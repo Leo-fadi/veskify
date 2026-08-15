@@ -130,7 +130,16 @@ const contentSupportDefinitionInput = {
       emptyState: "message",
     },
   ],
-  assetSlots: [],
+  assetSlots: [
+    {
+      id: "contentSupportMedia",
+      title: { en: "Approved editorial media", fi: "Hyväksytty toimituksellinen media" },
+      acceptedRoles: ["editorialImage"],
+      required: false,
+      minItems: 0,
+      maxItems: 1,
+    },
+  ],
   editablePresentationFields: [
     {
       path: "props.readingWidth",
@@ -244,9 +253,16 @@ const contentSupportCommercialAnatomy: RegisteredCommercialAnatomyInput = {
     {
       variantId: "aboutStory",
       classification: "meaningfulStructuralVariant",
-      materialDifferences: ["presentationMode"],
+      materialDifferences: ["regionPresence", "assetPlacement", "presentationMode"],
       finishingTokenIds: [],
-      structure: { ...commonStructure, presentationMode: "aboutStory" },
+      structure: {
+        ...commonStructure,
+        regionOrder: ["frame", "content", "heading", "body", "media", "actions"],
+        omittedRegions: ["continuation"],
+        assetPlacements: [{ slotId: "contentSupportMedia", region: "media" }],
+        contentRelationship: "balanced",
+        presentationMode: "aboutStory",
+      },
     },
     {
       variantId: "aboutProcess",

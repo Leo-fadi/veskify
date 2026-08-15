@@ -12,8 +12,8 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
   await expect(page.getByText("Aurora Ring 585").first()).toBeVisible();
   await expect(page.getByText("Lumi Halo Ring")).toBeVisible();
-  await expect(page.getByText("1 290 €")).toBeVisible();
-  await expect(page.getByText("1 890 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
+  await expect(page.getByText("€1,890")).toBeVisible();
   const commerce = page.locator('[data-component="dynamicCollectionCommerce"]');
   await expect(commerce).toBeVisible();
   const productCards = commerce.getByRole("article");
@@ -37,14 +37,20 @@ test("loads the persisted rings collection and operates bilingual demo controls 
 
   const before = await page.getByRole("article").allTextContents();
   const filterRegion = page.locator('[data-layout-region="filters"]');
+  const filterDisclosure = filterRegion.locator('details[data-filter-panel-mode="disclosure"]');
+  const filterTrigger = filterDisclosure.locator("summary");
   await expect(page.locator('[data-filter-layout="horizontal"]')).toBeVisible();
-  await expect(filterRegion).toHaveAttribute("open", "");
-  await expect(filterRegion.locator("summary")).toBeHidden();
+  await expect(filterDisclosure).not.toHaveAttribute("open", "");
+  await expect(filterTrigger).toContainText("Show filters");
+  await filterTrigger.focus();
+  await expect(filterTrigger).toBeFocused();
+  await filterTrigger.press("Enter");
+  await expect(filterDisclosure).toHaveAttribute("open", "");
   await expect(filterRegion.getByRole("heading", { name: "Filters" })).toBeVisible();
-  const material = page.getByRole("checkbox", { name: /Gold/ });
-  await expect(material).toBeVisible();
-  await material.focus();
-  await expect(material).toBeFocused();
+  const metalColour = page.getByRole("checkbox", { name: /^Yellow gold \(1\)$/ });
+  await expect(metalColour).toBeVisible();
+  await metalColour.focus();
+  await expect(metalColour).toBeFocused();
   await page.keyboard.press("Space");
   expect(await page.getByRole("article").allTextContents()).toEqual(before);
 
@@ -55,10 +61,10 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(page.getByText("Malliston sormukset")).toBeVisible();
   await expect(page.getByText("Current locale: FI")).toBeVisible();
   await expect(filterRegion.getByRole("heading", { name: "Suodattimet" })).toBeVisible();
-  const finnishMaterial = page.getByRole("checkbox", { name: /^Kulta \(2\)$/ });
-  await expect(finnishMaterial).toBeVisible();
-  await finnishMaterial.focus();
-  await expect(finnishMaterial).toBeFocused();
+  const finnishMetalColour = page.getByRole("checkbox", { name: /^Keltakulta \(1\)$/ });
+  await expect(finnishMetalColour).toBeVisible();
+  await finnishMetalColour.focus();
+  await expect(finnishMetalColour).toBeFocused();
   await expect(
     page.getByRole("combobox", { name: "Lajittele tuotteet", exact: true }),
   ).toBeVisible();
@@ -73,22 +79,17 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.goto(collectionUrl);
     await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
     const filterRegion = page.locator('[data-layout-region="filters"]');
+    const filterDisclosure = filterRegion.locator('details[data-filter-panel-mode="disclosure"]');
+    const filterTrigger = filterDisclosure.locator("summary");
     await expect(page.locator('[data-filter-layout="horizontal"]')).toBeVisible();
-    if (width === 375) {
-      const disclosure = page.getByRole("button", { name: "Show filters", exact: true });
-      await expect(disclosure).toBeVisible();
-      await disclosure.focus();
-      await expect(disclosure).toBeFocused();
-      await disclosure.press("Enter");
-      await expect(filterRegion).toHaveAttribute("open", "");
-      await expect(filterRegion.getByRole("heading", { name: "Filters" })).toBeVisible();
-      await expect(filterRegion.getByRole("checkbox", { name: /^Gold \(2\)$/ })).toBeVisible();
-    } else {
-      await expect(filterRegion).toHaveAttribute("open", "");
-      await expect(filterRegion.locator("summary")).toBeHidden();
-      await expect(filterRegion.getByRole("heading", { name: "Filters" })).toBeVisible();
-      await expect(filterRegion.getByRole("checkbox", { name: /^Gold \(2\)$/ })).toBeVisible();
-    }
+    await expect(filterDisclosure).not.toHaveAttribute("open", "");
+    await expect(filterTrigger).toContainText("Show filters");
+    await filterTrigger.focus();
+    await expect(filterTrigger).toBeFocused();
+    await filterTrigger.press("Enter");
+    await expect(filterDisclosure).toHaveAttribute("open", "");
+    await expect(filterRegion.getByRole("heading", { name: "Filters" })).toBeVisible();
+    await expect(filterRegion.getByRole("checkbox", { name: /^Yellow gold \(1\)$/ })).toBeVisible();
     await expectNoStorefrontHorizontalClipping(page);
   });
 }

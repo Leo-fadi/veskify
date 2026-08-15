@@ -5,10 +5,12 @@ import {
   type ApprovedAssetPresentation,
   type WholeStorefrontPlanningInput,
 } from "@/application/whole-storefront-generation-plan";
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
 import { createComponentRegistryV2 } from "@/domain/component-platform";
 import {
   approvedAssetPresentationSchema,
   canonicalValueString,
+  createDynamicCommercePresentationAuthority,
   storefrontSnapshotSchema,
   type ApprovedAssetPlacementOperation,
   type PageModel,
@@ -169,6 +171,129 @@ function expectedPageRole(page: PageModel): WholeStorefrontRuntimeState["pages"]
   return "other";
 }
 
+function compactRuntimeDynamicApprovedAssets(
+  runtime: WholeStorefrontRuntimeState,
+  presentations: readonly ApprovedAssetPresentation[],
+): WholeStorefrontRuntimeState["dynamicCommercePresentation"] {
+  const authority = runtime.dynamicCommercePresentation;
+  if (!authority) return null;
+  let changed = false;
+  const collectionSearchArchetypes = authority.collectionSearchArchetypes.map((archetype) => {
+    const routeIds = authority.collectionRouteMappings
+      .filter(({ archetypeId }) => archetypeId === archetype.id)
+      .map(({ routeId }) => routeId)
+      .sort();
+    if (routeIds.length === 0) return structuredClone(archetype);
+    const routeAuthorities = routeIds.map((routeId) => {
+      const page = runtime.pages.find((candidate) => candidate.pageId === routeId);
+      const component = page?.components.find(
+        (candidate) => candidate.component === "dynamicCollectionCommerce",
+      );
+      const placements = runtime.approvedAssetPlacements.filter(
+        (placement) =>
+          placement.pageId === routeId && placement.componentType === "dynamicCollectionCommerce",
+      );
+      if (!component) invalid();
+      return {
+        variant: component.variant,
+        visible: component.visible,
+        content: structuredClone(component.content),
+        props: structuredClone(component.props),
+        styleOverrides: structuredClone(component.styleOverrides),
+        selections: placements
+          .map((placement) => {
+            const assignment = component.assetAssignments.find(
+              (candidate) =>
+                candidate.slotId === placement.assetSlotId &&
+                candidate.assetId === placement.assetId &&
+                candidate.role === placement.role,
+            );
+            const presentation = presentations.find(
+              (candidate) =>
+                candidate.assetId === placement.assetId &&
+                candidate.asset.id === placement.assetId &&
+                candidate.role === placement.role &&
+                candidate.revision === placement.assetRevision &&
+                candidate.materialFingerprint === placement.materialFingerprint,
+            );
+            if (!assignment || !presentation || placement.componentId !== component.id) invalid();
+            return {
+              assetSlotId: placement.assetSlotId,
+              assetId: placement.assetId,
+              role: placement.role,
+              assetRevision: placement.assetRevision,
+              materialFingerprint: placement.materialFingerprint,
+              sourceReferenceId: placement.sourceReferenceId,
+              ...(placement.sourceProvenanceKind
+                ? { sourceProvenanceKind: placement.sourceProvenanceKind }
+                : {}),
+              required: placement.required,
+              presentation: approvedAssetPresentationSchema.parse(structuredClone(presentation)),
+            };
+          })
+          .sort((left, right) =>
+            canonicalValueString(left).localeCompare(canonicalValueString(right)),
+          ),
+      };
+    });
+    const reusable = routeAuthorities[0]?.selections ?? [];
+    const reusablePresentation = routeAuthorities[0];
+    if (
+      !reusablePresentation ||
+      routeAuthorities.some(
+        ({ selections, ...presentation }) =>
+          canonicalValueString(presentation) !==
+            canonicalValueString({
+              variant: reusablePresentation.variant,
+              visible: reusablePresentation.visible,
+              content: reusablePresentation.content,
+              props: reusablePresentation.props,
+              styleOverrides: reusablePresentation.styleOverrides,
+            }) || canonicalValueString(selections) !== canonicalValueString(reusable),
+      )
+    ) {
+      invalid();
+    }
+    const componentPresentations = archetype.componentPresentations.map((presentation) => {
+      if (presentation.component !== "dynamicCollectionCommerce") {
+        return structuredClone(presentation);
+      }
+      if (
+        presentation.variant !== reusablePresentation.variant ||
+        presentation.visible !== reusablePresentation.visible ||
+        canonicalValueString(presentation.content) !==
+          canonicalValueString(reusablePresentation.content) ||
+        canonicalValueString(presentation.props) !==
+          canonicalValueString(reusablePresentation.props) ||
+        canonicalValueString(presentation.styleOverrides ?? {}) !==
+          canonicalValueString(reusablePresentation.styleOverrides ?? {}) ||
+        canonicalValueString(presentation.approvedAssetSelections ?? []) !==
+          canonicalValueString(reusable)
+      ) {
+        changed = true;
+      }
+      return {
+        ...structuredClone(presentation),
+        variant: reusablePresentation.variant,
+        visible: reusablePresentation.visible,
+        content: structuredClone(reusablePresentation.content),
+        props: structuredClone(reusablePresentation.props),
+        styleOverrides: structuredClone(reusablePresentation.styleOverrides),
+        approvedAssetSelections: structuredClone(reusable),
+      };
+    });
+    return { ...structuredClone(archetype), componentPresentations };
+  });
+  if (!changed) return structuredClone(authority);
+  const { authorityFingerprint: _authorityFingerprint, ...material } = authority;
+  void _authorityFingerprint;
+  return createDynamicCommercePresentationAuthority({
+    ...structuredClone(material),
+    authorityRevision: material.authorityRevision + 1,
+    collectionSearchArchetypes,
+  });
+}
+
 /**
  * Canonical whole-storefront proposal-result to StorefrontSnapshot materialization.
  * It reuses the same runtime component projection used by the server proposal envelope.
@@ -225,8 +350,9 @@ export function materializeWholeStorefrontRuntimeSnapshot(input: {
     }
     const baseMaterial = structuredClone(base);
     delete baseMaterial.dynamicCommercePresentation;
+    const dynamicCommercePresentation = compactRuntimeDynamicApprovedAssets(runtime, presentations);
     const dynamicRouteIds = new Set(
-      runtime.dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
+      dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
     );
     const navigation = Object.fromEntries(
       Object.entries(runtime.navigation).map(([area, items]) => [
@@ -248,9 +374,9 @@ export function materializeWholeStorefrontRuntimeSnapshot(input: {
       ...baseMaterial,
       brandSystem: structuredClone(runtime.brandSystem),
       navigation,
-      ...(runtime.dynamicCommercePresentation
+      ...(dynamicCommercePresentation
         ? {
-            dynamicCommercePresentation: structuredClone(runtime.dynamicCommercePresentation),
+            dynamicCommercePresentation: structuredClone(dynamicCommercePresentation),
           }
         : {}),
       pages: base.pages
@@ -271,15 +397,45 @@ export function materializeWholeStorefrontRuntimeSnapshot(input: {
       [...placements].sort((left, right) =>
         canonicalValueString(left).localeCompare(canonicalValueString(right)),
       );
-    const materializedPlacements = sortPlacements(
-      materialized.pages.flatMap((page) =>
+    const reconstructedDynamicPlacements =
+      materialized.dynamicCommercePresentation?.routeInventory.flatMap((route) =>
+        route.kind === "search"
+          ? []
+          : resolveDynamicCommerceRoutePage({
+              snapshot: materialized,
+              catalogue: planningInput.catalogue,
+              routeId: route.id,
+              projection: "runtime",
+            }).page.sections.flatMap((section) => section.approvedAssetPlacements ?? []),
+      ) ?? [];
+    const materializedPlacements = sortPlacements([
+      ...materialized.pages.flatMap((page) =>
         page.sections.flatMap((section) => section.approvedAssetPlacements ?? []),
       ),
+      ...reconstructedDynamicPlacements,
+    ]);
+    const runtimePlacements = sortPlacements(
+      runtime.approvedAssetPlacements.map((placement) => {
+        if (!dynamicRouteIds.has(placement.pageId)) return placement;
+        const canonicalPlacement = reconstructedDynamicPlacements.find(
+          (candidate) =>
+            candidate.pageId === placement.pageId &&
+            candidate.componentType === placement.componentType &&
+            candidate.assetSlotId === placement.assetSlotId &&
+            candidate.assetId === placement.assetId &&
+            candidate.role === placement.role &&
+            candidate.assetRevision === placement.assetRevision &&
+            candidate.materialFingerprint === placement.materialFingerprint &&
+            candidate.sourceReferenceId === placement.sourceReferenceId &&
+            candidate.sourceProvenanceKind === placement.sourceProvenanceKind &&
+            candidate.required === placement.required,
+        );
+        return canonicalPlacement
+          ? { ...structuredClone(placement), componentId: canonicalPlacement.componentId }
+          : placement;
+      }),
     );
-    if (
-      canonicalValueString(materializedPlacements) !==
-      canonicalValueString(sortPlacements(runtime.approvedAssetPlacements))
-    ) {
+    if (canonicalValueString(materializedPlacements) !== canonicalValueString(runtimePlacements)) {
       invalid();
     }
     return materialized;

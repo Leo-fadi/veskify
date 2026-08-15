@@ -47,6 +47,13 @@ function renderRoute(repository: ProjectRepository, snapshotKind: "draft" | "pub
   );
 }
 
+function expectReturnToCurrentStore(): void {
+  expect(screen.getByRole("link", { name: "Return to store" })).toHaveAttribute(
+    "href",
+    `/projects/${aurumNordicSeed.project.id}`,
+  );
+}
+
 describe("seed project route", () => {
   it("shows a loading state while the repository is pending", () => {
     const { repository } = repositoryWithGet(() => new Promise<ProjectAggregate>(() => undefined));
@@ -187,6 +194,7 @@ describe("seed project route", () => {
     renderRoute(repository);
     expect(await screen.findByRole("heading", { name: "Project not found" })).toBeVisible();
     expect(screen.queryByText(/indexeddb/i)).not.toBeInTheDocument();
+    expectReturnToCurrentStore();
   });
 
   it("shows a missing draft state with retry", async () => {
@@ -197,6 +205,7 @@ describe("seed project route", () => {
     const { repository, get } = repositoryWithGet(() => Promise.resolve(value));
     renderRoute(repository);
     expect(await screen.findByRole("heading", { name: "Draft unavailable" })).toBeVisible();
+    expectReturnToCurrentStore();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
   });
@@ -208,6 +217,7 @@ describe("seed project route", () => {
     const { repository } = repositoryWithGet(() => Promise.resolve(value));
     renderRoute(repository);
     expect(await screen.findByRole("heading", { name: "Homepage unavailable" })).toBeVisible();
+    expectReturnToCurrentStore();
   });
 
   it("shows a generic storage failure without technical details", async () => {
@@ -220,6 +230,7 @@ describe("seed project route", () => {
     ).toBeVisible();
     expect(screen.queryByText(/transaction stack detail/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expectReturnToCurrentStore();
   });
 
   it("rejects invalid composition before registry rendering", async () => {
@@ -232,6 +243,7 @@ describe("seed project route", () => {
     expect(
       await screen.findByRole("heading", { name: "Storefront could not be displayed" }),
     ).toBeVisible();
+    expectReturnToCurrentStore();
   });
 
   it("contains no editor or Puck chrome in the successful read-only route", async () => {

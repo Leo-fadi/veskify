@@ -35,11 +35,13 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalStorefrontSiteMapFingerprint,
   canonicalValueFingerprint,
+  approvedAssetPresentationSchema,
   storefrontSnapshotSchema,
   validateCanonicalStorefrontSiteMap,
   type SectionInstance,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
+import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import {
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
@@ -64,6 +66,52 @@ const contentSupportFamilyIds = new Set([
   "generic-content",
   "store-locations",
 ]);
+
+const RELATED_PRODUCT_LIMIT = 4;
+
+/**
+ * Derives bounded related merchandising without creating canonical catalogue relationships.
+ * Existing collection order and catalogue order remain the only ordering authorities.
+ */
+export function selectBoundedRelatedProductIds(
+  catalogue: CatalogueDisplayModel,
+  productId: string,
+): readonly string[] {
+  const product = catalogue.products.find((candidate) => candidate.id === productId);
+  if (!product) throw new Error(`Related merchandising product ${productId} is unavailable.`);
+
+  const eligible = new Set(
+    catalogue.products
+      .filter(
+        (candidate) =>
+          candidate.id !== productId &&
+          candidate.images.length > 0 &&
+          candidate.price !== undefined &&
+          (candidate.stockStatus === "inStock" || candidate.stockStatus === "lowStock"),
+      )
+      .map(({ id }) => id),
+  );
+  const selected: string[] = [];
+  const append = (candidateId: string) => {
+    if (
+      eligible.has(candidateId) &&
+      !selected.includes(candidateId) &&
+      selected.length < RELATED_PRODUCT_LIMIT
+    ) {
+      selected.push(candidateId);
+    }
+  };
+
+  catalogue.collections
+    .filter(({ productIds }) => productIds.includes(productId))
+    .forEach(({ productIds }) => productIds.forEach(append));
+  catalogue.products
+    .filter((candidate) => candidate.productType === product.productType)
+    .forEach(({ id }) => append(id));
+  catalogue.products.forEach(({ id }) => append(id));
+
+  return Object.freeze(selected);
+}
 
 type DynamicRouteInventoryEntry = NonNullable<
   StorefrontSnapshot["dynamicCommercePresentation"]
@@ -224,7 +272,10 @@ function productSection(
       relatedProductIds: [...relatedProductIds],
       canonicalRevision,
     },
-    props: structuredClone(authority.dynamicProductDetailProps),
+    props: {
+      ...structuredClone(authority.dynamicProductDetailProps),
+      relatedCardVariant: authority.relatedProductCardAnatomyId,
+    },
     approvedAssetPlacements: [],
     approvedAssetPresentations: [],
   };
@@ -312,6 +363,17 @@ export function materializeCompleteStorefrontSelection(
         snapshot,
         pageId: page.id,
         factAuthority: input.contentFactAuthority,
+        ...(input.planningInput.approvedAssetContext
+          ? {
+              approvedAssetAuthority: {
+                context: input.planningInput.approvedAssetContext,
+                presentations: input.approvedAssetPresentations.map((presentation) =>
+                  approvedAssetPresentationSchema.parse(presentation),
+                ),
+                placements: input.planningInput.requiredAssetPlacements,
+              },
+            }
+          : {}),
       }).snapshot;
     }
   }
@@ -323,10 +385,7 @@ export function materializeCompleteStorefrontSelection(
   snapshot = storefrontSnapshotSchema.parse({
     ...snapshot,
     pages: snapshot.pages.map((page) => {
-      if (
-        ["search-results", "collection"].includes(page.pageFamily?.familyId ?? "") &&
-        page.sections.length === 0
-      ) {
+      if (["search-results", "collection"].includes(page.pageFamily?.familyId ?? "")) {
         return {
           ...page,
           sections: [
@@ -343,7 +402,7 @@ export function materializeCompleteStorefrontSelection(
           ],
         };
       }
-      if (page.pageFamily?.familyId === "product-detail" && page.sections.length === 0) {
+      if (page.pageFamily?.familyId === "product-detail") {
         const productId =
           page.pageFamily.commerceContext.kind === "product"
             ? page.pageFamily.commerceContext.productId
@@ -357,17 +416,16 @@ export function materializeCompleteStorefrontSelection(
           );
         const retainedRelatedProductIds =
           retainedProductRoute?.kind === "product"
-            ? [...(retainedProductRoute.relatedProductIds ?? [])]
+            ? retainedProductRoute.relatedProductIds
             : undefined;
         return {
           ...page,
           sections: [
             productSection(
               productId,
-              retainedRelatedProductIds ??
-                input.planningInput.catalogue.products
-                  .map(({ id }) => id)
-                  .filter((id) => id !== productId),
+              retainedProductRoute?.kind === "product"
+                ? [...(retainedRelatedProductIds ?? [])]
+                : selectBoundedRelatedProductIds(input.planningInput.catalogue, productId),
               canonicalCommerceFingerprint,
               commercialPdpProfileIdSchema.parse(page.pageFamily.profileId),
               materializationIdPrefix,
@@ -380,6 +438,10 @@ export function materializeCompleteStorefrontSelection(
     }),
   });
 
+  snapshot = storefrontSnapshotSchema.parse({
+    ...snapshot,
+    dynamicCommercePresentation: undefined,
+  });
   const currentDynamicAuthority = materializeCurrentDynamicCommercePresentationAuthority(
     snapshot,
     input.planningInput.catalogue,
@@ -415,6 +477,22 @@ export function materializeCompleteStorefrontSelection(
     approvedAssetRoleSelections: input.approvedAssetRoleSelections,
     dynamicCommerceSelection: reboundDynamicSelection,
   });
+  for (const placement of plan.approvedAssetPlacements) {
+    const presentation = input.approvedAssetPresentations.find(
+      (candidate) =>
+        candidate.assetId === placement.assetId &&
+        candidate.asset.id === placement.assetId &&
+        candidate.role === placement.role &&
+        candidate.revision === placement.assetRevision &&
+        candidate.materialFingerprint === placement.materialFingerprint,
+    );
+    if (!presentation) {
+      throw new WholeStorefrontGenerationPlanError(
+        "stale-approved-asset",
+        "A planned approved asset has no matching current renderer presentation authority.",
+      );
+    }
+  }
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const legacyMaterialized = materializeWholeStorefrontRuntimeSnapshot({
     runtime: proposal.proposedStorefront,

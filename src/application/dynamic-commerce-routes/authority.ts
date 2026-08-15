@@ -47,9 +47,11 @@ import {
   createDynamicCommercePresentationAuthority,
   dynamicCommercePresentationAuthoritySchema,
   dynamicCommerceRouteInventoryEntrySchema,
+  isDynamicCommerceArchetypeCompatibleWithSharedFrame,
   storefrontSnapshotSchema,
   type DynamicCommerceCollectionSearchArchetype,
   type DynamicCommerceCollectionContextRule,
+  type DynamicCommerceApprovedAssetSelection,
   type DynamicCommerceComponentPresentation,
   type DynamicCommercePresentationAuthority,
   type DynamicCommerceProductComplexityRule,
@@ -209,9 +211,128 @@ function productArchetypeId(profileId: string): string {
   return PDP_PROFILE_TO_ARCHETYPE[profileId as keyof typeof PDP_PROFILE_TO_ARCHETYPE] ?? "";
 }
 
+export function registeredDynamicCommerceCollectionArchetypeId(profileId: string): string {
+  const archetypeId = collectionArchetypeId(profileId);
+  if (!archetypeId) {
+    return fail("stale-profile", `Collection profile ${profileId} has no archetype ID.`);
+  }
+  return archetypeId;
+}
+
+export function dynamicCommerceRouteSectionId(routeId: string, archetypeId: string): string {
+  return idSchema.parse(`section_${routeId}_${archetypeId}`);
+}
+
+type LegacyDynamicPresentationEntry = Readonly<{
+  page: PageModel;
+  section: SectionInstance;
+}>;
+
+function compactApprovedAssetSelections(
+  entries: readonly LegacyDynamicPresentationEntry[],
+  expectedComponent: "dynamicCollectionCommerce" | "dynamicProductDetail",
+): DynamicCommerceApprovedAssetSelection[] {
+  const definition = veskifyComponentDefinitionsV2.find(({ type }) => type === expectedComponent);
+  if (!definition) {
+    return fail(
+      "invalid-presentation",
+      `Registered ${expectedComponent} approved-asset authority is unavailable.`,
+    );
+  }
+  const routeSelections = entries.map(({ page, section }) => {
+    if (section.component !== expectedComponent) {
+      return fail(
+        "invalid-presentation",
+        "A compact dynamic-commerce asset selection targets the wrong component family.",
+      );
+    }
+    return (section.approvedAssetPlacements ?? [])
+      .map((placement) => {
+        const slot = definition.assetSlots.find(({ id }) => id === placement.assetSlotId);
+        if (!slot || !slot.acceptedRoles.includes(placement.role)) {
+          return fail(
+            "invalid-presentation",
+            "An approved dynamic-commerce asset is incompatible with its registered slot.",
+          );
+        }
+        const presentation = (section.approvedAssetPresentations ?? []).find(
+          (candidate) =>
+            candidate.assetId === placement.assetId &&
+            candidate.asset.id === placement.assetId &&
+            candidate.role === placement.role &&
+            candidate.revision === placement.assetRevision &&
+            candidate.materialFingerprint === placement.materialFingerprint,
+        );
+        if (
+          placement.pageId !== page.id ||
+          placement.componentId !== section.id ||
+          placement.componentType !== section.component ||
+          !presentation
+        ) {
+          return fail(
+            "invalid-presentation",
+            "A dynamic-commerce approved asset has incomplete canonical placement authority.",
+          );
+        }
+        return {
+          assetSlotId: placement.assetSlotId,
+          assetId: placement.assetId,
+          role: placement.role,
+          assetRevision: placement.assetRevision,
+          materialFingerprint: placement.materialFingerprint,
+          sourceReferenceId: placement.sourceReferenceId,
+          ...(placement.sourceProvenanceKind
+            ? { sourceProvenanceKind: placement.sourceProvenanceKind }
+            : {}),
+          required: placement.required,
+          presentation: structuredClone(presentation),
+        } satisfies DynamicCommerceApprovedAssetSelection;
+      })
+      .sort(
+        (left, right) =>
+          left.assetSlotId.localeCompare(right.assetSlotId) ||
+          left.assetId.localeCompare(right.assetId),
+      );
+  });
+  const reusable = routeSelections[0] ?? [];
+  const reusableFingerprints = new Set(
+    reusable
+      .filter((selection) =>
+        routeSelections.every((selections) =>
+          selections.some(
+            (candidate) => canonicalValueString(candidate) === canonicalValueString(selection),
+          ),
+        ),
+      )
+      .map((selection) => canonicalValueString(selection)),
+  );
+  const routesWithNonReusableRequiredAssets = entries.flatMap(({ page }, index) =>
+    (routeSelections[index] ?? []).some(
+      (selection) =>
+        selection.required && !reusableFingerprints.has(canonicalValueString(selection)),
+    )
+      ? [page.id]
+      : [],
+  );
+  if (routesWithNonReusableRequiredAssets.length > 0) {
+    throw new DynamicCommerceMigrationError([
+      {
+        code: "conflicting-legacy-presentation",
+        routeIds: routesWithNonReusableRequiredAssets,
+        message:
+          "Routes sharing one archetype have required approved assets that are not reusable across every route.",
+      },
+    ]);
+  }
+  return reusable
+    .filter((selection) => reusableFingerprints.has(canonicalValueString(selection)))
+    .map((selection) => structuredClone(selection));
+}
+
 function collectionPresentation(
   profileId: string,
   legacySection?: SectionInstance,
+  approvedAssetSelections: readonly DynamicCommerceApprovedAssetSelection[] = [],
 ): DynamicCommerceComponentPresentation {
   const plan = getCommercialCollectionSearchProfile(profileId);
   const authority = plan?.profile?.commercialCollectionSearch;
@@ -238,6 +359,21 @@ function collectionPresentation(
     void _canonicalRevision;
     content = dynamicCollectionCommerceContentSchema.parse(presentationContent);
   }
+  const parsedProps = dynamicCollectionCommercePropsSchema.parse(
+    legacySection?.props ?? {
+      ...dynamicCollectionCommerceDefaultProps,
+      gridDensity: authority.gridDensity,
+      cardVariant: authority.productCardAnatomyId,
+      filterLayout: authority.filterLayout,
+      showChildCollections: authority.childCollectionTreatment !== "omit",
+    },
+  );
+  if (legacySection && parsedProps.cardVariant !== authority.productCardAnatomyId) {
+    fail(
+      "invalid-presentation",
+      "The legacy collection product-card anatomy conflicts with its registered profile.",
+    );
+  }
   return {
     slotId: slot.slotId,
     component: "dynamicCollectionCommerce",
@@ -245,27 +381,19 @@ function collectionPresentation(
     anatomyId: authority.productCardAnatomyId,
     visible: legacySection?.visible ?? true,
     content,
-    props: structuredClone(
-      dynamicCollectionCommercePropsSchema.parse(
-        legacySection?.props ?? {
-          ...dynamicCollectionCommerceDefaultProps,
-          gridDensity: authority.gridDensity,
-          cardVariant: authority.productCardAnatomyId,
-          filterLayout: authority.filterLayout,
-          showChildCollections: authority.childCollectionTreatment !== "omit",
-        },
-      ),
-    ),
+    props: structuredClone(parsedProps),
     styleOverrides: structuredClone(
       legacySection?.styleOverrides ?? dynamicCollectionCommerceDefaultStyleOverrides,
     ),
     boundedParameters: structuredClone(slot.boundedParameters),
+    approvedAssetSelections: approvedAssetSelections.map((selection) => structuredClone(selection)),
   };
 }
 
 function productPresentation(
   profileId: string,
   legacySection?: SectionInstance,
+  approvedAssetSelections: readonly DynamicCommerceApprovedAssetSelection[] = [],
 ): DynamicCommerceComponentPresentation {
   const plan = getCommercialPdpProfile(profileId);
   const authority = plan?.profile?.commercialProductDetail;
@@ -292,6 +420,18 @@ function productPresentation(
     void _canonicalRevision;
     content = dynamicProductDetailContentSchema.parse(presentationContent);
   }
+  const parsedProps = dynamicProductDetailPropsSchema.parse(
+    legacySection?.props ?? {
+      ...authority.dynamicProductDetailProps,
+      relatedCardVariant: authority.relatedProductCardAnatomyId,
+    },
+  );
+  if (legacySection && parsedProps.relatedCardVariant !== authority.relatedProductCardAnatomyId) {
+    fail(
+      "invalid-presentation",
+      "The legacy related-product-card anatomy conflicts with its registered profile.",
+    );
+  }
   return {
     slotId: slot.slotId,
     component: "dynamicProductDetail",
@@ -299,21 +439,18 @@ function productPresentation(
     anatomyId: authority.relatedProductCardAnatomyId,
     visible: legacySection?.visible ?? true,
     content,
-    props: structuredClone(
-      dynamicProductDetailPropsSchema.parse(
-        legacySection?.props ?? authority.dynamicProductDetailProps,
-      ),
-    ),
+    props: structuredClone(parsedProps),
     styleOverrides: structuredClone(
       legacySection?.styleOverrides ?? dynamicProductDetailDefaultStyleOverrides,
     ),
     boundedParameters: structuredClone(slot.boundedParameters),
+    approvedAssetSelections: approvedAssetSelections.map((selection) => structuredClone(selection)),
   };
 }
 
 function createCollectionArchetype(
   profileId: string,
-  legacySection?: SectionInstance,
+  legacyEntries: readonly LegacyDynamicPresentationEntry[] = [],
   supportsSearch = profileId === "collection-dense-search",
 ): DynamicCommerceCollectionSearchArchetype {
   const plan = getCommercialCollectionSearchProfile(profileId);
@@ -344,7 +481,13 @@ function createCollectionArchetype(
     compatibleSharedFrameProfileIds: [...authority.compatibleSharedFrameProfileIds],
     defaultSharedFrameProfileId: authority.defaultSharedFrameProfileId,
     designDnaNarrowing: structuredClone(authority.designDnaNarrowing),
-    componentPresentations: [collectionPresentation(profileId, legacySection)],
+    componentPresentations: [
+      collectionPresentation(
+        profileId,
+        legacyEntries[0]?.section,
+        compactApprovedAssetSelections(legacyEntries, "dynamicCollectionCommerce"),
+      ),
+    ],
     responsivePosture: authority.responsiveArchitecture,
     artDirectionPosture: {
       imagePosture: authority.designDnaNarrowing.imagePosture[0],
@@ -359,7 +502,7 @@ function createCollectionArchetype(
 
 function createProductArchetype(
   profileId: string,
-  legacySection?: SectionInstance,
+  legacyEntries: readonly LegacyDynamicPresentationEntry[] = [],
   generic = false,
 ): DynamicCommerceProductDetailArchetype {
   const plan = getCommercialPdpProfile(profileId);
@@ -387,7 +530,13 @@ function createProductArchetype(
     compatibleSharedFrameProfileIds: [...authority.compatibleSharedFrameProfileIds],
     defaultSharedFrameProfileId: authority.defaultSharedFrameProfileId,
     designDnaNarrowing: structuredClone(authority.designDnaNarrowing),
-    componentPresentations: [productPresentation(profileId, legacySection)],
+    componentPresentations: [
+      productPresentation(
+        profileId,
+        legacyEntries[0]?.section,
+        compactApprovedAssetSelections(legacyEntries, "dynamicProductDetail"),
+      ),
+    ],
     responsivePosture: authority.responsiveArchitecture,
     artDirectionPosture: {
       imagePosture: authority.designDnaNarrowing.imagePosture[0],
@@ -818,6 +967,19 @@ function legacyMigrationPreflight(input: {
           message: "A legacy product route does not satisfy its registered component schema.",
         });
       } else {
+        const productAuthority = getCommercialPdpProfile(profileId ?? "")?.profile
+          ?.commercialProductDetail;
+        if (
+          productAuthority &&
+          props.data.relatedCardVariant !== productAuthority.relatedProductCardAnatomyId
+        ) {
+          decisions.push({
+            code: "conflicting-legacy-presentation",
+            routeIds: [page.id],
+            message:
+              "A legacy product route has product-card anatomy that conflicts with its exact registered profile.",
+          });
+        }
         if (content.data.productId !== commerceContext.productId) {
           decisions.push({
             code: "missing-catalogue-identity",
@@ -873,6 +1035,19 @@ function legacyMigrationPreflight(input: {
           "A legacy collection/search route does not satisfy its registered component schema.",
       });
     } else {
+      const collectionAuthority = getCommercialCollectionSearchProfile(profileId ?? "")?.profile
+        ?.commercialCollectionSearch;
+      if (
+        collectionAuthority &&
+        props.data.cardVariant !== collectionAuthority.productCardAnatomyId
+      ) {
+        decisions.push({
+          code: "conflicting-legacy-presentation",
+          routeIds: [page.id],
+          message:
+            "A legacy collection route has product-card anatomy that conflicts with its exact registered profile.",
+        });
+      }
       if (
         commerceContext.kind === "collection" &&
         content.data.collectionId !== commerceContext.collectionId
@@ -951,7 +1126,7 @@ function buildAuthority(input: {
   );
   if (decisions.length) return decisions;
 
-  const byProfile = new Map<string, Array<{ page: PageModel; section: SectionInstance }>>();
+  const byProfile = new Map<string, LegacyDynamicPresentationEntry[]>();
   input.dynamicPages.forEach((page) => {
     const profileId = page.pageFamily?.profileId;
     const section = pageSections.get(page.id);
@@ -1059,7 +1234,7 @@ function buildAuthority(input: {
     const profileId = plan.profile!.id;
     return createCollectionArchetype(
       profileId,
-      byProfile.get(profileId)?.[0]?.section,
+      byProfile.get(profileId),
       profileId === searchProfileId,
     );
   });
@@ -1070,7 +1245,7 @@ function buildAuthority(input: {
   const productDetailArchetypes = [
     ...compatibleProductPlans.map((plan) => {
       const profileId = plan.profile!.id;
-      return createProductArchetype(profileId, byProfile.get(profileId)?.[0]?.section);
+      return createProductArchetype(profileId, byProfile.get(profileId));
     }),
     createProductArchetype(genericProductPlan.profile!.id, undefined, true),
   ];
@@ -1879,15 +2054,42 @@ function assertCurrentArchetype(
   }
   try {
     for (const presentation of archetype.componentPresentations) {
+      const definition = veskifyComponentDefinitionsV2.find(
+        ({ type }) => type === presentation.component,
+      );
+      if (!definition) {
+        fail("invalid-presentation", "The dynamic route component definition is unavailable.");
+      }
+      for (const selection of presentation.approvedAssetSelections ?? []) {
+        const slot = definition.assetSlots.find(({ id }) => id === selection.assetSlotId);
+        if (!slot || !slot.acceptedRoles.includes(selection.role)) {
+          fail(
+            "invalid-presentation",
+            "The dynamic route approved asset selection is outside current registered authority.",
+          );
+        }
+      }
       if (archetype.family === "collection-search") {
         dynamicCollectionCommerceContentSchema.parse(presentation.content);
-        dynamicCollectionCommercePropsSchema.parse(presentation.props);
+        const props = dynamicCollectionCommercePropsSchema.parse(presentation.props);
+        if (props.cardVariant !== presentation.anatomyId) {
+          fail(
+            "invalid-presentation",
+            `The collection product-card anatomy ${props.cardVariant} does not match its executable presentation ${presentation.anatomyId} for ${archetype.profile.profileId}.`,
+          );
+        }
         if (presentation.styleOverrides) {
           dynamicCollectionCommerceStyleOverridesSchema.parse(presentation.styleOverrides);
         }
       } else {
         dynamicProductDetailContentSchema.parse(presentation.content);
-        dynamicProductDetailPropsSchema.parse(presentation.props);
+        const props = dynamicProductDetailPropsSchema.parse(presentation.props);
+        if (props.relatedCardVariant !== presentation.anatomyId) {
+          fail(
+            "invalid-presentation",
+            `The related-product-card anatomy ${props.relatedCardVariant} does not match its executable presentation ${presentation.anatomyId} for ${archetype.profile.profileId}.`,
+          );
+        }
         if (presentation.styleOverrides) {
           dynamicProductDetailStyleOverridesSchema.parse(presentation.styleOverrides);
         }
@@ -1903,7 +2105,7 @@ function assertCurrentArchetype(
   }
   if (
     snapshot.sharedFrame &&
-    !archetype.compatibleSharedFrameProfileIds.includes(snapshot.sharedFrame.profileId)
+    !isDynamicCommerceArchetypeCompatibleWithSharedFrame(archetype, snapshot.sharedFrame.profileId)
   ) {
     fail(
       "incompatible-shared-frame",
@@ -2002,6 +2204,30 @@ function routeSection(
   const presentation = archetype.componentPresentations[0];
   if (!presentation) return fail("invalid-presentation", "The selected archetype is empty.");
   const revision = `canonical-commerce-${canonicalValueFingerprint(catalogue)}`;
+  const approvedAssetSelections = presentation.approvedAssetSelections ?? [];
+  const sectionId =
+    projection === "editor"
+      ? `section_${archetype.id}`
+      : dynamicCommerceRouteSectionId(route.id, archetype.id);
+  const approvedAssetPlacements = approvedAssetSelections.map((selection) => ({
+    type: "PLACE_APPROVED_SOURCE_ASSET" as const,
+    pageId: projection === "editor" ? archetype.id : route.id,
+    componentId: sectionId,
+    componentType: presentation.component,
+    assetSlotId: selection.assetSlotId,
+    assetId: selection.assetId,
+    role: selection.role,
+    assetRevision: selection.assetRevision,
+    materialFingerprint: selection.materialFingerprint,
+    sourceReferenceId: selection.sourceReferenceId,
+    ...(selection.sourceProvenanceKind
+      ? { sourceProvenanceKind: selection.sourceProvenanceKind }
+      : {}),
+    required: selection.required,
+  }));
+  const approvedAssetPresentations = approvedAssetSelections.map(({ presentation: asset }) =>
+    structuredClone(asset),
+  );
   if (route.kind === "product" && archetype.family === "product-detail") {
     const relatedProductIds = route.relatedProductIds ?? [];
     if (
@@ -2015,8 +2241,7 @@ function routeSection(
       );
     }
     return {
-      id:
-        projection === "editor" ? `section_${archetype.id}` : `section_${route.id}_${archetype.id}`,
+      id: sectionId,
       component: "dynamicProductDetail",
       variant: presentation.variant,
       visible: presentation.visible,
@@ -2031,8 +2256,8 @@ function routeSection(
       },
       props: structuredClone(presentation.props),
       styleOverrides: structuredClone(projectSectionStyleOverrides(presentation.styleOverrides)),
-      approvedAssetPlacements: [],
-      approvedAssetPresentations: [],
+      approvedAssetPlacements,
+      approvedAssetPresentations,
     };
   }
   if (route.kind === "collection" && archetype.family === "collection-search") {
@@ -2040,8 +2265,7 @@ function routeSection(
     if (!collection)
       return fail("unknown-commerce-identity", "The route collection is unavailable.");
     return {
-      id:
-        projection === "editor" ? `section_${archetype.id}` : `section_${route.id}_${archetype.id}`,
+      id: sectionId,
       component: "dynamicCollectionCommerce",
       variant: presentation.variant,
       visible: presentation.visible,
@@ -2053,8 +2277,8 @@ function routeSection(
       },
       props: structuredClone(presentation.props),
       styleOverrides: structuredClone(projectSectionStyleOverrides(presentation.styleOverrides)),
-      approvedAssetPlacements: [],
-      approvedAssetPresentations: [],
+      approvedAssetPlacements,
+      approvedAssetPresentations,
     };
   }
   if (route.kind === "search" && archetype.family === "collection-search") {
@@ -2243,15 +2467,23 @@ export function applyDynamicCommerceArchetypePage(
       ? collectionPresentation(current.profile.profileId, section)
       : productPresentation(current.profile.profileId, section);
   const currentPresentation = current.componentPresentations[0];
+  const presentationWithRetainedAssets = {
+    ...presentation,
+    approvedAssetSelections: (currentPresentation?.approvedAssetSelections ?? []).map((selection) =>
+      structuredClone(selection),
+    ),
+  };
   const canonicalPresentation =
     currentPresentation &&
     canonicalValueString(projectSectionStyleOverrides(currentPresentation.styleOverrides)) ===
-      canonicalValueString(projectSectionStyleOverrides(presentation.styleOverrides))
+      canonicalValueString(
+        projectSectionStyleOverrides(presentationWithRetainedAssets.styleOverrides),
+      )
       ? {
-          ...presentation,
+          ...presentationWithRetainedAssets,
           styleOverrides: structuredClone(currentPresentation.styleOverrides),
         }
-      : presentation;
+      : presentationWithRetainedAssets;
   if (
     canonicalValueString(current.componentPresentations) ===
     canonicalValueString([canonicalPresentation])

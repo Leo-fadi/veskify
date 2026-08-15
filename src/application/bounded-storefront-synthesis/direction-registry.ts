@@ -34,8 +34,8 @@ const packages = [
       "Expressive image-led hierarchy, spacious editorial pacing, considered merchandising and evidence-backed story continuity.",
     constraints: {
       designSystemDirectionIds: ["premiumEditorial"],
-      designSystemSpacingDensities: ["standard"],
-      designSystemSurfaceDepths: ["subtle"],
+      designSystemSpacingDensities: ["spacious"],
+      designSystemSurfaceDepths: ["layered"],
       sharedFrameProfileIds: ["editorial-masthead", "centered-minimal", "commerce-utility"],
       homepageProfileIds: [
         "homepage-editorial-storytelling",
@@ -56,11 +56,20 @@ const packages = [
       informationDensityPostures: ["balanced", "airy"],
       artDirectionPostures: ["editorial", "immersive"],
       responsiveModes: ["content-first", "balanced"],
+      postureDefaults: {
+        narrativePosture: "story-led",
+        merchandisingPosture: "curated",
+        informationDensityPosture: "balanced",
+        artDirectionPosture: "editorial",
+        responsiveMode: "content-first",
+      },
       designDna: {
         typographyPairings: ["serif-led"],
-        spacingScales: ["balanced"],
+        // The registered Premium direction owns spacious legacy spacing, which
+        // canonically projects to generous Design DNA and spacious controls.
+        spacingScales: ["generous"],
         surfacePostures: ["quiet", "layered", "contrast"],
-        controlDensities: ["balanced"],
+        controlDensities: ["spacious"],
         mediaPostures: ["editorial"],
       },
     },
@@ -104,6 +113,13 @@ const packages = [
       informationDensityPostures: ["compact", "balanced"],
       artDirectionPostures: ["contained", "editorial"],
       responsiveModes: ["commerce-first", "balanced"],
+      postureDefaults: {
+        narrativePosture: "discovery-led",
+        merchandisingPosture: "discovery",
+        informationDensityPosture: "compact",
+        artDirectionPosture: "contained",
+        responsiveMode: "commerce-first",
+      },
       designDna: {
         typographyPairings: ["sans-led"],
         spacingScales: ["balanced"],
@@ -147,6 +163,13 @@ const packages = [
       informationDensityPostures: ["balanced", "airy"],
       artDirectionPostures: ["contained", "editorial"],
       responsiveModes: ["balanced", "commerce-first"],
+      postureDefaults: {
+        narrativePosture: "restrained",
+        merchandisingPosture: "restrained",
+        informationDensityPosture: "balanced",
+        artDirectionPosture: "contained",
+        responsiveMode: "balanced",
+      },
       designDna: {
         typographyPairings: ["serif-led"],
         spacingScales: ["balanced"],

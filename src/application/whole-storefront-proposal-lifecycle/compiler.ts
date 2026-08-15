@@ -7,6 +7,7 @@ import {
   materializeCurrentDynamicCommercePresentationAuthority,
   materializeDynamicCommerceDesignSelectionAuthority,
   materializeDynamicCommerceDesignSelectionFromAuthority,
+  resolveDynamicCommerceRoutePage,
 } from "@/application/dynamic-commerce-routes";
 import {
   wholeStorefrontGenerationPlanSchema,
@@ -256,6 +257,63 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
   }
 }
 
+function sourceApprovedAssetAuthority(
+  page: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number],
+  section: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number]["sections"][number],
+  planningInput: WholeStorefrontPlanningInput,
+) {
+  const placements = (section.approvedAssetPlacements ?? []).map((placement) =>
+    structuredClone(placement),
+  );
+  const presentations = section.approvedAssetPresentations ?? [];
+  const approvedAssets = new Map(
+    (planningInput.approvedAssetContext?.assets ?? []).map((asset) => [asset.assetId, asset]),
+  );
+  const assignmentKeys = new Set<string>();
+  const assignments = placements.map((placement) => {
+    const approved = approvedAssets.get(placement.assetId);
+    const presentation = presentations.find(
+      (candidate) =>
+        candidate.assetId === placement.assetId &&
+        candidate.asset.id === placement.assetId &&
+        candidate.role === placement.role &&
+        candidate.revision === placement.assetRevision &&
+        candidate.materialFingerprint === placement.materialFingerprint,
+    );
+    if (
+      placement.pageId !== page.id ||
+      placement.componentId !== section.id ||
+      placement.componentType !== section.component ||
+      !approved ||
+      approved.role !== placement.role ||
+      approved.revision !== placement.assetRevision ||
+      approved.materialFingerprint !== placement.materialFingerprint ||
+      approved.sourceReferenceId !== placement.sourceReferenceId ||
+      !presentation
+    ) {
+      invalid(
+        "asset-placement-target-mismatch",
+        "A retained approved source asset no longer matches the current page, component, presentation or approval authority.",
+      );
+    }
+    const assignment = {
+      slotId: placement.assetSlotId,
+      assetId: placement.assetId,
+      role: placement.role,
+    };
+    const key = canonicalValueString(assignment);
+    if (assignmentKeys.has(key)) {
+      invalid(
+        "duplicate-operation-identity",
+        "A retained approved source asset assignment is duplicated.",
+      );
+    }
+    assignmentKeys.add(key);
+    return assignment;
+  });
+  return { assignments, placements };
+}
+
 function sourceComponent(
   page: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number],
   section: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number]["sections"][number],
@@ -290,6 +348,7 @@ function sourceComponent(
   let content = structuredClone(section.content);
   let bindings: ComponentInstanceV2["bindings"] = [];
   let styleOverrides: ComponentInstanceV2["styleOverrides"] = {};
+  const assetAuthority = sourceApprovedAssetAuthority(page, section, planningInput);
   const homepageBridgeComponent = homepageCommerceBridgeComponentNames.find(
     (component): component is HomepageCommerceBridgeComponent => component === section.component,
   );
@@ -404,7 +463,7 @@ function sourceComponent(
       props: structuredClone(section.props),
       styleOverrides,
       bindings,
-      assetAssignments: [],
+      assetAssignments: assetAuthority.assignments,
     }),
     visible: section.visible,
   };
@@ -447,6 +506,49 @@ function createOriginalState(
       };
     })
     .sort((left, right) => left.pageId.localeCompare(right.pageId));
+  const staticApprovedAssetPlacements = input.planningInput.draft.pages.flatMap((page) =>
+    page.sections.flatMap(
+      (section) => sourceApprovedAssetAuthority(page, section, input.planningInput).placements,
+    ),
+  );
+  const dynamicCommercePresentation =
+    input.planningInput.draft.dynamicCommercePresentation ??
+    (plan.dynamicCommerceSelection
+      ? materializeCurrentDynamicCommercePresentationAuthority(
+          input.planningInput.draft,
+          input.planningInput.catalogue,
+        )
+      : null);
+  const dynamicCommerceSnapshot = dynamicCommercePresentation
+    ? {
+        ...input.planningInput.draft,
+        dynamicCommercePresentation,
+      }
+    : input.planningInput.draft;
+  const dynamicApprovedAssetPlacements =
+    dynamicCommercePresentation?.routeInventory.flatMap((route) =>
+      route.kind === "search"
+        ? []
+        : resolveDynamicCommerceRoutePage({
+            snapshot: dynamicCommerceSnapshot,
+            catalogue: input.planningInput.catalogue,
+            routeId: route.id,
+            projection: "runtime",
+          }).page.sections.flatMap((section) => section.approvedAssetPlacements ?? []),
+    ) ?? [];
+  const approvedAssetPlacements = [
+    ...staticApprovedAssetPlacements,
+    ...dynamicApprovedAssetPlacements,
+  ].sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)));
+  if (
+    new Set(approvedAssetPlacements.map((placement) => canonicalValueString(placement))).size !==
+    approvedAssetPlacements.length
+  ) {
+    invalid(
+      "duplicate-operation-identity",
+      "The current storefront contains a duplicated approved asset placement.",
+    );
+  }
   return {
     projectId: input.planningInput.project.id,
     projectRevision: input.planningInput.project.revision,
@@ -458,17 +560,9 @@ function createOriginalState(
     approvedAssetContextFingerprint: input.planningInput.approvedAssetContext?.fingerprint ?? null,
     brandSystem: structuredClone(input.planningInput.draft.brandSystem),
     navigation: structuredClone(input.planningInput.draft.navigation),
-    dynamicCommercePresentation: structuredClone(
-      input.planningInput.draft.dynamicCommercePresentation ??
-        (plan.dynamicCommerceSelection
-          ? materializeCurrentDynamicCommercePresentationAuthority(
-              input.planningInput.draft,
-              input.planningInput.catalogue,
-            )
-          : null),
-    ),
+    dynamicCommercePresentation: structuredClone(dynamicCommercePresentation),
     pages,
-    approvedAssetPlacements: [],
+    approvedAssetPlacements,
   };
 }
 
@@ -1200,6 +1294,10 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
       ? {
           type: "APPLY_REGISTERED_BRAND_SYSTEM",
           directionId: plan.designSystemSelection.directionId,
+          designSystemNarrowing: {
+            spacingDensity: plan.designSystemSelection.spacingDensity,
+            surfaceDepth: plan.designSystemSelection.surfaceDepth,
+          },
           brandSystem: selectedBrandSystem,
         }
       : {
@@ -1210,6 +1308,8 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
         },
   );
   add({ type: "RETAIN_NAVIGATION", navigation: structuredClone(original.navigation) });
+  let selectedDynamicCommercePresentation: WholeStorefrontRuntimeState["dynamicCommercePresentation"] =
+    null;
   if (plan.dynamicCommerceSelection) {
     const selected = materializeDynamicCommerceDesignSelectionAuthority(
       input.planningInput.draft,
@@ -1223,6 +1323,7 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
         "The exact dynamic-commerce selection did not produce canonical presentation authority.",
       );
     }
+    selectedDynamicCommercePresentation = structuredClone(selected);
     add({
       type: "APPLY_DYNAMIC_COMMERCE_PRESENTATION",
       sourceAuthorityFingerprint: original.dynamicCommercePresentation.authorityFingerprint,
@@ -1234,12 +1335,78 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
     .slice()
     .sort((left, right) => left.pageId.localeCompare(right.pageId))
     .forEach((pagePlan) => {
-      const planned = plannedPage(original, plan, pagePlan);
+      let planned = plannedPage(original, plan, pagePlan);
+      const exactDynamicPresentation = selectedDynamicCommercePresentation ?? undefined;
+      const selectedRoute = exactDynamicPresentation?.routeInventory.find(
+        ({ id }) => id === pagePlan.pageId,
+      );
+      if (selectedRoute && selectedRoute.kind !== "search") {
+        const originalPage = original.pages.find(({ pageId }) => pageId === pagePlan.pageId);
+        const sourcePage = input.planningInput.draft.pages.find(({ id }) => id === pagePlan.pageId);
+        const selectedRoutePage = resolveDynamicCommerceRoutePage({
+          snapshot: {
+            ...structuredClone(input.planningInput.draft),
+            dynamicCommercePresentation: structuredClone(exactDynamicPresentation),
+          },
+          catalogue: input.planningInput.catalogue,
+          routeId: selectedRoute.id,
+          projection: "runtime",
+        }).page;
+        const selectedSection = selectedRoutePage.sections[0];
+        const originalRuntimeComponent = originalPage?.components.find(
+          ({ component }) => component === selectedSection?.component,
+        );
+        if (
+          !originalPage ||
+          !sourcePage ||
+          !selectedSection ||
+          !originalRuntimeComponent ||
+          originalPage.components.length !== 1 ||
+          selectedRoutePage.sections.length !== 1
+        ) {
+          invalid(
+            "invalid-page-component-target",
+            "A selected dynamic-commerce route must replace one exact current composite component.",
+          );
+        }
+        const exactSection = {
+          ...structuredClone(selectedSection),
+          id: originalRuntimeComponent.id,
+          approvedAssetPlacements: (selectedSection.approvedAssetPlacements ?? []).map(
+            (placement) => ({
+              ...structuredClone(placement),
+              componentId: originalRuntimeComponent.id,
+            }),
+          ),
+        };
+        const exactPage = {
+          ...structuredClone(sourcePage),
+          sections: [exactSection],
+        };
+        const exactComponent = sourceComponent(exactPage, exactSection, plan, input.planningInput);
+        planned = {
+          page: {
+            pageId: originalPage.pageId,
+            role: originalPage.role,
+            type: originalPage.type,
+            components: materializeRegisteredPresentation([exactComponent], plan),
+          },
+          removedComponentIds: originalPage.components
+            .filter(({ id }) => id !== originalRuntimeComponent.id)
+            .map(({ id }) => id),
+        };
+      }
       add({ type: "APPLY_PAGE_COMPONENTS", ...planned });
     });
   plan.approvedAssetPlacements
     .slice()
     .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)))
+    .filter(
+      (placement) =>
+        !original.approvedAssetPlacements.some(
+          (current) => canonicalValueString(current) === canonicalValueString(placement),
+        ),
+    )
     .forEach((placement) => add(structuredClone(placement)));
   const proposed = replayWholeStorefrontProposalOperations(original, operations);
   const proposalWithoutId = {
@@ -1691,9 +1858,13 @@ function componentProjectionForCoordinatedFollowUp(
       role: asset.role,
       ...(asset.alt === null ? {} : { alt: asset.alt }),
       decorative: asset.presentation.decorative,
-      provenance: { kind: "merchantProvided", sourceId: asset.sourceReferenceId },
+      provenance: {
+        kind:
+          asset.provenance.location === "merchant-upload" ? "merchantProvided" : "sourceDiscovered",
+        sourceId: asset.sourceReferenceId,
+      },
       approvalStatus: "approved",
-      usageRights: "merchantOwned",
+      usageRights: asset.provenance.location === "merchant-upload" ? "merchantOwned" : "unknown",
       responsiveCrops: asset.presentation.responsiveCrops,
       revision: asset.revision,
     });

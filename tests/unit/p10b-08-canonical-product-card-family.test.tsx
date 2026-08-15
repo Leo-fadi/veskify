@@ -188,6 +188,37 @@ describe("P10B-08 canonical product-card family", () => {
     );
   });
 
+  it("keeps the image-first commercial anatomy complete and driven by BrandSystem controls", () => {
+    const rendered = render(
+      <CanonicalProductCard
+        locale={{ activeLocale: "en", primaryLocale: "en" }}
+        mediaPlaceholder="Unavailable"
+        onNavigateProduct={() => undefined}
+        request={request("imageFirst", "collectionResults")}
+        resolvedAsset={{
+          id: source.assetId,
+          url: "/watch.jpg",
+          alt: product.media[0].alt,
+          decorative: false,
+        }}
+      />,
+    );
+    const card = rendered.container.querySelector('[data-card-anatomy="imageFirst"]');
+    const css = readFileSync("src/components/storefront/canonical-product-card.module.css", "utf8");
+
+    for (const region of ["media", "heading", "price", "metadata", "actions"]) {
+      expect(card?.querySelector(`[data-card-region="${region}"]`)).not.toBeNull();
+    }
+    expect(card).toHaveTextContent("Canonical watch");
+    expect(card).toHaveTextContent("€249");
+    expect(card).toHaveTextContent("In stock");
+    expect(css).toMatch(/\.card\s*\{[^}]*height:\s*100%/s);
+    expect(css).toMatch(
+      /\.imageFirstAction \.actions button\s*\{[^}]*var\(--brand-color-surface\)/s,
+    );
+    expect(css).not.toContain("color: #111");
+  });
+
   it("formats fallback prices with the active storefront locale", () => {
     const fallbackProduct = {
       ...product,
@@ -270,6 +301,8 @@ describe("P10B-08 canonical product-card family", () => {
     const css = readFileSync("src/components/storefront/canonical-product-card.module.css", "utf8");
     expect(css).toContain("max-width: 767px");
     expect(css).toContain("max-width: 1023px");
+    expect(css.match(/\.media img\s*\{[^}]*\}/)?.[0]).not.toMatch(/object-fit/);
+    expect(css).toMatch(/\.media > figure > img\s*\{[^}]*object-fit:\s*contain/);
     expect(artDirection.responsiveTreatments.map(({ breakpoint }) => breakpoint)).toContain(
       "mobile",
     );

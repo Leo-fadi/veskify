@@ -1,8 +1,12 @@
 import type { ComponentConfig, Config, Data, Field } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { z } from "zod";
-import type { CollectionCommerceRoutePresentation } from "@/integrations/storefront-commerce-routes";
+import type {
+  CollectionCommerceRoutePresentation,
+  ProductCommerceRoutePresentation,
+} from "@/integrations/storefront-commerce-routes";
 import { renderDynamicCollectionCommerce } from "@/components/storefront/dynamic-collection-commerce";
+import { IntegratedDynamicProductDetail } from "@/components/storefront/integrated-dynamic-product-detail";
 import {
   getComponentDefinition,
   renderRegisteredSection,
@@ -164,6 +168,7 @@ function componentToPuckConfig(
   context: StorefrontRenderContext,
   pageType: PageType,
   collectionPresentation?: CollectionCommerceRoutePresentation,
+  productPresentation?: ProductCommerceRoutePresentation,
 ): ComponentConfig<PuckEditorProps> {
   const fields: Record<string, Field> = { variant: variantPuckField(definition) };
   for (const [name, metadata] of Object.entries(definition.editorFields)) {
@@ -199,6 +204,28 @@ function componentToPuckConfig(
             onFilterIntent: () => undefined,
             onSortIntent: () => undefined,
           })
+        ) : (
+          <></>
+        );
+      }
+      if (section.component === "dynamicProductDetail" && productPresentation) {
+        return section.visible ? (
+          <IntegratedDynamicProductDetail
+            activeLocale={context.activeLocale}
+            instance={{
+              ...productPresentation.instance,
+              id: section.id,
+              variant: section.variant,
+            }}
+            onNavigateProduct={() => undefined}
+            onPrimaryAction={() => undefined}
+            primaryLocale={context.primaryLocale}
+            productContext={productPresentation.productContext}
+            projection={productPresentation.projection}
+            resolveAssetUrl={productPresentation.resolveAssetUrl}
+            resolver={productPresentation.resolver}
+            target="editor"
+          />
         ) : (
           <></>
         );
@@ -266,6 +293,7 @@ export function generateVeskifyPuckConfig(
   pageType: PageType = "home",
   brandSystem: BrandSystem = aurumNordicSeed.draftSnapshot.brandSystem,
   collectionPresentation?: CollectionCommerceRoutePresentation,
+  productPresentation?: ProductCommerceRoutePresentation,
 ): Config {
   return {
     components: Object.fromEntries(
@@ -273,7 +301,13 @@ export function generateVeskifyPuckConfig(
         .filter((definition) => definition.allowedPageTypes.includes(pageType))
         .map((definition) => [
           definition.type,
-          componentToPuckConfig(definition, context, pageType, collectionPresentation),
+          componentToPuckConfig(
+            definition,
+            context,
+            pageType,
+            collectionPresentation,
+            productPresentation,
+          ),
         ]),
     ),
     root: {

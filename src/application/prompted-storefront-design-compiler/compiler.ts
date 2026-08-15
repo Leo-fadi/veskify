@@ -1,21 +1,15 @@
 import {
-  CompatibleCoordinatedDirectionCandidateBudgetError,
-  listCompatibleCoordinatedDirectionSelectionNarrowings,
   type CompatibleCoordinatedDirectionNarrowingInput,
   type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "@/application/bounded-storefront-synthesis";
 import {
-  createPromptedStorefrontCatalogueCharacteristics,
   createPromptedStorefrontDesignRequestV2,
-  validatePromptedStorefrontDesignIntentV2,
   type CreatePromptedStorefrontDesignRequestV2Input,
   type PromptedStorefrontCapabilityAuthority,
   type PromptedStorefrontCapabilityAuthorityReference,
   type PromptedStorefrontCapabilityDimension,
-  type PromptedStorefrontDesignIntentV2,
   type PromptedStorefrontDesignRequestV2,
   type PromptedStorefrontPreferenceSemantics,
-  promptedStorefrontDesignIntentFingerprint,
 } from "@/application/prompted-storefront-design-intent";
 import { createDynamicCommerceProductMatchContext } from "@/application/dynamic-commerce-routes";
 import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
@@ -41,27 +35,14 @@ import {
 } from "@/application/whole-storefront-generation-plan";
 import { veskifyComponentCapabilityManifest } from "@/components/registry";
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
-import {
-  canonicalProductCardAuthority,
-  canonicalProductTypePresentationId,
-} from "@/domain/product-card";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import {
   canonicalValueFingerprint,
   canonicalValueString,
-  getCommercialSharedFrameProfile,
-  listPageFamilyDefinitions,
-  type DynamicCommerceCollectionSearchArchetype,
+  isDynamicCommerceArchetypeCompatibleWithSharedFrame,
   type DynamicCommerceProductDetailArchetype,
 } from "@/domain/storefront";
-import {
-  COMPILED_PROMPTED_STOREFRONT_DESIGN_DECISION_V2,
-  MAX_PROMPTED_STOREFRONT_COMPILER_CANDIDATES,
-  compiledPromptedStorefrontDesignDecisionFingerprint,
-  compiledPromptedStorefrontDesignDecisionV2Schema,
-  PromptedStorefrontDesignCompilerError,
-  type CompiledPromptedStorefrontDesignDecisionV2,
-  type PromptedStorefrontResolutionDiagnostic,
-} from "./contract";
+import { PromptedStorefrontDesignCompilerError } from "./contract";
 
 export type LocatedPreference = Readonly<{
   path: string;
@@ -81,24 +62,8 @@ type CandidateContext = Readonly<{
   homepageRoleSequence: readonly string[];
 }>;
 
-function exactSynthesisSelection(narrowing: BoundedStorefrontSynthesisSelectionNarrowing) {
-  const {
-    authorityId: _authorityId,
-    authorityVersion: _authorityVersion,
-    authorityFingerprint: _authorityFingerprint,
-    selectionId: _selectionId,
-    ...exact
-  } = narrowing;
-  void _authorityId;
-  void _authorityVersion;
-  void _authorityFingerprint;
-  void _selectionId;
-  return exact;
-}
-
-export type CompilePromptedStorefrontDesignIntentV2Input = Readonly<{
+export type PromptedStorefrontCompilerAuthorityInput = Readonly<{
   originalRequest: PromptedStorefrontDesignRequestV2;
-  providerIntent: PromptedStorefrontDesignIntentV2;
   currentRequestInput: CreatePromptedStorefrontDesignRequestV2Input;
   compatibilityInput: CompatibleCoordinatedDirectionNarrowingInput;
   maximumCandidateEvaluations?: number;
@@ -119,7 +84,7 @@ function fail(
  */
 export function assertPromptedStorefrontPlanningAuthorityBound(
   input: Pick<
-    CompilePromptedStorefrontDesignIntentV2Input,
+    PromptedStorefrontCompilerAuthorityInput,
     "currentRequestInput" | "compatibilityInput"
   >,
 ): void {
@@ -156,246 +121,6 @@ function compareCanonical(left: string, right: string): number {
   return left === right ? 0 : left < right ? -1 : 1;
 }
 
-function stableUnique(values: readonly string[]): string[] {
-  return [...new Set(values)].sort(compareCanonical);
-}
-
-function preferenceList(
-  path: string,
-  values: readonly Readonly<{
-    key: string;
-    dimension: PromptedStorefrontCapabilityDimension;
-    semantics: PromptedStorefrontPreferenceSemantics;
-    rank: number | null;
-    value?: string | number;
-  }>[],
-): LocatedPreference[] {
-  return values.map((value, index) => ({
-    path: `${path}[${index}]`,
-    key: value.key,
-    dimension: value.dimension,
-    semantics: value.semantics,
-    rank: value.rank,
-    value: value.value ?? null,
-  }));
-}
-
-function referenceList(
-  path: string,
-  semantics: PromptedStorefrontPreferenceSemantics,
-  values: readonly Readonly<{
-    key: string;
-    dimension: PromptedStorefrontCapabilityDimension;
-  }>[],
-): LocatedPreference[] {
-  return values.map((value, index) => ({
-    path: `${path}[${index}]`,
-    key: value.key,
-    dimension: value.dimension,
-    semantics,
-    rank: semantics === "soft" ? index + 1 : null,
-    value: null,
-  }));
-}
-
-function collectPreferences(intent: PromptedStorefrontDesignIntentV2): LocatedPreference[] {
-  const groups: LocatedPreference[][] = [
-    preferenceList("constraints.hard", intent.constraints.hard),
-    preferenceList("constraints.soft", intent.constraints.soft),
-    preferenceList("constraints.optional", intent.constraints.optional),
-    preferenceList("constraints.avoid", intent.constraints.avoid),
-    preferenceList("designDna.preferences", intent.designDna.preferences),
-    preferenceList("sharedFrame.preferences", intent.sharedFrame.preferences),
-    preferenceList("homepage.profilePreferences", intent.homepage.profilePreferences),
-    [
-      {
-        path: "homepage.sectionCount",
-        key: intent.homepage.sectionCount.key,
-        dimension: intent.homepage.sectionCount.dimension,
-        semantics: "hard",
-        rank: null,
-        value: intent.homepage.sectionCount.ideal,
-        minimum: intent.homepage.sectionCount.minimum,
-        maximum: intent.homepage.sectionCount.maximum,
-      },
-    ],
-    referenceList("homepage.narrativeRoleSequence", "hard", intent.homepage.narrativeRoleSequence),
-    referenceList("homepage.requiredRoles", "hard", intent.homepage.requiredRoles),
-    referenceList("homepage.preferredRoles", "soft", intent.homepage.preferredRoles),
-    referenceList("homepage.optionalRoles", "optional", intent.homepage.optionalRoles),
-    referenceList("homepage.avoidedRoles", "avoid", intent.homepage.avoidedRoles),
-    preferenceList(
-      "homepage.componentFamilyPreferences",
-      intent.homepage.componentFamilyPreferences,
-    ),
-    preferenceList(
-      "homepage.meaningfulVariantPreferences",
-      intent.homepage.meaningfulVariantPreferences,
-    ),
-    preferenceList("homepage.sectionRhythmPreferences", intent.homepage.sectionRhythmPreferences),
-    preferenceList(
-      "homepage.approvedAssetRolePreferences",
-      intent.homepage.approvedAssetRolePreferences,
-    ),
-    preferenceList(
-      "collectionSearch.archetypePreferences",
-      intent.collectionSearch.archetypePreferences,
-    ),
-    preferenceList(
-      "collectionSearch.discoveryPreferences",
-      intent.collectionSearch.discoveryPreferences,
-    ),
-    preferenceList(
-      "collectionSearch.densityPreferences",
-      intent.collectionSearch.densityPreferences,
-    ),
-    preferenceList(
-      "collectionSearch.filterSortPreferences",
-      intent.collectionSearch.filterSortPreferences,
-    ),
-    preferenceList(
-      "collectionSearch.childCollectionPreferences",
-      intent.collectionSearch.childCollectionPreferences,
-    ),
-    preferenceList(
-      "collectionSearch.merchandisingPreferences",
-      intent.collectionSearch.merchandisingPreferences,
-    ),
-    preferenceList(
-      "collectionSearch.productCardPreferences",
-      intent.collectionSearch.productCardPreferences,
-    ),
-    preferenceList(
-      "collectionSearch.searchRelationshipPreferences",
-      intent.collectionSearch.searchRelationshipPreferences,
-    ),
-    preferenceList(
-      "productDetail.standardSimplePreferences",
-      intent.productDetail.standardSimplePreferences,
-    ),
-    preferenceList(
-      "productDetail.configurablePreferences",
-      intent.productDetail.configurablePreferences,
-    ),
-    preferenceList(
-      "productDetail.galleryLedPreferences",
-      intent.productDetail.galleryLedPreferences,
-    ),
-    preferenceList(
-      "productDetail.highConsiderationPreferences",
-      intent.productDetail.highConsiderationPreferences,
-    ),
-    preferenceList(
-      "productDetail.genericFallbackPreferences",
-      intent.productDetail.genericFallbackPreferences,
-    ),
-    preferenceList(
-      "productDetail.optionComplexityPreferences",
-      intent.productDetail.optionComplexityPreferences,
-    ),
-    preferenceList("productDetail.mediaPreferences", intent.productDetail.mediaPreferences),
-    preferenceList(
-      "productDetail.purchaseDecisionHierarchyPreferences",
-      intent.productDetail.purchaseDecisionHierarchyPreferences,
-    ),
-    preferenceList(
-      "productDetail.relatedMerchandisingPreferences",
-      intent.productDetail.relatedMerchandisingPreferences,
-    ),
-    preferenceList(
-      "productDetail.productCardPreferences",
-      intent.productDetail.productCardPreferences,
-    ),
-    preferenceList(
-      "contentSupport.pageFamilyPreferences",
-      intent.contentSupport.pageFamilyPreferences,
-    ),
-    preferenceList(
-      "contentSupport.narrativePurposePreferences",
-      intent.contentSupport.narrativePurposePreferences,
-    ),
-    referenceList(
-      "contentSupport.evidenceRequirements",
-      intent.contentSupport.safeOmissionBehavior === "fail-closed" ? "hard" : "optional",
-      intent.contentSupport.evidenceRequirements,
-    ),
-    preferenceList("components.familyPreferences", intent.components.familyPreferences),
-    preferenceList(
-      "components.meaningfulVariantPreferences",
-      intent.components.meaningfulVariantPreferences,
-    ),
-    preferenceList(
-      "components.boundedParameterPreferences",
-      intent.components.boundedParameterPreferences,
-    ),
-    preferenceList(
-      "responsiveArtDirection.responsivePosturePreferences",
-      intent.responsiveArtDirection.responsivePosturePreferences,
-    ),
-    preferenceList(
-      "responsiveArtDirection.mobileHierarchyPreferences",
-      intent.responsiveArtDirection.mobileHierarchyPreferences,
-    ),
-    preferenceList(
-      "responsiveArtDirection.densityTransformationPreferences",
-      intent.responsiveArtDirection.densityTransformationPreferences,
-    ),
-    referenceList(
-      "responsiveArtDirection.desktopNarrativePriority",
-      "hard",
-      intent.responsiveArtDirection.desktopNarrativePriority,
-    ),
-    referenceList(
-      "responsiveArtDirection.mobileNarrativePriority",
-      "hard",
-      intent.responsiveArtDirection.mobileNarrativePriority,
-    ),
-    preferenceList(
-      "responsiveArtDirection.imagePosturePreferences",
-      intent.responsiveArtDirection.imagePosturePreferences,
-    ),
-    preferenceList(
-      "responsiveArtDirection.cropFocalPreferences",
-      intent.responsiveArtDirection.cropFocalPreferences,
-    ),
-    preferenceList(
-      "responsiveArtDirection.overlayPreferences",
-      intent.responsiveArtDirection.overlayPreferences,
-    ),
-    preferenceList(
-      "responsiveArtDirection.approvedMediaRolePreferences",
-      intent.responsiveArtDirection.approvedMediaRolePreferences,
-    ),
-  ];
-  intent.productDetail.productTypeIntentions.forEach((entry, index) => {
-    groups.push(
-      preferenceList(
-        `productDetail.productTypeIntentions[${index}].preferences`,
-        entry.preferences,
-      ),
-    );
-  });
-  return groups.flat().sort((left, right) => compareCanonical(left.path, right.path));
-}
-
-function diversityAvoidancePreferences(
-  request: PromptedStorefrontDesignRequestV2,
-  authority: PromptedStorefrontCapabilityAuthority,
-): LocatedPreference[] {
-  return request.priorDiversityEvidence.merchantAvoidancePreferenceKeys.map((key, index) => {
-    const reference = authority.referencesByPreferenceKey.get(key);
-    if (!reference) fail("stale-authority", `Diversity avoidance ${key} is no longer current.`);
-    return {
-      path: `priorDiversityEvidence.merchantAvoidancePreferenceKeys[${index}]`,
-      key,
-      dimension: reference.dimension,
-      semantics: "avoid",
-      rank: null,
-      value: null,
-    };
-  });
-}
-
 function referenceFor(
   authority: Pick<PromptedStorefrontCapabilityAuthority, "referencesByPreferenceKey">,
   preference: LocatedPreference,
@@ -430,158 +155,8 @@ function planProfileId(reference: PromptedStorefrontCapabilityAuthorityReference
   return null;
 }
 
-function dnaReferenceMatches(
-  reference: PromptedStorefrontCapabilityAuthorityReference,
-  dna: DesignDna,
-): boolean {
-  const exactValues: Readonly<Record<string, string>> = {
-    "typography.pairing": dna.typography.pairing,
-    "typography.scale": dna.typography.scale.posture,
-    "typography.weight": dna.typography.weightPosture,
-    "typography.tracking": dna.typography.trackingPosture,
-    "typography.lineHeight": dna.typography.lineHeightPosture,
-    "layout.sectionRhythm": dna.spacing.sectionRhythm,
-    "layout.pageGutter": dna.spacing.pageGutter,
-    "layout.gridRhythm": dna.spacing.gridGap,
-    "layout.density": dna.density.posture === "balanced" ? "standard" : dna.density.posture,
-    "control.posture": dna.controls.height,
-    "shape.border": dna.surfaces.border,
-    "shape.radius": dna.surfaces.radius,
-    "shape.elevation": dna.surfaces.elevation,
-    "media.ratio": dna.media.ratio,
-    "media.crop": dna.media.crop,
-    "media.overlay": dna.media.overlay,
-    "media.emphasis": dna.media.prominence,
-    "media.posture": dna.media.posture,
-    "colour.surfaceRelationship": dna.colour.surfaceRelationship,
-    "colour.actionRelationship": dna.colour.actionRelationship,
-  };
-  return Object.entries(exactValues).some(
-    ([category, value]) => reference.authorityId === `${category}:${value}`,
-  );
-}
-
-function profileForDimension(
-  dimension: PromptedStorefrontCapabilityDimension,
-  narrowing: BoundedStorefrontSynthesisSelectionNarrowing,
-): string | null {
-  if (dimension.startsWith("homepage.")) return narrowing.homepageProfileId;
-  if (dimension.startsWith("collection-search.")) return narrowing.collectionProfileId;
-  if (dimension.startsWith("pdp.")) return narrowing.pdpProfileId;
-  return null;
-}
-
-function approvedSiteMapEvidenceIds(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-): ReadonlySet<string> {
-  return new Set(
-    input.compatibilityInput.approvedEvidenceReferences
-      .filter(({ status }) => status === "approved")
-      .map(({ source, authorityId, revision }) => `${source}:${authorityId}:${revision}`),
-  );
-}
-
-function pageHasCurrentApprovedEvidence(
-  page: CompilePromptedStorefrontDesignIntentV2Input["compatibilityInput"]["siteMapDecision"]["pages"][number],
-  approvedEvidenceIds: ReadonlySet<string>,
-): boolean {
-  return page.evidenceReferences.every(({ source, authorityId, revision }) =>
-    approvedEvidenceIds.has(`${source}:${authorityId}:${revision}`),
-  );
-}
-
-function selectedSiteMapPages(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  candidate: Readonly<{ narrowing: BoundedStorefrontSynthesisSelectionNarrowing }>,
-) {
-  const approvedEvidenceIds = approvedSiteMapEvidenceIds(input);
-  const includedOptionalPageFamilies = new Set(candidate.narrowing.includedOptionalPageFamilyIds);
-  return input.compatibilityInput.siteMapDecision.pages.filter((page) => {
-    const evidenceSatisfied = pageHasCurrentApprovedEvidence(page, approvedEvidenceIds);
-    if (!evidenceSatisfied && page.required) {
-      fail(
-        "no-compatible-selection",
-        `Required page ${page.key} does not have current approved evidence.`,
-      );
-    }
-    return evidenceSatisfied && (page.required || includedOptionalPageFamilies.has(page.familyId));
-  });
-}
-
-function missingEvidenceSiteMapAuthority(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-): ReadonlySet<string> {
-  const approvedEvidenceIds = approvedSiteMapEvidenceIds(input);
-  const pages = input.compatibilityInput.siteMapDecision.pages.filter(
-    (page) => !pageHasCurrentApprovedEvidence(page, approvedEvidenceIds),
-  );
-  return new Set(
-    pages.flatMap(({ familyId, profile }) => {
-      const identity = `${profile.id}@${profile.version}`;
-      const plan = registeredCommercialPlans().find(
-        (candidatePlan) => candidatePlan.profile?.id === profile.id,
-      );
-      return [
-        identity,
-        `${identity}:${familyId}`,
-        ...(plan?.profile?.orderedNarrativeRoles.map((role) => `${identity}:${familyId}:${role}`) ??
-          []),
-      ];
-    }),
-  );
-}
-
-function selectedSiteMapAuthorityIds(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  candidate: Readonly<{ narrowing: BoundedStorefrontSynthesisSelectionNarrowing }>,
-): ReadonlySet<string> {
-  return new Set(
-    selectedSiteMapPages(input, candidate).flatMap(({ familyId, profile }) => {
-      const identity = `${profile.id}@${profile.version}`;
-      const plan = registeredCommercialPlans().find(
-        (candidatePlan) => candidatePlan.profile?.id === profile.id,
-      );
-      return [
-        identity,
-        `${identity}:${familyId}`,
-        ...(plan?.profile?.orderedNarrativeRoles.map((role) => `${identity}:${familyId}:${role}`) ??
-          []),
-      ];
-    }),
-  );
-}
-
-function omittedEvidenceFamilyIds(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-): ReadonlySet<string> {
-  const approvedEvidenceIds = approvedSiteMapEvidenceIds(input);
-  const evidenceEligibleFamilies = new Set(
-    input.compatibilityInput.siteMapDecision.pages
-      .filter((page) => pageHasCurrentApprovedEvidence(page, approvedEvidenceIds))
-      .map(({ familyId }) => familyId),
-  );
-  return new Set(
-    listPageFamilyDefinitions()
-      .filter(
-        ({ id, evidenceRequirement, omissionBehavior }) =>
-          evidenceRequirement === "approved-facts" &&
-          omissionBehavior === "omit-optional-or-fail-required" &&
-          !evidenceEligibleFamilies.has(id),
-      )
-      .map(({ id }) => id),
-  );
-}
-
-function isSubsequence(requested: readonly string[], actual: readonly string[]): boolean {
-  let cursor = 0;
-  for (const value of actual) {
-    if (requested[cursor] === value) cursor += 1;
-  }
-  return cursor === requested.length;
-}
-
 function resolveExactHomepageExecution(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
+  input: PromptedStorefrontCompilerAuthorityInput,
   narrowing: BoundedStorefrontSynthesisSelectionNarrowing,
 ): Readonly<{
   slotIds: readonly string[];
@@ -628,174 +203,6 @@ function resolveExactHomepageExecution(
       .filter(({ id }) => included.has(id))
       .map(({ narrativeRole }) => narrativeRole),
   };
-}
-
-function homepageNarrativeCompatible(
-  intent: PromptedStorefrontDesignIntentV2,
-  candidate: CandidateContext,
-  authority: PromptedStorefrontCapabilityAuthority,
-): boolean {
-  const roles = candidate.homepageRoleSequence;
-  const slotFor = (key: string): Readonly<{ slotId: string; role: string }> | null => {
-    const reference = authority.referencesByPreferenceKey.get(key);
-    const plan = getCommercialHomepageProfile(candidate.narrowing.homepageProfileId);
-    const profile = plan?.profile;
-    if (!reference || !profile) return null;
-    const slot = plan.slots.find(
-      ({ id }) => reference.authorityId === `${profile.id}@${profile.version}:${id}`,
-    );
-    return slot ? { slotId: slot.id, role: slot.narrativeRole } : null;
-  };
-  const requested = intent.homepage.narrativeRoleSequence.map(
-    ({ key }) => slotFor(key)?.slotId ?? "",
-  );
-  const required = intent.homepage.requiredRoles.map(({ key }) => slotFor(key)?.slotId ?? "");
-  const avoided = intent.homepage.avoidedRoles.map(({ key }) => slotFor(key)?.slotId ?? "");
-  const desktopPriority = intent.responsiveArtDirection.desktopNarrativePriority.map(
-    ({ key }) => slotFor(key)?.slotId ?? "",
-  );
-  const mobilePriority = intent.responsiveArtDirection.mobileNarrativePriority.map(
-    ({ key }) => slotFor(key)?.slotId ?? "",
-  );
-  return (
-    roles.length > 0 &&
-    isSubsequence(requested, candidate.homepageSlotIds) &&
-    required.every((slotId) => candidate.homepageSlotIds.includes(slotId)) &&
-    avoided.every((slotId) => !candidate.homepageSlotIds.includes(slotId)) &&
-    isSubsequence(desktopPriority, candidate.homepageSlotIds) &&
-    isSubsequence(mobilePriority, candidate.homepageSlotIds)
-  );
-}
-
-function candidateReferenceMatches(
-  candidate: CandidateContext,
-  preference: LocatedPreference,
-  reference: PromptedStorefrontCapabilityAuthorityReference,
-  dynamicCollections: readonly DynamicCommerceCollectionSearchArchetype[],
-  dynamicProducts: readonly DynamicCommerceProductDetailArchetype[],
-  siteMapAuthorityIds: ReadonlySet<string>,
-  omittedEvidenceFamilies: ReadonlySet<string>,
-  exactHomepageSectionCount: number,
-  exactResponsiveAuthorityIds?: ReadonlySet<string>,
-  exactApprovedAssetAuthorityIds?: ReadonlySet<string>,
-): boolean | null {
-  if (reference.authorityKind === "design-dna") {
-    return dnaReferenceMatches(reference, candidate.designDna);
-  }
-  if (reference.authorityKind === "shared-frame") {
-    return reference.authorityId === candidate.narrowing.sharedFrameProfileId;
-  }
-  if (
-    reference.authorityKind === "approved-assets" &&
-    reference.dimension === "homepage.asset-role"
-  ) {
-    return exactApprovedAssetAuthorityIds?.has(reference.authorityId) ?? null;
-  }
-  if (
-    reference.authorityKind === "page-blueprint" &&
-    ["content-support.profile", "content-support.narrative-purpose", "utility.profile"].includes(
-      reference.dimension,
-    )
-  ) {
-    return siteMapAuthorityIds.has(reference.authorityId);
-  }
-  if (
-    reference.authorityKind === "approved-evidence" &&
-    reference.dimension === "content-support.omission"
-  ) {
-    return omittedEvidenceFamilies.has(reference.authorityId);
-  }
-  if (
-    reference.authorityKind === "page-blueprint" &&
-    reference.dimension === "homepage.section-count"
-  ) {
-    return (
-      planProfileId(reference) === candidate.narrowing.homepageProfileId &&
-      reference.selection.kind === "number" &&
-      preference.minimum !== undefined &&
-      preference.maximum !== undefined &&
-      typeof preference.value === "number" &&
-      preference.minimum <= exactHomepageSectionCount &&
-      exactHomepageSectionCount <= preference.maximum &&
-      preference.value === exactHomepageSectionCount
-    );
-  }
-  if (reference.authorityKind === "page-blueprint") {
-    const expected = profileForDimension(preference.dimension, candidate.narrowing);
-    return expected === null ? null : planProfileId(reference) === expected;
-  }
-  if (reference.authorityKind === "dynamic-commerce") {
-    if (preference.dimension.startsWith("collection-search.")) {
-      if (preference.dimension === "collection-search.search-relationship") {
-        if (!isPresentationOnlySearchRelationshipPreference(preference, reference)) return false;
-        const archetype = dynamicCollections.find(({ id }) => id === reference.authorityId);
-        return archetype
-          ? archetype.supportedContexts.includes("search") &&
-              archetype.profile.profileId === candidate.narrowing.searchProfileId
-          : null;
-      }
-      const archetype = dynamicCollections.find(({ id }) => id === reference.authorityId);
-      if (!archetype) return null;
-      return archetype.profile.profileId === candidate.narrowing.collectionProfileId;
-    }
-    if (preference.dimension.startsWith("pdp.") && !reference.productTypeKey) {
-      const archetype = dynamicProducts.find(({ id }) => id === reference.authorityId);
-      return archetype ? archetype.profile.profileId === candidate.narrowing.pdpProfileId : null;
-    }
-  }
-  if (reference.authorityKind === "product-card") {
-    if (preference.dimension === "collection-search.product-card") {
-      return (
-        getCommercialCollectionSearchProfile(candidate.narrowing.collectionProfileId)?.profile
-          ?.commercialCollectionSearch?.productCardAnatomyId === reference.authorityId
-      );
-    }
-    if (
-      preference.dimension === "pdp.product-card" ||
-      preference.dimension === "pdp.related-merchandising"
-    ) {
-      return (
-        getCommercialPdpProfile(candidate.narrowing.pdpProfileId)?.profile?.commercialProductDetail
-          ?.relatedProductCardAnatomyId === reference.authorityId
-      );
-    }
-  }
-  if (reference.authorityKind === "component-manifest") {
-    if (reference.authorityId.startsWith("responsive:")) {
-      return exactResponsiveAuthorityIds?.has(reference.authorityId) ?? null;
-    }
-    if (
-      preference.dimension === "component.family" ||
-      preference.dimension === "homepage.component-family"
-    ) {
-      return selectedPlans(candidate).some((plan) => {
-        if (preference.dimension.startsWith("homepage.") && plan.pageType !== "home") return false;
-        return plan.slots.some(
-          ({ id, sectionType }) =>
-            sectionType === reference.authorityId &&
-            (plan.pageType !== "home" || candidate.homepageSlotIds.includes(id)),
-        );
-      });
-    }
-  }
-  if (
-    reference.authorityKind === "dynamic-commerce" &&
-    reference.authorityId.startsWith("art-direction:")
-  ) {
-    const selectedProfileIds = new Set<string>([
-      candidate.narrowing.collectionProfileId,
-      candidate.narrowing.searchProfileId,
-      candidate.narrowing.pdpProfileId,
-    ]);
-    return [...dynamicCollections, ...dynamicProducts].some(
-      ({ profile, artDirectionPosture }) =>
-        selectedProfileIds.has(profile.profileId) &&
-        Object.entries(artDirectionPosture).some(
-          ([trait, value]) => reference.authorityId === `art-direction:${trait}:${value}`,
-        ),
-    );
-  }
-  return null;
 }
 
 function isPresentationOnlySearchRelationshipPreference(
@@ -892,679 +299,7 @@ function groupPreferencesByResolutionBoundary(
   return grouped;
 }
 
-function materialBoundaryForReference(
-  reference: PromptedStorefrontCapabilityAuthorityReference,
-): string {
-  if (reference.authorityKind === "design-dna") {
-    return `${reference.dimension}:${authorityPrefix(reference.authorityId)}`;
-  }
-  if (
-    reference.authorityKind === "approved-assets" &&
-    reference.dimension === "homepage.asset-role"
-  ) {
-    return `${reference.dimension}:${reference.key.split(".").slice(0, -1).join(".")}`;
-  }
-  if (
-    reference.authorityKind === "component-manifest" &&
-    ["homepage.meaningful-variant", "component.meaningful-variant"].includes(reference.dimension)
-  ) {
-    return `${reference.dimension}:${reference.authorityId.split(":")[0]}`;
-  }
-  if (
-    reference.authorityKind === "component-manifest" &&
-    reference.dimension === "component.bounded-parameter"
-  ) {
-    return `${reference.dimension}:${reference.authorityId}`;
-  }
-  if (reference.dimension === "pdp.archetype" && reference.intentRoles?.length) {
-    return `${reference.dimension}:${[...reference.intentRoles].sort(compareCanonical).join("+")}`;
-  }
-  if (
-    reference.authorityKind === "page-blueprint" &&
-    reference.dimension === "content-support.profile"
-  ) {
-    return `${reference.dimension}:${reference.authorityId.split(":").at(-1)}`;
-  }
-  if (
-    reference.authorityKind === "page-blueprint" &&
-    reference.dimension === "content-support.narrative-purpose"
-  ) {
-    return `${reference.dimension}:${reference.authorityId.split(":").slice(-2).join(":")}`;
-  }
-  if (reference.dimension === "utility.profile") {
-    return `${reference.dimension}:${reference.authorityId}`;
-  }
-  if (
-    reference.authorityKind === "approved-evidence" &&
-    reference.dimension === "content-support.omission"
-  ) {
-    return `${reference.dimension}:${reference.authorityId}`;
-  }
-  if (
-    reference.authorityKind === "page-blueprint" &&
-    reference.dimension === "homepage.narrative-role"
-  ) {
-    return `${reference.dimension}:${reference.authorityId.split(":").at(-1)}`;
-  }
-  if (reference.productTypeKey) {
-    return `${reference.dimension}:${authorityPrefix(reference.authorityId)}`;
-  }
-  return reference.dimension;
-}
-
-function materialCoverage(
-  intent: PromptedStorefrontDesignIntentV2,
-  authority: PromptedStorefrontCapabilityAuthority,
-): void {
-  const usable = (
-    values: readonly Readonly<{
-      key: string;
-      semantics: PromptedStorefrontPreferenceSemantics;
-    }>[],
-  ) =>
-    values.some(
-      ({ key, semantics }) =>
-        (semantics === "hard" || semantics === "soft") &&
-        authority.referencesByPreferenceKey.get(key)?.availability === "available",
-    );
-  const usableRequiredReference = (values: readonly Readonly<{ key: string }>[]) =>
-    values.some(
-      ({ key }) => authority.referencesByPreferenceKey.get(key)?.availability === "available",
-    );
-  const coverage = [
-    usable(intent.designDna.preferences),
-    usable(intent.sharedFrame.preferences),
-    usable(intent.homepage.profilePreferences) ||
-      usableRequiredReference(intent.homepage.narrativeRoleSequence),
-    usable(intent.collectionSearch.archetypePreferences),
-    [
-      ...intent.productDetail.standardSimplePreferences,
-      ...intent.productDetail.configurablePreferences,
-      ...intent.productDetail.galleryLedPreferences,
-      ...intent.productDetail.highConsiderationPreferences,
-      ...intent.productDetail.genericFallbackPreferences,
-    ].some(
-      ({ key, semantics }) =>
-        (semantics === "hard" || semantics === "soft") &&
-        authority.referencesByPreferenceKey.get(key)?.availability === "available",
-    ),
-    [
-      ...intent.responsiveArtDirection.responsivePosturePreferences,
-      ...intent.responsiveArtDirection.imagePosturePreferences,
-      ...intent.responsiveArtDirection.cropFocalPreferences,
-      ...intent.responsiveArtDirection.overlayPreferences,
-    ].some(
-      ({ key, semantics }) =>
-        (semantics === "hard" || semantics === "soft") &&
-        authority.referencesByPreferenceKey.get(key)?.availability === "available",
-    ),
-  ];
-  if (coverage.some((covered) => !covered)) {
-    fail(
-      "insufficient-material-intent",
-      "Complete-storefront compilation requires usable Design DNA, frame, homepage, collection, PDP and responsive/art-direction intent.",
-    );
-  }
-  if (
-    intent.homepage.narrativeRoleSequence.length === 0 &&
-    intent.homepage.profilePreferences.length === 0
-  ) {
-    fail(
-      "insufficient-material-intent",
-      "Complete-storefront compilation requires bounded homepage narrative authority.",
-    );
-  }
-}
-
-function promptedCandidateStructuralMaterial(input: {
-  compilerInput: CompilePromptedStorefrontDesignIntentV2Input;
-  candidate: CandidateContext;
-  slotOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[];
-  dynamicCommerceSelection: ReturnType<typeof buildDynamicSelection>["selection"];
-}) {
-  const {
-    directionId: _directionId,
-    includedOptionalPageFamilyIds: _includedOptionalPageFamilyIds,
-    ...structuralSelection
-  } = exactSynthesisSelection(input.candidate.narrowing);
-  const { colour: _colour, ...structuralDesignDna } = input.candidate.designDna;
-  void _directionId;
-  void _includedOptionalPageFamilyIds;
-  void _colour;
-  const selectedSiteMapPagesForStructure = selectedSiteMapPages(
-    input.compilerInput,
-    input.candidate,
-  );
-  const contentSupportProfileIds = new Set(
-    listCommercialContentSupportProfiles().flatMap(({ profile }) => (profile ? [profile.id] : [])),
-  );
-  const utilityProfileIds = new Set(
-    listCommercialUtilityProfiles().flatMap(({ profile }) => (profile ? [profile.id] : [])),
-  );
-  const dynamic = input.compilerInput.currentRequestInput.draft.dynamicCommercePresentation;
-  if (!dynamic) fail("stale-authority", "Dynamic-commerce authority is missing.");
-  const selectedDynamicArchetypeIds = new Set([
-    input.dynamicCommerceSelection.collectionArchetypeId,
-    input.dynamicCommerceSelection.searchArchetypeId,
-    input.dynamicCommerceSelection.standardSimpleArchetypeId,
-    input.dynamicCommerceSelection.configurableArchetypeId,
-    input.dynamicCommerceSelection.galleryLedArchetypeId,
-    input.dynamicCommerceSelection.highConsiderationArchetypeId,
-    input.dynamicCommerceSelection.genericFallbackArchetypeId,
-    ...input.dynamicCommerceSelection.productTypeMappings.map(({ archetypeId }) => archetypeId),
-  ]);
-  const productCardAnatomyIds = stableUnique([
-    ...selectedMaterializedPlanContexts(input.compilerInput, input.candidate).flatMap(
-      ({ plan }) => {
-        const profile = plan.profile;
-        if (!profile) return [];
-        return [
-          ...(profile.commercialHomepage ? [profile.commercialHomepage.productCardAnatomyId] : []),
-          ...(profile.commercialCollectionSearch
-            ? [profile.commercialCollectionSearch.productCardAnatomyId]
-            : []),
-          ...(profile.commercialProductDetail
-            ? [profile.commercialProductDetail.relatedProductCardAnatomyId]
-            : []),
-        ];
-      },
-    ),
-    ...dynamic.collectionSearchArchetypes
-      .filter(({ id }) => selectedDynamicArchetypeIds.has(id))
-      .flatMap(({ profile }) => {
-        const authority = getCommercialCollectionSearchProfile(profile.profileId)?.profile
-          ?.commercialCollectionSearch;
-        return authority ? [authority.productCardAnatomyId] : [];
-      }),
-    ...dynamic.productDetailArchetypes
-      .filter(({ id }) => selectedDynamicArchetypeIds.has(id))
-      .flatMap(({ profile }) => {
-        const authority = getCommercialPdpProfile(profile.profileId)?.profile
-          ?.commercialProductDetail;
-        return authority ? [authority.relatedProductCardAnatomyId] : [];
-      }),
-  ]);
-  return {
-    structuralSelection,
-    structuralDesignDna,
-    pageSet: selectedSiteMapPagesForStructure
-      .map(({ familyId, profile }) => {
-        const profileId =
-          familyId === "home"
-            ? input.candidate.narrowing.homepageProfileId
-            : familyId === "collection"
-              ? input.candidate.narrowing.collectionProfileId
-              : familyId === "search-results"
-                ? input.candidate.narrowing.searchProfileId
-                : familyId === "product-detail"
-                  ? input.candidate.narrowing.pdpProfileId
-                  : profile.id;
-        const selectedProfile = registeredCommercialPlans().find(
-          (plan) => plan.profile?.id === profileId,
-        )?.profile;
-        if (!selectedProfile) {
-          fail("stale-authority", `Selected PageBlueprint profile ${profileId} is unavailable.`);
-        }
-        return { familyId, profileId, profileVersion: selectedProfile.version };
-      })
-      .sort((left, right) =>
-        compareCanonical(canonicalValueString(left), canonicalValueString(right)),
-      ),
-    slotOverrides: input.slotOverrides,
-    homepageRoleSequence: [...input.candidate.homepageRoleSequence],
-    staticContentSupportSelections: stableUnique(
-      selectedSiteMapPagesForStructure
-        .filter(({ profile }) => contentSupportProfileIds.has(profile.id))
-        .map(({ profile }) => `${profile.id}@${profile.version}`),
-    ),
-    utilityPresentationSelections: stableUnique(
-      selectedSiteMapPagesForStructure
-        .filter(({ profile }) => utilityProfileIds.has(profile.id))
-        .map(({ profile }) => `${profile.id}@${profile.version}`),
-    ),
-    dynamicCommercePresentation: promptedStorefrontStructuralDynamicCommerceMaterial(
-      input.dynamicCommerceSelection,
-      input.compilerInput.currentRequestInput,
-      input.compilerInput.originalRequest.catalogueCharacteristics.productTypes,
-    ),
-    productCardAnatomyIds,
-  };
-}
-
-export function promptedStorefrontStructuralDynamicCommerceMaterial(
-  selection: CompiledPromptedStorefrontDesignDecisionV2["dynamicCommerceSelection"],
-  currentRequestInput: CreatePromptedStorefrontDesignRequestV2Input,
-  productTypes = createPromptedStorefrontCatalogueCharacteristics(currentRequestInput.catalogue)
-    .productTypes,
-) {
-  const authority = currentRequestInput.draft.dynamicCommercePresentation;
-  if (!authority) fail("stale-authority", "Dynamic-commerce authority is missing.");
-  const collectionById = new Map(
-    authority.collectionSearchArchetypes.map((archetype) => [archetype.id, archetype]),
-  );
-  const productById = new Map(
-    authority.productDetailArchetypes.map((archetype) => [archetype.id, archetype]),
-  );
-  const structuralArchetype = (
-    archetypeId: string,
-    index: ReadonlyMap<
-      string,
-      DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype
-    >,
-  ) => {
-    const archetype = index.get(archetypeId);
-    if (!archetype) fail("stale-authority", `Dynamic archetype ${archetypeId} is unavailable.`);
-    const { id: _id, ...material } = archetype;
-    void _id;
-    return material;
-  };
-  const productTypeCharacteristics = new Map(
-    productTypes.map(
-      ({
-        productTypeKey,
-        safeLabel: _safeLabel,
-        productCount: _productCount,
-        simpleProductCount,
-        configurableProductCount,
-        highConsiderationPresentationCount,
-        ...ranges
-      }) => {
-        void _safeLabel;
-        void _productCount;
-        return [
-          productTypeKey.replace(/^pdp\.product-type\./, ""),
-          {
-            ...ranges,
-            hasSimpleProducts: simpleProductCount > 0,
-            hasConfigurableProducts: configurableProductCount > 0,
-            hasHighConsiderationProducts: highConsiderationPresentationCount > 0,
-          },
-        ] as const;
-      },
-    ),
-  );
-  const normalizedProductTypeArchetypeMappings = selection.productTypeMappings.map(
-    ({ productTypeId, archetypeId }) => {
-      const characteristics = productTypeCharacteristics.get(productTypeId);
-      if (!characteristics) {
-        fail("stale-authority", `Product type ${productTypeId} characteristics are unavailable.`);
-      }
-      return {
-        characteristics,
-        archetype: structuralArchetype(archetypeId, productById),
-      };
-    },
-  );
-  const productTypeArchetypeMappings = [
-    ...new Map(
-      normalizedProductTypeArchetypeMappings.map((mapping) => [
-        canonicalValueString(mapping),
-        mapping,
-      ]),
-    ).values(),
-  ].sort((left, right) =>
-    compareCanonical(canonicalValueString(left), canonicalValueString(right)),
-  );
-  return {
-    collectionArchetype: structuralArchetype(selection.collectionArchetypeId, collectionById),
-    searchArchetype: structuralArchetype(selection.searchArchetypeId, collectionById),
-    standardSimpleArchetype: structuralArchetype(selection.standardSimpleArchetypeId, productById),
-    configurableArchetype: structuralArchetype(selection.configurableArchetypeId, productById),
-    galleryLedArchetype: structuralArchetype(selection.galleryLedArchetypeId, productById),
-    highConsiderationArchetype: structuralArchetype(
-      selection.highConsiderationArchetypeId,
-      productById,
-    ),
-    genericFallbackArchetype: structuralArchetype(
-      selection.genericFallbackArchetypeId,
-      productById,
-    ),
-    // Merchant labels, product-type IDs and route cardinality are protected commerce authority,
-    // not design structure. Preserve the material mapping relationship through the canonical
-    // type-characteristic signature so swapping two type experiences remains structurally
-    // visible while equivalent catalogues do not diverge merely by identity or count.
-    productTypeArchetypeMappings,
-  };
-}
-
-function promptedStructuralFingerprint(
-  material: ReturnType<typeof promptedCandidateStructuralMaterial>,
-): string {
-  return `compiled-prompted-structural-${canonicalValueFingerprint(material)}`;
-}
-
-function promptedCandidateStructuralFingerprint(
-  input: Parameters<typeof promptedCandidateStructuralMaterial>[0],
-): string {
-  return promptedStructuralFingerprint(promptedCandidateStructuralMaterial(input));
-}
-
-type PromptedCandidateSelection = Readonly<{
-  candidate: CandidateContext;
-  skippedPriorStructuralFingerprints: readonly string[];
-}>;
-
-function chooseCandidate(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  intent: PromptedStorefrontDesignIntentV2,
-  authority: PromptedStorefrontCapabilityAuthority,
-  preferences: readonly LocatedPreference[],
-): PromptedCandidateSelection {
-  const maximum = input.maximumCandidateEvaluations ?? MAX_PROMPTED_STOREFRONT_COMPILER_CANDIDATES;
-  if (
-    !Number.isInteger(maximum) ||
-    maximum < 1 ||
-    maximum > MAX_PROMPTED_STOREFRONT_COMPILER_CANDIDATES
-  ) {
-    fail("invalid-input", "The compiler candidate budget is invalid.");
-  }
-  let narrowings: readonly BoundedStorefrontSynthesisSelectionNarrowing[];
-  try {
-    narrowings = listCompatibleCoordinatedDirectionSelectionNarrowings(input.compatibilityInput, {
-      maximumCandidateEvaluations: maximum,
-    });
-  } catch (error) {
-    if (error instanceof CompatibleCoordinatedDirectionCandidateBudgetError) {
-      fail("candidate-budget-exceeded", error.message, error);
-    }
-    throw error;
-  }
-  if (narrowings.length > maximum) {
-    fail(
-      "candidate-budget-exceeded",
-      `Current compatibility authority exposes ${narrowings.length} selections above the ${maximum} candidate budget.`,
-    );
-  }
-  const dynamic = input.currentRequestInput.draft.dynamicCommercePresentation;
-  if (!dynamic) fail("stale-authority", "The current draft has no dynamic-commerce authority.");
-  const diversity = input.originalRequest.priorDiversityEvidence;
-  const recentlyUsedKeys = new Set(diversity.recentlyUsedPostureKeys);
-  const priorStructuralFingerprints = new Set([
-    ...diversity.recentAcceptedStructuralFingerprints,
-    ...diversity.recentRejectedStructuralFingerprints,
-  ]);
-  const slotOverridesBySelection = new Map<
-    string,
-    readonly WholeStorefrontPageBlueprintSelectionOverride[]
-  >();
-  const exactResponsiveAuthorityBySelection = new Map<string, ReadonlySet<string>>();
-  const approvedAssetResolutionBySelection = new Map<
-    string,
-    ReturnType<typeof resolveExactApprovedAssetSelections>
-  >();
-  const dynamicCommerceSelectionByProfiles = new Map<
-    string,
-    ReturnType<typeof buildDynamicSelection>["selection"]
-  >();
-  const exactSelectionFailures: PromptedStorefrontDesignCompilerError[] = [];
-  const candidates = narrowings
-    .flatMap((narrowing) => {
-      const brandSystem = registeredBrandSystemForDirection(
-        input.currentRequestInput.draft.brandSystem,
-        input.compatibilityInput.planningInput.recipeContext.designSystem,
-        narrowing.directionId,
-        {
-          spacingDensity: narrowing.designSystemSpacingDensity,
-          surfaceDepth: narrowing.designSystemSurfaceDepth,
-        },
-      );
-      const homepage = resolveExactHomepageExecution(input, narrowing);
-      if (!homepage) return [];
-      return [
-        {
-          narrowing,
-          designDna: resolveBrandSystemDesignDna(brandSystem),
-          homepageSlotIds: homepage.slotIds,
-          homepageRoleSequence: homepage.roleSequence,
-        },
-      ];
-    })
-    .filter((candidate) => homepageNarrativeCompatible(intent, candidate, authority))
-    .flatMap((candidate) => {
-      let score = 0;
-      const matches = new Map<string, boolean | null>();
-      const siteMapAuthority = selectedSiteMapAuthorityIds(input, candidate);
-      const omittedEvidenceFamilies = omittedEvidenceFamilyIds(input);
-      const rejectedByCheapExactConstraint = preferences.some((preference) => {
-        if (preference.semantics !== "hard" && preference.semantics !== "avoid") return false;
-        const reference = referenceFor(authority, preference);
-        if (reference.availability !== "available") return false;
-        // Search relationship preferences resolve against the exact presentation archetype below.
-        // A PageBlueprint-profile match is not sufficient to reject an exact archetype here,
-        // because multiple registered search presentations may share that profile.
-        if (isPresentationOnlySearchRelationshipPreference(preference, reference)) return false;
-        const match = candidateReferenceMatches(
-          candidate,
-          preference,
-          reference,
-          dynamic.collectionSearchArchetypes,
-          dynamic.productDetailArchetypes,
-          siteMapAuthority,
-          omittedEvidenceFamilies,
-          candidate.homepageSlotIds.length,
-        );
-        return (
-          (preference.semantics === "hard" && match === false) ||
-          (preference.semantics === "avoid" && match === true)
-        );
-      });
-      if (rejectedByCheapExactConstraint) return [];
-      const responsiveSelectionKey = canonicalValueString({
-        homepageProfileId: candidate.narrowing.homepageProfileId,
-        collectionProfileId: candidate.narrowing.collectionProfileId,
-        searchProfileId: candidate.narrowing.searchProfileId,
-        pdpProfileId: candidate.narrowing.pdpProfileId,
-        includedOptionalPageFamilyIds: candidate.narrowing.includedOptionalPageFamilyIds,
-      });
-      let slotOverrides = slotOverridesBySelection.get(responsiveSelectionKey);
-      let exactResponsiveAuthorityIds =
-        exactResponsiveAuthorityBySelection.get(responsiveSelectionKey);
-      let exactApprovedAssetAuthorityIds: ReadonlySet<string>;
-      let dynamicCommerceSelection: ReturnType<typeof buildDynamicSelection>["selection"];
-      try {
-        if (!slotOverrides) {
-          slotOverrides = resolvePromptedStorefrontExactSlotOverrides({
-            selectionNarrowing: candidate.narrowing,
-            componentDefinitions: input.compatibilityInput.planningInput.componentDefinitions,
-            authority,
-            preferences,
-            includedHomepageSlotIds: candidate.homepageSlotIds,
-          }).slotOverrides;
-          slotOverridesBySelection.set(responsiveSelectionKey, slotOverrides);
-        }
-        if (!exactResponsiveAuthorityIds) {
-          exactResponsiveAuthorityIds = resolvePromptedStorefrontExactResponsiveAuthorityIds({
-            compilerInput: input,
-            candidate,
-            slotOverrides,
-          });
-          exactResponsiveAuthorityBySelection.set(
-            responsiveSelectionKey,
-            exactResponsiveAuthorityIds,
-          );
-        }
-        const approvedAssetSelectionKey = canonicalValueString({
-          homepageProfileId: candidate.narrowing.homepageProfileId,
-          homepageSlotIds: candidate.homepageSlotIds,
-          slotOverrides,
-        });
-        let approvedAssetResolution =
-          approvedAssetResolutionBySelection.get(approvedAssetSelectionKey);
-        if (!approvedAssetResolution) {
-          approvedAssetResolution = resolveExactApprovedAssetSelections({
-            currentRequestInput: input.currentRequestInput,
-            candidate,
-            slotOverrides,
-            authority,
-            preferences,
-          });
-          approvedAssetResolutionBySelection.set(
-            approvedAssetSelectionKey,
-            approvedAssetResolution,
-          );
-        }
-        exactApprovedAssetAuthorityIds = new Set(
-          approvedAssetResolution.selections.map(approvedAssetSelectionAuthorityId),
-        );
-        const dynamicSelectionKey = canonicalValueString({
-          collectionProfileId: candidate.narrowing.collectionProfileId,
-          searchProfileId: candidate.narrowing.searchProfileId,
-          pdpProfileId: candidate.narrowing.pdpProfileId,
-        });
-        const cachedDynamicSelection = dynamicCommerceSelectionByProfiles.get(dynamicSelectionKey);
-        dynamicCommerceSelection =
-          cachedDynamicSelection ??
-          buildDynamicSelection(input, intent, candidate, authority, preferences).selection;
-        if (!cachedDynamicSelection) {
-          dynamicCommerceSelectionByProfiles.set(dynamicSelectionKey, dynamicCommerceSelection);
-        }
-      } catch (error) {
-        if (
-          error instanceof PromptedStorefrontDesignCompilerError &&
-          [
-            "unsatisfied-hard-preference",
-            "incompatible-component-selection",
-            "no-compatible-selection",
-          ].includes(error.code)
-        ) {
-          exactSelectionFailures.push(error);
-          return [];
-        }
-        throw error;
-      }
-      for (const preference of preferences) {
-        const reference = referenceFor(authority, preference);
-        const presentationOnlySearch = isPresentationOnlySearchRelationshipPreference(
-          preference,
-          reference,
-        );
-        const selected = presentationOnlySearch
-          ? dynamicCommerceSelection.searchArchetypeId === reference.authorityId
-          : reference.availability === "available"
-            ? candidateReferenceMatches(
-                candidate,
-                preference,
-                reference,
-                dynamic.collectionSearchArchetypes,
-                dynamic.productDetailArchetypes,
-                siteMapAuthority,
-                omittedEvidenceFamilies,
-                candidate.homepageSlotIds.length,
-                exactResponsiveAuthorityIds,
-                exactApprovedAssetAuthorityIds,
-              )
-            : null;
-        matches.set(preference.path, selected);
-        if (selected === null) continue;
-        if (preference.semantics === "hard" && !selected) return [];
-        if (preference.semantics === "avoid" && selected) return [];
-        if (selected && preference.semantics === "hard") score += 100_000;
-      }
-      for (const group of groupPreferencesByResolutionBoundary(preferences, authority).values()) {
-        const bestSoft = group
-          .filter(({ path, semantics }) => semantics === "soft" && matches.get(path) === true)
-          .sort(
-            (left, right) =>
-              (left.rank ?? 32) - (right.rank ?? 32) || compareCanonical(left.key, right.key),
-          )[0];
-        if (bestSoft) {
-          score += 10_000 - (bestSoft.rank ?? 32);
-          continue;
-        }
-        if (group.some(({ path, semantics }) => semantics === "optional" && matches.get(path))) {
-          score += 100;
-        }
-      }
-      for (const key of recentlyUsedKeys) {
-        const reference = authority.referencesByPreferenceKey.get(key);
-        if (!reference) fail("stale-authority", `Diversity posture ${key} is no longer current.`);
-        const syntheticPreference: LocatedPreference = {
-          path: `priorDiversityEvidence.recentlyUsedPostureKeys.${key}`,
-          key,
-          dimension: reference.dimension,
-          semantics: "optional",
-          rank: null,
-          value: null,
-        };
-        if (
-          candidateReferenceMatches(
-            candidate,
-            syntheticPreference,
-            reference,
-            dynamic.collectionSearchArchetypes,
-            dynamic.productDetailArchetypes,
-            siteMapAuthority,
-            omittedEvidenceFamilies,
-            candidate.homepageSlotIds.length,
-            exactResponsiveAuthorityIds,
-            exactApprovedAssetAuthorityIds,
-          ) === true
-        ) {
-          score -= 10;
-        }
-      }
-      const structuralMaterial = promptedCandidateStructuralMaterial({
-        compilerInput: input,
-        candidate,
-        slotOverrides,
-        dynamicCommerceSelection,
-      });
-      return [
-        {
-          candidate,
-          score,
-          canonicalStructuralMaterial: canonicalValueString(structuralMaterial),
-          // Structural identity intentionally omits non-structural exact values such as the
-          // coordinated direction label. Keep a final, content-derived tuple tie-break so equal
-          // score and equal structural material never inherit registry/source iteration order.
-          canonicalExactValueTuple: canonicalValueString(
-            exactSynthesisSelection(candidate.narrowing),
-          ),
-          structuralFingerprint: promptedStructuralFingerprint(structuralMaterial),
-        },
-      ];
-    })
-    .sort(
-      (left, right) =>
-        right.score - left.score ||
-        compareCanonical(left.canonicalStructuralMaterial, right.canonicalStructuralMaterial) ||
-        compareCanonical(left.canonicalExactValueTuple, right.canonicalExactValueTuple),
-    );
-  if (candidates.length === 0) {
-    const hardFailure = exactSelectionFailures.find(
-      ({ code }) => code === "unsatisfied-hard-preference",
-    );
-    if (hardFailure) {
-      throw hardFailure;
-    }
-    fail(
-      "no-compatible-selection",
-      "No current metadata-only coordinated direction is compatible with the exact provider intent.",
-    );
-  }
-  const selectedIndex = candidates.findIndex(
-    ({ structuralFingerprint }) => !priorStructuralFingerprints.has(structuralFingerprint),
-  );
-  if (selectedIndex < 0) {
-    fail(
-      "no-compatible-selection",
-      "Every compatible metadata-only coordinated direction duplicates a recently accepted or rejected structure.",
-    );
-  }
-  const selected = candidates[selectedIndex];
-  if (!selected) fail("no-compatible-selection", "No compatible candidate remains.");
-  return {
-    candidate: selected.candidate,
-    skippedPriorStructuralFingerprints: stableUnique(
-      candidates
-        .slice(0, selectedIndex)
-        .map(({ structuralFingerprint }) => structuralFingerprint)
-        .filter((fingerprint) => priorStructuralFingerprints.has(fingerprint)),
-    ),
-  };
-}
-
-function exactProfileReference(
+export function resolvePromptedStorefrontExactProfileReference(
   authority: PromptedStorefrontCapabilityAuthority,
   profileId: string,
 ): PromptedStorefrontCapabilityAuthorityReference {
@@ -1723,7 +458,7 @@ function productArchetypeMatchesReference(
   archetype: DynamicCommerceProductDetailArchetype,
   reference: PromptedStorefrontCapabilityAuthorityReference,
   current: NonNullable<
-    CompilePromptedStorefrontDesignIntentV2Input["currentRequestInput"]["draft"]["dynamicCommercePresentation"]
+    PromptedStorefrontCompilerAuthorityInput["currentRequestInput"]["draft"]["dynamicCommercePresentation"]
   >,
 ): boolean | null {
   if (reference.authorityKind === "dynamic-commerce") {
@@ -1760,8 +495,7 @@ function productArchetypeIntentRoles(
 }
 
 function buildDynamicSelection(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  intent: PromptedStorefrontDesignIntentV2,
+  input: PromptedStorefrontCompilerAuthorityInput,
   candidate: CandidateContext,
   authority: PromptedStorefrontCapabilityAuthority,
   preferences: readonly LocatedPreference[],
@@ -1779,7 +513,12 @@ function buildDynamicSelection(
       label: `${context} archetype`,
       candidates: current.collectionSearchArchetypes.filter(
         (entry) =>
-          entry.profile.profileId === profileId && entry.supportedContexts.includes(context),
+          entry.profile.profileId === profileId &&
+          entry.supportedContexts.includes(context) &&
+          isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+            entry,
+            candidate.narrowing.sharedFrameProfileId,
+          ),
       ),
       defaultId:
         context === "search" ? current.searchArchetypeId : current.fallbacks.collectionArchetypeId,
@@ -1827,7 +566,12 @@ function buildDynamicSelection(
   ) => {
     const genericFallbackRole = role === "pdp-generic-fallback";
     const nonFallbackArchetypes = current.productDetailArchetypes.filter(
-      ({ id }) => id !== current.fallbacks.productDetailArchetypeId,
+      (archetype) =>
+        archetype.id !== current.fallbacks.productDetailArchetypeId &&
+        isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+          archetype,
+          candidate.narrowing.sharedFrameProfileId,
+        ),
     );
     const roleArchetypes = nonFallbackArchetypes.filter((archetype) =>
       productArchetypeIntentRoles(archetype, authority).has(role),
@@ -1855,7 +599,12 @@ function buildDynamicSelection(
       label: `${role} PDP archetype`,
       candidates: genericFallbackRole
         ? current.productDetailArchetypes.filter(
-            ({ id }) => id === current.fallbacks.productDetailArchetypeId,
+            (archetype) =>
+              archetype.id === current.fallbacks.productDetailArchetypeId &&
+              isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+                archetype,
+                candidate.narrowing.sharedFrameProfileId,
+              ),
           )
         : allPreferredCandidatesAreAvoided
           ? nonFallbackArchetypes
@@ -1864,6 +613,10 @@ function buildDynamicSelection(
         current.productDetailArchetypes.find(
           (archetype) =>
             archetype.profile.profileId === fallbackProfileId &&
+            isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+              archetype,
+              candidate.narrowing.sharedFrameProfileId,
+            ) &&
             (genericFallbackRole || archetype.id !== current.fallbacks.productDetailArchetypeId),
         )?.id ?? "",
       preferences: rolePreferences,
@@ -1902,6 +655,17 @@ function buildDynamicSelection(
     ({ id }) => id === current.fallbacks.productDetailArchetypeId,
   );
   if (!fallback) fail("stale-authority", "The generic PDP fallback is missing.");
+  if (
+    !isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+      fallback,
+      candidate.narrowing.sharedFrameProfileId,
+    )
+  ) {
+    fail(
+      "no-compatible-selection",
+      "The generic PDP fallback is incompatible with the selected shared frame.",
+    );
+  }
   const generic = choosePdp(
     "productDetail.genericFallbackPreferences",
     "pdp-generic-fallback",
@@ -1926,27 +690,6 @@ function buildDynamicSelection(
     const products = productsByType.get(productTypeId) ?? [];
     products.push(product);
     productsByType.set(productTypeId, products);
-  });
-  const intentionByProductTypeId = new Map<
-    string,
-    Readonly<{
-      index: number;
-      intention: PromptedStorefrontDesignIntentV2["productDetail"]["productTypeIntentions"][number];
-    }>
-  >();
-  intent.productDetail.productTypeIntentions.forEach((intention, index) => {
-    const productTypeReference = authority.referencesByPreferenceKey.get(intention.productTypeKey);
-    if (!productTypeReference?.productTypeKey) {
-      return fail("stale-authority", `Product type ${intention.productTypeKey} is stale.`);
-    }
-    const currentMapping = current.productTypeMappings.find(
-      (mapping) =>
-        productTypeReference.authorityId === `${mapping.productTypeId}:${mapping.archetypeId}`,
-    );
-    if (!currentMapping) {
-      return fail("stale-authority", `Product type ${intention.productTypeKey} has no mapping.`);
-    }
-    intentionByProductTypeId.set(currentMapping.productTypeId, { intention, index });
   });
   const productTypeMappings = [...current.productTypeMappings]
     .sort((left, right) => compareCanonical(left.productTypeId, right.productTypeId))
@@ -1980,80 +723,20 @@ function buildDynamicSelection(
           `Product type ${mapping.productTypeId} characteristics changed.`,
         );
       }
-      // A known product type must be materialized to one exact non-fallback
-      // registered PDP archetype. Its protected complexity characteristics
-      // narrow the preferred role; if the current registry has no dedicated
-      // non-fallback role profile, use another current non-fallback archetype
-      // rather than silently selecting the generic unknown-type fallback.
-      const exactNonFallbackRoleId = (
-        role: NonNullable<PromptedStorefrontCapabilityAuthorityReference["intentRoles"]>[number],
-      ) =>
-        current.productDetailArchetypes.find(
-          (archetype) =>
-            archetype.id !== current.fallbacks.productDetailArchetypeId &&
-            productArchetypeIntentRoles(archetype, authority).has(role),
-        )?.id;
-      const characteristicRoleIds = new Set<string>();
-      const standardRoleId = exactNonFallbackRoleId("pdp-standard-simple");
-      const configurableRoleId = exactNonFallbackRoleId("pdp-configurable");
-      const galleryRoleId = exactNonFallbackRoleId("pdp-gallery-led");
-      const highRoleId = exactNonFallbackRoleId("pdp-high-consideration");
-      if (characteristics.simpleProductCount > 0 && standardRoleId) {
-        characteristicRoleIds.add(standardRoleId);
-      }
-      if (characteristics.configurableProductCount > 0 && configurableRoleId) {
-        characteristicRoleIds.add(configurableRoleId);
-      }
-      if (
-        characteristics.mediaDepthRange.maximum >= 2 &&
-        characteristics.simpleProductCount > 0 &&
-        galleryRoleId
-      ) {
-        characteristicRoleIds.add(galleryRoleId);
-      }
-      if (
-        (characteristics.highConsiderationPresentationCount > 0 ||
-          characteristics.optionGroupCountRange.maximum >= 4) &&
-        highRoleId
-      ) {
-        characteristicRoleIds.add(highRoleId);
-      }
-      const nonFallbackArchetypes = current.productDetailArchetypes.filter(
-        (archetype) => archetype.id !== current.fallbacks.productDetailArchetypeId,
-      );
-      const candidatesForCharacteristics = nonFallbackArchetypes.filter(({ id }) =>
-        characteristicRoleIds.has(id),
-      );
-      const scoped = intentionByProductTypeId.get(mapping.productTypeId);
-      const scopedPreferences = scoped
-        ? preferences.filter((preference) =>
-            preference.path.startsWith(
-              `productDetail.productTypeIntentions[${scoped.index}].preferences`,
-            ),
-          )
-        : [];
-      const preferredCandidates =
-        candidatesForCharacteristics.length > 0
-          ? candidatesForCharacteristics
-          : nonFallbackArchetypes;
-      const candidates = preferredCandidates;
-      if (candidates.length === 0) {
-        return fail(
-          "no-compatible-selection",
-          `Product type ${mapping.productTypeId} has no compatible complexity archetype.`,
-        );
-      }
-      const resolved = resolvePreferenceBoundary({
-        label: `product type ${mapping.productTypeId}`,
-        candidates,
-        defaultId: mapping.archetypeId,
-        preferences: scopedPreferences,
-        authority,
-        matches: (archetype, reference) =>
-          productArchetypeMatchesReference(archetype, reference, current),
-      });
-      retain(resolved);
-      return { productTypeId: mapping.productTypeId, archetypeId: resolved.value.id };
+      // Resolve each known product type through the exact role archetypes already selected above.
+      // This preserves any frame-compatible substitution (for example, configurable intent using
+      // the high-consideration archetype inside an editorial frame) instead of falling back to a
+      // stale previous product-type mapping.
+      const selectedArchetype =
+        characteristics.highConsiderationPresentationCount > 0 ||
+        characteristics.optionGroupCountRange.maximum >= 3
+          ? high
+          : characteristics.configurableProductCount > 0
+            ? configurable
+            : characteristics.mediaDepthRange.maximum >= 2
+              ? gallery
+              : standard;
+      return { productTypeId: mapping.productTypeId, archetypeId: selectedArchetype.id };
     });
   return {
     selection: {
@@ -2084,178 +767,6 @@ function selectedPlans(
     fail("stale-authority", "A selected PageBlueprint profile is unavailable.");
   }
   return plans as readonly StorefrontTemplatePagePlan[];
-}
-
-type SelectedMaterializedPlanContext = Readonly<{
-  plan: StorefrontTemplatePagePlan;
-  overridePageType: WholeStorefrontPageBlueprintSelectionOverride["pageType"] | null;
-  executionContext: "home" | "collection" | "search" | "product" | "static";
-}>;
-
-function selectedMaterializedPlanContexts(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  candidate: Readonly<{ narrowing: BoundedStorefrontSynthesisSelectionNarrowing }>,
-): readonly SelectedMaterializedPlanContext[] {
-  const selectedContexts = [
-    {
-      profileId: candidate.narrowing.homepageProfileId,
-      overridePageType: "home" as const,
-      executionContext: "home" as const,
-    },
-    {
-      profileId: candidate.narrowing.collectionProfileId,
-      overridePageType: "collection" as const,
-      executionContext: "collection" as const,
-    },
-    {
-      profileId: candidate.narrowing.searchProfileId,
-      overridePageType: null,
-      executionContext: "search" as const,
-    },
-    {
-      profileId: candidate.narrowing.pdpProfileId,
-      overridePageType: "product" as const,
-      executionContext: "product" as const,
-    },
-    ...selectedSiteMapPages(input, candidate)
-      .filter(
-        ({ familyId }) =>
-          !["home", "collection", "search-results", "product-detail"].includes(familyId),
-      )
-      .map(({ profile }) => ({
-        profileId: profile.id,
-        overridePageType: null,
-        executionContext: "static" as const,
-      })),
-  ];
-  const uniqueContexts = new Map(
-    selectedContexts.map((context) => [
-      `${context.executionContext}:${context.profileId}`,
-      context,
-    ]),
-  );
-  return [...uniqueContexts.values()].map(({ profileId, overridePageType, executionContext }) => {
-    const plan = registeredCommercialPlans().find(({ profile }) => profile?.id === profileId);
-    if (!plan?.profile) {
-      fail("stale-authority", `Selected PageBlueprint profile ${profileId} is unavailable.`);
-    }
-    return { plan, overridePageType, executionContext };
-  });
-}
-
-function selectedProductCardAnatomyIds(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  candidate: Readonly<{ narrowing: BoundedStorefrontSynthesisSelectionNarrowing }>,
-): ReadonlySet<string> {
-  return new Set(
-    selectedMaterializedPlanContexts(input, candidate).flatMap(({ plan }) => {
-      const profile = plan.profile;
-      if (!profile) return [];
-      return [
-        ...(profile.commercialHomepage ? [profile.commercialHomepage.productCardAnatomyId] : []),
-        ...(profile.commercialCollectionSearch
-          ? [profile.commercialCollectionSearch.productCardAnatomyId]
-          : []),
-        ...(profile.commercialProductDetail
-          ? [profile.commercialProductDetail.relatedProductCardAnatomyId]
-          : []),
-      ];
-    }),
-  );
-}
-
-export function resolvePromptedStorefrontResponsiveVariantContexts(input: {
-  compilerInput: CompilePromptedStorefrontDesignIntentV2Input;
-  candidate: Readonly<{
-    narrowing: BoundedStorefrontSynthesisSelectionNarrowing;
-    homepageSlotIds: readonly string[];
-  }>;
-  slotOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[];
-}) {
-  const overrides = new Map(
-    input.slotOverrides.flatMap(({ pageType, profileId, slotSelections }) =>
-      slotSelections.map(
-        (selection) => [`${pageType}:${profileId}:${selection.slotId}`, selection] as const,
-      ),
-    ),
-  );
-  const homepagePlan = getCommercialHomepageProfile(input.candidate.narrowing.homepageProfileId);
-  if (!homepagePlan?.profile) fail("stale-authority", "The selected homepage is unavailable.");
-  const includedHomepageSlotIds = new Set(input.candidate.homepageSlotIds);
-  const contexts = [];
-  for (const { plan, overridePageType, executionContext } of selectedMaterializedPlanContexts(
-    input.compilerInput,
-    input.candidate,
-  )) {
-    for (const slot of plan.slots) {
-      if (overridePageType === "home" && !includedHomepageSlotIds.has(slot.id)) {
-        continue;
-      }
-      const variantId =
-        (overridePageType
-          ? overrides.get(`${overridePageType}:${plan.profile!.id}:${slot.id}`)?.variant
-          : undefined) ?? slot.defaultVariant;
-      const component = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
-      const anatomy = component?.commercialAnatomy;
-      const variant = component?.variants.find(({ id }) => id === variantId);
-      const anatomyVariant = anatomy?.variants.find(({ variantId: id }) => id === variantId);
-      if (!component || !anatomy || !variant || !anatomyVariant) {
-        fail(
-          "stale-authority",
-          `Responsive authority for ${slot.sectionType}/${variantId} is unavailable.`,
-        );
-      }
-      const authorityIds = anatomyVariant.structure.responsiveTransformationIds.map(
-        (transformationId) => {
-          const transformation = anatomy.responsiveTransformations.find(
-            ({ id }) => id === transformationId,
-          );
-          if (!transformation) {
-            fail(
-              "stale-authority",
-              `Responsive transformation ${transformationId} is unavailable.`,
-            );
-          }
-          return `responsive:${transformation.mode}`;
-        },
-      );
-      contexts.push({
-        executionContext,
-        profileId: plan.profile!.id,
-        slotId: slot.id,
-        component: slot.sectionType,
-        variant: variantId,
-        authorityIds: stableUnique(authorityIds),
-      });
-    }
-  }
-  return contexts.sort((left, right) =>
-    compareCanonical(
-      `${left.executionContext}:${left.profileId}:${left.slotId}`,
-      `${right.executionContext}:${right.profileId}:${right.slotId}`,
-    ),
-  );
-}
-
-export function resolvePromptedStorefrontExactResponsiveAuthorityIds(input: {
-  compilerInput: CompilePromptedStorefrontDesignIntentV2Input;
-  candidate: Readonly<{
-    narrowing: BoundedStorefrontSynthesisSelectionNarrowing;
-    homepageSlotIds: readonly string[];
-  }>;
-  slotOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[];
-}): ReadonlySet<string> {
-  const modes = new Set(
-    resolvePromptedStorefrontResponsiveVariantContexts(input).flatMap(
-      ({ authorityIds }) => authorityIds,
-    ),
-  );
-  for (const anatomyId of selectedProductCardAnatomyIds(input.compilerInput, input.candidate)) {
-    const anatomy = canonicalProductCardAuthority.anatomies.find(({ id }) => id === anatomyId);
-    if (!anatomy) fail("stale-authority", `Product-card anatomy ${anatomyId} is unavailable.`);
-    anatomy.responsiveTransformations.forEach(({ mode }) => modes.add(`responsive:${mode}`));
-  }
-  return modes;
 }
 
 function approvedAssetSelectionAuthorityId(selection: WholeStorefrontApprovedAssetRoleSelection) {
@@ -2338,124 +849,70 @@ function decodeExactApprovedAssetSelection(input: {
   return exact?.selection ?? null;
 }
 
-function resolveExactApprovedAssetSelections(input: {
+/**
+ * Semantic intent deliberately does not expose registered asset IDs. Resolve
+ * the exact current approved placement authority here, after the homepage
+ * profile and variants are fixed, so the compiled decision records every
+ * renderer-visible asset choice instead of letting materialization fall back
+ * to whichever approved asset happens to appear first.
+ */
+function resolveSemanticApprovedAssetSelections(input: {
   currentRequestInput: CreatePromptedStorefrontDesignRequestV2Input;
   candidate: CandidateContext;
   slotOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[];
   authority: PromptedStorefrontCapabilityAuthority;
-  preferences: readonly LocatedPreference[];
-}): Readonly<{
-  selections: readonly WholeStorefrontApprovedAssetRoleSelection[];
-  selectedPreferencePaths: ReadonlySet<string>;
-}> {
-  const selectedPreferencePaths = new Set<string>();
-  const selections: WholeStorefrontApprovedAssetRoleSelection[] = [];
-  const relevant = input.preferences.filter(({ dimension }) => dimension === "homepage.asset-role");
-  for (const group of groupPreferencesByResolutionBoundary(relevant, input.authority).values()) {
-    const resolved = group
-      .map((preference) => ({
-        preference,
-        reference: referenceFor(input.authority, preference),
-      }))
-      .map((row) => ({
-        ...row,
-        selection: decodeExactApprovedAssetSelection({
-          reference: row.reference,
-          currentRequestInput: input.currentRequestInput,
-          candidate: input.candidate,
-          slotOverrides: input.slotOverrides,
-        }),
-      }));
-    const avoided = resolved.filter(({ preference }) => preference.semantics === "avoid");
-    const positive = resolved.filter(({ preference }) => preference.semantics !== "avoid");
-    const hard = positive.filter(({ preference }) => preference.semantics === "hard");
-    if (hard.some(({ selection }) => !selection)) {
-      fail("unsatisfied-hard-preference", "A required approved asset role is not executable.");
-    }
-    const hardAuthorityIds = new Set(
-      hard.flatMap(({ selection }) =>
-        selection ? [approvedAssetSelectionAuthorityId(selection)] : [],
-      ),
-    );
-    if (hardAuthorityIds.size > 1) {
+  componentDefinitions: PromptedStorefrontCompilerAuthorityInput["compatibilityInput"]["planningInput"]["componentDefinitions"];
+}): readonly WholeStorefrontApprovedAssetRoleSelection[] {
+  const roleRank = (selection: WholeStorefrontApprovedAssetRoleSelection) => {
+    const definition = input.componentDefinitions.find(({ type }) => type === selection.component);
+    const assetSlot = definition?.assetSlots.find(({ id }) => id === selection.assetSlotId);
+    const index = assetSlot?.acceptedRoles.indexOf(selection.role) ?? -1;
+    if (index < 0) {
       fail(
-        "contradictory-preferences",
-        "One approved asset slot cannot require more than one exact asset-role authority.",
+        "stale-authority",
+        `Approved role ${selection.role} is no longer registered for ${selection.component}:${selection.assetSlotId}.`,
       );
     }
-    const avoidedAuthorityIds = new Set(
-      avoided.flatMap(({ selection }) =>
-        selection ? [approvedAssetSelectionAuthorityId(selection)] : [],
-      ),
-    );
-    const compatible = positive
-      .flatMap((row) => {
-        const selection = row.selection;
-        if (!selection) return [];
-        return avoidedAuthorityIds.has(approvedAssetSelectionAuthorityId(selection))
-          ? []
-          : [{ ...row, selection }];
-      })
-      .sort(
-        (left, right) =>
-          Number(right.preference.semantics === "hard") -
-            Number(left.preference.semantics === "hard") ||
-          (left.preference.rank ?? 32) - (right.preference.rank ?? 32) ||
-          compareCanonical(left.preference.key, right.preference.key),
-      );
-    let selected:
-      | Readonly<{
-          preference: LocatedPreference | null;
-          reference: PromptedStorefrontCapabilityAuthorityReference;
-          selection: WholeStorefrontApprovedAssetRoleSelection;
-        }>
-      | undefined = compatible[0];
-    if (!selected && hard.length > 0) {
-      fail("contradictory-preferences", "Required and avoided asset authority conflicts.");
-    }
-    if (!selected && avoidedAuthorityIds.size > 0) {
-      const boundary = materialBoundaryForReference(resolved[0].reference);
-      selected = [...input.authority.referencesByPreferenceKey.values()]
-        .filter(
-          (reference) =>
-            reference.dimension === "homepage.asset-role" &&
-            reference.availability === "available" &&
-            materialBoundaryForReference(reference) === boundary,
-        )
-        .sort((left, right) => compareCanonical(left.key, right.key))
-        .flatMap((reference) => {
-          const selection = decodeExactApprovedAssetSelection({
-            reference,
-            currentRequestInput: input.currentRequestInput,
-            candidate: input.candidate,
-            slotOverrides: input.slotOverrides,
-          });
-          return selection && !avoidedAuthorityIds.has(approvedAssetSelectionAuthorityId(selection))
-            ? [{ preference: null, reference, selection }]
-            : [];
-        })[0];
-      if (!selected) {
-        fail(
-          "no-compatible-selection",
-          "An avoided homepage asset has no compatible approved alternative for its exact slot.",
-        );
-      }
-    }
-    if (!selected) continue;
-    selections.push(selected.selection);
-    if (selected.preference) selectedPreferencePaths.add(selected.preference.path);
-  }
-  return {
-    selections: wholeStorefrontApprovedAssetRoleSelectionsSchema.parse(selections),
-    selectedPreferencePaths,
+    return index;
   };
+  const compatible = [...input.authority.referencesByPreferenceKey.values()]
+    .filter(
+      (reference) =>
+        reference.authorityKind === "approved-assets" &&
+        reference.dimension === "homepage.asset-role" &&
+        reference.availability === "available",
+    )
+    .flatMap((reference) => {
+      const selection = decodeExactApprovedAssetSelection({
+        reference,
+        currentRequestInput: input.currentRequestInput,
+        candidate: input.candidate,
+        slotOverrides: input.slotOverrides,
+      });
+      return selection ? [selection] : [];
+    })
+    .sort(
+      (left, right) =>
+        left.profileId.localeCompare(right.profileId) ||
+        left.slotId.localeCompare(right.slotId) ||
+        left.component.localeCompare(right.component) ||
+        left.assetSlotId.localeCompare(right.assetSlotId) ||
+        roleRank(left) - roleRank(right) ||
+        left.assetId.localeCompare(right.assetId),
+    );
+  const selectedBySlot = new Map<string, WholeStorefrontApprovedAssetRoleSelection>();
+  compatible.forEach((selection) => {
+    const boundary = `${selection.profileId}:${selection.slotId}:${selection.component}:${selection.assetSlotId}`;
+    if (!selectedBySlot.has(boundary)) selectedBySlot.set(boundary, selection);
+  });
+  return wholeStorefrontApprovedAssetRoleSelectionsSchema.parse([...selectedBySlot.values()]);
 }
 
 export function resolvePromptedStorefrontExactSlotOverrides(
   input: Readonly<{
     selectionNarrowing: BoundedStorefrontSynthesisSelectionNarrowing;
     componentDefinitions: Readonly<
-      CompilePromptedStorefrontDesignIntentV2Input["compatibilityInput"]["planningInput"]["componentDefinitions"]
+      PromptedStorefrontCompilerAuthorityInput["compatibilityInput"]["planningInput"]["componentDefinitions"]
     >;
     authority: Pick<PromptedStorefrontCapabilityAuthority, "referencesByPreferenceKey">;
     preferences: readonly LocatedPreference[];
@@ -2917,824 +1374,64 @@ export function resolvePromptedStorefrontExactSlotOverrides(
   };
 }
 
-function selectedReferenceKeys(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-  candidate: CandidateContext,
-  dynamic: ReturnType<typeof buildDynamicSelection>["selection"],
-  slotOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[],
-  approvedAssetRoleSelections: readonly WholeStorefrontApprovedAssetRoleSelection[],
-  authority: PromptedStorefrontCapabilityAuthority,
-  preferences: readonly LocatedPreference[],
-  exactSelectedPreferencePaths: ReadonlySet<string>,
-): ReadonlyMap<string, PromptedStorefrontCapabilityAuthorityReference> {
-  const compatibleByPath = new Map<string, PromptedStorefrontCapabilityAuthorityReference>();
-  const dynamicIds = new Set([
-    dynamic.collectionArchetypeId,
-    dynamic.searchArchetypeId,
-    dynamic.standardSimpleArchetypeId,
-    dynamic.configurableArchetypeId,
-    dynamic.galleryLedArchetypeId,
-    dynamic.highConsiderationArchetypeId,
-    dynamic.genericFallbackArchetypeId,
-    ...dynamic.productTypeMappings.map(({ archetypeId }) => archetypeId),
-  ]);
-  const overridesByProfileAndSlot = new Map(
-    slotOverrides.flatMap(({ profileId, slotSelections }) =>
-      slotSelections.map((selection) => [`${profileId}:${selection.slotId}`, selection] as const),
-    ),
+/** Resolves registered execution metadata for one semantic selection without materialization. */
+export function resolvePromptedStorefrontSemanticExecutionAuthority(input: {
+  compilerInput: PromptedStorefrontCompilerAuthorityInput;
+  selection: BoundedStorefrontSynthesisSelectionNarrowing;
+  currentExactAuthority?: ReturnType<typeof createPromptedStorefrontDesignRequestV2>;
+}): Readonly<{
+  designDna: DesignDna;
+  homepageRoleSequence: readonly string[];
+  dynamicCommerceSelection: ReturnType<typeof buildDynamicSelection>["selection"];
+  pageBlueprintSelectionOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[];
+  approvedAssetRoleSelections: readonly WholeStorefrontApprovedAssetRoleSelection[];
+}> {
+  const current =
+    input.currentExactAuthority ??
+    createPromptedStorefrontDesignRequestV2(input.compilerInput.currentRequestInput);
+  const homepage = resolveExactHomepageExecution(input.compilerInput, input.selection);
+  if (!homepage)
+    fail("no-compatible-selection", "The semantic selection has no executable homepage.");
+  const brandSystem = registeredBrandSystemForDirection(
+    input.compilerInput.currentRequestInput.draft.brandSystem,
+    input.compilerInput.compatibilityInput.planningInput.recipeContext.designSystem,
+    input.selection.directionId,
+    {
+      spacingDensity: input.selection.designSystemSpacingDensity,
+      surfaceDepth: input.selection.designSystemSurfaceDepth,
+    },
   );
-  const selectedSlotRows = selectedMaterializedPlanContexts(input, candidate).flatMap(
-    ({ plan, overridePageType }) =>
-      plan.slots
-        .filter(({ id }) => overridePageType !== "home" || candidate.homepageSlotIds.includes(id))
-        .map((slot) => {
-          const profileId = plan.profile!.id;
-          const override = overridesByProfileAndSlot.get(`${profileId}:${slot.id}`);
-          return {
-            component: slot.sectionType,
-            variant: override?.variant ?? slot.defaultVariant,
-            boundedParameters: override?.boundedParameters ?? {},
-          };
-        }),
-  );
-  const profileIds = new Set<string>([
-    candidate.narrowing.homepageProfileId,
-    candidate.narrowing.collectionProfileId,
-    candidate.narrowing.searchProfileId,
-    candidate.narrowing.pdpProfileId,
-  ]);
-  const homepageSectionCount = candidate.homepageSlotIds.length;
-  const siteMapAuthority = selectedSiteMapAuthorityIds(input, candidate);
-  const omittedEvidenceFamilies = omittedEvidenceFamilyIds(input);
-  const componentIdentities = new Set(selectedSlotRows.map(({ component }) => component));
-  const responsiveIdentities = resolvePromptedStorefrontExactResponsiveAuthorityIds({
-    compilerInput: input,
-    candidate,
-    slotOverrides,
-  });
-  const approvedAssetIdentities = new Set(
-    approvedAssetRoleSelections.map(approvedAssetSelectionAuthorityId),
-  );
-  const dynamicArtDirectionIdentities = new Set([
-    ...input.currentRequestInput.draft
-      .dynamicCommercePresentation!.collectionSearchArchetypes.filter(({ id }) =>
-        [dynamic.collectionArchetypeId, dynamic.searchArchetypeId].includes(id),
-      )
-      .flatMap(({ artDirectionPosture }) => [
-        `art-direction:ratio:${artDirectionPosture.ratio}`,
-        `art-direction:crop:${artDirectionPosture.crop}`,
-        `art-direction:overlay:${artDirectionPosture.overlay}`,
-      ]),
-    ...input.currentRequestInput.draft
-      .dynamicCommercePresentation!.productDetailArchetypes.filter(({ id }) => dynamicIds.has(id))
-      .flatMap(({ artDirectionPosture }) => [
-        `art-direction:ratio:${artDirectionPosture.ratio}`,
-        `art-direction:crop:${artDirectionPosture.crop}`,
-        `art-direction:overlay:${artDirectionPosture.overlay}`,
-      ]),
-  ]);
-  for (const preference of preferences) {
-    const reference = referenceFor(authority, preference);
-    if (
-      reference.availability !== "available" &&
-      !isPresentationOnlySearchRelationshipPreference(preference, reference)
-    ) {
-      continue;
-    }
-    if (preference.semantics === "avoid") {
-      if (
-        reference.authorityKind === "component-manifest" &&
-        reference.authorityId.startsWith("responsive:") &&
-        responsiveIdentities.has(reference.authorityId)
-      ) {
-        fail(
-          "no-compatible-selection",
-          `The exact selected component variant uses avoided responsive authority ${reference.authorityId}.`,
-        );
-      }
-      continue;
-    }
-    if (exactSelectedPreferencePaths.has(preference.path)) {
-      compatibleByPath.set(preference.path, reference);
-      continue;
-    }
-    const resolvedAtDynamicBoundary =
-      (preference.path.startsWith("collectionSearch.") &&
-        preference.dimension !== "collection-search.search-relationship") ||
-      [
-        "productDetail.standardSimplePreferences",
-        "productDetail.configurablePreferences",
-        "productDetail.galleryLedPreferences",
-        "productDetail.highConsiderationPreferences",
-        "productDetail.genericFallbackPreferences",
-        "productDetail.productTypeIntentions[",
-      ].some((path) => preference.path.startsWith(path));
-    if (resolvedAtDynamicBoundary) continue;
-    const profileId = planProfileId(reference);
-    // Per-product-type intent is resolved only by the final product-type
-    // mapping above. A whole-storefront PDP candidate must not make an
-    // incompatible higher-ranked product-type preference appear accepted.
-    const candidateMatch = preference.path.startsWith("productDetail.productTypeIntentions[")
-      ? null
-      : candidateReferenceMatches(
-          candidate,
-          preference,
-          reference,
-          input.currentRequestInput.draft.dynamicCommercePresentation!.collectionSearchArchetypes,
-          input.currentRequestInput.draft.dynamicCommercePresentation!.productDetailArchetypes,
-          siteMapAuthority,
-          omittedEvidenceFamilies,
-          homepageSectionCount,
-          responsiveIdentities,
-          approvedAssetIdentities,
-        );
-    const matchesCandidate =
-      candidateMatch === true ||
-      (profileIds.has(profileId ?? "") &&
-        !preference.path.startsWith("productDetail.productTypeIntentions[") &&
-        (preference.dimension === "homepage.section-count"
-          ? homepageSectionCount !== undefined &&
-            preference.value === homepageSectionCount &&
-            (preference.minimum ?? homepageSectionCount) <= homepageSectionCount &&
-            homepageSectionCount <= (preference.maximum ?? homepageSectionCount)
-          : !["homepage.meaningful-variant", "component.meaningful-variant"].includes(
-              preference.dimension,
-            ))) ||
-      (siteMapAuthority.has(reference.authorityId) &&
-        (preference.dimension === "content-support.profile" ||
-          preference.dimension === "content-support.narrative-purpose" ||
-          preference.dimension === "utility.profile")) ||
-      (reference.authorityKind === "approved-evidence" &&
-        preference.dimension === "content-support.omission" &&
-        omittedEvidenceFamilies.has(reference.authorityId)) ||
-      (componentIdentities.has(reference.authorityId) &&
-        ["component.family", "homepage.component-family"].includes(preference.dimension)) ||
-      (responsiveIdentities.has(reference.authorityId) &&
-        preference.dimension.startsWith("responsive.")) ||
-      (dynamicArtDirectionIdentities.has(reference.authorityId) &&
-        ["responsive.image", "responsive.crop", "responsive.overlay"].includes(
-          preference.dimension,
-        )) ||
-      (reference.authorityKind === "product-card" &&
-        selectedPlans(candidate).some((plan) => {
-          const commercial =
-            plan.profile?.commercialHomepage ??
-            plan.profile?.commercialCollectionSearch ??
-            plan.profile?.commercialProductDetail;
-          return (
-            commercial && Object.values(commercial).some((value) => value === reference.authorityId)
-          );
-        }));
-    if (matchesCandidate) compatibleByPath.set(preference.path, reference);
-  }
-  const selected = new Map<string, PromptedStorefrontCapabilityAuthorityReference>();
-  for (const group of groupPreferencesByResolutionBoundary(preferences, authority).values()) {
-    const hard = group.filter(
-      ({ path, semantics }) => semantics === "hard" && compatibleByPath.has(path),
-    );
-    hard.forEach(({ path }) => selected.set(path, compatibleByPath.get(path)!));
-    const soft = group
-      .filter(({ path, semantics }) => semantics === "soft" && compatibleByPath.has(path))
-      .sort(
-        (left, right) =>
-          (left.rank ?? 32) - (right.rank ?? 32) || compareCanonical(left.key, right.key),
-      )[0];
-    if (soft) {
-      selected.set(soft.path, compatibleByPath.get(soft.path)!);
-    }
-    group
-      .filter(({ path, semantics }) => semantics === "optional" && compatibleByPath.has(path))
-      .sort((left, right) => compareCanonical(left.key, right.key))
-      .forEach(({ path }) => selected.set(path, compatibleByPath.get(path)!));
-  }
-  return selected;
-}
-
-function diagnosticsFor(
-  preferences: readonly LocatedPreference[],
-  authority: PromptedStorefrontCapabilityAuthority,
-  selectedByPath: ReadonlyMap<string, PromptedStorefrontCapabilityAuthorityReference>,
-  missingEvidenceAuthorityIds: ReadonlySet<string>,
-): PromptedStorefrontResolutionDiagnostic[] {
-  return preferences.map((preference) => {
-    const requested = referenceFor(authority, preference);
-    const accepted = selectedByPath.has(preference.path);
-    const missingCurrentEvidence =
-      requested.authorityKind === "page-blueprint" &&
-      ["content-support.profile", "content-support.narrative-purpose"].includes(
-        requested.dimension,
-      ) &&
-      missingEvidenceAuthorityIds.has(requested.authorityId);
-    if (preference.semantics === "hard" && !accepted) {
-      fail("unsatisfied-hard-preference", `Hard preference ${preference.key} was not selected.`);
-    }
-    const selectedAlternative = [...selectedByPath.entries()]
-      .filter(
-        ([path, reference]) =>
-          preferenceResolutionBoundary(
-            preferences.find((entry) => entry.path === path)!,
-            reference,
-          ) === preferenceResolutionBoundary(preference, requested),
-      )
-      .map(([path, reference]) => ({
-        preference: preferences.find((entry) => entry.path === path),
-        reference,
-      }))
-      .sort(
-        (left, right) =>
-          (left.preference?.rank ?? 32) - (right.preference?.rank ?? 32) ||
-          compareCanonical(left.reference.key, right.reference.key),
-      )[0];
-    const substituted =
-      preference.semantics === "soft" &&
-      selectedAlternative?.preference?.semantics === "soft" &&
-      (selectedAlternative.preference.rank ?? 32) > (preference.rank ?? 32);
-    const outcome = accepted
-      ? "accepted"
-      : substituted
-        ? "substituted"
-        : preference.semantics === "optional"
-          ? "omitted"
-          : "rejected";
-    const selectedAuthority = accepted
-      ? requested
-      : substituted
-        ? (selectedAlternative?.reference ?? null)
-        : null;
-    const reasonCode = accepted
-      ? preference.semantics === "soft"
-        ? "highest-ranked-compatible"
-        : preference.semantics === "optional"
-          ? "optional-compatible"
-          : "exact-current-authority"
-      : substituted
-        ? "higher-ranked-incompatible"
-        : missingCurrentEvidence
-          ? "missing-approved-evidence"
-          : preference.semantics === "optional"
-            ? requested.availability === "evidence-dependent"
-              ? requested.authorityKind === "approved-assets"
-                ? "missing-approved-asset"
-                : "missing-approved-evidence"
-              : "optional-unavailable"
-            : preference.semantics === "avoid"
-              ? "avoided-selection"
-              : requested.availability !== "available"
-                ? "unavailable-capability"
-                : selectedAlternative
-                  ? "lower-ranked-compatible"
-                  : "incompatible-context";
-    return {
-      preferencePath: preference.path,
-      preferenceKey: preference.key,
-      semantics: preference.semantics,
-      requestedRank: preference.rank,
-      requestedValue: preference.value,
-      outcome,
-      selectedAuthority,
-      reasonCode,
-      authorityFingerprint:
-        selectedAuthority?.authorityFingerprint ?? requested.authorityFingerprint,
-    };
-  });
-}
-
-function structuralRepetitionDiagnostics(
-  request: PromptedStorefrontDesignRequestV2,
-  skippedFingerprints: readonly string[],
-): PromptedStorefrontResolutionDiagnostic[] {
-  return skippedFingerprints.map((fingerprint) => {
-    const acceptedIndex =
-      request.priorDiversityEvidence.recentAcceptedStructuralFingerprints.indexOf(fingerprint);
-    const rejectedIndex =
-      request.priorDiversityEvidence.recentRejectedStructuralFingerprints.indexOf(fingerprint);
-    const preferencePath =
-      acceptedIndex >= 0
-        ? `priorDiversityEvidence.recentAcceptedStructuralFingerprints[${acceptedIndex}]`
-        : rejectedIndex >= 0
-          ? `priorDiversityEvidence.recentRejectedStructuralFingerprints[${rejectedIndex}]`
-          : fail("stale-authority", "A skipped structural fingerprint has no current evidence.");
-    return {
-      preferencePath,
-      preferenceKey: fingerprint,
-      semantics: "optional",
-      requestedRank: null,
-      requestedValue: null,
-      outcome: "substituted",
-      selectedAuthority: null,
-      reasonCode: "recent-structural-repeat-substituted",
-      authorityFingerprint: fingerprint,
-    };
-  });
-}
-
-/**
- * Refreshes exact request authority, validates one provider intent, evaluates only bounded
- * compatibility metadata, and returns one transient executable decision. It never creates a
- * StorefrontSnapshot, synthesis result, proposal, provider request, save, or publication.
- */
-export function compilePromptedStorefrontDesignIntentV2(
-  input: CompilePromptedStorefrontDesignIntentV2Input,
-): CompiledPromptedStorefrontDesignDecisionV2 {
-  assertPromptedStorefrontPlanningAuthorityBound(input);
-  let current: ReturnType<typeof createPromptedStorefrontDesignRequestV2>;
-  try {
-    current = createPromptedStorefrontDesignRequestV2(input.currentRequestInput);
-  } catch (error) {
-    return fail(
-      "stale-authority",
-      "Current prompted storefront authority cannot be rebuilt.",
-      error,
-    );
-  }
-  if (
-    input.currentRequestInput.merchantPrompt !== input.originalRequest.merchantPrompt ||
-    current.request.requestFingerprint !== input.originalRequest.requestFingerprint ||
-    canonicalValueString(current.request.currentAuthority) !==
-      canonicalValueString(input.originalRequest.currentAuthority)
-  ) {
-    fail("stale-authority", "The prompted request or synthesis compatibility authority changed.");
-  }
-  let intent: PromptedStorefrontDesignIntentV2;
-  try {
-    const { intentFingerprint, ...providerIntentMaterial } = input.providerIntent;
-    if (intentFingerprint !== promptedStorefrontDesignIntentFingerprint(providerIntentMaterial)) {
-      fail("invalid-input", "The provider intent fingerprint is stale.");
-    }
-    intent = validatePromptedStorefrontDesignIntentV2({
-      request: current.request,
-      capabilityAuthority: current.capabilityAuthority,
-      currentAuthority: current.request.currentAuthority,
-      intent: providerIntentMaterial,
-    });
-  } catch (error) {
-    return fail(
-      "invalid-input",
-      "The provider intent is not valid against current authority.",
-      error,
-    );
-  }
-  materialCoverage(intent, current.capabilityAuthority);
-  const preferences = [
-    ...collectPreferences(intent),
-    ...diversityAvoidancePreferences(current.request, current.capabilityAuthority),
-  ].sort((left, right) => compareCanonical(left.path, right.path));
-  const candidateSelection = chooseCandidate(
-    input,
-    intent,
-    current.capabilityAuthority,
-    preferences,
-  );
-  const candidate = candidateSelection.candidate;
-  const dynamicResolution = buildDynamicSelection(
-    input,
-    intent,
-    candidate,
-    current.capabilityAuthority,
-    preferences,
-  );
-  const dynamic = dynamicResolution.selection;
-  const slotOverrideResolution = resolvePromptedStorefrontExactSlotOverrides({
-    selectionNarrowing: candidate.narrowing,
-    componentDefinitions: input.compatibilityInput.planningInput.componentDefinitions,
-    authority: current.capabilityAuthority,
-    preferences,
-    includedHomepageSlotIds: candidate.homepageSlotIds,
-  });
-  const slotOverrides = slotOverrideResolution.slotOverrides;
-  const approvedAssetResolution = resolveExactApprovedAssetSelections({
-    currentRequestInput: input.currentRequestInput,
-    candidate,
-    slotOverrides,
-    authority: current.capabilityAuthority,
-    preferences,
-  });
-  const selectedByPath = selectedReferenceKeys(
-    input,
-    candidate,
-    dynamic,
-    slotOverrides,
-    approvedAssetResolution.selections,
-    current.capabilityAuthority,
-    preferences,
-    new Set([
-      ...dynamicResolution.selectedPreferencePaths.keys(),
-      ...slotOverrideResolution.selectedPreferencePaths,
-      ...approvedAssetResolution.selectedPreferencePaths,
-    ]),
-  );
-  const selectedReferences = [
-    ...new Map(
-      [...selectedByPath.values()].map((reference) => [reference.key, reference] as const),
-    ).values(),
-  ].sort((left, right) => compareCanonical(left.key, right.key));
-  const frame = getCommercialSharedFrameProfile(candidate.narrowing.sharedFrameProfileId);
-  const profileReferences = {
-    homepage: exactProfileReference(
-      current.capabilityAuthority,
-      candidate.narrowing.homepageProfileId,
-    ),
-    collection: exactProfileReference(
-      current.capabilityAuthority,
-      candidate.narrowing.collectionProfileId,
-    ),
-    search: exactProfileReference(current.capabilityAuthority, candidate.narrowing.searchProfileId),
-    productDetail: exactProfileReference(
-      current.capabilityAuthority,
-      candidate.narrowing.pdpProfileId,
-    ),
+  const candidate: CandidateContext = {
+    narrowing: input.selection,
+    designDna: resolveBrandSystemDesignDna(brandSystem),
+    homepageSlotIds: homepage.slotIds,
+    homepageRoleSequence: homepage.roleSequence,
   };
-  const plans = selectedPlans(candidate);
-  const overridesByProfileAndSlot = new Map(
-    slotOverrides.flatMap(({ profileId, slotSelections }) =>
-      slotSelections.map((selection) => [`${profileId}:${selection.slotId}`, selection] as const),
-    ),
-  );
-  const selectedSlots = plans.flatMap((plan) =>
-    plan.slots
-      .filter(({ id }) => plan.pageType !== "home" || candidate.homepageSlotIds.includes(id))
-      .map((slot) => {
-        const override = overridesByProfileAndSlot.get(`${plan.profile!.id}:${slot.id}`);
-        const definition = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
-        if (!definition) {
-          fail("stale-authority", `Component ${slot.sectionType} is no longer registered.`);
-        }
-        return {
-          plan,
-          slot,
-          definition,
-          variant: override?.variant ?? slot.defaultVariant,
-          boundedParameters: override?.boundedParameters ?? {},
-        };
-      }),
-  );
-  const selectedComponentAuthorityIds = new Set(
-    selectedSlots.flatMap(({ slot, variant, boundedParameters }) => [
-      slot.sectionType,
-      `${slot.sectionType}:${variant}`,
-      ...Object.keys(boundedParameters).map((parameter) => `${slot.sectionType}:${parameter}`),
-    ]),
-  );
-  const selectedResponsiveAuthorityIds = resolvePromptedStorefrontExactResponsiveAuthorityIds({
-    compilerInput: input,
+  const dynamicCommerceSelection = buildDynamicSelection(
+    input.compilerInput,
     candidate,
-    slotOverrides,
-  });
-  const dynamicIds = new Set([
-    dynamic.collectionArchetypeId,
-    dynamic.searchArchetypeId,
-    dynamic.standardSimpleArchetypeId,
-    dynamic.configurableArchetypeId,
-    dynamic.galleryLedArchetypeId,
-    dynamic.highConsiderationArchetypeId,
-    dynamic.genericFallbackArchetypeId,
-    ...dynamic.productTypeMappings.map(({ archetypeId }) => archetypeId),
-  ]);
-  const dynamicArtDirectionIds = new Set(
-    [
-      ...input.currentRequestInput.draft.dynamicCommercePresentation!.collectionSearchArchetypes,
-      ...input.currentRequestInput.draft.dynamicCommercePresentation!.productDetailArchetypes,
-    ]
-      .filter(({ id }) => dynamicIds.has(id))
-      .flatMap(({ artDirectionPosture }) => [
-        `art-direction:ratio:${artDirectionPosture.ratio}`,
-        `art-direction:crop:${artDirectionPosture.crop}`,
-        `art-direction:overlay:${artDirectionPosture.overlay}`,
-      ]),
-  );
-  const selectedProductCardIds = new Set<string>(
-    plans.flatMap((plan) => {
-      const profile = plan.profile!;
-      return [
-        ...(profile.commercialHomepage ? [profile.commercialHomepage.productCardAnatomyId] : []),
-        ...(profile.commercialCollectionSearch
-          ? [profile.commercialCollectionSearch.productCardAnatomyId]
-          : []),
-        ...(profile.commercialProductDetail
-          ? [profile.commercialProductDetail.relatedProductCardAnatomyId]
-          : []),
-      ];
-    }),
-  );
-  const profileIdentities = new Set(
-    plans.map(({ profile }) => `${profile!.id}@${profile!.version}`),
-  );
-  const selectedSiteMapPagesForDefaults = selectedSiteMapPages(input, candidate);
-  const siteMapAuthorityIds = selectedSiteMapAuthorityIds(input, candidate);
-  const omittedEvidenceFamilies = omittedEvidenceFamilyIds(input);
-  const narrativeIdentities = new Set(
-    selectedSlots.map(
-      ({ plan, slot }) => `${plan.profile!.id}@${plan.profile!.version}:${slot.id}`,
-    ),
-  );
-  const productTypeIdentities = new Set(
-    dynamic.productTypeMappings.map(
-      ({ productTypeId, archetypeId }) => `${productTypeId}:${archetypeId}`,
-    ),
-  );
-  const selectedIdentityByDimension = new Set(
-    [...selectedByPath.values()].map(({ dimension, authorityId }) => `${dimension}:${authorityId}`),
-  );
-  const materiallySuppliedBoundaries = new Set(
-    preferences.map((preference) =>
-      materialBoundaryForReference(referenceFor(current.capabilityAuthority, preference)),
-    ),
-  );
-  const exactBoundedParameterDefaults = selectedSlots
-    .flatMap(({ plan, slot, definition, variant, boundedParameters }) =>
-      definition.boundedParameters.flatMap((parameter) => {
-        const reference = [...current.capabilityAuthority.referencesByPreferenceKey.values()]
-          .filter(
-            (candidateReference) =>
-              candidateReference.dimension === "component.bounded-parameter" &&
-              candidateReference.authorityKind === "component-manifest" &&
-              candidateReference.authorityId === `${slot.sectionType}:${parameter.id}` &&
-              candidateReference.availability === "available",
-          )
-          .sort((left, right) => compareCanonical(left.key, right.key))[0];
-        if (
-          !reference ||
-          Object.hasOwn(boundedParameters, parameter.id) ||
-          materiallySuppliedBoundaries.has(materialBoundaryForReference(reference)) ||
-          !parameter.compatiblePageTypes.includes(plan.pageType) ||
-          (parameter.compatibleVariants.length > 0 &&
-            !parameter.compatibleVariants.includes(variant))
-        ) {
-          return [];
-        }
-        const value = plan.profile!.parameterDefaults[parameter.id] ?? parameter.defaultValue;
-        return [
-          {
-            preferencePath: `defaults.component.bounded-parameter.${plan.pageType}.${plan.profile!.id}.${slot.id}.${parameter.id}`,
-            preferenceKey: reference.key,
-            semantics: "optional" as const,
-            requestedRank: null,
-            requestedValue: value,
-            outcome: "defaulted" as const,
-            selectedAuthority: reference,
-            reasonCode: "registered-safe-default" as const,
-            authorityFingerprint: reference.authorityFingerprint,
-          },
-        ];
-      }),
-    )
-    .sort((left, right) => compareCanonical(left.preferencePath, right.preferencePath));
-  const defaultReferences = [...current.capabilityAuthority.referencesByPreferenceKey.values()]
-    .filter((reference) => {
-      if (
-        reference.availability !== "available" ||
-        reference.dimension === "component.bounded-parameter" ||
-        materiallySuppliedBoundaries.has(materialBoundaryForReference(reference)) ||
-        selectedIdentityByDimension.has(`${reference.dimension}:${reference.authorityId}`)
-      ) {
-        return false;
-      }
-      if (dnaReferenceMatches(reference, candidate.designDna)) return true;
-      if (reference.authorityKind === "shared-frame") {
-        return reference.authorityId === candidate.narrowing.sharedFrameProfileId;
-      }
-      if (reference.authorityKind === "page-blueprint") {
-        return (
-          profileIdentities.has(reference.authorityId) ||
-          narrativeIdentities.has(reference.authorityId) ||
-          siteMapAuthorityIds.has(reference.authorityId)
-        );
-      }
-      if (reference.authorityKind === "component-manifest") {
-        return (
-          selectedComponentAuthorityIds.has(reference.authorityId) ||
-          selectedResponsiveAuthorityIds.has(reference.authorityId)
-        );
-      }
-      if (reference.authorityKind === "dynamic-commerce") {
-        return (
-          dynamicIds.has(reference.authorityId) ||
-          dynamicArtDirectionIds.has(reference.authorityId) ||
-          productTypeIdentities.has(reference.authorityId)
-        );
-      }
-      if (reference.authorityKind === "approved-evidence") {
-        return (
-          reference.dimension === "content-support.omission" &&
-          omittedEvidenceFamilies.has(reference.authorityId)
-        );
-      }
-      return (
-        reference.authorityKind === "product-card" &&
-        selectedProductCardIds.has(reference.authorityId)
-      );
-    })
-    .sort((left, right) => compareCanonical(left.key, right.key));
-  const baseDiagnostics = diagnosticsFor(
-    preferences,
     current.capabilityAuthority,
-    selectedByPath,
-    missingEvidenceSiteMapAuthority(input),
-  );
-  const diagnostics = [
-    ...baseDiagnostics,
-    ...structuralRepetitionDiagnostics(
-      current.request,
-      candidateSelection.skippedPriorStructuralFingerprints,
-    ),
-    ...exactBoundedParameterDefaults,
-    ...defaultReferences.map((reference): PromptedStorefrontResolutionDiagnostic => ({
-      preferencePath: `defaults.${reference.dimension}.${reference.key}`,
-      preferenceKey: reference.key,
-      semantics: "optional",
-      requestedRank: null,
-      requestedValue: null,
-      outcome: "defaulted",
-      selectedAuthority: reference,
-      reasonCode: "registered-safe-default",
-      authorityFingerprint: reference.authorityFingerprint,
-    })),
-  ];
-  const productCardAnatomyIds = stableUnique([
-    ...selectedPlans(candidate).flatMap((plan) => {
-      const profile = plan.profile;
-      if (!profile) return [];
-      return [
-        ...(profile.commercialHomepage ? [profile.commercialHomepage.productCardAnatomyId] : []),
-        ...(profile.commercialCollectionSearch
-          ? [profile.commercialCollectionSearch.productCardAnatomyId]
-          : []),
-        ...(profile.commercialProductDetail
-          ? [profile.commercialProductDetail.relatedProductCardAnatomyId]
-          : []),
-      ];
-    }),
-    ...selectedReferences
-      .filter(({ authorityKind }) => authorityKind === "product-card")
-      .map(({ authorityId }) => authorityId),
-    ...input.currentRequestInput.draft
-      .dynamicCommercePresentation!.collectionSearchArchetypes.filter(({ id }) =>
-        [dynamic.collectionArchetypeId, dynamic.searchArchetypeId].includes(id),
-      )
-      .flatMap(({ profile }) => {
-        const exact = getCommercialCollectionSearchProfile(profile.profileId)?.profile
-          ?.commercialCollectionSearch;
-        return exact ? [exact.productCardAnatomyId] : [];
-      }),
-    ...input.currentRequestInput.draft
-      .dynamicCommercePresentation!.productDetailArchetypes.filter(({ id }) =>
-        [
-          dynamic.standardSimpleArchetypeId,
-          dynamic.configurableArchetypeId,
-          dynamic.galleryLedArchetypeId,
-          dynamic.highConsiderationArchetypeId,
-          dynamic.genericFallbackArchetypeId,
-        ].includes(id),
-      )
-      .flatMap(({ profile }) => {
-        const exact = getCommercialPdpProfile(profile.profileId)?.profile?.commercialProductDetail;
-        return exact ? [exact.relatedProductCardAnatomyId] : [];
-      }),
-  ]);
-  const homepageRoleSequence = [...candidate.homepageRoleSequence];
-  const selectedSiteMapPagesForOutput = selectedSiteMapPagesForDefaults;
-  const contentSupportProfileIds = new Set(
-    listCommercialContentSupportProfiles().flatMap(({ profile }) => (profile ? [profile.id] : [])),
-  );
-  const utilityProfileIds = new Set(
-    listCommercialUtilityProfiles().flatMap(({ profile }) => (profile ? [profile.id] : [])),
-  );
-  const staticContentSupportSelections = stableUnique(
-    selectedSiteMapPagesForOutput
-      .filter(({ profile }) => contentSupportProfileIds.has(profile.id))
-      .map(({ profile }) => `${profile.id}@${profile.version}`),
-  );
-  const utilityPresentationSelections = stableUnique(
-    selectedSiteMapPagesForOutput
-      .filter(({ profile }) => utilityProfileIds.has(profile.id))
-      .map(({ profile }) => `${profile.id}@${profile.version}`),
-  );
-  const responsiveCapabilityKeys = stableUnique(
-    selectedReferences
-      .filter(({ dimension }) => dimension.startsWith("responsive."))
-      .map(({ key }) => key),
-  );
-  const artDirectionCapabilityKeys = stableUnique(
-    selectedReferences
-      .filter(({ dimension }) =>
-        ["responsive.image", "responsive.crop", "responsive.overlay"].includes(dimension),
-      )
-      .map(({ key }) => key),
-  );
-  const approvedAssetRoleKeys = stableUnique(
-    selectedReferences
-      .filter(({ authorityKind }) => authorityKind === "approved-assets")
-      .map(({ key }) => key),
-  );
-  const authorityFingerprints = stableUnique([
-    current.request.currentAuthority.capabilityReferenceAuthorityFingerprint,
-    current.request.currentAuthority.capabilityManifestFingerprint,
-    current.request.currentAuthority.pageBlueprintAuthorityFingerprint,
-    current.request.currentAuthority.designDnaAuthorityFingerprint,
-    dynamic.authorityFingerprint,
-    frame.authorityFingerprint,
-    ...selectedReferences.map(({ authorityFingerprint }) => authorityFingerprint),
-  ]);
-  const structuralFingerprint = promptedCandidateStructuralFingerprint({
-    compilerInput: input,
+    [],
+  ).selection;
+  const pageBlueprintSelectionOverrides = resolvePromptedStorefrontExactSlotOverrides({
+    selectionNarrowing: input.selection,
+    componentDefinitions: input.compilerInput.compatibilityInput.planningInput.componentDefinitions,
+    authority: current.capabilityAuthority,
+    preferences: [],
+    includedHomepageSlotIds: homepage.slotIds,
+  }).slotOverrides;
+  const approvedAssetRoleSelections = resolveSemanticApprovedAssetSelections({
+    currentRequestInput: input.compilerInput.currentRequestInput,
     candidate,
-    slotOverrides,
-    dynamicCommerceSelection: dynamic,
+    slotOverrides: pageBlueprintSelectionOverrides,
+    authority: current.capabilityAuthority,
+    componentDefinitions: input.compilerInput.compatibilityInput.planningInput.componentDefinitions,
   });
-  const priorStructuralFingerprints = new Set([
-    ...current.request.priorDiversityEvidence.recentAcceptedStructuralFingerprints,
-    ...current.request.priorDiversityEvidence.recentRejectedStructuralFingerprints,
-  ]);
-  if (priorStructuralFingerprints.has(structuralFingerprint)) {
-    fail(
-      "no-compatible-selection",
-      "The exact compiled storefront duplicates a recently accepted or rejected structure.",
-    );
-  }
-  const currentAuthorityFingerprint = `prompted-current-authority-${canonicalValueFingerprint(
-    current.request.currentAuthority,
-  )}`;
-  const material = {
-    contractVersion: COMPILED_PROMPTED_STOREFRONT_DESIGN_DECISION_V2,
-    identity: {
-      requestFingerprint: current.request.requestFingerprint,
-      promptFingerprint: current.request.promptFingerprint,
-      providerIntentFingerprint: intent.intentFingerprint,
-      currentAuthorityFingerprint,
-      capabilityReferenceAuthorityFingerprint:
-        current.request.currentAuthority.capabilityReferenceAuthorityFingerprint,
-      baseSnapshotId: current.request.currentAuthority.draftSnapshotId,
-      baseSnapshotRevision: current.request.currentAuthority.draftRevision,
-    },
-    exactSelection: exactSynthesisSelection(candidate.narrowing),
-    designDna: {
-      directionId: candidate.narrowing.directionId,
-      authorityFingerprint: `compiled-design-dna-${canonicalValueFingerprint(candidate.designDna)}`,
-      value: candidate.designDna,
-    },
-    sharedFrame: {
-      profileId: frame.id,
-      profileVersion: frame.version,
-      authorityFingerprint: frame.authorityFingerprint,
-    },
-    profiles: {
-      homepage: {
-        profileId: candidate.narrowing.homepageProfileId,
-        authorityFingerprint: profileReferences.homepage.authorityFingerprint,
-      },
-      collection: {
-        profileId: candidate.narrowing.collectionProfileId,
-        authorityFingerprint: profileReferences.collection.authorityFingerprint,
-      },
-      search: {
-        profileId: candidate.narrowing.searchProfileId,
-        authorityFingerprint: profileReferences.search.authorityFingerprint,
-      },
-      productDetail: {
-        profileId: candidate.narrowing.pdpProfileId,
-        authorityFingerprint: profileReferences.productDetail.authorityFingerprint,
-      },
-    },
-    dynamicCommerceSelection: dynamic,
-    pageBlueprintSelectionOverrides:
-      wholeStorefrontPageBlueprintSelectionOverridesSchema.parse(slotOverrides),
-    approvedAssetRoleSelections: [...approvedAssetResolution.selections],
-    productCardAnatomyIds,
-    selectedCapabilityReferences: selectedReferences,
-    staticContentSupportSelections,
-    utilityPresentationSelections,
-    narrative: {
-      homepageRoleSequence,
-      desktopPriority: intent.responsiveArtDirection.desktopNarrativePriority.map(({ key }) => key),
-      mobilePriority: intent.responsiveArtDirection.mobileNarrativePriority.map(({ key }) => key),
-    },
-    responsiveArtDirection: {
-      responsiveMode: candidate.narrowing.responsiveMode,
-      responsiveCapabilityKeys,
-      artDirectionCapabilityKeys,
-      approvedAssetRoleKeys,
-    },
-    evidenceBackedOmissions: stableUnique(
-      diagnostics
-        .filter(
-          ({ outcome, reasonCode, selectedAuthority }) =>
-            outcome === "omitted" &&
-            (reasonCode === "missing-approved-evidence" ||
-              reasonCode === "missing-approved-asset" ||
-              selectedAuthority?.authorityKind === "approved-evidence" ||
-              selectedAuthority?.authorityKind === "approved-assets"),
-        )
-        .map(({ preferenceKey }) => preferenceKey),
-    ),
-    diagnostics,
-    exactAuthorityFingerprints: authorityFingerprints,
-    structuralFingerprint,
-    dynamicRoutePresentationFingerprint: `compiled-prompted-dynamic-${canonicalValueFingerprint(
-      dynamic,
-    )}`,
-  };
-  return compiledPromptedStorefrontDesignDecisionV2Schema.parse({
-    ...material,
-    compiledDecisionFingerprint: compiledPromptedStorefrontDesignDecisionFingerprint(material),
+  return Object.freeze({
+    designDna: candidate.designDna,
+    homepageRoleSequence: Object.freeze([...candidate.homepageRoleSequence]),
+    dynamicCommerceSelection: structuredClone(dynamicCommerceSelection),
+    pageBlueprintSelectionOverrides: structuredClone(pageBlueprintSelectionOverrides),
+    approvedAssetRoleSelections: structuredClone(approvedAssetRoleSelections),
   });
 }

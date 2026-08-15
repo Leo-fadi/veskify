@@ -20,6 +20,7 @@ import {
 import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type CollectionCommerceRoutePresentation,
+  type ProductCommerceRoutePresentation,
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
 import {
@@ -61,6 +62,7 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { canonicalProductTypePresentationId } from "@/domain/product-card";
+import type { CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
 import { projectDynamicCommerceArchetypePages } from "@/application/dynamic-commerce-routes";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
@@ -412,6 +414,8 @@ export function ProjectEditorClient({
   storefrontAiProvider,
   promptedStorefrontClient,
   promptedInitialDraftAuthority,
+  p10b16p04Acceptance = false,
+  p10b16p04InitialAggregate,
   localDemoBridge,
   commerceRouteAdapter = defaultCommerceRouteAdapter,
 }: {
@@ -423,6 +427,10 @@ export function ProjectEditorClient({
   storefrontAiProvider?: StorefrontAIProvider;
   promptedStorefrontClient?: PromptedStorefrontStudioClient;
   promptedInitialDraftAuthority?: PromptedInitialStorefrontDraftAuthority;
+  /** Safe fingerprint projection used only by the authenticated non-production P04 browser gate. */
+  p10b16p04Acceptance?: boolean;
+  /** Trusted raw commercial-acceptance input; never contains a generated or designed snapshot. */
+  p10b16p04InitialAggregate?: ProjectAggregate;
   localDemoBridge?: LocalDemoBridge;
   commerceRouteAdapter?: StorefrontCommerceRouteAdapter;
 }) {
@@ -434,6 +442,7 @@ export function ProjectEditorClient({
   const [selectedPageId, setSelectedPageId] = useState<string>();
   const [selectedSectionId, setSelectedSectionId] = useState<string>();
   const [representativeRouteIds, setRepresentativeRouteIds] = useState<Record<string, string>>({});
+  const [p10b16p04CartContext, setP10b16p04CartContext] = useState<"empty" | "populated">("empty");
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [sessionBrandSystem, setSessionBrandSystem] = useState<BrandSystem>();
@@ -481,10 +490,18 @@ export function ProjectEditorClient({
   const resolvedPromptedStorefrontClient = useMemo(
     () =>
       promptedStorefrontClient ??
-      (storefrontAiProvider || localDemoBridge || projectId !== P10B16P03_PROJECT_ID
+      (storefrontAiProvider ||
+      localDemoBridge ||
+      (projectId !== P10B16P03_PROJECT_ID && !p10b16p04Acceptance)
         ? undefined
         : createServerPromptedStorefrontStudioClient()),
-    [localDemoBridge, projectId, promptedStorefrontClient, storefrontAiProvider],
+    [
+      localDemoBridge,
+      p10b16p04Acceptance,
+      projectId,
+      promptedStorefrontClient,
+      storefrontAiProvider,
+    ],
   );
 
   useEffect(() => {
@@ -521,6 +538,25 @@ export function ProjectEditorClient({
     let cancelled = false;
     const load = async () => {
       const currentRepository = repository.current!;
+      if (p10b16p04InitialAggregate) {
+        if (!(currentRepository instanceof IndexedDbProjectRepository)) {
+          throw new Error(
+            "The P04 acceptance composition requires the canonical browser repository.",
+          );
+        }
+        const baselineDraft = p10b16p04InitialAggregate.snapshots.find(
+          ({ id }) => id === p10b16p04InitialAggregate.project.draftSnapshotId,
+        );
+        if (!baselineDraft) {
+          throw new Error("The P04 acceptance composition is missing its raw draft.");
+        }
+        const baselineFingerprint = canonicalStorefrontContentFingerprint(baselineDraft);
+        const marker = `veskify:p10b-16p-04:${p10b16p04InitialAggregate.project.id}:${baselineFingerprint}`;
+        if (window.sessionStorage.getItem(marker) !== "seeded") {
+          await currentRepository.replaceLocalDemoAggregate(p10b16p04InitialAggregate);
+          window.sessionStorage.setItem(marker, "seeded");
+        }
+      }
       if (localDemoBridge) {
         if (!(currentRepository instanceof IndexedDbProjectRepository)) {
           throw new Error("The local demo bridge requires the canonical browser repository.");
@@ -609,7 +645,7 @@ export function ProjectEditorClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, initialEvidenceReferences, localDemoBridge, projectId]);
+  }, [attempt, initialEvidenceReferences, localDemoBridge, p10b16p04InitialAggregate, projectId]);
 
   const readyState = state.status === "ready" ? state : undefined;
   const editorDraftBase = sessionStorefrontDraft ?? readyState?.draft;
@@ -953,6 +989,9 @@ export function ProjectEditorClient({
           : route.kind === "collection",
       )
     : [];
+  const selectedRepresentativeRoute = representativeRoutes.find(
+    ({ id }) => id === selectedArchetypeProjection?.representativeRouteId,
+  );
   const title = resolveLocalizedText(
     workspacePage.title,
     locale,
@@ -1000,6 +1039,62 @@ export function ProjectEditorClient({
           (collection) => canvasPage.slug === `/collections/${collection.slug}`,
         )
       : undefined;
+  const canvasProductId =
+    canvasPage.pageFamily?.commerceContext?.kind === "product"
+      ? canvasPage.pageFamily.commerceContext.productId
+      : undefined;
+  const canvasProduct = canvasProductId
+    ? state.aggregate.catalogue.products.find(({ id }) => id === canvasProductId)
+    : undefined;
+  const p10b16p04CartRuntime: CommerceUtilityRuntimeState | undefined = (() => {
+    if (
+      !p10b16p04Acceptance ||
+      !canvasPage.sections.some(
+        (section) => section.component === "commerceUtility" && section.variant === "cart",
+      )
+    ) {
+      return undefined;
+    }
+    if (p10b16p04CartContext === "empty") {
+      return {
+        kind: "cart",
+        revision: "p10b16p04-cart-empty-v1",
+        lines: [],
+        actions: ["continue-shopping"],
+      };
+    }
+    const product = state.aggregate.catalogue.products.find(
+      (candidate) => candidate.id === "product_sisu_automatic_watch",
+    );
+    if (!product?.price) return undefined;
+    return {
+      kind: "cart",
+      revision: "p10b16p04-cart-populated-v1",
+      lines: [
+        {
+          lineId: "p10b16p04-cart-line-sisu",
+          productId: product.id,
+          quantity: 1,
+          minimumQuantity: 1,
+          maximumQuantity: 3,
+          unitPrice: product.price,
+          linePrice: product.price,
+        },
+      ],
+      subtotal: product.price,
+      total: product.price,
+      actions: ["change-quantity", "remove-line", "continue-shopping"],
+    };
+  })();
+  const canvasContext = p10b16p04CartRuntime
+    ? {
+        ...context,
+        commerceUtilityRuntime: p10b16p04CartRuntime,
+        // The acceptance composition proves the existing typed action boundary without
+        // introducing or persisting operational cart state.
+        onCommerceUtilityIntent: () => undefined,
+      }
+    : context;
   let canvasCollectionPresentation: CollectionCommerceRoutePresentation | undefined;
   let canvasCollectionPresentationInvalid = false;
   if (canvasCollection) {
@@ -1013,6 +1108,26 @@ export function ProjectEditorClient({
         }) ?? undefined;
     } catch {
       canvasCollectionPresentationInvalid = true;
+    }
+  }
+  let canvasProductPresentation: ProductCommerceRoutePresentation | undefined;
+  let canvasProductPresentationInvalid =
+    canvasPage.type === "product" &&
+    canvasPage.sections.some(({ component }) => component === "dynamicProductDetail") &&
+    !canvasProduct;
+  if (canvasProduct) {
+    try {
+      canvasProductPresentation =
+        commerceRouteAdapter.product({
+          aggregate: state.aggregate,
+          snapshot: displayedDraft,
+          page: canvasPage,
+          product: canvasProduct,
+          evidenceReferences: currentEvidenceReferences,
+        }) ?? undefined;
+      canvasProductPresentationInvalid = canvasProductPresentation === undefined;
+    } catch {
+      canvasProductPresentationInvalid = true;
     }
   }
   const selectedSection = selectedSectionId
@@ -1386,7 +1501,7 @@ export function ProjectEditorClient({
                     )?.title
                   : undefined;
             return (
-              <option key={route.id} value={route.id}>
+              <option data-route={route.route} key={route.id} value={route.id}>
                 {commerceLabel
                   ? resolveLocalizedText(
                       commerceLabel,
@@ -1396,14 +1511,46 @@ export function ProjectEditorClient({
                   : locale === "fi"
                     ? "Kokoelma ei saatavilla"
                     : "Collection unavailable"}
-                {` — ${route.route}`}
               </option>
             );
           })}
         </select>
+        {selectedRepresentativeRoute ? (
+          <span className={styles.representativeRoute} data-testid="representative-route-path">
+            {selectedRepresentativeRoute.route}
+          </span>
+        ) : null}
       </Field>
     </Card>
   ) : null;
+
+  const p10b16p04UtilityContextControls =
+    p10b16p04Acceptance && p10b16p04CartRuntime ? (
+      <Card className={styles.sectionActions}>
+        <p className={styles.eyebrow}>Visual acceptance context</p>
+        <h2>Read-only cart presentation</h2>
+        <p>
+          Switch the transient acceptance context without changing the storefront draft or canonical
+          commerce.
+        </p>
+        <div className={styles.sectionActionButtons}>
+          <Button
+            data-testid="p10b16p04-utility-empty"
+            onClick={() => setP10b16p04CartContext("empty")}
+            variant={p10b16p04CartContext === "empty" ? "primary" : "secondary"}
+          >
+            Empty cart
+          </Button>
+          <Button
+            data-testid="p10b16p04-utility-populated"
+            onClick={() => setP10b16p04CartContext("populated")}
+            variant={p10b16p04CartContext === "populated" ? "primary" : "secondary"}
+          >
+            Populated cart
+          </Button>
+        </div>
+      </Card>
+    ) : null;
 
   const productTypeMappingList = dynamicAuthority ? (
     <Card className={styles.sectionActions} data-testid="dynamic-commerce-product-type-mappings">
@@ -1748,6 +1895,13 @@ export function ProjectEditorClient({
     <div
       aria-busy={saving || agent.controlsDisabled}
       className={styles.editor}
+      {...(p10b16p04Acceptance
+        ? {
+            "data-p10b16p04-active-draft-fingerprint": canonicalStorefrontContentFingerprint(
+              activeDraft!,
+            ),
+          }
+        : {})}
       lang={locale}
       style={style}
     >
@@ -1980,6 +2134,7 @@ export function ProjectEditorClient({
                 </select>
               </Field>
               {representativeContextControls}
+              {p10b16p04UtilityContextControls}
               {productTypeMappingList}
               {outlineList}
               {sectionActions}
@@ -2001,18 +2156,20 @@ export function ProjectEditorClient({
                 {text.canvas.proposalNotice}
               </div>
             ) : null}
-            {canvasCollectionPresentationInvalid ? (
+            {canvasCollectionPresentationInvalid || canvasProductPresentationInvalid ? (
               <section
                 aria-label={text.canvas.editor}
                 className={styles.validationMessage}
                 role="alert"
               >
-                {text.feedback.collectionProjectionUnavailable}
+                {canvasProductPresentationInvalid
+                  ? text.feedback.canvasValidation
+                  : text.feedback.collectionProjectionUnavailable}
               </section>
             ) : (
               <VeskifyPuckCanvas
                 brandSystem={displayedBrandSystem}
-                context={context}
+                context={canvasContext}
                 onPageChange={changePage}
                 onSelectedSectionChange={(sectionId) => {
                   const nextSectionId =
@@ -2045,6 +2202,7 @@ export function ProjectEditorClient({
                     : undefined
                 }
                 collectionPresentation={canvasCollectionPresentation}
+                productPresentation={canvasProductPresentation}
                 showDesignFields={false}
                 validationErrorMessage={text.feedback.canvasValidation}
               />
@@ -2060,6 +2218,7 @@ export function ProjectEditorClient({
         >
           <div className={styles.drawerContent}>
             {representativeContextControls}
+            {p10b16p04UtilityContextControls}
             {productTypeMappingList}
             {outlineList}
             {sectionActions}

@@ -465,7 +465,7 @@ test("P9R-07 exact design system reaches every rendered storefront surface and a
   await expect(purchaseAction).toBeEnabled();
   await expect(purchaseAction).toHaveCSS("background-color", "rgb(181, 71, 8)");
   await expect(purchaseAction).toHaveCSS("color", "rgb(255, 255, 255)");
-  await expect(page.getByText("1 290 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
   await expect(
     page.locator('[data-component="dynamicProductDetail"] p[aria-live="polite"]', {
       hasText: "In stock",

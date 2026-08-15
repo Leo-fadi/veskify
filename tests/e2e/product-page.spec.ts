@@ -9,32 +9,40 @@ const viewports = [
   { width: 1440, height: 1000 },
 ] as const;
 
-test("loads the bilingual Aurora product draft with visual-only controls", async ({ page }) => {
+test("loads the bilingual Aurora product draft with deduplicated canonical media", async ({
+  page,
+}) => {
   await page.goto(url);
   await expect(page.getByText("Draft preview")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
   await expect(page.getByText("Yellow gold", { exact: true })).toBeVisible();
   await expect(page.getByText("14K", { exact: true })).toBeVisible();
-  await expect(page.getByText("1 290 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeVisible();
-  await expect(page.getByText(/0\/20 characters.*Allowed length: 0-20 characters/)).toBeVisible();
+  await expect(page.getByText(/0\/20 characters.*Enter 0-20 characters/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Lumi Halo Ring" })).toBeVisible();
   await expect(page.locator('[data-component="dynamicProductDetail"]')).toBeVisible();
   const gallery = page.getByRole("region", { name: "Product gallery" });
-  const firstImage = gallery.getByRole("button", { name: "View product image 1" });
-  const secondImage = gallery.getByRole("button", { name: "View product image 2" });
-  await secondImage.click();
-  await expect(secondImage).toHaveAttribute("aria-pressed", "true");
-  await expect(gallery.locator("figure img")).toHaveAttribute("alt", "Aurora ring side detail");
-  await firstImage.focus();
-  await page.keyboard.press("Enter");
-  await expect(firstImage).toHaveAttribute("aria-pressed", "true");
+  await expect(gallery).toHaveAttribute("data-canonical-media-count", "2");
+  await expect(gallery).toHaveAttribute("data-presented-media-count", "1");
+  await expect(gallery.locator("figure img")).toHaveAttribute(
+    "alt",
+    "Aurora yellow-gold diamond ring",
+  );
+  await expect(gallery.getByRole("group", { name: "Choose product image" })).toHaveCount(0);
   const finnish = page.getByRole("radio", { name: "Suomi" });
   await finnish.focus();
   await page.keyboard.press("Space");
   await expect(page.getByRole("heading", { level: 1, name: "Aurora-sormus 585" })).toBeVisible();
   await expect(page.getByText("Current locale: FI")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Materiaali, hoito ja toimitus" })).toBeVisible();
+  const finnishGallery = page.getByRole("region", { name: "Tuotegalleria" });
+  await expect(finnishGallery).toHaveAttribute("data-canonical-media-count", "2");
+  await expect(finnishGallery).toHaveAttribute("data-presented-media-count", "1");
+  await expect(finnishGallery.locator("figure img")).toHaveAttribute(
+    "alt",
+    "Aurora-keltakultainen timanttisormus",
+  );
   await expectNoStorefrontHorizontalClipping(page);
   await expect(page.getByText(/Puck editor|property panel/i)).toHaveCount(0);
 });
@@ -86,7 +94,7 @@ for (const { width, height } of viewports) {
       name: "Lisää ostoskoriin",
       exact: true,
     });
-    const galleryAction = page.getByRole("button", { name: "Näytä tuotekuva 1" });
+    const gallery = page.getByRole("region", { name: "Tuotegalleria" });
     const specifications = page.getByRole("heading", { name: "Tekniset tiedot" });
 
     await expect(heading).toBeVisible();
@@ -99,12 +107,16 @@ for (const { width, height } of viewports) {
     await expect(engraving).toBeVisible();
     await expect(engraving).toBeEditable();
     await expect(purchaseAction).toBeDisabled();
-    await expect(galleryAction).toBeVisible();
+    await expect(gallery).toHaveAttribute("data-canonical-media-count", "2");
+    await expect(gallery).toHaveAttribute("data-presented-media-count", "1");
+    await expect(gallery.locator("figure img")).toHaveAttribute(
+      "alt",
+      "Aurora-keltakultainen timanttisormus",
+    );
+    await expect(gallery.getByRole("group", { name: "Valitse tuotekuva" })).toHaveCount(0);
     await expect(specifications).toBeVisible();
     await expect(page.getByText("Materiaali, hoito ja toimitus")).toBeVisible();
 
-    await galleryAction.focus();
-    await expect(galleryAction).toBeFocused();
     await size.focus();
     await expect(size).toBeFocused();
     await size.click();

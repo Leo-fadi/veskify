@@ -447,7 +447,8 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
       [...campaign.children].map(
         (child) => child.getAttribute("data-region") ?? child.getAttribute("data-asset-role"),
       ),
-    ).toEqual(["heroDesktop", "merchandising", "content", "actions"]);
+    ).toEqual(["media", "merchandising", "content", "actions"]);
+    expect(campaign.children[0]).toHaveAttribute("data-asset-role", "heroDesktop");
     const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
     expect(css).toMatch(/variant_fullBleedOverlay \.media_background[\s\S]*position:\s*relative/);
     expect(css).toMatch(

@@ -12,20 +12,20 @@ const copyByState = {
   cart: {
     heading: { en: "Cart", fi: "Ostoskori" },
     body: {
-      en: "Review items and continue through the available checkout authority.",
-      fi: "Tarkista tuotteet ja jatka käytettävissä olevan kassavaltuuden kautta.",
+      en: "Review your items before continuing to checkout.",
+      fi: "Tarkista tuotteet ennen kassalle jatkamista.",
     },
   },
   checkout: {
     heading: { en: "Checkout", fi: "Kassa" },
     body: {
-      en: "Continue securely through the merchant's checkout authority.",
-      fi: "Jatka turvallisesti kauppiaan kassavaltuuden kautta.",
+      en: "Review your order details before continuing.",
+      fi: "Tarkista tilauksesi tiedot ennen jatkamista.",
     },
   },
   "no-results": {
     heading: { en: "No results", fi: "Ei tuloksia" },
-    body: { en: "No canonical products matched", fi: "Yhtään kanonista tuotetta ei vastannut" },
+    body: { en: "No products matched", fi: "Yksikään tuote ei vastannut hakua" },
   },
   empty: {
     heading: { en: "Nothing here yet", fi: "Täällä ei ole vielä mitään" },

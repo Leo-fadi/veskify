@@ -212,17 +212,22 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   );
   const migrationReview = proposalReview.getByTestId("dynamic-commerce-migration-review");
   await expect(migrationReview).toContainText(
-    /Kanoninen dynaamisten kauppareittien yhdistäminen|Canonical dynamic-commerce route convergence/,
+    /Yhtenäinen verkkokaupan sivuilme|Coordinated storefront page design/,
   );
-  await expect(migrationReview).toContainText(/Staattiset sivut8|Static pages8/);
-  await expect(migrationReview).toContainText(/Kaupan ulkoasumallit6|Commerce archetypes6/);
+  await expect(migrationReview).toContainText(/Verkkokaupan sivut8|Storefront pages8/);
   await expect(migrationReview).toContainText(
-    /Ajonaikaiset kauppareitit20|Runtime commerce routes20/,
+    /Uudelleenkäytettävät kaupan asettelut6|Reusable shopping layouts6/,
   );
-  await expect(migrationReview).toContainText(/suojattuina Vesko|protected Vesko commerce/i);
+  await expect(migrationReview).toContainText(
+    /Tuote-, kokoelma- ja hakusivut20|Product, collection, and search pages20/,
+  );
+  await expect(migrationReview).toContainText(/säilyvät ennallaan|stay unchanged/i);
+  await expect(migrationReview).not.toContainText(
+    /kanoninen|canonical|ulkoasumalli|archetype|ajonaikainen|runtime|suojattu Vesko|protected Vesko/i,
+  );
   await expect(
     page.getByText(
-      /valvotussa hyväksynnässä käytetään luotua ehdotusta|controlled acceptance uses the generated proposal/i,
+      /tarkista ehdotus ja hyväksy tai hylkää se|review this proposal, then accept or reject it/i,
     ),
   ).toBeVisible();
   await expect(
@@ -269,17 +274,23 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   );
   await page
     .locator("#dynamic-commerce-representative-route")
-    .selectOption({ label: "Myrskyluodon Maija — /collections/myrskyluodon-maija" });
+    .selectOption({ label: "Myrskyluodon Maija" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/collections/myrskyluodon-maija",
+  );
   await expect(
     proposalCanvas.locator('[data-component="dynamicCollectionCommerce"]'),
   ).toBeVisible();
   await selectOptionMatching(
     storefrontPage,
-    /High-consideration product-page design archetype|Harkitun oston tuotesivumalli/i,
+    /Configurable product-page design archetype|Muunneltavan tuotteen tuotesivumalli/i,
   );
   await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Festive Feeniks Lux Oval timanttisormus — /products/product-karvonen-06",
+    label: "Festive Feeniks Lux Oval timanttisormus",
   });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/product-karvonen-06",
+  );
   await expect(
     proposalCanvas.getByRole("heading", {
       name: "Festive Feeniks Lux Oval timanttisormus",
@@ -287,7 +298,7 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
     }),
   ).toBeVisible();
   await expect(
-    proposalCanvas.getByRole("region", { name: /Product gallery|Tuotekuvat/ }),
+    proposalCanvas.getByRole("region", { name: /Product gallery|Tuotegalleria/ }),
   ).toBeVisible();
   await storefrontPage.selectOption(homePageId);
   await expect(proposalCanvas.locator('[data-component="homepageHero"]')).toBeVisible();
@@ -327,7 +338,10 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   );
   await page
     .locator("#dynamic-commerce-representative-route")
-    .selectOption({ label: "Myrskyluodon Maija — /collections/myrskyluodon-maija" });
+    .selectOption({ label: "Myrskyluodon Maija" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/collections/myrskyluodon-maija",
+  );
   const previewLink = page
     .getByRole("link", { name: /Esikatsele kauppaa|Preview storefront/ })
     .first();
@@ -350,11 +364,14 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   await expect(reloadedStorefrontPage.locator("option")).toHaveCount(canonicalDesignAuthorityCount);
   await selectOptionMatching(
     reloadedStorefrontPage,
-    /High-consideration product-page design archetype|Harkitun oston tuotesivumalli/i,
+    /Configurable product-page design archetype|Muunneltavan tuotteen tuotesivumalli/i,
   );
   await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Festive Feeniks Lux Oval timanttisormus — /products/product-karvonen-06",
+    label: "Festive Feeniks Lux Oval timanttisormus",
   });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/product-karvonen-06",
+  );
   const productPreview = page
     .getByRole("link", { name: /Esikatsele kauppaa|Preview storefront/ })
     .first();

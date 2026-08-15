@@ -2,13 +2,24 @@
   --homepage-columns: 3;
   box-sizing: border-box;
   display: grid;
-  gap: var(--brand-grid-gap);
+  gap: clamp(1.5rem, calc(var(--brand-grid-gap) * var(--brand-density-content, 1)), 3rem);
+  font-family: var(--brand-font-body, inherit);
+  font-size: var(--brand-type-body-size, 1rem);
+  font-weight: var(--brand-type-body-weight, 400);
   isolation: isolate;
+  width: min(100%, var(--brand-container-full, 100%));
   max-width: 100%;
+  margin-inline: auto;
   overflow: clip;
-  padding: var(--brand-section-rhythm)
+  padding: clamp(
+      3rem,
+      calc(var(--brand-section-rhythm) * 0.52 * var(--brand-density-content, 1)),
+      6rem
+    )
     max(var(--brand-page-gutter), calc((100% - var(--brand-container-content)) / 2));
   position: relative;
+  letter-spacing: var(--brand-type-body-tracking, normal);
+  line-height: calc(var(--brand-type-body-line-height, 1.5) * var(--brand-density-global, 1));
 }
 
 .root *,
@@ -19,7 +30,7 @@
 }
 
 .surface_plain {
-  background: var(--brand-surface-page);
+  background: var(--brand-surface-page, var(--brand-color-background));
   color: var(--brand-surface-page-text);
   --homepage-surface-muted-text: var(--brand-surface-page-muted-text);
 }
@@ -41,13 +52,52 @@
 .editorialStory {
   align-items: center;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  min-height: min(42rem, 78vh);
+  min-height: min(36rem, calc(62vh * var(--brand-media-prominence, 1)));
+}
+
+.hero {
+  padding-block: clamp(
+    3.5rem,
+    calc(var(--brand-section-rhythm) * 0.54 * var(--brand-density-content, 1)),
+    6.5rem
+  );
+}
+
+.promotion,
+.proof,
+.trust {
+  padding-block: clamp(
+    2.75rem,
+    calc(var(--brand-section-rhythm) * 0.38 * var(--brand-density-content, 1)),
+    4.75rem
+  );
+}
+
+.featuredProducts,
+.featuredCollections,
+.collectionNavigation,
+.editorialStory {
+  padding-block: clamp(
+    3rem,
+    calc(var(--brand-section-rhythm) * 0.46 * var(--brand-density-content, 1)),
+    5.5rem
+  );
 }
 
 .variant_imageLed,
 .variant_overlay,
 .variant_fullBleedOverlay {
   grid-template-columns: 1fr;
+}
+
+.promotion.variant_imageLed {
+  grid-template-columns: minmax(18rem, 0.85fr) minmax(0, 1.15fr);
+  min-height: auto;
+}
+
+.promotion.variant_imageLed .editorialMedia {
+  aspect-ratio: 4 / 3;
+  max-height: min(36rem, 65vh);
 }
 
 .variant_minimal {
@@ -69,14 +119,14 @@
 
 .variant_campaignMerchandising {
   align-items: end;
-  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(20rem, 0.8fr);
   grid-template-rows: auto 1fr auto;
 }
 
 .variant_campaignMerchandising .heroMedia {
   grid-column: 1;
   grid-row: 1 / -1;
-  min-height: min(44rem, 82vh);
+  min-height: min(40rem, 74vh);
 }
 
 .heroMerchandising {
@@ -109,6 +159,15 @@
   grid-template-columns: 1fr;
 }
 
+.variant_continuationCta.editorialStory {
+  min-height: auto;
+  padding-block: clamp(
+    2.75rem,
+    calc(var(--brand-section-rhythm) * 0.34 * var(--brand-density-content, 1)),
+    4.5rem
+  );
+}
+
 .variant_editorialCards .collectionCard {
   gap: 1.25rem;
 }
@@ -136,7 +195,7 @@
 .heroCopy,
 .editorialCopy {
   display: grid;
-  gap: 1rem;
+  gap: calc(1rem * var(--brand-density-content, 1));
   position: relative;
   z-index: 2;
 }
@@ -158,6 +217,8 @@
   font-family: var(--brand-font-heading);
   font-size: clamp(1.75rem, 3vw, var(--brand-type-heading-size));
   font-weight: var(--brand-type-heading-weight);
+  letter-spacing: var(--brand-type-heading-tracking, normal);
+  line-height: var(--brand-type-heading-line-height, 1.15);
 }
 
 .heroCopy p,
@@ -176,14 +237,18 @@
   font-size: var(--brand-type-utility-size) !important;
   font-weight: var(--brand-type-utility-weight);
   letter-spacing: var(--brand-type-utility-tracking);
+  line-height: var(--brand-type-utility-line-height, 1.2);
   text-transform: uppercase;
 }
 
 .heroMedia,
 .editorialMedia {
+  align-self: stretch;
+  aspect-ratio: var(--brand-media-ratio, auto);
   margin: 0;
-  min-height: 18rem;
+  min-height: calc(18rem * min(var(--brand-media-prominence, 1), 1.2));
   order: 2;
+  overflow: hidden;
 }
 
 .media_left {
@@ -204,9 +269,10 @@
 }
 
 .media_background::after {
-  background: color-mix(in srgb, var(--brand-color-background) 28%, transparent);
+  background: var(--brand-color-text);
   content: "";
   inset: 0;
+  opacity: var(--brand-media-overlay-opacity, 0.16);
   pointer-events: none;
   position: absolute;
   z-index: 1;
@@ -228,7 +294,8 @@
 
 .variant_fullBleedOverlay[data-copy-treatment="overlay"][data-overlay-contrast="strong"]
   .media_background::after {
-  background: color-mix(in srgb, var(--brand-color-text) 74%, transparent);
+  background: var(--brand-color-text);
+  opacity: clamp(0.42, calc(var(--brand-media-overlay-opacity, 0.16) + 0.28), 0.74);
 }
 
 .media_background img {
@@ -251,7 +318,7 @@
 .heroMedia > img,
 .editorialMedia > img,
 .collectionCard > figure > img {
-  object-fit: cover;
+  object-fit: var(--brand-media-crop, cover);
 }
 
 .image_contain img {
@@ -287,12 +354,13 @@
 
 .action {
   align-items: center;
-  border: 1px solid var(--brand-color-border);
-  border-radius: 999px;
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-control-radius, var(--brand-radius));
   display: inline-flex;
   justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.65rem var(--brand-control-padding-inline, 1rem);
+  font-weight: var(--brand-control-emphasis, 700);
   width: fit-content;
 }
 
@@ -344,13 +412,26 @@
 .sectionHeading {
   display: grid;
   gap: 0.75rem;
+  max-width: min(100%, var(--brand-container-reading, 44rem));
+}
+
+.featuredProducts .sectionHeading,
+.featuredCollections .sectionHeading,
+.collectionNavigation .sectionHeading {
+  padding-block-end: clamp(0.75rem, 1.5vw, 1.25rem);
+  border-block-end: var(--brand-border-width, 1px) solid var(--brand-color-border);
+}
+
+.proof .sectionHeading,
+.trust .sectionHeading {
+  max-width: 36rem;
 }
 
 .collectionGrid,
 .productGrid,
 .trustGrid {
   display: grid;
-  gap: clamp(1rem, 2vw, 2rem);
+  gap: max(var(--brand-grid-gap, 1.5rem), calc(1rem * var(--brand-density-commerce, 1)));
   grid-template-columns: repeat(var(--homepage-columns), minmax(0, 1fr));
 }
 
@@ -381,11 +462,13 @@
 
 .collectionCard {
   background: var(--brand-color-surface);
-  border: 1px solid var(--brand-color-border);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  box-shadow: var(--brand-elevation-shadow, none);
   color: var(--brand-color-text);
   display: grid;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: calc(0.75rem * var(--brand-density-content, 1));
+  padding: var(--brand-card-inset, 1rem);
 }
 
 .collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"] {
@@ -399,11 +482,11 @@
 
 .productGrid[data-item-count="1"] {
   justify-self: center;
-  width: min(100%, 32rem);
+  width: min(100%, 26rem);
 }
 
 .collectionCard figure {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--brand-media-ratio, 4 / 3);
   margin: 0;
   overflow: hidden;
 }
@@ -420,7 +503,7 @@
   color: var(--brand-color-primary);
   font-size: 1.125rem;
   font-weight: 650;
-  min-height: 2.75rem;
+  min-height: var(--brand-control-height, 2.75rem);
   text-align: start;
 }
 
@@ -441,12 +524,14 @@
 
 .trustGrid article {
   background: var(--brand-color-surface);
-  border: 1px solid var(--brand-color-border);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  box-shadow: var(--brand-elevation-shadow, none);
   color: var(--brand-color-text);
   display: grid;
-  gap: 0.75rem;
+  gap: calc(0.75rem * var(--brand-density-content, 1));
   min-height: 9rem;
-  padding: 1rem;
+  padding: var(--brand-card-inset, 1rem);
 }
 
 .trustGrid article > span {
@@ -474,6 +559,10 @@
   text-align: center;
 }
 
+.variant_continuationCta .editorialCopy {
+  justify-items: center;
+}
+
 .storyGallery {
   display: grid;
   gap: var(--brand-grid-gap);
@@ -482,7 +571,7 @@
 }
 
 .storyGallery .editorialMedia {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--brand-media-ratio, 4 / 5);
   min-height: 0;
   overflow: hidden;
 }
@@ -533,6 +622,7 @@
   border-block-start: 2px solid var(--brand-color-accent);
   display: grid;
   gap: 1rem;
+  min-height: 7rem;
   padding-block-start: clamp(1rem, 2vw, 1.5rem);
 }
 
@@ -563,8 +653,10 @@
 }
 
 .variant_serviceAssurance .proofGrid article {
-  border: 1px solid var(--brand-color-border);
-  padding: clamp(1rem, 2vw, 1.5rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  box-shadow: var(--brand-elevation-shadow, none);
+  padding: var(--brand-card-inset, clamp(1rem, 2vw, 1.5rem));
 }
 
 .emptyState {
@@ -577,6 +669,14 @@
 }
 
 @media (max-width: 63.99rem) {
+  .root {
+    padding-block: clamp(
+      2.5rem,
+      calc(var(--brand-section-rhythm) * 0.38 * var(--brand-density-content, 1)),
+      4.5rem
+    );
+  }
+
   .hero,
   .promotion,
   .editorialStory,
@@ -584,6 +684,10 @@
   .variant_asymmetric {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .promotion.variant_imageLed {
+    grid-template-columns: 1fr;
   }
 
   .variant_brandStory .storyGallery {
@@ -640,6 +744,12 @@
 
 @media (max-width: 47.99rem) {
   .root {
+    gap: clamp(1.25rem, calc(var(--brand-grid-gap) * 0.8), 2rem);
+    padding-block: clamp(
+      2.25rem,
+      calc(var(--brand-section-rhythm) * 0.3 * var(--brand-density-content, 1)),
+      3.5rem
+    );
     padding-inline: 1rem;
   }
 
@@ -677,6 +787,10 @@
     min-height: 15rem;
   }
 
+  .variant_campaignMerchandising .heroMedia {
+    min-height: min(22rem, 55vh);
+  }
+
   .collectionGrid,
   .productGrid,
   .trustGrid,
@@ -689,7 +803,7 @@
   .variant_restrained,
   .variant_continuationCta.editorialStory {
     gap: 0.75rem;
-    padding-block: max(1.5rem, calc(var(--brand-section-rhythm) * 0.65));
+    padding-block: clamp(2rem, calc(var(--brand-section-rhythm) * 0.28), 3.25rem);
   }
 
   .variant_craftProcess .processList {

@@ -467,21 +467,17 @@ function projectPlanOperations(
     if (!registeredDirection) {
       throw new ServerWholeStorefrontAuthorityError("malformed-state");
     }
-    const designSystemNarrowing =
-      registeredDirection.spacingDensity === plan.designSystemSelection.spacingDensity &&
-      registeredDirection.surfaceDepth === plan.designSystemSelection.surfaceDepth
-        ? undefined
-        : {
-            spacingDensity: plan.designSystemSelection.spacingDensity,
-            surfaceDepth: plan.designSystemSelection.surfaceDepth,
-          };
+    const designSystemNarrowing = {
+      spacingDensity: plan.designSystemSelection.spacingDensity,
+      surfaceDepth: plan.designSystemSelection.surfaceDepth,
+    };
     add(
       request.target.designSystemTarget,
       plan.tokenRefinementPlan === null
         ? {
             type: "APPLY_REGISTERED_BRAND_SYSTEM",
             directionId: plan.designSystemSelection.directionId,
-            ...(designSystemNarrowing === undefined ? {} : { designSystemNarrowing }),
+            designSystemNarrowing,
             brandSystem: structuredClone(wholeStorefrontProposal.proposedStorefront.brandSystem),
           }
         : {

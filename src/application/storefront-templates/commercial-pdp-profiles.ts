@@ -177,7 +177,15 @@ function createProfile(input: CommercialPdpProfileInput): StorefrontTemplatePage
 const profileInputs: readonly CommercialPdpProfileInput[] = [
   {
     id: "pdp-standard-commerce",
-    compatibleSharedFrameProfileIds: ["commerce-utility", "centered-minimal"],
+    // The generic PDP fallback is storefront-global safety authority. It uses the
+    // same frame-agnostic dynamic renderer as the exact PDP archetypes and must
+    // remain renderable inside every registered complete-storefront frame.
+    compatibleSharedFrameProfileIds: [
+      "commerce-utility",
+      "centered-minimal",
+      "editorial-masthead",
+      "compact-technical",
+    ],
     defaultSharedFrameProfileId: "commerce-utility",
     presentation: "standard-commerce",
     dynamicProductDetailVariant: "balanced",
@@ -196,8 +204,8 @@ const profileInputs: readonly CommercialPdpProfileInput[] = [
     ],
     responsiveTransformationIds: ["pdpStandardStack"],
     designDnaNarrowing: {
-      spacingDensity: ["compact", "standard"],
-      surfaceDepth: ["flat", "subtle"],
+      spacingDensity: ["compact", "standard", "spacious"],
+      surfaceDepth: ["flat", "subtle", "layered"],
       imagePosture: ["contained", "editorial"],
     },
   },

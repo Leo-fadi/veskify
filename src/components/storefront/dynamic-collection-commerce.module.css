@@ -5,6 +5,11 @@
   overflow-x: clip;
   color: var(--brand-color-text);
   background: var(--brand-color-background);
+  font-family: var(--brand-font-body, inherit);
+  font-size: var(--brand-type-body-size, 1rem);
+  font-weight: var(--brand-type-body-weight, 400);
+  letter-spacing: var(--brand-type-body-tracking, normal);
+  line-height: calc(var(--brand-type-body-line-height, 1.5) * var(--brand-density-global, 1));
 }
 
 .surface_soft {
@@ -19,16 +24,14 @@
 .childCollections,
 .commerceLayout {
   min-width: 0;
-  padding: clamp(1.25rem, 4vw, 4rem) clamp(1rem, 5vw, 5rem);
+  padding: calc(var(--brand-section-rhythm, 4rem) * 0.38)
+    max(var(--brand-page-gutter, 1rem), calc((100% - var(--brand-container-commerce, 80rem)) / 2));
 }
 
 .campaignLead {
-  display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.8fr);
-  gap: clamp(1rem, 4vw, 4rem);
-  align-items: end;
-  padding: clamp(1.25rem, 4vw, 4rem) clamp(1rem, 5vw, 5rem);
+  padding: calc(var(--brand-section-rhythm, 4rem) * 0.28)
+    max(var(--brand-page-gutter, 1rem), calc((100% - var(--brand-container-commerce, 80rem)) / 2));
   background: var(--brand-surface-subtle);
 }
 
@@ -39,18 +42,9 @@
 .campaignLead img {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-}
-
-.campaignLead h2,
-.campaignLead p {
-  margin: 0;
-}
-
-.campaignLead p + h2,
-.campaignLead h2 + p {
-  margin-top: 0.75rem;
+  max-height: calc(30rem * var(--brand-media-prominence, 1));
+  aspect-ratio: 16 / 7;
+  object-fit: var(--brand-media-crop, cover);
 }
 
 .searchContext {
@@ -74,13 +68,14 @@
 .filters button,
 .filters summary,
 .sortControl select {
-  min-height: 2.75rem;
-  border: 1px solid var(--brand-color-border);
-  border-radius: var(--brand-radius);
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-control-radius, var(--brand-radius));
   background: var(--brand-color-surface);
   color: var(--brand-color-text);
-  padding: 0.65rem 0.85rem;
+  padding: 0.65rem var(--brand-control-padding-inline, 0.85rem);
   font: inherit;
+  font-weight: var(--brand-control-emphasis, 700);
 }
 
 .collectionHeaderLayout {
@@ -93,9 +88,11 @@
 
 .collectionHeader h1 {
   margin: 0 0 1rem;
-  font-family: var(--brand-font-heading);
+  font-family: var(--brand-font-display, var(--brand-font-heading));
   font-size: clamp(2.25rem, 7vw, 5.5rem);
-  line-height: 1;
+  font-weight: var(--brand-type-display-weight, 600);
+  letter-spacing: var(--brand-type-display-tracking, -0.025em);
+  line-height: var(--brand-type-display-line-height, 1.05);
   overflow-wrap: anywhere;
 }
 
@@ -113,7 +110,8 @@
   display: block;
   width: 100%;
   height: auto;
-  object-fit: cover;
+  aspect-ratio: var(--brand-media-ratio, auto);
+  object-fit: var(--brand-media-crop, cover);
   background: var(--brand-color-surface);
 }
 
@@ -127,23 +125,48 @@
 
 .commerceLayout {
   display: grid;
-  gap: clamp(1.5rem, 4vw, 3.5rem);
+  gap: calc(var(--brand-grid-gap, 1.5rem) * var(--brand-density-commerce, 1) * 1.25);
 }
 
+.filterToolbar,
 .filters {
   min-width: 0;
 }
 
 .filters summary {
-  display: list-item;
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.65rem;
+  list-style: none;
   cursor: pointer;
   font-weight: 800;
 }
 
+.filters summary::-webkit-details-marker {
+  display: none;
+}
+
+.filters summary::after {
+  content: "+";
+  font-size: 1.15em;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.filters[open] summary::after {
+  content: "−";
+}
+
 .filterPanel {
   display: grid;
-  gap: 1.25rem;
+  gap: calc(var(--brand-grid-gap, 1.25rem) * var(--brand-density-commerce, 1));
   margin-top: 1rem;
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-surface-section);
+  box-shadow: var(--brand-elevation-shadow, none);
+  padding: var(--brand-card-inset, 1.25rem);
 }
 
 .filterHeading,
@@ -160,14 +183,35 @@
   margin: 0;
   font-family: var(--brand-font-heading);
   font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: var(--brand-type-heading-weight, 600);
+  letter-spacing: var(--brand-type-heading-tracking, normal);
+  line-height: var(--brand-type-heading-line-height, 1.15);
 }
 
 .filters fieldset {
   min-width: 0;
   margin: 0;
   border: 0;
-  border-top: 1px solid var(--brand-color-border);
+  border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
   padding: 1rem 0 0;
+}
+
+.filterGroup {
+  min-width: 0;
+}
+
+.filterGroup h3 {
+  margin: 0 0 0.75rem;
+  font-family: var(--brand-font-heading);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-weight: var(--brand-type-heading-weight, 600);
+  letter-spacing: var(--brand-type-heading-tracking, normal);
+}
+
+.filterGroupFields {
+  display: grid;
+  min-width: 0;
+  gap: calc(var(--brand-grid-gap, 1.25rem) * var(--brand-density-commerce, 1));
 }
 
 .filters legend,
@@ -211,6 +255,31 @@
   max-width: 100%;
 }
 
+.activeFilterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.activeFilterChips button,
+.filterDisclosure {
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: 999px;
+  background: var(--brand-surface-subtle);
+  color: var(--brand-color-text);
+  padding: 0.45rem var(--brand-control-padding-inline, 0.85rem);
+  font: inherit;
+  font-weight: var(--brand-control-emphasis, 700);
+}
+
+.filterDisclosure {
+  width: fit-content;
+  border-radius: var(--brand-control-radius, var(--brand-radius));
+  background: var(--brand-color-surface);
+}
+
 .productGridHeading {
   margin-bottom: 1.25rem;
 }
@@ -218,22 +287,25 @@
 .productGrid {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
-  gap: clamp(1rem, 3vw, 2rem);
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--brand-grid-gap, 1.5rem) * var(--brand-density-commerce, 1));
+  align-items: stretch;
 }
 
 .productGrid[data-product-count="1"] {
-  width: min(100%, 32rem);
+  width: min(100%, 24rem);
 }
 
 .density_compact {
-  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
-  gap: 1rem;
+  gap: calc(1rem * var(--brand-density-commerce, 1));
 }
 
 .density_spacious {
-  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-  gap: clamp(1.5rem, 4vw, 3rem);
+  gap: calc(var(--brand-grid-gap, 1.5rem) * var(--brand-density-commerce, 1) * 1.25);
+}
+
+.productGrid > * {
+  height: 100%;
 }
 
 .variant_gallery .collectionHeader {
@@ -279,7 +351,10 @@
 .loadingState,
 .emptyState {
   min-height: 12rem;
-  border: 1px dashed var(--brand-color-border);
+  border: var(--brand-border-width, 1px) dashed var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-surface);
+  box-shadow: var(--brand-elevation-shadow, none);
   padding: clamp(1rem, 4vw, 3rem);
 }
 
@@ -288,25 +363,16 @@
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
   }
 
-  .filters_horizontal > summary {
-    display: none;
+  .collectionHeader[data-collection-hero-treatment^="text-only"] .collectionHeaderLayout {
+    grid-template-columns: minmax(0, 52rem);
   }
 
-  .filters_horizontal:not([open]) > .filterPanel {
-    display: grid;
-  }
-
-  .filters_horizontal .filterPanel {
-    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  .productGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 47.99rem) {
-  .campaignLead {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-  }
-
   .variant_catalogueComparison .childCollections,
   .variant_denseSearch .childCollections {
     gap: 0.35rem;
@@ -322,17 +388,31 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .filters > summary {
-    display: none;
-  }
-
-  .filters:not([open]) > .filterPanel {
-    display: grid;
-  }
-
-  .layout_horizontal > .filters,
+  .layout_horizontal > .filterToolbar,
   .layout_horizontal > .productResults {
     grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 80rem) {
+  .productGrid[data-wide-grid-columns="1"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .productGrid[data-wide-grid-columns="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .productGrid[data-wide-grid-columns="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .productGrid[data-wide-grid-columns="4"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .filterGroupFields {
+    grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
   }
 }
 

@@ -17,14 +17,21 @@ import { aiProviderDiagnosticSchema } from "@/application/ai-provider/contract";
 import { createOpenAiStrictJsonSchema } from "./strict-output-contract";
 
 export {
+  assertOpenAiStrictSchemaCompatibility,
   assertOpenAiStrictSchemaIsClosed,
+  canonicalizeOpenAiStrictSchemaReferences,
   createOpenAiStrictJsonSchema,
+  inspectOpenAiStrictSchemaCompatibility,
+  openAiStrictSchemaLimits,
   openAiUnsupportedStrictSchemaKeywords,
 } from "./strict-output-contract";
 export type {
   OpenAiResponseRequestOptions,
   OpenAiResponsesRequest,
   OpenAiResponsesTransport,
+  OpenAiStrictSchemaCompatibilityIssue,
+  OpenAiStrictSchemaCompatibilityReport,
+  OpenAiStrictSchemaMetrics,
 } from "./strict-output-contract";
 
 const modelAddApprovedSectionOperationSchema = addApprovedSectionOperationSchema

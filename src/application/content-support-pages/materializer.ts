@@ -1,15 +1,24 @@
 import {
+  approvedGenerationAssetContextSchema,
+  type ApprovedGenerationAssetContext,
+} from "@/application/ai-storefront-generation/approved-asset-context";
+import {
   getCommercialContentSupportProfile,
   materializeExecutablePageBlueprint,
   validateExecutablePageBlueprintRealization,
 } from "@/application/storefront-templates";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry";
 import {
+  approvedAssetPlacementOperationSchema,
+  approvedAssetPresentationSchema,
   canonicalValueFingerprint,
+  canonicalValueString,
   contentSupportPageFamilyIdSchema,
   pageFactEvidenceRequestSchema,
   pageModelSchema,
   storefrontSnapshotSchema,
+  type ApprovedAssetPlacementOperation,
+  type ApprovedAssetPresentation,
   type ContentSupportFactDocument,
   type PageModel,
   type StorefrontSnapshot,
@@ -21,6 +30,9 @@ export const contentSupportPageMaterializationErrorCodes = [
   "unsupported-profile",
   "profile-family-mismatch",
   "missing-approved-fact",
+  "ambiguous-approved-asset",
+  "stale-approved-asset",
+  "incompatible-approved-asset",
   "invalid-realization",
 ] as const;
 export type ContentSupportPageMaterializationErrorCode =
@@ -44,6 +56,145 @@ export type ContentSupportPageMaterialization = Readonly<{
   fingerprint: string;
 }>;
 
+export type ContentSupportApprovedAssetAuthority = Readonly<{
+  context: ApprovedGenerationAssetContext;
+  presentations: readonly ApprovedAssetPresentation[];
+  placements: readonly ApprovedAssetPlacementOperation[];
+}>;
+
+type ResolvedContentSupportMedia = Readonly<{
+  placements: readonly ApprovedAssetPlacementOperation[];
+  presentations: readonly ApprovedAssetPresentation[];
+}>;
+
+const noContentSupportMedia: ResolvedContentSupportMedia = Object.freeze({
+  placements: [],
+  presentations: [],
+});
+
+function resolveContentSupportMedia(
+  input: Readonly<{
+    pageId: string;
+    sectionId: string;
+    component: string;
+    variant: string;
+    fact: ContentSupportFactDocument;
+    approvedAssetAuthority?: ContentSupportApprovedAssetAuthority;
+  }>,
+): ResolvedContentSupportMedia {
+  if (!input.approvedAssetAuthority) return noContentSupportMedia;
+  const definition = veskifyComponentDefinitionsV2.find(
+    (candidate) => candidate.type === input.component,
+  );
+  const variant = definition?.commercialAnatomy?.variants.find(
+    (candidate) => candidate.variantId === input.variant,
+  );
+  const placedSlotIds = new Set(
+    variant?.structure.assetPlacements.map(({ slotId }) => slotId) ?? [],
+  );
+  const mediaSlot = definition?.assetSlots.find(
+    (candidate) =>
+      placedSlotIds.has(candidate.id) && candidate.acceptedRoles.includes("editorialImage"),
+  );
+  if (!definition || !variant || !mediaSlot) return noContentSupportMedia;
+
+  const exactPlacements = input.approvedAssetAuthority.placements.filter(
+    (placement) =>
+      placement.pageId === input.pageId &&
+      placement.componentId === input.sectionId &&
+      placement.componentType === input.component &&
+      placement.assetSlotId === mediaSlot.id,
+  );
+  if (exactPlacements.length === 0) return noContentSupportMedia;
+  if (exactPlacements.length !== 1) {
+    throw new ContentSupportPageMaterializationError(
+      "ambiguous-approved-asset",
+      "Content/support media requires one exact approved placement.",
+    );
+  }
+  const placement = exactPlacements[0];
+  if (!placement || !mediaSlot.acceptedRoles.includes(placement.role)) {
+    throw new ContentSupportPageMaterializationError(
+      "incompatible-approved-asset",
+      "Content/support media is incompatible with its registered placement slot.",
+    );
+  }
+
+  const parsedContext = approvedGenerationAssetContextSchema.safeParse(
+    structuredClone(input.approvedAssetAuthority.context),
+  );
+  if (!parsedContext.success) {
+    throw new ContentSupportPageMaterializationError(
+      "stale-approved-asset",
+      "Content/support media does not match the current approved evidence authority.",
+    );
+  }
+  if (
+    input.fact.evidence.approvalAuthorityId !== parsedContext.data.briefId ||
+    input.fact.evidence.approvalFingerprint !== parsedContext.data.approvedEvidenceFingerprint
+  ) {
+    throw new ContentSupportPageMaterializationError(
+      "stale-approved-asset",
+      "Content/support media does not match the current approved evidence authority.",
+    );
+  }
+  const candidates = parsedContext.data.assets.filter(
+    (asset) =>
+      asset.assetId === placement.assetId &&
+      asset.role === placement.role &&
+      asset.revision === placement.assetRevision &&
+      asset.materialFingerprint === placement.materialFingerprint &&
+      asset.sourceReferenceId === placement.sourceReferenceId,
+  );
+  if (candidates.length !== 1) {
+    throw new ContentSupportPageMaterializationError(
+      "stale-approved-asset",
+      "The exact content/support placement no longer matches current approved asset authority.",
+    );
+  }
+  const asset = candidates[0];
+  if (!asset) return noContentSupportMedia;
+  const presentations = input.approvedAssetAuthority.presentations.filter(
+    (candidate) => candidate.assetId === asset.assetId,
+  );
+  if (presentations.length !== 1) {
+    throw new ContentSupportPageMaterializationError(
+      "stale-approved-asset",
+      "The approved content/support asset has no exact current presentation authority.",
+    );
+  }
+  const parsedPresentation = approvedAssetPresentationSchema.safeParse(
+    structuredClone(presentations[0]),
+  );
+  const presentation = parsedPresentation.success ? parsedPresentation.data : null;
+  if (
+    !presentation ||
+    presentation.assetId !== asset.assetId ||
+    presentation.asset.id !== asset.assetId ||
+    presentation.role !== asset.role ||
+    presentation.revision !== asset.revision ||
+    presentation.materialFingerprint !== asset.materialFingerprint ||
+    presentation.asset.decorative !== asset.presentation.decorative ||
+    canonicalValueString(presentation.asset.alt ?? null) !== canonicalValueString(asset.alt)
+  ) {
+    throw new ContentSupportPageMaterializationError(
+      "stale-approved-asset",
+      "The content/support asset presentation does not match current approved authority.",
+    );
+  }
+  if (presentation.role !== "editorialImage") {
+    throw new ContentSupportPageMaterializationError(
+      "incompatible-approved-asset",
+      "Content/support media must use the registered editorial-image role.",
+    );
+  }
+  const exactPlacement = approvedAssetPlacementOperationSchema.parse(structuredClone(placement));
+  return Object.freeze({
+    placements: [exactPlacement],
+    presentations: [presentation],
+  });
+}
+
 /**
  * Materializes one registered PageBlueprint into the existing canonical page.
  * It never creates a parallel content tree: the page keeps its P10B-05 family,
@@ -53,6 +204,7 @@ export function materializeContentSupportPage(
   input: Readonly<{
     page: unknown;
     factAuthority: ContentSupportFactAuthority;
+    approvedAssetAuthority?: ContentSupportApprovedAssetAuthority;
   }>,
 ): ContentSupportPageMaterialization {
   const page = pageModelSchema.parse(structuredClone(input.page));
@@ -126,17 +278,30 @@ export function materializeContentSupportPage(
       "The approved generic editorial composition requires approved story facts.",
     );
   }
+  const sectionId = `section_${canonicalValueFingerprint({ pageId: page.id, slotId: slot.slotId }).slice(-24)}`;
+  const media = resolveContentSupportMedia({
+    pageId: page.id,
+    sectionId,
+    component: slot.component,
+    variant: slot.variant,
+    fact,
+    ...(input.approvedAssetAuthority
+      ? { approvedAssetAuthority: input.approvedAssetAuthority }
+      : {}),
+  });
   const realized = pageModelSchema.parse({
     ...page,
     sections: [
       {
-        id: `section_${canonicalValueFingerprint({ pageId: page.id, slotId: slot.slotId }).slice(-24)}`,
+        id: sectionId,
         component: slot.component,
         variant: slot.variant,
         visible: true,
         content: { factDocumentId: fact.id },
         props: { readingWidth: "standard", textAlignment: "left" },
         styleOverrides: { surface: "default" },
+        approvedAssetPlacements: media.placements,
+        approvedAssetPresentations: media.presentations,
       },
     ],
   });
@@ -175,6 +340,7 @@ export function materializeContentSupportSnapshot(
     snapshot: unknown;
     pageId: string;
     factAuthority: ContentSupportFactAuthority;
+    approvedAssetAuthority?: ContentSupportApprovedAssetAuthority;
   }>,
 ): Readonly<{
   snapshot: StorefrontSnapshot;
@@ -191,6 +357,9 @@ export function materializeContentSupportSnapshot(
   const materialization = materializeContentSupportPage({
     page,
     factAuthority: input.factAuthority,
+    ...(input.approvedAssetAuthority
+      ? { approvedAssetAuthority: input.approvedAssetAuthority }
+      : {}),
   });
   const nextDocuments = [
     ...snapshot.contentSupportFactDocuments.filter(

@@ -41,8 +41,34 @@ const standaloneIdentity = Object.freeze({
   storeId: "store_standalone",
 });
 
+export type PromptedStorefrontStudioLocalIdentity = Readonly<{
+  tenantId: string;
+  userId: string;
+  merchantId: string;
+  organizationId: string;
+  storeId: string;
+}>;
+
+/**
+ * Trusted server fixture shape shared by the normal P03 raw project and bounded
+ * non-production acceptance compositions. The fixture owns canonical project,
+ * catalogue, evidence and asset authority; no browser-supplied generation
+ * authority enters this boundary.
+ */
+export type PromptedStorefrontStudioFixture = Pick<
+  P10B16P03RawKarvonenStudioFixture,
+  | "aggregate"
+  | "brief"
+  | "planningInput"
+  | "siteMapDecision"
+  | "approvedEvidenceReferences"
+  | "pageEvidenceAuthority"
+  | "contentFactAuthority"
+  | "approvedAssetPresentations"
+>;
+
 function compilationAuthority(
-  fixture: P10B16P03RawKarvonenStudioFixture,
+  fixture: PromptedStorefrontStudioFixture,
   merchantPrompt: string,
 ): PromptedStorefrontDesignCompilationAuthority {
   return Object.freeze({
@@ -76,14 +102,22 @@ function compilationAuthority(
  */
 export function createP10B16P03ServerPromptedStorefrontStudioAuthority({
   loadFixture = createP10B16P03RawKarvonenStudioFixture,
+  projectId = P10B16P03_PROJECT_ID,
+  identity = standaloneIdentity,
 }: {
-  loadFixture?: () =>
-    P10B16P03RawKarvonenStudioFixture | Promise<P10B16P03RawKarvonenStudioFixture>;
+  loadFixture?: () => PromptedStorefrontStudioFixture | Promise<PromptedStorefrontStudioFixture>;
+  /** Exact project identity owned by the supplied trusted fixture. */
+  projectId?: string;
+  /**
+   * A non-production composition may supply an already authenticated local identity while still
+   * reusing the exact P03 fixture-backed project and current-authority checks.
+   */
+  identity?: PromptedStorefrontStudioLocalIdentity;
 } = {}): ServerPromptedStorefrontStudioAuthority {
   return Object.freeze({
     async resolve(request: PromptedStorefrontStudioGenerationRequest) {
       const initial = await loadFixture();
-      if (request.projectId !== P10B16P03_PROJECT_ID) {
+      if (request.projectId !== projectId || initial.aggregate.project.id !== projectId) {
         throw new ServerWholeStorefrontAuthorityError("invalid");
       }
       const repository = new InMemoryProjectRepository([initial.aggregate]);
@@ -110,9 +144,9 @@ export function createP10B16P03ServerPromptedStorefrontStudioAuthority({
       }
       const context = await createStandaloneMerchantProjectContextPort({
         projectRepository: repository,
-        ...standaloneIdentity,
+        ...identity,
       }).load({
-        tenantId: standaloneIdentity.tenantId,
+        tenantId: identity.tenantId,
         storefrontProjectId: aggregate.project.id,
       });
       return {
@@ -123,6 +157,7 @@ export function createP10B16P03ServerPromptedStorefrontStudioAuthority({
             ({ id }) => id === current.aggregate.project.draftSnapshotId,
           );
           if (
+            current.aggregate.project.id !== projectId ||
             current.aggregate.project.id !== request.projectId ||
             current.aggregate.project.draftSnapshotId !== request.draftSnapshotId ||
             currentDraft?.revision !== request.draftRevision ||

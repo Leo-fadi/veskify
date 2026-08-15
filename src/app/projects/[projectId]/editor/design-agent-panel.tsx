@@ -96,7 +96,7 @@ const copy = {
     reviewAssets: "Approved source assets",
     reviewProtected: "Commerce details that stay unchanged",
     reviewProtectedBody:
-      "Products, collections, SKUs, prices, stock and availability, variants and options, and product media stay connected to your canonical commerce data.",
+      "Products, collections, SKUs, prices, stock and availability, variants and options, and product imagery stay unchanged.",
     reviewAssetsEmpty: "No approved source assets are being placed by this proposal.",
     reviewBindingsEmpty: "No product or collection connections change in this proposal.",
     reviewPages: "Open a proposed page",
@@ -113,7 +113,7 @@ const copy = {
     pages: "pages",
     sections: "sections",
     controlledAcceptance:
-      "This controlled acceptance uses the generated proposal. Accept or reject it, then start a new controlled run to create another proposal.",
+      "Review this proposal, then accept or reject it. After deciding, you can enter another request.",
   },
   fi: {
     eyebrow: "Suunnitteluavustaja",
@@ -175,7 +175,7 @@ const copy = {
     reviewAssets: "Hyväksytyt lähdeaineistot",
     reviewProtected: "Muuttumattomat kauppatiedot",
     reviewProtectedBody:
-      "Tuotteet, kokoelmat, tuotetunnukset, hinnat, varasto ja saatavuus, variantit ja valinnat sekä tuotekuvat pysyvät kanonisissa kauppatiedoissasi.",
+      "Tuotteet, kokoelmat, tuotetunnukset, hinnat, varasto ja saatavuus, variantit ja valinnat sekä tuotekuvat säilyvät ennallaan.",
     reviewAssetsEmpty: "Tähän ehdotukseen ei sijoiteta hyväksyttyjä lähdeaineistoja.",
     reviewBindingsEmpty: "Tämä ehdotus ei muuta tuote- tai kokoelmayhteyksiä.",
     reviewPages: "Avaa ehdotettu sivu",
@@ -192,7 +192,7 @@ const copy = {
     pages: "sivua",
     sections: "osiota",
     controlledAcceptance:
-      "Tässä valvotussa hyväksynnässä käytetään luotua ehdotusta. Hyväksy tai hylkää se ja aloita uusi valvottu ajo luodaksesi uuden ehdotuksen.",
+      "Tarkista ehdotus ja hyväksy tai hylkää se. Päätöksen jälkeen voit kirjoittaa uuden pyynnön.",
   },
 } as const;
 
@@ -595,16 +595,22 @@ export function DesignAgentPanel({
               <p>{storefrontReview.dynamicCommerceConvergence.summary}</p>
               <dl className={styles.reviewFacts}>
                 <div>
-                  <dt>{locale === "fi" ? "Staattiset sivut" : "Static pages"}</dt>
+                  <dt>{locale === "fi" ? "Verkkokaupan sivut" : "Storefront pages"}</dt>
                   <dd>{storefrontReview.dynamicCommerceConvergence.staticPageCount}</dd>
                 </div>
                 <div>
-                  <dt>{locale === "fi" ? "Kaupan ulkoasumallit" : "Commerce archetypes"}</dt>
+                  <dt>
+                    {locale === "fi"
+                      ? "Uudelleenkäytettävät kaupan asettelut"
+                      : "Reusable shopping layouts"}
+                  </dt>
                   <dd>{storefrontReview.dynamicCommerceConvergence.archetypeCount}</dd>
                 </div>
                 <div>
                   <dt>
-                    {locale === "fi" ? "Ajonaikaiset kauppareitit" : "Runtime commerce routes"}
+                    {locale === "fi"
+                      ? "Tuote-, kokoelma- ja hakusivut"
+                      : "Product, collection, and search pages"}
                   </dt>
                   <dd>{storefrontReview.dynamicCommerceConvergence.runtimeRouteCount}</dd>
                 </div>
@@ -618,16 +624,22 @@ export function DesignAgentPanel({
               <p>{storefrontReview.canonicalGeneration.summary}</p>
               <dl className={styles.reviewFacts}>
                 <div>
-                  <dt>{locale === "fi" ? "Staattiset sivut" : "Static pages"}</dt>
+                  <dt>{locale === "fi" ? "Verkkokaupan sivut" : "Storefront pages"}</dt>
                   <dd>{storefrontReview.canonicalGeneration.staticPageCount}</dd>
                 </div>
                 <div>
-                  <dt>{locale === "fi" ? "Kaupan ulkoasumallit" : "Commerce archetypes"}</dt>
+                  <dt>
+                    {locale === "fi"
+                      ? "Uudelleenkäytettävät kaupan asettelut"
+                      : "Reusable shopping layouts"}
+                  </dt>
                   <dd>{storefrontReview.canonicalGeneration.archetypeCount}</dd>
                 </div>
                 <div>
                   <dt>
-                    {locale === "fi" ? "Ajonaikaiset kauppareitit" : "Runtime commerce routes"}
+                    {locale === "fi"
+                      ? "Tuote-, kokoelma- ja hakusivut"
+                      : "Product, collection, and search pages"}
                   </dt>
                   <dd>{storefrontReview.canonicalGeneration.runtimeRouteCount}</dd>
                 </div>

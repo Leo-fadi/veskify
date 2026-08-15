@@ -39,43 +39,43 @@ function exactSelection(
   return boundedStorefrontSynthesisExactSelectionSchema.parse(exact);
 }
 
-const mixableFields = [
+const mixableArchitectureFields = [
   "sharedFrameProfileId",
   "homepageProfileId",
   "collectionProfileId",
   "searchProfileId",
   "pdpProfileId",
   "includedOptionalPageFamilyIds",
-  "narrativePosture",
-  "merchandisingPosture",
-  "informationDensityPosture",
-  "artDirectionPosture",
-  "responsiveMode",
 ] as const satisfies readonly (keyof BoundedStorefrontSynthesisExactSelection)[];
 
-function unauthorizedCrossFieldMix(
+function unauthorizedCrossDirectionArchitectureMix(
   narrowings: readonly BoundedStorefrontSynthesisSelectionNarrowing[],
-): BoundedStorefrontSynthesisExactSelection {
+): Readonly<{
+  mixed: BoundedStorefrontSynthesisExactSelection;
+  field: (typeof mixableArchitectureFields)[number];
+}> {
   const exact = narrowings.map(exactSelection);
   const exactTuples = new Set(exact.map(canonicalValueString));
   for (const base of exact) {
-    for (const alternative of exact.filter(({ directionId }) => directionId === base.directionId)) {
-      for (const field of mixableFields) {
+    for (const alternative of exact.filter(({ directionId }) => directionId !== base.directionId)) {
+      for (const field of mixableArchitectureFields) {
         if (canonicalValueString(base[field]) === canonicalValueString(alternative[field]))
           continue;
         const mixed = boundedStorefrontSynthesisExactSelectionSchema.parse({
           ...base,
           [field]: alternative[field],
         });
-        if (!exactTuples.has(canonicalValueString(mixed))) return mixed;
+        if (!exactTuples.has(canonicalValueString(mixed))) return { mixed, field };
       }
     }
   }
-  throw new Error("The current authority fixture did not expose a cross-field tuple regression.");
+  throw new Error(
+    "The current authority fixture did not expose a cross-direction tuple regression.",
+  );
 }
 
 describe("P10B-16P-02B exact selection tuple authority", () => {
-  it("accepts one execution-only current tuple and rejects cross-field authority mixing", () => {
+  it("accepts one execution-only current tuple and rejects cross-direction architecture mixing", () => {
     const { input } = currentAuthority();
     const narrowings = listCompatibleCoordinatedDirectionSelectionNarrowings(input);
     const first = narrowings[0];
@@ -92,21 +92,21 @@ describe("P10B-16P-02B exact selection tuple authority", () => {
       }).decisions,
     ).toContainEqual(expect.objectContaining({ code: "prompted-v2-exact-selection" }));
 
-    const mixed = unauthorizedCrossFieldMix(narrowings);
-    const sameDirectionTuples = narrowings
-      .map(exactSelection)
-      .filter(({ directionId }) => directionId === mixed.directionId);
-    for (const field of mixableFields) {
-      expect(
-        sameDirectionTuples.some(
+    const { mixed, field } = unauthorizedCrossDirectionArchitectureMix(narrowings);
+    expect(
+      narrowings
+        .map(exactSelection)
+        .some(
           (candidate) =>
             canonicalValueString(candidate[field]) === canonicalValueString(mixed[field]),
         ),
-      ).toBe(true);
-    }
-    expect(sameDirectionTuples.map(canonicalValueString)).not.toContain(
-      canonicalValueString(mixed),
-    );
+    ).toBe(true);
+    expect(
+      narrowings
+        .map(exactSelection)
+        .filter(({ directionId }) => directionId === mixed.directionId)
+        .map(canonicalValueString),
+    ).not.toContain(canonicalValueString(mixed));
 
     expect(() =>
       createBoundedStorefrontSynthesisDecision({

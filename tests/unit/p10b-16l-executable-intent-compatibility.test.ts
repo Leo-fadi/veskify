@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  CoordinatedStorefrontDirectionError,
   createP10bLiveSynthesisIntentPreflightAuthority,
-  createCoordinatedDirectionSelection,
-  getCoordinatedStorefrontDirection,
   listExecutableCoordinatedDirectionIntents,
   p10bLiveSynthesisExecutableResultFingerprint,
   validateP10bLiveSynthesisIntentProviderResult,
@@ -103,80 +100,11 @@ function liveRequest(
 }
 
 describe("P10B-16L executable live-intent compatibility", () => {
-  it("reproduces independently valid Premium Editorial posture tuples that current synthesis cannot execute", () => {
-    const fixture = createP10B16LRawKarvonenAcceptanceFixture();
-    const direction = getCoordinatedStorefrontDirection("premium-editorial");
-    const tuples = direction.constraints.narrativePostures.flatMap((narrativePosture) =>
-      direction.constraints.merchandisingPostures.flatMap((merchandisingPosture) =>
-        direction.constraints.informationDensityPostures.flatMap((informationDensityPosture) =>
-          direction.constraints.artDirectionPostures.flatMap((artDirectionPosture) =>
-            direction.constraints.responsiveModes.map((responsiveMode) => ({
-              narrativePosture,
-              merchandisingPosture,
-              informationDensityPosture,
-              artDirectionPosture,
-              responsiveMode,
-            })),
-          ),
-        ),
-      ),
-    );
-    const executable = [];
-    const unexecutable = [];
-
-    for (const characteristics of tuples) {
-      try {
-        createCoordinatedDirectionSelection({
-          planningInput: fixture.executionPlanningInput,
-          siteMapDecision: fixture.siteMapDecision,
-          approvedEvidenceReferences: fixture.approvedEvidenceReferences,
-          request: { intent: direction.intent, deterministicSeed: "legacy-v1-gap" },
-          directionRequest: {
-            directionId: direction.id,
-            deterministicSeed: "legacy-v1-gap",
-            characteristics,
-          },
-        });
-        executable.push(characteristics);
-      } catch (error) {
-        expect(error).toBeInstanceOf(CoordinatedStorefrontDirectionError);
-        expect(error).toMatchObject({ code: "unsupported-characteristic" });
-        unexecutable.push(characteristics);
-      }
-    }
-
-    expect(tuples).toHaveLength(72);
-    expect(executable).toEqual([
-      {
-        narrativePosture: "story-led",
-        merchandisingPosture: "considered",
-        informationDensityPosture: "airy",
-        artDirectionPosture: "editorial",
-        responsiveMode: "balanced",
-      },
-      {
-        narrativePosture: "campaign-led",
-        merchandisingPosture: "considered",
-        informationDensityPosture: "airy",
-        artDirectionPosture: "editorial",
-        responsiveMode: "balanced",
-      },
-    ]);
-    expect(unexecutable).toHaveLength(70);
-    expect(unexecutable).toContainEqual({
-      narrativePosture: "story-led",
-      merchandisingPosture: "curated",
-      informationDensityPosture: "balanced",
-      artDirectionPosture: "editorial",
-      responsiveMode: "content-first",
-    });
-  });
-
   it("advertises only exact executable options for all named directions and the general run", () => {
     const expectedCounts = {
-      "premium-editorial": 2,
-      "modern-technical": 3,
-      "minimal-commerce": 3,
+      "premium-editorial": 1,
+      "modern-technical": 1,
+      "minimal-commerce": 1,
     } as const;
     for (const directionId of directionIds) {
       const { request } = liveRequest(directionId);
@@ -191,7 +119,7 @@ describe("P10B-16L executable live-intent compatibility", () => {
     const namedInventory = directionIds.flatMap(
       (directionId) => liveRequest(directionId).request.executableIntents,
     );
-    expect(general.executableIntents).toHaveLength(8);
+    expect(general.executableIntents).toHaveLength(3);
     expect(general.executableIntents).toEqual(namedInventory);
     expect(new Set(general.executableIntents.map(({ directionId }) => directionId))).toEqual(
       new Set(directionIds),
@@ -203,9 +131,9 @@ describe("P10B-16L executable live-intent compatibility", () => {
 
   it("retains the complete raw-fixture executable audit behind the bounded provider inventory", () => {
     const expectedCounts = {
-      "premium-editorial": 2,
-      "modern-technical": 3,
-      "minimal-commerce": 14,
+      "premium-editorial": 1,
+      "modern-technical": 1,
+      "minimal-commerce": 1,
     } as const;
     for (const directionId of directionIds) {
       const { fixture } = liveRequest(directionId);

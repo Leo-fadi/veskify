@@ -55,7 +55,10 @@ function currentAuthority() {
               productIds: [...collection.productIds],
               canonicalRevision: "canonical_fixture_revision",
             },
-            props: structuredClone(dynamicCollectionCommerceBridgeDefinition.defaultProps),
+            props: {
+              ...structuredClone(dynamicCollectionCommerceBridgeDefinition.defaultProps),
+              cardVariant: "editorial",
+            },
           },
         ],
       };

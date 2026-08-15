@@ -1,10 +1,26 @@
 .card {
   min-width: 0;
+  height: 100%;
   overflow: hidden;
-  border: 1px solid var(--brand-color-border);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
   border-radius: var(--section-radius, var(--brand-radius));
-  background: var(--brand-color-background);
+  background: var(--brand-color-surface);
+  box-shadow: var(--brand-elevation-shadow, none);
   color: var(--brand-color-text);
+  font-family: var(--brand-font-body, inherit);
+  font-size: var(--brand-type-body-size, 1rem);
+  font-weight: var(--brand-type-body-weight, 400);
+  letter-spacing: var(--brand-type-body-tracking, normal);
+  line-height: calc(var(--brand-type-body-line-height, 1.5) * var(--brand-density-global, 1));
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.card:focus-within {
+  outline: 2px solid var(--brand-color-accent);
+  outline-offset: 3px;
 }
 
 .card figure,
@@ -24,9 +40,14 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 12rem;
-  object-fit: cover;
+  min-height: calc(12rem * min(var(--brand-media-prominence, 1), 1.2));
   background: var(--brand-color-surface);
+}
+
+/* P10B-04 art-direction wrappers own their image fit. This fallback applies only
+   to legacy direct images that do not carry responsive media authority. */
+.media > figure > img {
+  object-fit: contain;
 }
 
 .mediaPlaceholder {
@@ -45,11 +66,14 @@
   overflow-wrap: anywhere;
   font-family: var(--brand-font-heading);
   font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-weight: var(--brand-type-heading-weight, 600);
+  letter-spacing: var(--brand-type-heading-tracking, normal);
+  line-height: var(--brand-type-heading-line-height, 1.15);
 }
 
 .title button,
 .actions button {
-  min-height: 2.75rem;
+  min-height: var(--brand-control-height, 2.75rem);
   border: 0;
   background: transparent;
   color: inherit;
@@ -57,18 +81,29 @@
 }
 
 .title button {
+  cursor: pointer;
   padding: 0;
   text-align: start;
-  font-weight: 800;
+  font-weight: inherit;
 }
 
 .actions button {
+  cursor: pointer;
   width: 100%;
-  border: 1px solid var(--brand-color-border);
-  border-radius: var(--section-radius, var(--brand-radius));
-  padding: 0.65rem 0.85rem;
-  background: var(--brand-color-surface);
-  font-weight: 800;
+  border: var(--brand-border-width, 1px) solid var(--brand-control-primary-border);
+  border-radius: var(--brand-control-radius, var(--section-radius, var(--brand-radius)));
+  padding: 0.65rem var(--brand-control-padding-inline, 0.85rem);
+  background: var(--brand-control-primary-background);
+  color: var(--brand-control-primary-text);
+  font-weight: var(--brand-control-emphasis, 800);
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.actions button:hover,
+.actions button:focus-visible {
+  filter: contrast(1.08);
 }
 
 .priceRow {
@@ -80,8 +115,11 @@
 
 .price,
 .priceUnavailable {
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-family: var(--brand-font-price, inherit);
+  font-size: var(--brand-type-price-size, 1.05rem);
+  font-weight: var(--brand-type-price-weight, 800);
+  letter-spacing: var(--brand-type-price-tracking, normal);
+  line-height: var(--brand-type-price-line-height, 1.2);
 }
 
 .priceRow del,
@@ -120,7 +158,7 @@
 .compactLead {
   display: grid;
   min-width: 0;
-  gap: 0.65rem;
+  gap: calc(0.65rem * var(--brand-density-commerce, 1));
 }
 
 .anatomy_standard {
@@ -129,14 +167,14 @@
 
 .anatomy_standard .media img,
 .anatomy_standard .mediaPlaceholder {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--brand-media-ratio, 4 / 5);
 }
 
 .standardFrame {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem;
-  padding: 1rem;
+  gap: calc(var(--brand-grid-gap, 1rem) * var(--brand-density-commerce, 1));
+  padding: var(--brand-card-inset, 1rem);
 }
 
 .standardAction {
@@ -146,6 +184,8 @@
 .editorialStage,
 .imageFirstStage {
   position: relative;
+  overflow: hidden;
+  background: var(--brand-surface-subtle);
 }
 
 .anatomy_editorial .media img,
@@ -162,28 +202,29 @@
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: calc(0.75rem * var(--brand-density-commerce, 1));
 }
 
 .editorialOverlay .badge,
 .editorialOverlay .actions button,
 .imageFirstAction .actions button {
-  border-color: rgb(255 255 255 / 70%);
-  background: rgb(255 255 255 / 88%);
-  color: #111;
+  border-color: color-mix(in srgb, var(--brand-color-border) 65%, transparent);
+  background: color-mix(in srgb, var(--brand-color-surface) 90%, transparent);
+  color: var(--brand-color-text);
+  backdrop-filter: blur(0.5rem);
 }
 
 .editorialCopy,
 .imageFirstCopy {
-  padding: 1rem;
+  padding: var(--brand-card-inset, 1rem);
 }
 
 .compactFrame {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(5.5rem, 0.6fr);
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: calc(0.75rem * var(--brand-density-commerce, 1));
+  padding: max(0.75rem, calc(var(--brand-card-inset, 1rem) * 0.75));
 }
 
 .anatomy_compact .media img,
@@ -197,6 +238,8 @@
 }
 
 .anatomy_imageFirst {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -208,15 +251,23 @@
 }
 
 .imageFirstCopy {
+  align-content: start;
   padding-inline: 0;
+}
+
+.imageFirstCopy .metadata {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  border-top: var(--brand-border-width, 1px) solid
+    color-mix(in srgb, var(--brand-color-border) 68%, transparent);
 }
 
 .horizontalFrame {
   display: grid;
   grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr) minmax(7rem, auto);
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
+  gap: calc(var(--brand-grid-gap, 1rem) * var(--brand-density-commerce, 1));
+  padding: max(0.75rem, calc(var(--brand-card-inset, 1rem) * 0.75));
 }
 
 .anatomy_horizontal .media img,
@@ -240,6 +291,32 @@
 }
 
 @media (max-width: 767px) {
+  .title {
+    overflow-wrap: anywhere;
+    font-size: 1rem;
+  }
+
+  .attributes div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: initial;
+  }
+
+  .attributes dd {
+    margin: 0;
+    overflow-wrap: break-word;
+  }
+
+  .imageFirstStage {
+    overflow: visible;
+  }
+
+  .imageFirstStage .media,
+  .imageFirstStage .media figure,
+  .imageFirstStage .media > span {
+    height: auto;
+  }
+
   .editorialOverlay,
   .imageFirstAction {
     position: static;
@@ -267,5 +344,13 @@
   .anatomy_horizontal .media img,
   .anatomy_horizontal .mediaPlaceholder {
     aspect-ratio: 4 / 3;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: color-mix(in srgb, var(--brand-color-accent) 35%, var(--brand-color-border));
+    box-shadow: var(--brand-elevation-shadow, none);
+    transform: translateY(-2px);
   }
 }

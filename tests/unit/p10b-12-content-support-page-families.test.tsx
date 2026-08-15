@@ -1,7 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  approvedGenerationAssetContextSchema,
+  createApprovedGenerationAssetContextFingerprint,
+} from "@/application/ai-storefront-generation";
+import {
   createStorefrontDesignBriefContentSupportFactAuthority,
+  ContentSupportPageMaterializationError,
   materializeContentSupportPage,
   materializeContentSupportSnapshot,
 } from "@/application/content-support-pages";
@@ -38,11 +43,15 @@ import {
   type EvidenceKind,
 } from "@/domain/source-discovery";
 import {
+  applyCommercialSharedFrame,
+  approvedAssetPlacementOperationSchema,
+  canonicalValueFingerprint,
   canonicalStorefrontContentFingerprint,
   listPageFamilyDefinitions,
   pageModelSchema,
   storefrontSnapshotSchema,
   type ContentSupportPageFamilyId,
+  type ApprovedAssetPresentation,
   type PageFamilyId,
 } from "@/domain/storefront";
 import type { StorefrontSiteMapDecision } from "@/application/storefront-site-map";
@@ -368,6 +377,80 @@ function materialized(familyId: ContentSupportPageFamilyId) {
   return { page, result, document, context };
 }
 
+function approvedEditorialAssetAuthority(
+  workflow: ReturnType<typeof approvedWorkflow>,
+  page: ReturnType<typeof canonicalPage>,
+) {
+  const brief = workflow.briefRevisions.find(
+    ({ revision }) => revision === workflow.currentBriefRevision,
+  );
+  const source = workflow.sourceReferences[0];
+  if (!brief?.approvedEvidenceFingerprint || !brief.approval.actorId || !source) {
+    throw new Error("The content/support media fixture requires one current approved brief.");
+  }
+  const asset = {
+    assetId: "asset_content_support_editorial",
+    role: "editorialImage" as const,
+    sourceReferenceId: source.id,
+    revision: "asset-revision-1",
+    materialFingerprint: "content-support-editorial-material-v1",
+    provenance: { location: "other-safe-source-location" as const, observedAt: now },
+    alt: localized("Approved editorial portrait", "Hyväksytty toimituksellinen kuva"),
+    presentation: {
+      decorative: false,
+      mediaType: "image/svg+xml",
+      responsiveCrops: [],
+    },
+    approval: { actorId: brief.approval.actorId, actorReference: "content-support-test" },
+  };
+  const contextInput = {
+    briefId: brief.id,
+    briefRevision: brief.revision,
+    approvedEvidenceFingerprint: brief.approvedEvidenceFingerprint,
+    assetReviewFingerprint: brief.assetReviewFingerprint,
+    assets: [asset],
+  };
+  const context = approvedGenerationAssetContextSchema.parse({
+    ...contextInput,
+    fingerprint: createApprovedGenerationAssetContextFingerprint(contextInput),
+  });
+  const presentations: readonly ApprovedAssetPresentation[] = [
+    {
+      assetId: asset.assetId,
+      role: asset.role,
+      revision: asset.revision,
+      materialFingerprint: asset.materialFingerprint,
+      asset: {
+        id: asset.assetId,
+        url: "/seed-assets/aava-necklace.svg",
+        alt: asset.alt,
+        decorative: asset.presentation.decorative,
+      },
+    },
+  ];
+  const sectionId = `section_${canonicalValueFingerprint({
+    pageId: page.id,
+    slotId: "approved-content-support",
+  }).slice(-24)}`;
+  const placements = [
+    approvedAssetPlacementOperationSchema.parse({
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: page.id,
+      componentId: sectionId,
+      componentType: "contentSupport",
+      assetSlotId: "contentSupportMedia",
+      assetId: asset.assetId,
+      role: asset.role,
+      assetRevision: asset.revision,
+      materialFingerprint: asset.materialFingerprint,
+      sourceReferenceId: asset.sourceReferenceId,
+      sourceProvenanceKind: "sourceDiscovered",
+      required: false,
+    }),
+  ];
+  return { context, presentations, placements };
+}
+
 const routeByFamily: Readonly<Record<PageFamilyId, string>> = {
   home: "/",
   collection: "/collections/rings",
@@ -613,6 +696,123 @@ describe("P10B-12 content and support page families", () => {
     expect(campaign.result.page.sections[0]?.content).toEqual({
       factDocumentId: campaign.document.id,
     });
+  });
+
+  it("consumes registered reading-width and alignment props in the shared content renderer", () => {
+    const about = materialized("about");
+    const page = structuredClone(about.result.page);
+    const section = page.sections[0];
+    if (!section) throw new Error("The About fixture requires one registered content section.");
+    section.props = { readingWidth: "wide", textAlignment: "center" };
+
+    const html = renderToStaticMarkup(renderStorefrontPage(page, about.context));
+    expect(html).toContain('data-reading-width="wide"');
+    expect(html).toContain('data-text-alignment="center"');
+    expect(html).toContain('data-content-contribution-count="2"');
+  });
+
+  it("materializes and renders exact current approved About media without placeholder copy", () => {
+    const workflow = approvedWorkflow("about");
+    const page = canonicalPage("about", workflow);
+    const approvedAssetAuthority = approvedEditorialAssetAuthority(workflow, page);
+    const result = materializeContentSupportPage({
+      page,
+      factAuthority: createStorefrontDesignBriefContentSupportFactAuthority(workflow),
+      approvedAssetAuthority,
+    });
+    const section = result.page.sections[0];
+    if (!section) throw new Error("The approved About page requires one content section.");
+    expect(section.approvedAssetPlacements).toEqual([
+      expect.objectContaining({
+        componentId: section.id,
+        componentType: "contentSupport",
+        assetSlotId: "contentSupportMedia",
+        assetId: "asset_content_support_editorial",
+        role: "editorialImage",
+      }),
+    ]);
+    const snapshot = {
+      navigation: { primary: [], footer: [] },
+      pages: [result.page],
+      brandSystem: aurumNordicSeed.draftSnapshot.brandSystem,
+      contentSupportFactDocuments: [result.factDocument],
+    };
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot,
+      evidenceReferences: page.pageFamily?.evidenceReferences ?? [],
+    });
+    const html = renderToStaticMarkup(renderStorefrontPage(result.page, context));
+    expect(html.match(/<h1\b/gu)).toHaveLength(1);
+    expect(html).toContain("about title");
+    expect(html).toContain("Approved information only.");
+    expect(html).toContain("A source-confirmed origin");
+    expect(html).toContain('data-asset-id="asset_content_support_editorial"');
+    expect(html).toContain('src="/seed-assets/aava-necklace.svg"');
+    expect(html).not.toMatch(/placeholder|verify live|requires verification|not captured/iu);
+  });
+
+  it("fails closed when About media presentation authority is stale or has the wrong role", () => {
+    const workflow = approvedWorkflow("about");
+    const page = canonicalPage("about", workflow);
+    const authority = approvedEditorialAssetAuthority(workflow, page);
+    const currentPresentation = authority.presentations.at(0);
+    if (!currentPresentation) {
+      throw new Error("The content/support media fixture requires one current presentation.");
+    }
+    const staleOrIncompatiblePresentations: readonly ApprovedAssetPresentation[] = [
+      { ...currentPresentation, revision: "stale-revision" },
+      { ...currentPresentation, role: "collectionImage" },
+    ];
+    for (const presentation of staleOrIncompatiblePresentations) {
+      try {
+        materializeContentSupportPage({
+          page,
+          factAuthority: createStorefrontDesignBriefContentSupportFactAuthority(workflow),
+          approvedAssetAuthority: {
+            context: authority.context,
+            presentations: [presentation],
+            placements: authority.placements,
+          },
+        });
+        throw new Error("Expected stale content/support media authority to fail closed.");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ContentSupportPageMaterializationError);
+        expect((error as ContentSupportPageMaterializationError).code).toBe("stale-approved-asset");
+      }
+    }
+  });
+
+  it("renders the approved About story through the commerce-utility shared frame", () => {
+    const about = materialized("about");
+    const profile = listCommercialContentSupportProfiles().find(
+      ({ profile: entry }) => entry?.id === "content-about-story",
+    );
+    expect(profile?.profile?.commercialContentSupport?.compatibleSharedFrameProfileIds).toContain(
+      "commerce-utility",
+    );
+    const framed = applyCommercialSharedFrame(aurumNordicSeed.draftSnapshot, "commerce-utility");
+    const snapshot = {
+      ...framed,
+      pages: [about.result.page],
+      navigation: { primary: [], footer: [] },
+      contentSupportFactDocuments: [about.document],
+    };
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot,
+      evidenceReferences: about.page.pageFamily!.evidenceReferences,
+    });
+    const html = renderToStaticMarkup(renderStorefrontPage(about.result.page, context));
+    expect(snapshot.sharedFrame?.profileId).toBe("commerce-utility");
+    expect(html).toContain('data-component="homepageEditorial"');
+    expect(html).toContain("A source-confirmed origin");
   });
 
   it("fails closed for stale, revoked, malformed, omitted and cross-family fact declarations", () => {

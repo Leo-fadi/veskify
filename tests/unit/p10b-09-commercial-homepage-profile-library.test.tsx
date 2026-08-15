@@ -221,16 +221,16 @@ describe("P10B-09 commercial homepage profile library", () => {
       campaignProfile.profile!.commercialHomepage!.defaultSharedFrameProfileId,
     );
     const currentAssetContext = campaignFixture.planningInput.approvedAssetContext;
-    const collectionOnlyAssets = currentAssetContext.assets.map((asset) => ({
+    const unsupportedHomepageAssets = currentAssetContext.assets.map((asset) => ({
       ...asset,
-      role: "collectionImage" as const,
+      role: "logo" as const,
     }));
-    const collectionOnlyContext = {
+    const unsupportedHomepageContext = {
       ...currentAssetContext,
-      assets: collectionOnlyAssets,
+      assets: unsupportedHomepageAssets,
       fingerprint: createApprovedGenerationAssetContextFingerprint({
         ...currentAssetContext,
-        assets: collectionOnlyAssets,
+        assets: unsupportedHomepageAssets,
       }),
     };
     expect(() =>
@@ -238,7 +238,7 @@ describe("P10B-09 commercial homepage profile library", () => {
         {
           ...campaignFixture.planningInput,
           draft: campaignDraft,
-          approvedAssetContext: collectionOnlyContext,
+          approvedAssetContext: unsupportedHomepageContext,
         },
         { directionId: "premiumEditorial", homepageProfileId: "homepage-campaign-led" },
       ),
@@ -384,9 +384,9 @@ describe("P10B-09 commercial homepage profile library", () => {
       if (binding.source === "collectionList") return binding.collectionIds;
       throw new Error(`Unexpected ${binding.source} authority for ${slotId}.`);
     };
-    expect(boundIds("homepageFeaturedCollections", "collections")).toHaveLength(6);
-    expect(boundIds("homepageCollectionNavigation", "collections")).toHaveLength(10);
-    expect(boundIds("homepageFeaturedProducts", "products")).toHaveLength(8);
+    expect(boundIds("homepageFeaturedCollections", "collections")).toHaveLength(4);
+    expect(boundIds("homepageCollectionNavigation", "collections")).toHaveLength(6);
+    expect(boundIds("homepageFeaturedProducts", "products")).toHaveLength(4);
   });
 
   it("composes current P10B-07 storytelling and P10B-08 merchandising authority only", () => {
@@ -462,6 +462,9 @@ describe("P10B-09 commercial homepage profile library", () => {
         expect(markup).toContain('data-frame-profile="');
         expect(markup).toContain('data-component="homepageHero"');
         expect(markup).toContain(`data-render-target="${renderTarget}"`);
+        expect(markup).toContain('data-region="section-heading"');
+        expect(markup).toContain('data-region="product-grid"');
+        expect(markup).toContain('data-surface="');
         expect(markup).toContain('data-card-context="homepageMerchandising"');
         expect(markup).toContain(
           `data-card-anatomy="${profile.profile!.commercialHomepage!.productCardAnatomyId}"`,

@@ -57,6 +57,7 @@ type LoadState =
       draft: Snapshot;
       page: Page;
       commercePresentation: CollectionCommerceRoutePresentation | null;
+      evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
@@ -106,6 +107,8 @@ export function CollectionPreviewClient({
   onFilterIntent = ignoreFilterIntent,
   onSortIntent = ignoreSortIntent,
   publishedSessionId,
+  initialAggregate,
+  proposalCandidateFingerprint,
   initialEvidenceReferences = emptyEvidenceReferences,
 }: {
   projectId: string;
@@ -121,6 +124,8 @@ export function CollectionPreviewClient({
   onFilterIntent?: (intent: CollectionFilterIntent) => void;
   onSortIntent?: (intent: CollectionSortIntent) => void;
   publishedSessionId?: string;
+  initialAggregate?: ProjectAggregate;
+  proposalCandidateFingerprint?: string;
   initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 }) {
   const effectiveRenderTarget =
@@ -130,18 +135,28 @@ export function CollectionPreviewClient({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [activeLocale, setActiveLocale] = useState<Locale>();
+  const previewQuerySuffix = publishedSessionId
+    ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+    : proposalCandidateFingerprint
+      ? `?p10b-16p-04-proposal=${encodeURIComponent(proposalCandidateFingerprint)}`
+      : "";
 
   useEffect(() => {
     let cancelled = false;
-    (snapshotKind === "published" && publishedSessionId
-      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId }).then(
-          ({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }),
-        )
-      : repository.current!.get(projectId).then((aggregate) => ({
-          aggregate,
+    const aggregateSource = initialAggregate
+      ? Promise.resolve({
+          aggregate: structuredClone(initialAggregate),
           evidenceReferences: structuredClone(initialEvidenceReferences),
-        }))
-    )
+        })
+      : snapshotKind === "published" && publishedSessionId
+        ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId }).then(
+            ({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }),
+          )
+        : repository.current!.get(projectId).then((aggregate) => ({
+            aggregate,
+            evidenceReferences: structuredClone(initialEvidenceReferences),
+          }));
+    aggregateSource
       .then(({ aggregate, evidenceReferences }) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
@@ -199,9 +214,7 @@ export function CollectionPreviewClient({
             snapshot: draft,
             evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-            pagePathSuffix: publishedSessionId
-              ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-              : "",
+            pagePathSuffix: previewQuerySuffix,
             renderTarget: effectiveRenderTarget,
           });
           void renderStorefrontPage(page, context);
@@ -219,7 +232,14 @@ export function CollectionPreviewClient({
             );
           }
           setActiveLocale(aggregate.project.primaryLocale);
-          setState({ status: "success", aggregate, draft, page, commercePresentation });
+          setState({
+            status: "success",
+            aggregate,
+            draft,
+            page,
+            commercePresentation,
+            evidenceReferences,
+          });
           return;
         } catch {
           return setState({ status: "validationFailure" });
@@ -237,11 +257,14 @@ export function CollectionPreviewClient({
     collectionSlug,
     commerceAdapter,
     historicalSnapshotId,
+    initialAggregate,
+    initialEvidenceReferences,
     projectId,
+    previewQuerySuffix,
+    proposalCandidateFingerprint,
     effectiveRenderTarget,
     snapshotKind,
     publishedSessionId,
-    initialEvidenceReferences,
   ]);
 
   const retry = () => {
@@ -319,10 +342,9 @@ export function CollectionPreviewClient({
     onLocaleChange: setActiveLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
+    evidenceReferences: state.evidenceReferences,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-    pagePathSuffix: publishedSessionId
-      ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-      : "",
+    pagePathSuffix: previewQuerySuffix,
     renderTarget: effectiveRenderTarget,
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
@@ -342,12 +364,7 @@ export function CollectionPreviewClient({
                   section.content.productId === intent.productId,
               ),
           )?.slug;
-      if (productRoute)
-        window.location.assign(
-          `${pathPrefix}${productRoute}${
-            publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
-          }`,
-        );
+      if (productRoute) window.location.assign(`${pathPrefix}${productRoute}${previewQuerySuffix}`);
     });
   const navigateCollection =
     onNavigateCollection ??
@@ -365,11 +382,7 @@ export function CollectionPreviewClient({
               ),
           )?.slug;
       if (collectionRoute)
-        window.location.assign(
-          `${pathPrefix}${collectionRoute}${
-            publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
-          }`,
-        );
+        window.location.assign(`${pathPrefix}${collectionRoute}${previewQuerySuffix}`);
     });
 
   return (
@@ -378,9 +391,11 @@ export function CollectionPreviewClient({
         <div>
           <Link
             className="project-preview__back"
-            href={`${previewPathPrefix(projectId, snapshotKind, historicalSnapshotId)}${
-              publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
-            }`}
+            href={`${previewPathPrefix(
+              projectId,
+              snapshotKind,
+              historicalSnapshotId,
+            )}${previewQuerySuffix}`}
           >
             Storefront home
           </Link>

@@ -200,8 +200,8 @@ function localizedAttributeValue(
 
 function money(value: ProductDisplayModel["price"]) {
   if (!value) return undefined;
-  const format = (amount: number) =>
-    new Intl.NumberFormat("fi-FI", {
+  const format = (locale: "en-FI" | "fi-FI", amount: number) =>
+    new Intl.NumberFormat(locale, {
       style: "currency",
       currency: value.currency,
       minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
@@ -210,8 +210,8 @@ function money(value: ProductDisplayModel["price"]) {
   return {
     ...value,
     formatted: {
-      en: format(value.amount),
-      fi: format(value.amount),
+      en: format("en-FI", value.amount),
+      fi: format("fi-FI", value.amount),
     },
   };
 }
@@ -223,7 +223,9 @@ function availabilityForStockStatus(
 }
 
 function availability(product: ProductDisplayModel): LocalizedText | undefined {
-  return product.availabilityLabel ?? availabilityForStockStatus(product.stockStatus);
+  return structuredClone(
+    product.availabilityLabel ?? availabilityForStockStatus(product.stockStatus),
+  );
 }
 
 function revisionFor(input: ProductCommerceRouteInput | CollectionCommerceRouteInput): string {
@@ -344,10 +346,14 @@ function productContext(
     productTypeId: canonicalProductTypePresentationId(product.productType),
     sku: product.sku,
     title: product.title,
-    description: product.description,
+    description: structuredClone(product.description),
     price: money(product.price),
     compareAtPrice: money(product.compareAtPrice),
-    priceUnavailableReason: product.priceUnavailableReason,
+    priceUnavailableReason: product.priceUnavailableReason
+      ? structuredClone(product.priceUnavailableReason)
+      : product.price
+        ? undefined
+        : { en: "Price unavailable", fi: "Hinta ei ole saatavilla" },
     availability: availability(product),
     media: [
       ...product.images.map((image, index) => ({
@@ -793,10 +799,28 @@ function collectionContext(
   heroAssetId?: string,
   additionalAssets: CollectionPresentationContext["assets"] = [],
 ): CollectionPresentationContext {
+  const pricedProducts = products.filter((product) => product.price !== undefined);
+  const sorting: CollectionPresentationContext["sorting"] = [
+    { id: "featured", label: { en: "Featured", fi: "Suositellut" }, default: true },
+    ...(pricedProducts.length >= 2
+      ? [
+          {
+            id: "price_low",
+            label: { en: "Price: low to high", fi: "Hinta: halvin ensin" },
+            default: false,
+          },
+          {
+            id: "price_high",
+            label: { en: "Price: high to low", fi: "Hinta: kallein ensin" },
+            default: false,
+          },
+        ]
+      : []),
+  ];
   return {
     collectionId: collection.id,
     title: collection.title,
-    description: collection.description,
+    description: structuredClone(collection.description),
     assets: [
       ...(heroAssetId ? [{ assetId: heroAssetId, role: "hero" as const }] : []),
       ...additionalAssets,
@@ -806,7 +830,7 @@ function collectionContext(
       const filter = collectionFilter(filterId, products);
       return filter ? [filter] : [];
     }),
-    sorting: [{ id: "featured", label: { en: "Featured", fi: "Suositellut" }, default: true }],
+    sorting,
     emptyState: {
       title: { en: "No products in this collection", fi: "Tässä mallistossa ei ole tuotteita" },
     },
@@ -862,7 +886,10 @@ function approvedCollectionMedia(section: SectionInstance): Readonly<{
         sourceId: placement.sourceReferenceId,
       },
       approvalStatus: "approved" as const,
-      usageRights: "merchantOwned" as const,
+      usageRights:
+        placement.sourceProvenanceKind === "merchantProvided"
+          ? ("merchantOwned" as const)
+          : ("unknown" as const),
       responsiveCrops: [],
       ...(presentation.artDirection === undefined
         ? {}
@@ -878,14 +905,126 @@ function approvedCollectionMedia(section: SectionInstance): Readonly<{
   };
 }
 
-function canonicalCollectionFilterIds(products: readonly ProductDisplayModel[]): readonly string[] {
+const MAX_CONTEXTUAL_COLLECTION_FACETS = 8;
+const INTERNAL_COLLECTION_FACET_TOKEN =
+  /(?:^|[_-])(admin|barcode|canonical|cost|ean|fingerprint|gtin|handle|id|internal|inventory|revision|sku|slug|source)(?:$|[_-])/i;
+const CONTEXTUAL_FACET_PRIORITY: Readonly<Record<string, number>> = {
+  material: 50,
+  colour: 48,
+  color: 48,
+  size: 46,
+  style: 44,
+  brand: 42,
+  price: 40,
+  availability: 38,
+};
+
+type ContextualCollectionFacet = Readonly<{
+  id: string;
+  coverage: number;
+  distinctValues: number;
+  priority: number;
+}>;
+
+function normalizedFacetValue(value: string | number): string {
+  return String(value).normalize("NFKC").trim().toLocaleLowerCase("en-US");
+}
+
+function collectionIdentityTokens(collection: CollectionDisplayModel): ReadonlySet<string> {
+  return new Set(
+    [collection.title.en, collection.title.fi]
+      .filter((value): value is string => typeof value === "string")
+      .flatMap((value) =>
+        value
+          .normalize("NFKC")
+          .toLocaleLowerCase("en-US")
+          .split(/[^\p{L}\p{N}]+/u),
+      )
+      .filter(Boolean)
+      .map((value) => (value.endsWith("s") && value.length > 3 ? value.slice(0, -1) : value)),
+  );
+}
+
+function contextualAttributeFacet(
+  attributeId: string,
+  products: readonly ProductDisplayModel[],
+  identityTokens: ReadonlySet<string>,
+): ContextualCollectionFacet | null {
+  const normalizedId = attributeId
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLocaleLowerCase("en-US");
+  if (INTERNAL_COLLECTION_FACET_TOKEN.test(normalizedId)) return null;
+  const idTokens = normalizedId.split(/[_-]+/).filter(Boolean);
+  const soleIdToken = idTokens.length === 1 ? idTokens[0] : undefined;
+  if (
+    soleIdToken &&
+    identityTokens.has(
+      soleIdToken.endsWith("s") && soleIdToken.length > 3 ? soleIdToken.slice(0, -1) : soleIdToken,
+    )
+  ) {
+    return null;
+  }
+  const productValues = products.flatMap((product) => {
+    const value = product.attributes[attributeId];
+    if (value === undefined) return [];
+    const normalized = (Array.isArray(value) ? value : [value])
+      .map(normalizedFacetValue)
+      .filter(Boolean);
+    return normalized.length ? [normalized] : [];
+  });
+  const distinctValues = new Set(productValues.flat()).size;
+  if (productValues.length < 2 || distinctValues < 2 || distinctValues > 12) return null;
+  return {
+    id: attributeId,
+    coverage: productValues.length,
+    distinctValues,
+    priority: CONTEXTUAL_FACET_PRIORITY[attributeId] ?? 20,
+  };
+}
+
+function contextualCollectionFilterIds(
+  collection: CollectionDisplayModel,
+  products: readonly ProductDisplayModel[],
+): readonly string[] {
+  const identityTokens = collectionIdentityTokens(collection);
   const attributeIds = new Set<string>();
   products.forEach((product) => {
     Object.keys(product.attributes).forEach((attributeId) => attributeIds.add(attributeId));
   });
-  return [...attributeIds]
-    .sort((left, right) => left.localeCompare(right))
-    .concat(["price", "availability"]);
+  const facets = [...attributeIds].flatMap((attributeId) => {
+    const facet = contextualAttributeFacet(attributeId, products, identityTokens);
+    return facet ? [facet] : [];
+  });
+  const prices = products.flatMap((product) => (product.price ? [product.price.amount] : []));
+  if (prices.length >= 2 && new Set(prices).size >= 2) {
+    facets.push({
+      id: "price",
+      coverage: prices.length,
+      distinctValues: new Set(prices).size,
+      priority: CONTEXTUAL_FACET_PRIORITY.price ?? 0,
+    });
+  }
+  const availabilityValues = products.flatMap((product) =>
+    product.stockStatus ? [product.stockStatus] : [],
+  );
+  if (availabilityValues.length >= 2 && new Set(availabilityValues).size >= 2) {
+    facets.push({
+      id: "availability",
+      coverage: availabilityValues.length,
+      distinctValues: new Set(availabilityValues).size,
+      priority: CONTEXTUAL_FACET_PRIORITY.availability ?? 0,
+    });
+  }
+  return facets
+    .sort(
+      (left, right) =>
+        right.coverage - left.coverage ||
+        right.priority - left.priority ||
+        left.distinctValues - right.distinctValues ||
+        left.id.localeCompare(right.id),
+    )
+    .slice(0, MAX_CONTEXTUAL_COLLECTION_FACETS)
+    .map(({ id }) => id);
 }
 
 function collectionPresentation(
@@ -919,13 +1058,16 @@ function collectionPresentation(
     }
     const productContexts = products.map((product) => productContext(product, revision));
     const approvedMedia = approvedCollectionMedia(dynamicSection);
+    const approvedCollectionHeroId = approvedMedia.metadata.find(
+      ({ role }) => role === "collectionImage",
+    )?.assetId;
     const collection = collectionContext(
       input.collection,
       products,
-      canonicalCollectionFilterIds(products),
+      contextualCollectionFilterIds(input.collection, products),
       revision,
-      products[0]?.images[0]?.id,
-      approvedMedia.assets,
+      approvedCollectionHeroId ?? products[0]?.images[0]?.id,
+      approvedMedia.assets.filter(({ assetId }) => assetId !== approvedCollectionHeroId),
     );
     const projection: ComponentProjectionContext = {
       evidenceReferences: [],

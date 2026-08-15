@@ -1719,12 +1719,55 @@ function promptedStudioSuccess(request: PromptedStorefrontStudioGenerationReques
     draftRevision: request.draftRevision,
   };
   const candidateSnapshotFingerprint = canonicalStorefrontContentFingerprint(candidate);
+  const materialFingerprint = (dimension: string, material: unknown) =>
+    `semantic-${dimension}-${canonicalValueFingerprint(material)}`;
+  const profileFingerprint = (profileId: string) => {
+    const selection = execution.decision.pageProfileSelections.find(
+      (candidate) => candidate.profileId === profileId,
+    );
+    if (!selection) throw new Error(`Missing prompted Studio profile authority for ${profileId}.`);
+    return selection.profileFingerprint;
+  };
+  const exactSelection = execution.narrowing;
   const lineage = {
     providerId: "p10b-16p-03-editor-mock",
     modelId: null,
     requestFingerprint: canonicalValueFingerprint({ request }),
     promptFingerprint: canonicalValueFingerprint({ prompt: request.merchantPrompt }),
     providerIntentFingerprint: canonicalValueFingerprint({ intent: request.merchantPrompt }),
+    semanticAuthorityFingerprint: materialFingerprint("authority", {
+      direction: execution.direction.authorityFingerprint,
+      selection: exactSelection.authorityFingerprint,
+    }),
+    semanticResolutionFingerprint: materialFingerprint("resolution", {
+      direction: execution.directionFingerprint,
+      selection: exactSelection.selectionId,
+    }),
+    explicitConstraintFingerprint: materialFingerprint("explicit-constraints", []),
+    trustedHintFingerprint: materialFingerprint("trusted-hints", {
+      directionPackageId: execution.direction.id,
+      frameFamilyId: execution.decision.sharedFrame.profileId,
+    }),
+    materialDimensionFingerprints: {
+      designDna: execution.decision.designDna.fingerprint,
+      sharedFrame: execution.decision.sharedFrame.authorityFingerprint,
+      homepage: profileFingerprint(execution.decision.commercialProfiles.homepageProfileId),
+      collection: profileFingerprint(execution.decision.commercialProfiles.collectionProfileId),
+      productDetail: profileFingerprint(execution.decision.commercialProfiles.pdpProfileId),
+      pageSet: execution.decision.siteMap.pageSetFingerprint,
+      componentVariants: materialFingerprint("components", execution.decision.componentChoices),
+      productCard: materialFingerprint(
+        "product-card",
+        execution.decision.componentChoices.flatMap(({ anatomyId }) =>
+          anatomyId === null ? [] : [anatomyId],
+        ),
+      ),
+      narrative: materialFingerprint("narrative", exactSelection.narrativePosture),
+      merchandising: materialFingerprint("merchandising", exactSelection.merchandisingPosture),
+      density: materialFingerprint("density", exactSelection.informationDensityPosture),
+      responsive: materialFingerprint("responsive", exactSelection.responsiveMode),
+      artDirection: materialFingerprint("art-direction", exactSelection.artDirectionPosture),
+    },
     sourceProposalFingerprint: canonicalValueFingerprint(sourceProposal),
     compiledDecisionFingerprint: canonicalValueFingerprint({ compiled: request.requestId }),
     synthesisFingerprint: canonicalValueFingerprint({ synthesis: request.requestId }),

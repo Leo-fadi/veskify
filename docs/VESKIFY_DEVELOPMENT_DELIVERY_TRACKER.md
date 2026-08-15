@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 12 August 2026, P10B-16P-03 Storefront Studio prompted generation journey                                           |
+| Baseline                    | 15 August 2026, P10B-16P-04 real Studio Design Intent V2 acceptance                                                 |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -62,7 +62,7 @@ required evidence are accepted.
 | ☑    | P10B-16P-02A | Prompted Storefront Design Intent V2                 | **Baseline** | Provider contract/adapter        | P10B-16P-01                           | Safe capability/request projection, strict intent/reference/fingerprint/failure tests and mocked OpenAI transport                                                  |
 | ☑    | P10B-16P-02B | Deterministic design-intent compiler                 | **Baseline** | Design-plan compiler             | P10B-16P-02A                          | Exact refreshed-authority resolution, bounded metadata compilation, canonical one-shot synthesis/proposal, diagnostics and stale/incompatible/no-partial rejection |
 | ☑    | P10B-16P-03  | Storefront Studio generation journey                 | **Baseline** | Storefront Studio/generation     | P10B-16P-02B                          | Standalone/mock authority; integrated auth fail-closed; one registered operation; exact source/lineage/evidence; full mocked lifecycle and browser/E2E             |
-| ☐    | P10B-16P-04  | Live V2 acceptance and bridge disposition            | **Planned**  | Provider acceptance/architecture | P10B-16P-03                           | Injected authenticated tenant/project authority, separately authorized real-provider V2 evidence and explicit P10B-16L bridge disposition                          |
+| ☑    | P10B-16P-04  | Live V2 acceptance and bridge disposition            | **Baseline** | Provider acceptance/architecture | P10B-16P-03                           | Safe 16-call ledger; final A/B/C; C full lifecycle; protected commerce/media; Deprecated P10B-16L                                                                  |
 | ☐    | P10B-17      | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA             | P10B-16P-04 and implemented families  | Four-width EN/FI geometry, a11y, performance and visual evidence                                                                                                   |
 | ☐    | P10B-18      | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA    | All prior P10B tasks                  | 100+ configurations and fingerprint-stratified human review                                                                                                        |
 
@@ -170,8 +170,10 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-03 are **Baseline**. P10B-16P-02 is
-**Baseline**. P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-04 are **Baseline**. P10B-16P-02 is
+**Baseline**. P10B-17 and P10B-18 remain **Planned**. P10B-16P-04 acceptance evidence is retained
+in
+[`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P sequence is a mandatory convergence package between P10B-16 and P10B-17; it
 supplements rather than renumbers the locked P10B-01 through P10B-18 plan.
@@ -597,15 +599,27 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 #### P10B-16P-04 — Live V2 acceptance and bridge disposition
 
 - **Outcome:** Prove the prompt-driven Design Intent V2 path with separately authorized real
-  provider evidence and explicitly retire, migrate or retain the P10B-16L compatibility bridge.
-- **Status:** **Planned**.
+  provider evidence and explicitly disposition the P10B-16L compatibility bridge.
+- **Status:** **Baseline**. Completed 15 August 2026; see
+  [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 - **Depends on:** P10B-16P-03.
-- **Done when:** The provider receives capability knowledge before any complete-store execution,
-  authenticated tenant/project-backed current authority is injected before provider selection, the
-  provider returns a strict intent, current authority compiles it through normal Studio proposal
-  review, and safe retained evidence proves call/retry limits, lifecycle, protection and bridge
-  disposition.
-- **Non-goal:** Treating another preset-selection run as V2 evidence or automatic provider calls.
+- **Done:** A trusted server-owned, production-disabled Aurum acceptance composition loaded current
+  project, draft, evidence, assets, catalogue, and capability authority before explicit provider
+  selection. The cumulative P10B-16P-04 ledger records 16 authorized calls with zero retries or
+  fallback; the final Premium Editorial, Modern Technical, and Minimal Commerce calls each returned
+  strict semantic intent, compiled deterministically, and materialized exactly one isolated
+  proposal through normal Storefront Studio. Prompt A and Prompt B were rejected without draft or
+  history mutation. Prompt C passed Accept, exact Undo/Redo, Save, reload, and normal Preview with
+  no publication. The three results were materially distinct, retained human visual acceptance,
+  and preserved protected commerce and canonical product media. Search presentation remains
+  registered while execution fails closed. P10B-16L is **Deprecated compatibility-only** and is
+  retained for historical evidence, migration/safety regressions, and later authorized cleanup.
+- **Evidence:** Real-provider, contract/schema, deterministic unit, integration, browser/E2E, and
+  retained human visual review correlated through safe provider/model, authority, semantic intent,
+  compiled-decision, structural, candidate-snapshot, lifecycle, usage, and latency fingerprints.
+  Raw prompts, provider responses, credentials, and authorization headers were not retained.
+- **Non-goal:** Production authentication, Vesko staging, executable search, publication,
+  P10B-17/P10B-18 closure, automatic provider calls, or treating preset selection as V2 evidence.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 

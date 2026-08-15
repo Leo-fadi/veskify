@@ -14,12 +14,13 @@ import { requireMerchantProjectAction } from "@/application/merchant-project-con
 import {
   PromptedStorefrontDesignCompilerError,
   runPromptedStorefrontDesignCompilation,
+  SemanticCompatibilityResolutionError,
   type PromptedStorefrontDesignCompilationAuthority,
   type PromptedStorefrontDesignCompilationResult,
 } from "@/application/prompted-storefront-design-compiler";
 import {
   PromptedStorefrontDesignIntentError,
-  type PromptedStorefrontDesignIntentProvider,
+  type SemanticStorefrontDesignIntentProvider,
 } from "@/application/prompted-storefront-design-intent";
 import {
   promptedStorefrontStudioGenerationRequestSchema,
@@ -52,7 +53,18 @@ export type SelectServerPromptedStorefrontDesignIntentProvider = (input: {
   request: PromptedStorefrontStudioGenerationRequest;
   httpRequest: Request;
   currentAuthority: PromptedStorefrontDesignCompilationAuthority;
-}) => PromptedStorefrontDesignIntentProvider;
+}) => SemanticStorefrontDesignIntentProvider;
+
+export type ServerPromptedStorefrontStudioGenerationLifecycle = Readonly<{
+  success?: (input: {
+    request: PromptedStorefrontStudioGenerationRequest;
+    result: PromptedStorefrontDesignCompilationResult;
+  }) => void | Promise<void>;
+  failure?: (input: {
+    request: PromptedStorefrontStudioGenerationRequest;
+    error: unknown;
+  }) => void | Promise<void>;
+}>;
 
 const mockFailures: readonly P10B16P03MockPromptFailure[] = [
   "provider-refusal",
@@ -81,7 +93,7 @@ export function createDefaultServerPromptedStorefrontDesignIntentProviderSelecto
 }: {
   environment?: Environment;
 } = {}): SelectServerPromptedStorefrontDesignIntentProvider {
-  return ({ request, httpRequest, currentAuthority }) => {
+  return ({ request, httpRequest }) => {
     const standaloneP03 =
       environment.VESKIFY_RUNTIME_MODE === "standalone" &&
       request.projectId === P10B16P03_PROJECT_ID;
@@ -102,7 +114,6 @@ export function createDefaultServerPromptedStorefrontDesignIntentProviderSelecto
       const failure = mockFailure(httpRequest);
       return createP10B16P03MockPromptedStorefrontDesignIntentProvider({
         scenario: selectP10B16P03MockPromptScenario(request.merchantPrompt),
-        compatibilityInput: currentAuthority.compatibilityInput,
         ...(failure === undefined ? {} : { failure }),
       });
     }
@@ -128,6 +139,11 @@ function failureMapping(error: unknown): {
   }
   if (error instanceof PromptedStorefrontDesignCompilerError) {
     return error.code === "stale-authority"
+      ? { status: 409, category: "stale", retryable: false }
+      : { status: 400, category: "validation", retryable: false };
+  }
+  if (error instanceof SemanticCompatibilityResolutionError) {
+    return error.code.startsWith("stale-")
       ? { status: 409, category: "stale", retryable: false }
       : { status: 400, category: "validation", retryable: false };
   }
@@ -271,9 +287,11 @@ export function projectPromptedStorefrontCompilationToStudioProposal(input: {
 export function createServerPromptedStorefrontStudioHandler({
   authority,
   selectProvider = createDefaultServerPromptedStorefrontDesignIntentProviderSelector(),
+  lifecycle,
 }: {
   authority: ServerPromptedStorefrontStudioAuthority;
   selectProvider?: SelectServerPromptedStorefrontDesignIntentProvider;
+  lifecycle?: ServerPromptedStorefrontStudioGenerationLifecycle;
 }) {
   const activeGenerations = new Set<string>();
   return async function POST(httpRequest: Request): Promise<Response> {
@@ -303,20 +321,24 @@ export function createServerPromptedStorefrontStudioHandler({
         request,
         result,
       });
-      return Response.json(
-        promptedStorefrontStudioGenerationSuccessSchema.parse({
-          ok: true,
-          proposal,
-          currentEvidenceReferences: result.currentEvidenceReferences,
-          lineage: {
-            ...result.evidence,
-            providerCallCount: 1,
-            retryCount: 0,
-          },
-        }),
-        { status: 200 },
-      );
+      const success = promptedStorefrontStudioGenerationSuccessSchema.parse({
+        ok: true,
+        proposal,
+        currentEvidenceReferences: result.currentEvidenceReferences,
+        lineage: {
+          ...result.evidence,
+          providerCallCount: 1,
+          retryCount: 0,
+        },
+      });
+      await lifecycle?.success?.({ request, result });
+      return Response.json(success, { status: 200 });
     } catch (error) {
+      try {
+        await lifecycle?.failure?.({ request, error });
+      } catch {
+        // Acceptance evidence is best effort and must not replace the original safe failure.
+      }
       return failure(error);
     } finally {
       activeGenerations.delete(generationKey);

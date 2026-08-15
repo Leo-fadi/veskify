@@ -245,27 +245,29 @@ describe("P10B-06 commercial shared-frame families", () => {
     expect(withoutPoliciesMarkup).not.toContain("Delivery · Returns · Privacy");
   });
 
-  it("projects the same root frame across home, collection, PDP, content and utility pages", () => {
-    const snapshot = structuredClone(compile("centered-minimal").snapshot);
-    const source = snapshot.pages[0];
-    snapshot.pages.push(
-      emptyPage(source, { id: "page_about_frame_proof", slug: "/pages/about", type: "content" }),
-      emptyPage(source, { id: "page_cart_frame_proof", slug: "/cart", type: "cart" }),
-    );
-    const context = createStorefrontRenderContext({
-      activeLocale: "en",
-      primaryLocale: "en",
-      catalogue: aurumNordicSeed.catalogue,
-      snapshot,
-    });
-    expect(new Set(snapshot.pages.map(({ type }) => type))).toEqual(
-      new Set(["home", "collection", "product", "content", "cart"]),
-    );
-    for (const page of snapshot.pages) {
-      const markup = renderToStaticMarkup(renderStorefrontPage(page, context));
-      expect(markup).toContain('data-frame-profile="centered-minimal"');
-      expect(markup.match(/data-frame-region="header"/g)).toHaveLength(1);
-      expect(markup.match(/data-frame-region="footer"/g)).toHaveLength(1);
+  it("projects the registered centered and editorial frames across every required page family", () => {
+    for (const profileId of ["centered-minimal", "editorial-masthead"] as const) {
+      const snapshot = structuredClone(compile(profileId).snapshot);
+      const source = snapshot.pages[0];
+      snapshot.pages.push(
+        emptyPage(source, { id: `page_about_${profileId}`, slug: "/pages/about", type: "content" }),
+        emptyPage(source, { id: `page_cart_${profileId}`, slug: "/cart", type: "cart" }),
+      );
+      const context = createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue: aurumNordicSeed.catalogue,
+        snapshot,
+      });
+      expect(new Set(snapshot.pages.map(({ type }) => type))).toEqual(
+        new Set(["home", "collection", "product", "content", "cart"]),
+      );
+      for (const page of snapshot.pages) {
+        const markup = renderToStaticMarkup(renderStorefrontPage(page, context));
+        expect(markup).toContain(`data-frame-profile="${profileId}"`);
+        expect(markup.match(/data-frame-region="header"/g)).toHaveLength(1);
+        expect(markup.match(/data-frame-region="footer"/g)).toHaveLength(1);
+      }
     }
   });
 
@@ -287,6 +289,28 @@ describe("P10B-06 commercial shared-frame families", () => {
     }
     expect(markup).not.toContain('href="/search"');
     expect(markup).not.toContain('href="/cart"');
+  });
+
+  it("consumes editorial frame styling, localizes mobile controls and omits a lone service link", () => {
+    const snapshot = structuredClone(compile("editorial-masthead").snapshot);
+    snapshot.navigation.footer = snapshot.navigation.footer.slice(0, 1);
+    const context = createStorefrontRenderContext({
+      activeLocale: "fi",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot,
+    });
+    const homepage = snapshot.pages.find(({ type }) => type === "home")!;
+    const markup = renderToStaticMarkup(renderStorefrontPage(homepage, context));
+
+    expect(markup).toContain("store-header");
+    expect(markup).toContain("store-footer");
+    expect(markup).toContain('data-header-variant="editorial"');
+    expect(markup).toContain('data-footer-variant="editorial"');
+    expect(markup).toContain('data-responsive-transformations="editorial-to-drawer');
+    expect(markup).toContain(">Valikko</button>");
+    expect(markup).not.toContain('data-frame-region="service-strip"');
   });
 
   it("projects search and cart utilities only from exact canonical page-family destinations", () => {
@@ -339,6 +363,7 @@ describe("P10B-06 commercial shared-frame families", () => {
     expect(markup).toContain(">Haku<");
     expect(markup).toContain('href="/cart"');
     expect(markup).toContain(">Ostoskori<");
+    expect(markup.match(/data-frame-utility="cart"/g)).toHaveLength(2);
   });
 
   it("does not project an inventory-only search route before executable search runtime exists", () => {

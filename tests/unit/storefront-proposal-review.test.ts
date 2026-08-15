@@ -267,11 +267,14 @@ describe("P4-05D storefront proposal review projection", () => {
       productDetailArchetypeCount: authority.productDetailArchetypes.length,
       runtimeRouteCount: authority.routeInventory.length,
     });
-    expect(review.heading).toMatch(/static pages.*commerce design archetypes/i);
-    expect(review.confirmationBody).toMatch(/raw starting state.*one unsaved draft change/i);
+    expect(review.heading).toMatch(/pages.*reusable shopping layouts/i);
+    expect(review.confirmationBody).toMatch(/current starting design.*one unsaved draft change/i);
+    expect(`${review.heading} ${review.confirmationBody}`).not.toMatch(
+      /canonical|archetype|runtime|protected authority/i,
+    );
   });
 
-  it("reviews legacy route convergence as canonical static pages and reusable archetypes", () => {
+  it("reviews legacy route convergence in customer language while preserving exact counts", () => {
     const migrationProposal = dynamicCommerceMigrationProposal();
     const migrationAuthority = migrationProposal.proposedStorefront.dynamicCommercePresentation;
     if (!migrationAuthority) throw new Error("The review fixture has no migration authority.");
@@ -297,14 +300,17 @@ describe("P4-05D storefront proposal review projection", () => {
     });
     expect(review.dynamicCommerceConvergence?.operationIndexes).toHaveLength(20);
     expect(review.dynamicCommerceConvergence?.summary).toMatch(
-      /20 product, collection, and search route-specific designs converge into 6 reusable design archetypes/i,
+      /20 product, collection, and search page designs are coordinated into 6 reusable shopping layouts/i,
     );
     expect(review.dynamicCommerceConvergence?.protectedBindingSummary).toMatch(
-      /ordered collection membership.*canonical product media remain protected/i,
+      /collection order.*product imagery stay unchanged/i,
     );
     expect(review.confirmationBody).toMatch(
-      /route-specific pages converge.*protected Vesko commerce bindings remain unchanged/i,
+      /product and collection pages share a consistent design.*details stay unchanged/i,
     );
+    expect(
+      `${review.dynamicCommerceConvergence?.heading} ${review.dynamicCommerceConvergence?.summary} ${review.dynamicCommerceConvergence?.protectedBindingSummary} ${review.confirmationBody}`,
+    ).not.toMatch(/canonical|archetype|runtime route|protected Vesko|commerce binding/i);
     expect(review.representedOperationIndexes).toEqual(
       migrationProposal.operations.map((_operation, index) => index),
     );
@@ -333,11 +339,14 @@ describe("P4-05D storefront proposal review projection", () => {
     );
 
     const disclosure = screen.getByTestId("dynamic-commerce-migration-review");
-    expect(disclosure).toHaveTextContent("Canonical dynamic-commerce route convergence");
-    expect(disclosure).toHaveTextContent("Static pages13");
-    expect(disclosure).toHaveTextContent("Commerce archetypes6");
-    expect(disclosure).toHaveTextContent("Runtime commerce routes20");
-    expect(disclosure).toHaveTextContent("canonical product media remain protected");
+    expect(disclosure).toHaveTextContent("Coordinated storefront page design");
+    expect(disclosure).toHaveTextContent("Storefront pages13");
+    expect(disclosure).toHaveTextContent("Reusable shopping layouts6");
+    expect(disclosure).toHaveTextContent("Product, collection, and search pages20");
+    expect(disclosure).toHaveTextContent("product imagery stay unchanged");
+    expect(disclosure).not.toHaveTextContent(
+      /canonical|archetype|runtime|protected authority|commerce binding/i,
+    );
     expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
   });
 
@@ -360,7 +369,7 @@ describe("P4-05D storefront proposal review projection", () => {
     expect(screen.queryByLabelText("How should this proposal change?")).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Entire storefront" })).toBeDisabled();
     expect(screen.getByLabelText("Your request")).toBeDisabled();
-    expect(screen.getByText(/controlled acceptance uses the generated proposal/i)).toBeVisible();
+    expect(screen.getByText(/review this proposal, then accept or reject it/i)).toBeVisible();
   });
 
   it("presents homepage-only scope and operation-derived confirmation copy in English and Finnish", () => {

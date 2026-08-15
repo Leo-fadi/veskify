@@ -242,23 +242,10 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
     if (!collectionPresentation || !productPresentation) {
       throw new Error("P9R-04 accepted commerce sections are not renderer-visible.");
     }
-    const canonicalFilterIds = [
-      ...new Set(
-        collection.productIds.flatMap((collectionProductId) => {
-          const collectionProduct = aggregate.catalogue.products.find(
-            (candidate) => candidate.id === collectionProductId,
-          );
-          if (!collectionProduct) throw new Error("P9R-04 collection product is unavailable.");
-          return Object.keys(collectionProduct.attributes);
-        }),
-      ),
-    ]
-      .sort((left, right) => left.localeCompare(right))
-      .map((filterId) => filterId.toLowerCase())
-      .concat(["price", "availability"]);
-    expect(
-      collectionPresentation.projection.collections[0]?.filters.map((filter) => filter.id),
-    ).toEqual(canonicalFilterIds);
+    const contextualFilterIds =
+      collectionPresentation.projection.collections[0]?.filters.map((filter) => filter.id) ?? [];
+    expect(contextualFilterIds).toEqual(["material", "price", "availability"]);
+    expect(contextualFilterIds).toHaveLength(3);
     const routeContext = createStorefrontRenderContext({
       activeLocale: "fi",
       primaryLocale: "fi",

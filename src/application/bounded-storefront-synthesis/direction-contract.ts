@@ -11,7 +11,7 @@ import {
   commercialSharedFrameProfileIdSchema,
 } from "@/domain/storefront";
 
-export const COORDINATED_STOREFRONT_DIRECTION_AUTHORITY_VERSION = "1.0.0" as const;
+export const COORDINATED_STOREFRONT_DIRECTION_AUTHORITY_VERSION = "1.1.0" as const;
 export const COORDINATED_STOREFRONT_DIVERSITY_CONTRACT_VERSION = "1.0.0" as const;
 
 export const coordinatedStorefrontDirectionIdSchema = z.enum([
@@ -59,6 +59,15 @@ const directionConstraintsSchema = z
     informationDensityPostures: z.array(densityPostureSchema).min(1),
     artDirectionPostures: z.array(artDirectionPostureSchema).min(1),
     responsiveModes: z.array(responsiveModeSchema).min(1),
+    postureDefaults: z
+      .object({
+        narrativePosture: narrativePostureSchema,
+        merchandisingPosture: merchandisingPostureSchema,
+        informationDensityPosture: densityPostureSchema,
+        artDirectionPosture: artDirectionPostureSchema,
+        responsiveMode: responsiveModeSchema,
+      })
+      .strict(),
     designDna: z
       .object({
         typographyPairings: z.array(z.enum(["serif-led", "sans-led", "mixed"])).min(1),
@@ -69,7 +78,25 @@ const directionConstraintsSchema = z
       })
       .strict(),
   })
-  .strict();
+  .strict()
+  .superRefine((constraints, context) => {
+    const relationships = [
+      ["narrativePosture", constraints.narrativePostures],
+      ["merchandisingPosture", constraints.merchandisingPostures],
+      ["informationDensityPosture", constraints.informationDensityPostures],
+      ["artDirectionPosture", constraints.artDirectionPostures],
+      ["responsiveMode", constraints.responsiveModes],
+    ] as const;
+    for (const [field, options] of relationships) {
+      if (!options.includes(constraints.postureDefaults[field] as never)) {
+        context.addIssue({
+          code: "custom",
+          path: ["postureDefaults", field],
+          message: "The canonical posture default must be one of the registered options.",
+        });
+      }
+    }
+  });
 
 const directionMaterialSchema = z
   .object({

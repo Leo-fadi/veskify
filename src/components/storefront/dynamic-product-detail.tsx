@@ -37,7 +37,10 @@ import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-product-detail.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
-import { CanonicalProductCard } from "./canonical-product-card";
+import {
+  CanonicalProductCard,
+  type CanonicalProductCardNavigationIntent,
+} from "./canonical-product-card";
 import type { CanonicalProductCardAnatomyId } from "@/domain/product-card";
 
 export const productPrimaryActionPresentationSchema = z
@@ -128,6 +131,7 @@ export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
   textEntryDrafts?: readonly ProductTextEntryDraft[];
   resolveAssetUrl: (assetId: string) => string;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
+  onNavigateProduct?: (intent: CanonicalProductCardNavigationIntent) => void;
 };
 
 type ResolvedAsset = {
@@ -153,6 +157,7 @@ type PreparedDynamicProductDetail = ProductOptionIntentCallbacks & {
   textEntryDrafts: readonly ProductTextEntryDraft[];
   assetFor: (assetId: string, alt?: LocalizedText, decorative?: boolean) => ResolvedAsset;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
+  onNavigateProduct?: (intent: CanonicalProductCardNavigationIntent) => void;
 };
 
 const arraysEqual = (left: readonly string[], right: readonly string[]) =>
@@ -396,6 +401,7 @@ function prepareDynamicProductDetail(
     onClearOption: input.onClearOption,
     onResetOptions: input.onResetOptions,
     onPrimaryAction: input.onPrimaryAction,
+    onNavigateProduct: input.onNavigateProduct,
     assetFor(assetId, alt, decorative = false) {
       const metadata = assetMetadata.get(assetId);
       if (!metadata || metadata.approvalStatus !== "approved") {
@@ -489,12 +495,37 @@ export function DynamicProductGallery({
     (item) =>
       product.media.find((candidate) => candidate.assetId === item.assetId)?.role !== "editorial",
   );
-  const mediaFingerprint = canonicalValueString(galleryMedia.map((item) => item.assetId));
+  const presentationMedia = galleryMedia.reduce<
+    Array<{
+      reference: (typeof galleryMedia)[number];
+      resolved: ResolvedAsset;
+      presentationKey: string;
+    }>
+  >((current, reference) => {
+    const presentation = mediaPresentation(product, reference.assetId);
+    const resolved = assetFor(reference.assetId, presentation.alt, presentation.decorative);
+    const presentationKey = canonicalValueString({
+      url: resolved.asset.url,
+      safeArea: resolved.artDirection?.safeArea,
+      sourceTreatment: resolved.artDirection?.sourceTreatment,
+      responsiveTreatments: resolved.artDirection?.responsiveTreatments,
+      derivativeTreatments: resolved.artDirection?.derivatives.map(({ breakpoint, transform }) => ({
+        breakpoint,
+        transform,
+      })),
+    });
+    if (current.some((item) => item.presentationKey === presentationKey)) return current;
+    current.push({ reference, resolved, presentationKey });
+    return current;
+  }, []);
+  const mediaFingerprint = canonicalValueString(
+    presentationMedia.map(({ reference, resolved }) => [reference.assetId, resolved.asset.url]),
+  );
   const [selection, setSelection] = useState(() => ({
     mediaFingerprint,
-    assetId: galleryMedia[0]?.assetId,
+    assetId: presentationMedia[0]?.reference.assetId,
   }));
-  if (galleryMedia.length === 0) {
+  if (presentationMedia.length === 0) {
     return (
       <section
         aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
@@ -508,55 +539,51 @@ export function DynamicProductGallery({
   }
   const selectedAssetId =
     selection.mediaFingerprint === mediaFingerprint &&
-    galleryMedia.some((item) => item.assetId === selection.assetId)
+    presentationMedia.some(({ reference }) => reference.assetId === selection.assetId)
       ? selection.assetId
-      : galleryMedia[0].assetId;
-  const selected = galleryMedia.find((item) => item.assetId === selectedAssetId) ?? galleryMedia[0];
-  const selectedPresentation = mediaPresentation(product, selected.assetId);
-  const resolved = assetFor(
-    selected.assetId,
-    selectedPresentation.alt,
-    selectedPresentation.decorative,
-  );
+      : presentationMedia[0].reference.assetId;
+  const selected =
+    presentationMedia.find(({ reference }) => reference.assetId === selectedAssetId) ??
+    presentationMedia[0];
   return (
     <section
       aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
       className={`${styles.gallery} ${styles[`gallery_${layout}`]} ${styles[`media_${treatment}`]}`}
+      data-canonical-media-count={galleryMedia.length}
       data-layout={layout}
+      data-presented-media-count={presentationMedia.length}
     >
       <figure
         className={styles.primaryMedia}
-        data-asset-id={selected.assetId}
-        data-asset-provenance={resolved.provenance.kind}
+        data-asset-id={selected.reference.assetId}
+        data-asset-provenance={selected.resolved.provenance.kind}
       >
         <ProductAssetImage
-          artDirection={resolved.artDirection}
-          asset={resolved.asset}
+          artDirection={selected.resolved.artDirection}
+          asset={selected.resolved.asset}
           className={styles.primaryImage}
           locale={locale}
         />
       </figure>
-      {galleryMedia.length > 1 ? (
+      {presentationMedia.length > 1 ? (
         <div
           aria-label={fallbackLabel("Choose product image", "Valitse tuotekuva", locale)}
           className={styles.thumbnails}
           role="group"
         >
-          {galleryMedia.map((mediaItem, index) => {
-            const presentation = mediaPresentation(product, mediaItem.assetId);
-            const item = assetFor(mediaItem.assetId, presentation.alt, presentation.decorative);
+          {presentationMedia.map(({ reference, resolved }, index) => {
             return (
               <button
                 aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
-                aria-pressed={mediaItem.assetId === selected.assetId}
-                data-asset-provenance={item.provenance.kind}
-                key={mediaItem.assetId}
-                onClick={() => setSelection({ mediaFingerprint, assetId: mediaItem.assetId })}
+                aria-pressed={reference.assetId === selected.reference.assetId}
+                data-asset-provenance={resolved.provenance.kind}
+                key={reference.assetId}
+                onClick={() => setSelection({ mediaFingerprint, assetId: reference.assetId })}
                 type="button"
               >
                 <ProductAssetImage
-                  artDirection={item.artDirection}
-                  asset={item.asset}
+                  artDirection={resolved.artDirection}
+                  asset={resolved.asset}
                   locale={locale}
                 />
               </button>
@@ -615,7 +642,9 @@ export function DynamicProductIdentity({
         </p>
       ) : null}
       {showDescription && product.description ? (
-        <p className={styles.description}>{text(product.description, locale)}</p>
+        <p className={styles.description} data-product-region="description">
+          {text(product.description, locale)}
+        </p>
       ) : null}
     </header>
   );
@@ -925,8 +954,8 @@ function TextOptionGroup({
   const blockedReason = dependencyMessage(product, resolvedOptions, group.id, locale);
   const policyGuidance: Record<typeof constraints.characterPolicy, { en: string; fi: string }> = {
     unicodeText: {
-      en: "Letters, numbers, spaces and symbols are allowed; control characters are not allowed.",
-      fi: "Kirjaimet, numerot, välilyönnit ja symbolit sallitaan; ohjausmerkkejä ei sallita.",
+      en: "Use letters, numbers, spaces and standard symbols.",
+      fi: "Käytä kirjaimia, numeroita, välilyöntejä ja tavallisia symboleita.",
     },
     lettersAndSpaces: {
       en: "Use letters, spaces, apostrophes and hyphens only.",
@@ -943,8 +972,8 @@ function TextOptionGroup({
   };
   const constraintsDescription =
     locale.activeLocale === "fi"
-      ? `${enteredText.length}/${constraints.maxLength} merkkiä. Sallittu pituus: ${constraints.minLength}-${constraints.maxLength} merkkiä. ${policyGuidance[constraints.characterPolicy].fi}`
-      : `${enteredText.length}/${constraints.maxLength} characters. Allowed length: ${constraints.minLength}-${constraints.maxLength} characters. ${policyGuidance[constraints.characterPolicy].en}`;
+      ? `${enteredText.length}/${constraints.maxLength} merkkiä. Kirjoita ${constraints.minLength}-${constraints.maxLength} merkkiä. ${policyGuidance[constraints.characterPolicy].fi}`
+      : `${enteredText.length}/${constraints.maxLength} characters. Enter ${constraints.minLength}-${constraints.maxLength} characters. ${policyGuidance[constraints.characterPolicy].en}`;
   return (
     <div className={styles.textOption} data-option-group-id={group.id}>
       <label htmlFor={inputId}>
@@ -1092,9 +1121,19 @@ export function DynamicProductSpecifications({
     >
       <h2 id={headingId}>{fallbackLabel("Specifications", "Tekniset tiedot", locale)}</h2>
       <div className={styles.specificationGroups}>
-        {product.attributeGroups.map((group) => (
-          <section aria-labelledby={`${headingId}-${group.id}`} key={group.id}>
-            <h3 id={`${headingId}-${group.id}`}>{text(group.title, locale)}</h3>
+        {product.attributeGroups.map((group, index) => (
+          <details
+            className={styles.specificationGroup}
+            data-attribute-count={group.attributes.length}
+            key={group.id}
+            open={index === 0}
+          >
+            <summary aria-label={text(group.title, locale)}>
+              <span className={styles.specificationGroupTitle}>{text(group.title, locale)}</span>
+              <span aria-hidden="true">
+                {group.attributes.length} {fallbackLabel("details", "tietoa", locale)}
+              </span>
+            </summary>
             <dl>
               {group.attributes.map((attribute) => (
                 <div key={attribute.id}>
@@ -1106,7 +1145,7 @@ export function DynamicProductSpecifications({
                 </div>
               ))}
             </dl>
-          </section>
+          </details>
         ))}
       </div>
     </section>
@@ -1182,19 +1221,21 @@ export function DynamicRelatedProducts({
   locale,
   assetFor,
   anatomyId = "standard",
+  onNavigateProduct,
 }: {
   products: readonly ProductPresentationContext[];
   heading: LocalizedText;
   locale: LocaleContext;
   assetFor: PreparedDynamicProductDetail["assetFor"];
   anatomyId?: CanonicalProductCardAnatomyId;
+  onNavigateProduct?: PreparedDynamicProductDetail["onNavigateProduct"];
 }) {
   const headingId = useId();
   if (products.length === 0) return null;
   return (
     <section aria-labelledby={headingId} className={styles.relatedProducts}>
       <h2 id={headingId}>{text(heading, locale)}</h2>
-      <div className={styles.relatedGrid}>
+      <div className={styles.relatedGrid} data-related-product-count={products.length}>
         {products.map((product) => {
           const media = product.media.find(({ role }) => role !== "editorial");
           const image = media
@@ -1221,6 +1262,7 @@ export function DynamicRelatedProducts({
                 showCanonicalBadge: true,
                 conciseAttributeLimit: 1,
               }}
+              onNavigateProduct={onNavigateProduct}
               resolvedAsset={image?.asset}
             />
           );
@@ -1390,6 +1432,7 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
       assetFor={input.assetFor}
       heading={input.content.relatedHeading}
       locale={locale}
+      onNavigateProduct={input.onNavigateProduct}
       products={input.relatedProducts}
     />
   );
@@ -1415,7 +1458,11 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
         <>
           <div className={styles.productCore}>
             {gallery}
-            <div className={styles.productInformation}>
+            <div
+              className={styles.productInformation}
+              data-layout-region="product-purchase-hierarchy"
+              data-purchase-region="opening"
+            >
               {identity}
               {purchase}
             </div>
@@ -1428,15 +1475,19 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
       {composition === "high-consideration" ? (
         <>
           <div className={styles.highConsiderationLayout}>
-            <div className={styles.highConsiderationInformation}>{identity}</div>
-            <div className={styles.highConsiderationEvidence}>
-              {specifications}
-              {supporting}
-            </div>
-            <div className={styles.highConsiderationPurchase}>
-              {gallery}
+            <div className={styles.highConsiderationGallery}>{gallery}</div>
+            <div
+              className={styles.highConsiderationDecision}
+              data-layout-region="product-purchase-hierarchy"
+              data-purchase-region="opening"
+            >
+              {identity}
               <div className={styles.purchasePanel}>{purchase}</div>
             </div>
+          </div>
+          <div className={styles.highConsiderationEvidence}>
+            {supporting}
+            {specifications}
           </div>
           {related}
         </>
@@ -1444,7 +1495,11 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
       {composition === "gallery-led" ? (
         <>
           <div className={styles.galleryLedStage}>{gallery}</div>
-          <div className={styles.galleryLedPurchase}>
+          <div
+            className={styles.galleryLedPurchase}
+            data-layout-region="product-purchase-hierarchy"
+            data-purchase-region="opening"
+          >
             <div className={styles.galleryLedIdentity}>{identity}</div>
             <div className={styles.purchasePanel}>{purchase}</div>
           </div>
@@ -1458,7 +1513,11 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
       {composition === "variant-led" ? (
         <>
           <div className={styles.variantLedLayout}>
-            <div className={styles.variantLedPurchase}>
+            <div
+              className={styles.variantLedPurchase}
+              data-layout-region="product-purchase-hierarchy"
+              data-purchase-region="opening"
+            >
               {identity}
               <div className={styles.purchasePanel}>{purchase}</div>
             </div>

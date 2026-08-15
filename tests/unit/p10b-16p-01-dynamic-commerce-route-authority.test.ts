@@ -72,6 +72,23 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
           frameProfileId ? compatibleSharedFrameProfileIds.includes(frameProfileId) : true,
       ),
     ).toBe(true);
+    for (const archetype of authority.collectionSearchArchetypes) {
+      const presentation = archetype.componentPresentations[0];
+      expect(presentation.props.cardVariant).toBe(presentation.anatomyId);
+    }
+    for (const archetype of authority.productDetailArchetypes) {
+      const presentation = archetype.componentPresentations[0];
+      expect(presentation.props.relatedCardVariant).toBe(presentation.anatomyId);
+    }
+    for (const { archetype, page } of projections) {
+      const presentation = archetype.componentPresentations[0];
+      const executableProps = page.sections[0]?.props;
+      expect(
+        archetype.family === "collection-search"
+          ? executableProps?.cardVariant
+          : executableProps?.relatedCardVariant,
+      ).toBe(presentation.anatomyId);
+    }
     expect(
       authority.collectionSearchArchetypes.find(({ id }) => id === authority.searchArchetypeId)
         ?.supportedContexts,
@@ -608,6 +625,50 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
         ]),
       );
     }
+
+    const conflictingProductAnatomy = structuredClone(scenario.legacySnapshot);
+    const productPage = conflictingProductAnatomy.pages.find(
+      ({ pageFamily }) => pageFamily?.familyId === "product-detail",
+    )!;
+    productPage.sections[0].props.relatedCardVariant =
+      productPage.sections[0].props.relatedCardVariant === "standard" ? "editorial" : "standard";
+    const productAnatomyResult = migrateLegacyDynamicCommerceRoutes(
+      conflictingProductAnatomy,
+      scenario.catalogue,
+    );
+    expect(productAnatomyResult.status).toBe("requires-decision");
+    if (productAnatomyResult.status === "requires-decision") {
+      expect(productAnatomyResult.decisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "conflicting-legacy-presentation",
+            routeIds: [productPage.id],
+          }),
+        ]),
+      );
+    }
+
+    const conflictingCollectionAnatomy = structuredClone(scenario.legacySnapshot);
+    const collectionPage = conflictingCollectionAnatomy.pages.find(
+      ({ pageFamily }) => pageFamily?.familyId === "collection",
+    )!;
+    collectionPage.sections[0].props.cardVariant =
+      collectionPage.sections[0].props.cardVariant === "standard" ? "editorial" : "standard";
+    const collectionAnatomyResult = migrateLegacyDynamicCommerceRoutes(
+      conflictingCollectionAnatomy,
+      scenario.catalogue,
+    );
+    expect(collectionAnatomyResult.status).toBe("requires-decision");
+    if (collectionAnatomyResult.status === "requires-decision") {
+      expect(collectionAnatomyResult.decisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: "conflicting-legacy-presentation",
+            routeIds: [collectionPage.id],
+          }),
+        ]),
+      );
+    }
   });
 
   it("returns typed decisions for incomplete, mismatched, unknown, or invalid legacy inputs", () => {
@@ -870,6 +931,14 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
         "anatomy",
         (archetype) => {
           archetype.componentPresentations[0].anatomyId = "staleAnatomy";
+        },
+      ],
+      [
+        "executable product-card anatomy",
+        (archetype) => {
+          const presentation = archetype.componentPresentations[0];
+          presentation.props.relatedCardVariant =
+            presentation.anatomyId === "standard" ? "editorial" : "standard";
         },
       ],
       [

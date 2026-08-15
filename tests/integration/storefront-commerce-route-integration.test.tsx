@@ -146,7 +146,7 @@ describe("P6-06 storefront commerce route integration", () => {
     expect(screen.getByText("RING-AUR-585")).toBeVisible();
     expect(screen.getByText("Yellow gold", { exact: true })).toBeVisible();
     expect(screen.getByText("14K", { exact: true })).toBeVisible();
-    expect(screen.getByLabelText("Price").textContent).toBe("1 290 €");
+    expect(screen.getByLabelText("Price").textContent).toBe("€1,290");
     const supportingImage = screen.getAllByRole("img", {
       name: "Aurora yellow-gold ring detail",
     })[0];
@@ -395,8 +395,8 @@ describe("P6-06 storefront commerce route integration", () => {
       .getAllByRole("article")
       .map((article) => article.textContent)
       .filter((text): text is string => text !== null);
-    expect(exactPrices.some((text) => text.includes("1 290 €"))).toBe(true);
-    expect(exactPrices.some((text) => text.includes("1 890 €"))).toBe(true);
+    expect(exactPrices.some((text) => text.includes("€1,290"))).toBe(true);
+    expect(exactPrices.some((text) => text.includes("€1,890"))).toBe(true);
   });
 
   it("keeps availability IDs canonical while exposing localized EN/FI terminology", () => {
@@ -507,23 +507,13 @@ describe("P6-06 storefront commerce route integration", () => {
 
   it("clamps range intents and emits only a supported canonical sort value", async () => {
     const value = aggregate();
-    const baseAdapter = createCatalogueStorefrontCommerceRouteAdapter();
-    const adapter: StorefrontCommerceRouteAdapter = {
-      product: (input) => baseAdapter.product(input),
-      collection(input) {
-        const base = baseAdapter.collection(input)!;
-        const projection = structuredClone(base.projection);
-        projection.collections[0].sorting.push({
-          id: "price_low",
-          label: localized("Price: low to high"),
-          default: false,
-        });
-        return { ...base, projection };
-      },
-    };
     const onFilterIntent = vi.fn();
     const onSortIntent = vi.fn();
-    renderCollection(value, { commerceAdapter: adapter, onFilterIntent, onSortIntent });
+    renderCollection(value, {
+      commerceAdapter: createCatalogueStorefrontCommerceRouteAdapter(),
+      onFilterIntent,
+      onSortIntent,
+    });
     await screen.findByRole("heading", { level: 1, name: "Rings" });
 
     fireEvent.change(screen.getByRole("slider", { name: "Price minimum" }), {

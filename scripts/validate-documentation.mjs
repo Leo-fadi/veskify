@@ -41,6 +41,7 @@ const activeMarkdownFiles = [
   "docs/P10B_16_REAL_PROVIDER_SYNTHESIS_ACCEPTANCE.md",
   "docs/P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md",
   "docs/P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md",
+  "docs/P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
   "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
   "docs/P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md",
@@ -152,9 +153,10 @@ requireText("docs/VESKIFY_SDD.md", [
   "There is no Vesko staging or production evidence",
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
-  "P10B-16P-02B deterministic intent compilation/canonical proposal materialization, and\nP10B-16P-03 normal Studio prompted generation are Baseline",
+  "P10B-16P-03 normal Studio prompted generation and P10B-16P-04 real-provider acceptance are",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
-  "no live V2 provider call has\noccurred",
+  "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
+  "The cumulative P10B-16P-04 ledger is 16 real calls",
 ]);
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
@@ -188,7 +190,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-03\nare **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-04, P10B-17, and P10B-18 remain\n**Planned**.",
+  "**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-04\nare **Baseline**; P10B-16P-02 is **Baseline**; P10B-17 and P10B-18 remain **Planned**.",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -204,11 +206,11 @@ requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
 ]);
 
 requireText("docs/P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md", [
-  "**Parent status: Baseline.** P10B-16P-02A, P10B-16P-02B, and P10B-16P-03 are **Baseline**.",
+  "**Parent status: Baseline.** P10B-16P-02A, P10B-16P-02B, P10B-16P-03, and P10B-16P-04 are",
   "Before a V2 provider response, Veskify may read and validate capability knowledge only",
   "registered presentation authority / executable runtime unavailable",
   "hard merchant constraints, ranked soft preferences, optional suggestions and explicit avoidance",
-  "P10B-16P-04 owns a separately authorized live Design Intent V2\nacceptance",
+  "P10B-16P-04 subsequently completed separately authorized live Design",
   "Provider and Vesko call count for both parts is zero",
   "## 9. Deterministic compilation and canonical materialization",
 ]);
@@ -249,15 +251,16 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-16 coordinated direction/diversity control, P10B-16P-01 dynamic commerce route archetypes,\nP10B-16P-02A/P10B-16P-02B prompted Design Intent V2 authority and deterministic compilation, and\nP10B-16P-03 mocked normal Studio generation are **Baseline**. P10B-16P-02 is **Baseline**;\nP10B-16P-04, P10B-17, and P10B-18 remain **Planned**.",
+  "P10B-16P-03 normal Studio generation and P10B-16P-04 real-provider acceptance are **Baseline**.",
+  "P10B-16P-02 is **Baseline**; P10B-17 and P10B-18 remain **Planned**.",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 28) {
-  failures.push("Delivery tracker must contain exactly twenty-eight completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 29) {
+  failures.push("Delivery tracker must contain exactly twenty-nine completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -308,12 +311,12 @@ if (
   !/^\| ☑\s+\| P10B-16P-02A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-02B\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-03\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-16P-04\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-16P-04\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-03 Baseline; and keep P10B-16P-04, P10B-17 and P10B-18 Planned",
+    "Delivery tracker must mark P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-04 Baseline, and keep P10B-17 and P10B-18 Planned",
   );
 }
 
@@ -321,8 +324,16 @@ requireText("docs/P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md", [
   "**Status:** Baseline",
   "one registered structural operation with exact target permission and P02B source-proposal/lineage",
   "integrated request without injected authenticated tenant/project-backed current authority fails\nclosed before provider selection",
-  "No real Design Intent V2 provider call occurred in P10B-16P-03. Search execution remains\nunavailable",
-  "P10B-16P-04, P10B-17, and P10B-18 remain **Planned**",
+  "No real Design Intent V2 provider call occurred in P10B-16P-03 itself. Search execution remains\nunavailable",
+  "P10B-16P-04 are\n**Baseline**. P10B remains **Partial**. P10B-17 and P10B-18 remain **Planned**",
+]);
+
+requireText("docs/P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md", [
+  "**Status:** Baseline",
+  "The complete P10B-16P-04 investigation and acceptance ledger contains **16 real OpenAI calls**",
+  "Cumulative retries and fallbacks were\nzero. No Vesko call or publication occurred.",
+  "P10B-16L is **Deprecated — compatibility-only acceptance infrastructure**",
+  "P10B remains **Partial**. P10B-17 and P10B-18 remain **Planned**.",
 ]);
 
 requireText("docs/P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md", [
