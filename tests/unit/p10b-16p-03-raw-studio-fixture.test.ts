@@ -6,7 +6,7 @@ import {
   P10B16P03_PROJECT_ID,
   createP10B16P03RawKarvonenStudioFixture,
 } from "@/data/demo/p10b-16p-03-studio-prompt-generation";
-import { createP10B16LRawKarvonenAcceptanceFixture } from "@/data/demo/p10b-16l-live-provider-acceptance";
+import { createRawKarvonenStorefrontFixture } from "@/data/demo/raw-karvonen-storefront-fixture";
 import { canonicalValueString } from "@/domain/storefront";
 
 describe("P10B-16P-03 raw normal-Studio fixture", () => {
@@ -33,9 +33,9 @@ describe("P10B-16P-03 raw normal-Studio fixture", () => {
     ).not.toThrow();
   });
 
-  it("reuses the exact P10B-16L merchant, commerce, evidence and materialization authorities", () => {
+  it("reuses the exact raw Karvonen merchant, commerce, evidence and materialization authorities", () => {
     const fixture = createP10B16P03RawKarvonenStudioFixture();
-    const source = createP10B16LRawKarvonenAcceptanceFixture();
+    const source = createRawKarvonenStorefrontFixture();
 
     expect(canonicalValueString(fixture.aggregate.project)).toBe(
       canonicalValueString(source.aggregate.project),

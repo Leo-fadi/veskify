@@ -27,10 +27,10 @@ import { brandSystemToCssVariables } from "@/domain/design-system";
 import { canonicalProductCardAuthority } from "@/domain/product-card";
 import {
   createStandaloneAuthoritativeWholeStorefrontPlanningContextSource,
+  createServerWholeStorefrontPlanningHandler,
   createStandaloneServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import { ServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 
 type Seed = typeof aurumNordicSeed | typeof karvonenSeed;
 
@@ -294,7 +294,7 @@ describe("P9-03 Storefront Design System v1", () => {
   });
 
   it("returns an atomic registered composition with dynamic commerce through the runtime authority", async () => {
-    const handler = createWholeStorefrontPlanningRouteHandler({
+    const handler = createServerWholeStorefrontPlanningHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
       selectProvider: createDeterministicWholeStorefrontPlanningProvider,
     });
@@ -386,7 +386,7 @@ describe("P9-03 Storefront Design System v1", () => {
 
   it("rejects an incompatible request direction and accepts the matching brief direction", async () => {
     const instruction = "Use a minimal Nordic colour and typography direction throughout the site.";
-    const incompatibleHandler = createWholeStorefrontPlanningRouteHandler({
+    const incompatibleHandler = createServerWholeStorefrontPlanningHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
       selectProvider: createDeterministicWholeStorefrontPlanningProvider,
     });
@@ -397,7 +397,7 @@ describe("P9-03 Storefront Design System v1", () => {
       }),
     );
     const baseSource = createStandaloneAuthoritativeWholeStorefrontPlanningContextSource();
-    const compatibleHandler = createWholeStorefrontPlanningRouteHandler({
+    const compatibleHandler = createServerWholeStorefrontPlanningHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority({
         contextSource: {
           async load(input) {

@@ -118,7 +118,6 @@ export function ProjectPreviewClient({
   initialEvidenceReferences = emptyEvidenceReferences,
   publishedSessionId,
   pageSlug = "/",
-  draftSessionId,
   proposalCandidateFingerprint,
   p10b16p04UtilityContext,
 }: {
@@ -130,7 +129,6 @@ export function ProjectPreviewClient({
   initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
   publishedSessionId?: string;
   pageSlug?: string;
-  draftSessionId?: string;
   proposalCandidateFingerprint?: string;
   p10b16p04UtilityContext?: "empty" | "populated";
 }) {
@@ -141,17 +139,15 @@ export function ProjectPreviewClient({
   const [activeLocale, setActiveLocale] = useState<Locale | undefined>(undefined);
   const previewQuerySuffix = publishedSessionId
     ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-    : draftSessionId
-      ? `?p10b-16l-session=${encodeURIComponent(draftSessionId)}`
-      : proposalCandidateFingerprint
-        ? `?p10b-16p-04-proposal=${encodeURIComponent(proposalCandidateFingerprint)}${
-            p10b16p04UtilityContext
-              ? `&p10b-16p-04-utility=${encodeURIComponent(p10b16p04UtilityContext)}`
-              : ""
-          }`
-        : p10b16p04UtilityContext
-          ? `?p10b-16p-04-utility=${encodeURIComponent(p10b16p04UtilityContext)}`
-          : "";
+    : proposalCandidateFingerprint
+      ? `?p10b-16p-04-proposal=${encodeURIComponent(proposalCandidateFingerprint)}${
+          p10b16p04UtilityContext
+            ? `&p10b-16p-04-utility=${encodeURIComponent(p10b16p04UtilityContext)}`
+            : ""
+        }`
+      : p10b16p04UtilityContext
+        ? `?p10b-16p-04-utility=${encodeURIComponent(p10b16p04UtilityContext)}`
+        : "";
 
   useEffect(() => {
     let cancelled = false;
@@ -239,7 +235,6 @@ export function ProjectPreviewClient({
     historicalSnapshotId,
     initialAggregate,
     initialEvidenceReferences,
-    draftSessionId,
     pageSlug,
     projectId,
     publishedSessionId,

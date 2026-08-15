@@ -12,17 +12,18 @@ import {
 } from "@/application/accepted-snapshot-publishing";
 import { preparePublish } from "@/application/publishing";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 import { createP905bAcceptedAiReceiptRouteHandler } from "@/app/api/demo/p9-05b/accept/handler";
 import { createP905bLocalDemoGenerateHandler } from "@/app/api/demo/p9-05b/generate/handler";
 import {
   createP905bLocalDemoAcceptedAiAuthoritySource,
+  createP905bLocalDemoAuthority,
   loadP905bLocalDemoEditorSession,
   p905bLocalDemoRepository,
   p905bLocalDemoSession,
   resetP905bLocalDemo,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
+import { createServerWholeStorefrontPlanningHandler } from "@/integrations/ai/whole-storefront-runtime-authority";
 
 const token = "p10a-08b-02-route-token-for-focused-tests";
 const environment = {
@@ -50,8 +51,8 @@ async function generatedAuthority() {
   const session = p905bLocalDemoSession(environment);
   const generate = createP905bLocalDemoGenerateHandler({
     environment,
-    createProposalHandler: createWholeStorefrontPlanningRouteHandler({
-      environment,
+    createProposalHandler: createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: deterministicProvider,
     }),
   });

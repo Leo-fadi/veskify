@@ -50,22 +50,22 @@ import type { LocalizedText } from "@/domain/shared";
 import type { ProjectAggregate } from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 
-export const P10B16L_FIXTURE_ID = "p10b16l-karvonen-live-provider-acceptance";
-export const P10B16L_PROJECT_ID = P10B16_RAW_KARVONEN_PROJECT_ID;
-export const P10B16L_CATALOGUE_ID = P10B16_RAW_KARVONEN_CATALOGUE_ID;
-export const P10B16L_DRAFT_ID = P10B16_RAW_KARVONEN_DRAFT_ID;
-export const P10B16L_PUBLISHED_ID = P10B16_RAW_KARVONEN_PUBLISHED_ID;
-export const P10B16L_BRIEF_ID = "brief_p10b16l_karvonen_raw";
-export const P10B16L_RAW_HOME_PAGE_ID = "page_p10b16l_karvonen_raw_home";
+export const RAW_KARVONEN_FIXTURE_ID = "p10b16l-karvonen-live-provider-acceptance";
+export const RAW_KARVONEN_PROJECT_ID = P10B16_RAW_KARVONEN_PROJECT_ID;
+export const RAW_KARVONEN_CATALOGUE_ID = P10B16_RAW_KARVONEN_CATALOGUE_ID;
+export const RAW_KARVONEN_DRAFT_ID = P10B16_RAW_KARVONEN_DRAFT_ID;
+export const RAW_KARVONEN_PUBLISHED_ID = P10B16_RAW_KARVONEN_PUBLISHED_ID;
+export const RAW_KARVONEN_BRIEF_ID = "brief_p10b16l_karvonen_raw";
+export const RAW_KARVONEN_HOME_PAGE_ID = "page_p10b16l_karvonen_raw_home";
 /** Merchant-visible route count in the complete acceptance site map. */
-export const P10B16L_CORE_PAGE_COUNT = 28;
+export const RAW_KARVONEN_CORE_PAGE_COUNT = 28;
 /** Persisted static PageModels after compact dynamic-commerce migration. */
-export const P10B16L_STATIC_DESIGN_PAGE_COUNT = 8;
-export const P10B16L_DYNAMIC_ROUTE_COUNT = 20;
-export const P10B16L_PREMIUM_EDITORIAL_COLLECTION_SEARCH_ARCHETYPE_COUNT = 3;
-export const P10B16L_PREMIUM_EDITORIAL_PRODUCT_DETAIL_ARCHETYPE_COUNT = 4;
-export const P10B16L_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT = 4;
-export const P10B16L_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT = 5;
+export const RAW_KARVONEN_STATIC_DESIGN_PAGE_COUNT = 8;
+export const RAW_KARVONEN_DYNAMIC_ROUTE_COUNT = 20;
+export const RAW_KARVONEN_PREMIUM_EDITORIAL_COLLECTION_SEARCH_ARCHETYPE_COUNT = 3;
+export const RAW_KARVONEN_PREMIUM_EDITORIAL_PRODUCT_DETAIL_ARCHETYPE_COUNT = 4;
+export const RAW_KARVONEN_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT = 4;
+export const RAW_KARVONEN_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT = 5;
 
 const FIXED_TIME = "2026-08-10T09:00:00.000Z";
 const ABOUT_EVIDENCE_ID = "evidence_p10b16l_karvonen_about";
@@ -116,24 +116,24 @@ function projectLocalized(value: string): { en: string; fi: string } {
 function createCatalogue(): CatalogueDisplayModel {
   return catalogueDisplayModelSchema.parse({
     ...structuredClone(karvonenSeed.catalogue),
-    id: P10B16L_CATALOGUE_ID,
+    id: RAW_KARVONEN_CATALOGUE_ID,
   });
 }
 
 function createRawSnapshot(
-  id: typeof P10B16L_DRAFT_ID | typeof P10B16L_PUBLISHED_ID,
+  id: typeof RAW_KARVONEN_DRAFT_ID | typeof RAW_KARVONEN_PUBLISHED_ID,
   createdBy: "user" | "system",
 ): StorefrontSnapshot {
   const business = karvonenSeed.project.businessProfile;
   return storefrontSnapshotSchema.parse({
     id,
-    projectId: P10B16L_PROJECT_ID,
+    projectId: RAW_KARVONEN_PROJECT_ID,
     revision: 0,
     brandSystem: baselineBrandSystem,
     navigation: { primary: [], footer: [] },
     pages: [
       {
-        id: P10B16L_RAW_HOME_PAGE_ID,
+        id: RAW_KARVONEN_HOME_PAGE_ID,
         type: "home",
         slug: "/",
         title: projectLocalized(business.name),
@@ -145,7 +145,7 @@ function createRawSnapshot(
       },
     ],
     contentSupportFactDocuments: [],
-    catalogueRef: P10B16L_CATALOGUE_ID,
+    catalogueRef: RAW_KARVONEN_CATALOGUE_ID,
     createdAt: FIXED_TIME,
     createdBy,
   });
@@ -156,7 +156,7 @@ function createRawSnapshot(
  * promoter. Their registered default variants are replaced by the P10B-16 selected frame; this
  * prerequisite establishes no shared-frame, profile, direction, Design DNA or narrative choice.
  */
-export function createP10B16LExecutionPlanningInput(
+export function createRawKarvonenExecutionPlanningInput(
   rawPlanningInput: WholeStorefrontPlanningInput,
 ): WholeStorefrontPlanningInput {
   const raw = wholeStorefrontPlanningInputSchema.parse(structuredClone(rawPlanningInput));
@@ -169,7 +169,7 @@ export function createP10B16LExecutionPlanningInput(
     rawHome.pageFamily !== undefined ||
     raw.draft.sharedFrame !== undefined
   ) {
-    throw new Error("P10B-16L execution preparation requires the exact raw reset snapshot.");
+    throw new Error("Raw Karvonen execution preparation requires the exact reset snapshot.");
   }
   const brandName = karvonenSeed.project.businessProfile.name;
   const factualBrandName = projectLocalized(brandName);
@@ -209,14 +209,14 @@ export function createP10B16LExecutionPlanningInput(
 }
 
 function createAggregate(catalogue: CatalogueDisplayModel): ProjectAggregate {
-  const publishedSnapshot = createRawSnapshot(P10B16L_PUBLISHED_ID, "system");
-  const draftSnapshot = createRawSnapshot(P10B16L_DRAFT_ID, "user");
+  const publishedSnapshot = createRawSnapshot(RAW_KARVONEN_PUBLISHED_ID, "system");
+  const draftSnapshot = createRawSnapshot(RAW_KARVONEN_DRAFT_ID, "user");
   const project = projectSchema.parse({
     ...structuredClone(karvonenSeed.project),
-    id: P10B16L_PROJECT_ID,
+    id: RAW_KARVONEN_PROJECT_ID,
     enabledLocales: ["en", "fi"],
-    publishedSnapshotId: P10B16L_PUBLISHED_ID,
-    draftSnapshotId: P10B16L_DRAFT_ID,
+    publishedSnapshotId: RAW_KARVONEN_PUBLISHED_ID,
+    draftSnapshotId: RAW_KARVONEN_DRAFT_ID,
     revision: 0,
     createdAt: FIXED_TIME,
     updatedAt: FIXED_TIME,
@@ -239,7 +239,7 @@ function createApprovedBrief(catalogue: CatalogueDisplayModel): StorefrontDesign
     reconciliation: null,
   });
   const pending = createStorefrontDesignBrief({
-    id: P10B16L_BRIEF_ID,
+    id: RAW_KARVONEN_BRIEF_ID,
     now: FIXED_TIME,
     businessIdentity: {
       businessName: business.name,
@@ -297,7 +297,7 @@ function createAboutAuthority(brief: StorefrontDesignBriefContract): Readonly<{
 }> {
   const approvalFingerprint = brief.approvedEvidenceFingerprint;
   if (!approvalFingerprint || !brief.approval.actorId) {
-    throw new Error("The P10B-16L fixture brief must be authoritatively approved.");
+    throw new Error("The raw Karvonen fixture brief must be authoritatively approved.");
   }
   const business = karvonenSeed.project.businessProfile;
   const reference: PageFactEvidenceReference = {
@@ -336,19 +336,19 @@ function createAboutAuthority(brief: StorefrontDesignBriefContract): Readonly<{
       if (familyId !== "about" || request.authorityId !== reference.authorityId) {
         throw new PageFactEvidenceAuthorityError(
           "unknown-evidence-authority",
-          "No approved P10B-16L evidence exists for the requested page family.",
+          "No approved raw Karvonen evidence exists for the requested page family.",
         );
       }
       if (request.source !== reference.source) {
         throw new PageFactEvidenceAuthorityError(
           "evidence-source-mismatch",
-          "The P10B-16L evidence source does not match current authority.",
+          "The raw Karvonen evidence source does not match current authority.",
         );
       }
       if (request.revision !== reference.revision) {
         throw new PageFactEvidenceAuthorityError(
           "stale-evidence-revision",
-          "The P10B-16L evidence revision is stale.",
+          "The raw Karvonen evidence revision is stale.",
         );
       }
       return structuredClone(reference);
@@ -372,13 +372,13 @@ function createAboutAuthority(brief: StorefrontDesignBriefContract): Readonly<{
       if (request.authorityId !== document.id) {
         throw new ContentSupportFactAuthorityError(
           "unknown-evidence-authority",
-          "The requested P10B-16L content fact does not exist.",
+          "The requested raw Karvonen content fact does not exist.",
         );
       }
       if (request.revision !== document.evidence.revision) {
         throw new ContentSupportFactAuthorityError(
           "stale-evidence-revision",
-          "The requested P10B-16L content fact is stale.",
+          "The requested raw Karvonen content fact is stale.",
         );
       }
       return structuredClone(document);
@@ -436,7 +436,7 @@ function createSiteMapDecision(
     ),
     commerceContext: { kind: "none" },
     navigation: [{ area: "primary", order: 0, label: { en: "Home", fi: "Etusivu" } }],
-    existingPageId: P10B16L_RAW_HOME_PAGE_ID,
+    existingPageId: RAW_KARVONEN_HOME_PAGE_ID,
     evidenceReferences: [],
   });
   const collectionPages = catalogue.collections.map((collection, index) => {
@@ -552,15 +552,15 @@ function createSiteMapDecision(
   });
   return storefrontSiteMapDecisionSchema.parse({
     schemaVersion: 1,
-    projectId: P10B16L_PROJECT_ID,
+    projectId: RAW_KARVONEN_PROJECT_ID,
     localeCoverage: [...locales],
     sharedFrame: SITE_MAP_SHARED_FRAME,
     pages: [home, ...collectionPages, search, ...productPages, ...utilityPages, about],
   });
 }
 
-export type P10B16LRawKarvonenAcceptanceFixture = Readonly<{
-  fixtureId: typeof P10B16L_FIXTURE_ID;
+export type RawKarvonenStorefrontFixture = Readonly<{
+  fixtureId: typeof RAW_KARVONEN_FIXTURE_ID;
   aggregate: ProjectAggregate;
   rawDraft: StorefrontSnapshot;
   brief: StorefrontDesignBriefContract;
@@ -575,13 +575,13 @@ export type P10B16LRawKarvonenAcceptanceFixture = Readonly<{
 }>;
 
 /**
- * Deterministic raw Karvonen input for P10B-16L. It preserves canonical commerce/media while
+ * Deterministic raw Karvonen storefront input. It preserves canonical commerce/media while
  * intentionally supplying no preselected commercial frame, profile, section or Design DNA.
  */
-export function createP10B16LRawKarvonenAcceptanceFixture(): P10B16LRawKarvonenAcceptanceFixture {
+export function createRawKarvonenStorefrontFixture(): RawKarvonenStorefrontFixture {
   const catalogue = createCatalogue();
   const aggregate = createAggregate(catalogue);
-  const rawDraft = aggregate.snapshots.find(({ id }) => id === P10B16L_DRAFT_ID)!;
+  const rawDraft = aggregate.snapshots.find(({ id }) => id === RAW_KARVONEN_DRAFT_ID)!;
   const brief = createApprovedBrief(catalogue);
   const authority = createAboutAuthority(brief);
   const siteMapDecision = createSiteMapDecision(catalogue, authority.reference);
@@ -599,7 +599,7 @@ export function createP10B16LRawKarvonenAcceptanceFixture(): P10B16LRawKarvonenA
     approvedAssetContext: null,
     requiredAssetPlacements: [],
   });
-  const executionPlanningInput = createP10B16LExecutionPlanningInput(planningInput);
+  const executionPlanningInput = createRawKarvonenExecutionPlanningInput(planningInput);
   const approvedBriefReference: PageFactEvidenceReference = {
     source: "merchant-approved",
     authorityId: brief.id,
@@ -609,7 +609,7 @@ export function createP10B16LRawKarvonenAcceptanceFixture(): P10B16LRawKarvonenA
     approvalFingerprint: brief.approvedEvidenceFingerprint!,
   };
   return Object.freeze({
-    fixtureId: P10B16L_FIXTURE_ID,
+    fixtureId: RAW_KARVONEN_FIXTURE_ID,
     aggregate,
     rawDraft: structuredClone(rawDraft),
     brief,

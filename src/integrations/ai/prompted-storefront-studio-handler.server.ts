@@ -15,7 +15,6 @@ import {
   PromptedStorefrontDesignCompilerError,
   runPromptedStorefrontDesignCompilation,
   SemanticCompatibilityResolutionError,
-  type PromptedStorefrontDesignCompilationAuthority,
   type PromptedStorefrontDesignCompilationResult,
 } from "@/application/prompted-storefront-design-compiler";
 import {
@@ -28,12 +27,6 @@ import {
   type PromptedStorefrontStudioGenerationFailureCategory,
   type PromptedStorefrontStudioGenerationRequest,
 } from "@/application/prompted-storefront-studio";
-import { P10B16P03_PROJECT_ID } from "@/data/demo/p10b-16p-03-studio-identity";
-import {
-  createP10B16P03MockPromptedStorefrontDesignIntentProvider,
-  selectP10B16P03MockPromptScenario,
-  type P10B16P03MockPromptFailure,
-} from "@/integrations/ai/mock-prompted-storefront-design-intent-v2-provider.server";
 import { selectServerPromptedStorefrontDesignIntentProviderConfiguration } from "@/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server";
 import {
   mapServerWholeStorefrontFailure,
@@ -45,14 +38,11 @@ import {
 } from "@/domain/storefront";
 import type { ServerPromptedStorefrontStudioAuthority } from "./prompted-storefront-studio-authority.server";
 
-export const P10B16P03_MOCK_FAILURE_HEADER = "x-veskify-p10b-16p-03-mock-failure" as const;
-
 type Environment = Readonly<Record<string, string | undefined>>;
 
 export type SelectServerPromptedStorefrontDesignIntentProvider = (input: {
   request: PromptedStorefrontStudioGenerationRequest;
   httpRequest: Request;
-  currentAuthority: PromptedStorefrontDesignCompilationAuthority;
 }) => SemanticStorefrontDesignIntentProvider;
 
 export type ServerPromptedStorefrontStudioGenerationLifecycle = Readonly<{
@@ -66,38 +56,18 @@ export type ServerPromptedStorefrontStudioGenerationLifecycle = Readonly<{
   }) => void | Promise<void>;
 }>;
 
-const mockFailures: readonly P10B16P03MockPromptFailure[] = [
-  "provider-refusal",
-  "provider-timeout",
-  "provider-transport",
-  "malformed-output",
-  "strict-schema-invalid",
-  "unknown-capability",
-  "insufficient-material-intent",
-  "unsupported-hard-constraint",
-];
-
-function mockFailure(httpRequest: Request): P10B16P03MockPromptFailure | undefined {
-  const requested = httpRequest.headers.get(P10B16P03_MOCK_FAILURE_HEADER);
-  return mockFailures.find((failure) => failure === requested);
-}
-
 /**
- * Selects one server-only provider path. Standalone access to the dedicated
- * P03 raw project intentionally uses the deterministic mock. Integrated
- * OpenAI mode uses only the V2 OpenAI selector and fails closed; it never
- * falls back to the mock when credentials or model authority are unavailable.
+ * Selects the normal server-only provider path. Production-disabled P03/P04
+ * acceptance compositions inject their own selectors and are not reachable
+ * through this dependency closure. Integrated OpenAI mode fails closed when
+ * credentials or model authority are unavailable and never uses a mock.
  */
 export function createDefaultServerPromptedStorefrontDesignIntentProviderSelector({
   environment = process.env,
 }: {
   environment?: Environment;
 } = {}): SelectServerPromptedStorefrontDesignIntentProvider {
-  return ({ request, httpRequest }) => {
-    const standaloneP03 =
-      environment.VESKIFY_RUNTIME_MODE === "standalone" &&
-      request.projectId === P10B16P03_PROJECT_ID;
-    const explicitlyMocked = environment.VESKIFY_P10B_16P_03_MOCK_PROVIDER === "1";
+  return () => {
     if (
       environment.VESKIFY_RUNTIME_MODE === "integrated" &&
       environment.VESKIFY_AI_PROVIDER === "openai"
@@ -109,13 +79,6 @@ export function createDefaultServerPromptedStorefrontDesignIntentProviderSelecto
         throw new PromptedStorefrontDesignIntentError("credentials-unavailable");
       }
       return configuration.provider;
-    }
-    if (standaloneP03 || explicitlyMocked) {
-      const failure = mockFailure(httpRequest);
-      return createP10B16P03MockPromptedStorefrontDesignIntentProvider({
-        scenario: selectP10B16P03MockPromptScenario(request.merchantPrompt),
-        ...(failure === undefined ? {} : { failure }),
-      });
     }
     throw new ServerWholeStorefrontAuthorityError("unavailable");
   };
@@ -307,11 +270,9 @@ export function createServerPromptedStorefrontStudioHandler({
     try {
       const context = await authority.resolve(request, httpRequest);
       requireMerchantProjectAction(context.authorization, "request-ai-design");
-      const providerSelectionAuthority = await context.loadCurrentAuthority();
       const provider = selectProvider({
         request,
         httpRequest,
-        currentAuthority: providerSelectionAuthority,
       });
       const result = await runPromptedStorefrontDesignCompilation({
         provider,

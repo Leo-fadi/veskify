@@ -35,7 +35,6 @@ import {
   createP10B16P03MockPromptedStorefrontDesignIntentProvider,
 } from "@/integrations/ai/mock-prompted-storefront-design-intent-v2-provider.server";
 import { createP10B16P03ServerPromptedStorefrontStudioAuthority } from "@/integrations/ai/prompted-storefront-studio-authority.server";
-import type { SelectServerPromptedStorefrontDesignIntentProvider } from "@/integrations/ai/prompted-storefront-studio-handler.server";
 import { InMemoryProjectRepository } from "@/services/storage";
 
 const scenarios = [
@@ -122,15 +121,13 @@ describe("P10B-16P-04F deterministic semantic Studio lifecycle", () => {
       const selectLegacyProvider = vi.fn(() =>
         createDeterministicWholeStorefrontPlanningProvider(),
       );
-      const selectPromptedProvider = vi.fn(
-        ({ currentAuthority }: Parameters<SelectServerPromptedStorefrontDesignIntentProvider>[0]) =>
-          createP10B16P03MockPromptedStorefrontDesignIntentProvider({
-            scenario: id,
-            compatibilityInput: currentAuthority.compatibilityInput,
-            onRequest: () => {
-              providerCalls += 1;
-            },
-          }),
+      const selectPromptedProvider = vi.fn(() =>
+        createP10B16P03MockPromptedStorefrontDesignIntentProvider({
+          scenario: id,
+          onRequest: () => {
+            providerCalls += 1;
+          },
+        }),
       );
       const route = createWholeStorefrontPlanningRouteHandler({
         promptedAuthority: createP10B16P03ServerPromptedStorefrontStudioAuthority(),

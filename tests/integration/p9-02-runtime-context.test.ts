@@ -15,10 +15,10 @@ import type { WholeStorefrontPlanningProvider } from "@/application/whole-storef
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import {
   createStandaloneAuthoritativeWholeStorefrontPlanningContextSource,
+  createServerWholeStorefrontPlanningHandler,
   createStandaloneServerWholeStorefrontPlanningAuthority,
   type AuthoritativeWholeStorefrontPlanningContextSource,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 
 function requestFor(
   seed: typeof aurumNordicSeed | typeof karvonenSeed,
@@ -81,7 +81,7 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
     );
     const source: AuthoritativeWholeStorefrontPlanningContextSource = { load };
     const received: unknown[] = [];
-    const handler = createWholeStorefrontPlanningRouteHandler({
+    const handler = createServerWholeStorefrontPlanningHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority({ contextSource: source }),
       selectProvider: () => recordingProvider((value) => received.push(value)),
     });
@@ -135,7 +135,7 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
   });
 
   it("retains the browser correlation ID while validating server-added authoritative assets", async () => {
-    const handler = createWholeStorefrontPlanningRouteHandler({
+    const handler = createServerWholeStorefrontPlanningHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
       selectProvider: () => recordingProvider(() => undefined),
     });
@@ -175,7 +175,7 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
           return context;
         },
       };
-      return createWholeStorefrontPlanningRouteHandler({
+      return createServerWholeStorefrontPlanningHandler({
         authority: createStandaloneServerWholeStorefrontPlanningAuthority({
           contextSource: source,
         }),
@@ -243,7 +243,7 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
         };
       },
     };
-    const handler = createWholeStorefrontPlanningRouteHandler({
+    const handler = createServerWholeStorefrontPlanningHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority({ contextSource: source }),
       selectProvider: () => recordingProvider(() => undefined),
     });

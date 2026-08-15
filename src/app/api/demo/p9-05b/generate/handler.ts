@@ -2,13 +2,16 @@ import "server-only";
 
 import { z } from "zod";
 import { aiStorefrontProviderRequestSchema } from "@/application/ai-storefront-generation";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createDeterministicWholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
 import {
   buildP905bLocalDemoRequest,
   configuredP905bLocalDemoToken,
+  createP905bLocalDemoAuthority,
   isP905bLocalDemoConfigured,
   sameP905bLocalDemoSecret,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
+import { selectServerWholeStorefrontPlanningProvider } from "@/integrations/ai/openai/whole-storefront-planning-client.server";
+import { createServerWholeStorefrontPlanningHandler } from "@/integrations/ai/whole-storefront-runtime-authority";
 
 const bodySchema = z
   .object({
@@ -18,7 +21,7 @@ const bodySchema = z
   })
   .strict();
 
-type CreateProposalHandler = ReturnType<typeof createWholeStorefrontPlanningRouteHandler>;
+type CreateProposalHandler = (request: Request) => Promise<Response>;
 
 function failure(
   status: number,
@@ -38,11 +41,25 @@ function isJsonRequest(request: Request) {
 
 export function createP905bLocalDemoGenerateHandler({
   environment = process.env,
-  createProposalHandler = createWholeStorefrontPlanningRouteHandler(),
+  createProposalHandler,
 }: {
   environment?: Readonly<Record<string, string | undefined>>;
   createProposalHandler?: CreateProposalHandler;
 } = {}) {
+  const proposalHandler =
+    createProposalHandler ??
+    createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
+      selectProvider: () => {
+        if (environment.VESKIFY_AI_PROVIDER === "deterministic") {
+          return createDeterministicWholeStorefrontPlanningProvider();
+        }
+        if (environment.VESKIFY_AI_PROVIDER === "openai") {
+          return selectServerWholeStorefrontPlanningProvider({ environment });
+        }
+        throw new Error("The production-disabled P9 planner is not configured.");
+      },
+    });
   return async function POST(request: Request) {
     if (request.method !== "POST" || !isP905bLocalDemoConfigured(environment)) {
       return failure(404, "providerUnavailable");
@@ -71,7 +88,7 @@ export function createP905bLocalDemoGenerateHandler({
       const providerRequest = aiStorefrontProviderRequestSchema.parse(
         await buildP905bLocalDemoRequest(body.merchantInstruction, environment),
       );
-      const response = await createProposalHandler(
+      const response = await proposalHandler(
         new Request(new URL("/api/ai/whole-storefront-proposals", request.url), {
           method: "POST",
           headers: {

@@ -5,5 +5,4 @@ export * from "./diversity";
 export * from "./coordinated-directions";
 export * from "./direction-evidence-manifest";
 export * from "./evidence-manifest";
-export * from "./live-provider-acceptance";
 export * from "./synthesizer";

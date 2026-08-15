@@ -10,7 +10,7 @@ import { executeCoordinatedDirection } from "@/application/bounded-storefront-sy
 import { designOperationSchema } from "@/application/design-operations";
 import type { WholeStorefrontPlanningInput } from "@/application/whole-storefront-generation-plan";
 import { createP10B14PremiumEditorialFixture } from "@/data/demo/p10b-14-premium-editorial";
-import { createP10B16LRawKarvonenAcceptanceFixture } from "@/data/demo/p10b-16l-live-provider-acceptance";
+import { createRawKarvonenStorefrontFixture } from "@/data/demo/raw-karvonen-storefront-fixture";
 import { canonicalStorefrontContentFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   createServerAuthoritativeTrustedPlanProposalTransport,
@@ -29,7 +29,7 @@ function studioTransport(planningInput: WholeStorefrontPlanningInput): AiStorefr
     activeLocale: planningInput.project.enabledLocales[0],
     requestSequence: 1,
     correlationRequestId: "p10b16l_trusted_plan_projection",
-    providerId: "p10b-live-synthesis-intent",
+    providerId: "trusted-plan-test-provider",
   });
 }
 
@@ -118,7 +118,7 @@ describe("server-authoritative trusted whole-storefront plan proposal projection
   });
 
   it("binds a bounded synthesized BrandSystem to its exact registered narrowing and current plan", () => {
-    const fixture = createP10B16LRawKarvonenAcceptanceFixture();
+    const fixture = createRawKarvonenStorefrontFixture();
     const result = executeCoordinatedDirection({
       planningInput: fixture.executionPlanningInput,
       siteMapDecision: fixture.siteMapDecision,
@@ -138,8 +138,8 @@ describe("server-authoritative trusted whole-storefront plan proposal projection
       merchantInstruction: "Create the trusted complete Premium Editorial storefront.",
       activeLocale: materialization.planningInput.project.enabledLocales[0],
       requestSequence: 1,
-      correlationRequestId: "p10b16l_registered_narrowing",
-      providerId: "p10b-live-synthesis-intent",
+      correlationRequestId: "registered_narrowing_regression",
+      providerId: "trusted-plan-test-provider",
     });
     const response = createServerAuthoritativeTrustedPlanProposalResponse({
       request,

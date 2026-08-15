@@ -2,9 +2,10 @@
 
 ## Status
 
-**Deprecated — compatibility-only acceptance infrastructure.** P10B-16, P10B-16P-01,
-P10B-16P-02A, P10B-16P-02B, P10B-16P-03, and P10B-16P-04 are **Baseline**. P10B-16P-02 is
-**Baseline**; P10B-17 and P10B-18 remain **Planned**. P10B remains **Partial**.
+**Deprecated — historical compatibility evidence; active runtime removed.** P10B-16,
+P10B-16P-01, P10B-16P-02A, P10B-16P-02B, P10B-16P-03, P10B-16P-04, and P10B-16P-05A are
+**Baseline**. P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18 remain **Planned**.
+P10B remains **Partial**.
 
 Provider calls during the P10B-16P-02A and P10B-16P-02B Design Intent V2 implementation:
 **zero**. One earlier, separately authorized call used the pre-correction v1 direction/posture
@@ -12,20 +13,22 @@ contract retained below.
 
 The retained call proves only that the earlier strict v1 provider result completed. Coordinated
 synthesis failed afterward, and the call did not generate a storefront design plan from the prompt.
-P10B-16P-04 now owns accepted live V2 evidence and has disposed this bridge as compatibility-only.
-The bridge's deterministic and mocked-transport evidence remains historical migration and safety
-evidence only; it is not the normal prompted Studio path.
+P10B-16P-04 owns accepted live V2 evidence and disposed this bridge as compatibility-only.
+P10B-16P-05A subsequently removed its active routes, executable-intent provider/runtime, and
+product-path consumers. This document and the bridge's bounded deterministic evidence remain
+historical migration and safety evidence only; they are not the normal prompted Studio path.
 
 ## Why this bridge exists
 
-P9-05B remains valid historical evidence for its own Phase 9 outcome. It starts from the
-already-designed `project_lumo_fresh` demonstration storefront and lets a provider choose one of
-the historical registered whole-storefront directions. It does not start from raw merchant
+P9-05B remains valid historical evidence for its own Phase 9 outcome. Its isolated live-generation
+path started from the already-designed `project_lumo_fresh` demonstration storefront and let a
+provider choose one of the historical registered whole-storefront directions. It did not start from raw merchant
 presentation authority and does not exercise the current P10B-16 direction packages through the
 P10B-15 complete-storefront synthesis engine. It therefore is not P10B-15/P10B-16 live synthesis
-acceptance evidence and is not changed by P10B-16L.
+acceptance evidence. P10B-16P-05A isolates it as Deprecated historical, production-disabled
+generation while retaining only proven publication/migration fixtures and evidence consumers.
 
-P10B-16L adds a separate local-only path:
+P10B-16L historically added this separate local-only path, now removed from the active runtime:
 
 ```text
 raw approved Karvonen merchant and commerce truth
@@ -99,25 +102,25 @@ choose a compatible product-led or typographic composition.
 
 ## Local-only authority and security
 
-The server authority uses the namespace
-`p10b-16l-real-provider-complete-storefront-synthesis`. It is process-local, resettable and backed
-by an in-memory project repository. It creates no production persistence and is unavailable when
+The removed server authority used the namespace
+`p10b-16l-real-provider-complete-storefront-synthesis`. It was process-local, resettable and backed
+by an in-memory project repository. It created no production persistence and was unavailable when
 `NODE_ENV` is `production`.
 
-Activation requires all of:
+Historical activation required all of:
 
 - a non-production process;
 - `VESKIFY_RUNTIME_MODE=integrated`;
 - `VESKIFY_P10B_16L_LOCAL_ACCEPTANCE=1`; and
 - a `VESKIFY_P10B_16L_LOCAL_ACCEPTANCE_TOKEN` whose encoded length is at least 32 bytes.
 
-The reset and generation endpoints require the configured token, same-origin requests and an
-exact request shape. The reset creates a new opaque session. Acceptance, rejection and
-synchronization require that session, the exact project identity, the expected monotonically
+The reset and generation endpoints required the configured token, same-origin requests and an
+exact request shape. The reset created a new opaque session. Acceptance, rejection and
+synchronization required that session, the exact project identity, the expected monotonically
 increasing authority revision, same-origin JSON requests and valid canonical state. Secret
-comparison is timing-safe. Production activation fails closed.
+comparison was timing-safe. Production activation failed closed.
 
-The local routes are intentionally separate from P9-05B:
+The removed local routes were intentionally separate from P9-05B:
 
 - `POST /api/demo/p10b-live` resets raw authority and issues an opaque session;
 - `POST /api/demo/p10b-live/generate` performs at most one provider call for that reset;
@@ -126,13 +129,20 @@ The local routes are intentionally separate from P9-05B:
   and
 - `POST /api/demo/p10b-live/synchronize` retains active or explicitly saved canonical state.
 
-The test-only `VESKIFY_P10B_16L_MOCK_TRANSPORT=1` switch is accepted only outside production and
-selects an explicit structured mock transport. It is not a fallback. A live run must leave this
-switch unset. Missing OpenAI selection, credentials, valid model identity or bounded timeout
-returns a safe unavailable result; it never selects the mock or historical deterministic planner.
+The former test-only `VESKIFY_P10B_16L_MOCK_TRANSPORT=1` switch was accepted only outside production
+and selected an explicit structured mock transport. It was not a fallback. Missing OpenAI
+selection, credentials, valid model identity or bounded timeout returned a safe unavailable result;
+it never selected the mock or historical deterministic planner. P10B-16P-05A removed this runtime
+configuration with the routes.
 
-Each reset has a one-call budget. A completed, failed or concurrent generation cannot call the
-provider again without an explicit reset. OpenAI SDK retries and per-request retries are both zero.
+Each historical reset had a one-call budget. A completed, failed or concurrent generation could not
+call the provider again without an explicit reset. OpenAI SDK retries and per-request retries were
+both zero.
+
+> **Historical contract note:** The sections below preserve the removed bridge's contract and
+> evidence in their original operational terminology. They do not describe a callable current
+> route, provider, project authority, or Studio session. P10B-16P-05A removed those runtime
+> consumers; only bounded documentation and required neutral migration/safety evidence remain.
 
 ## Executable bounded preset-selection compatibility contract
 
@@ -262,7 +272,7 @@ fact references. Utility pages retain their registered read-only presentation an
 unavailable posture when no operational cart or checkout runtime is present; the bridge does not
 invent operational state.
 
-## P10B-16L special Storefront Studio bridge
+## Historical P10B-16L special Storefront Studio bridge
 
 Generation returns the normal editor route with an opaque `p10b-16l-session` query value. The
 server keeps the raw saved aggregate in the browser repository and projects the transient review
@@ -362,10 +372,17 @@ Preview. The cumulative P10B-16P-04 ledger is 16 real calls with zero retries or
 publication, and unchanged protected commerce and canonical product media. See
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 
-The accepted path does not use the P10B-16L `executableIntentId` selector. P10B-16L is retained
-temporarily as Deprecated compatibility-only infrastructure for historical evidence, migration
-regressions, safety comparison, and consumer analysis. Removal requires merged P10B-16P-04
-evidence, equivalent V2 safety regressions, proof that no active production-path consumer depends
-on it, and a separately authorized cleanup task. Executable search, P10B-17/P10B-18 closure, Vesko
-staging, production authentication, and production readiness remain unclaimed. No provider call is
+The accepted path does not use the P10B-16L `executableIntentId` selector. P10B-16P-05A proved that
+no normal production-path consumer depended on it, preserved equivalent V2 safety and deterministic
+A/B/C replay, and removed the active P10B-16L routes, provider/runtime, project authority, and
+executable-intent consumers. This document and bounded neutral migration/safety fixtures remain as
+Deprecated historical compatibility evidence. P10B-16P-05B is Planned after P10B-18 for a final
+consumer-verified removal or archival pass.
+
+P10B-16P-05A also isolates the former P9/Lumo live-generation path as Deprecated historical,
+production-disabled evidence; proven publication and migration fixtures remain because they still
+have valid regression consumers. The current P10B-16P-04 Aurum composition remains temporary,
+production-disabled acceptance infrastructure through P10B-18. Executable search, P10B-17/P10B-18
+closure, Vesko staging, production authentication, and production readiness remain unclaimed. The
+canonical search query/results adapter is the next focused product task. No provider call is
 authorized by this documentation update.

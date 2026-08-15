@@ -1,9 +1,11 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
+import { createBoundedStorefrontSynthesisDecision } from "@/application/bounded-storefront-synthesis";
 import {
   compileSemanticStorefrontDesignIntentV1,
   deriveSemanticCapabilityIndex,
+  executeCompiledSemanticStorefrontDesignIntentV1,
   prepareSemanticStorefrontDesignCompilationAuthority,
   resolveSemanticStorefrontCompatibility,
 } from "@/application/prompted-storefront-design-compiler";
@@ -568,5 +570,65 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
         maximumFactorEvaluations: 467,
       }),
     ).toThrowError(expect.objectContaining({ code: "candidate-budget-exhausted" }));
+  });
+
+  it("rejects a valid synthesis decision that is not fingerprint-bound to the compiled decision", () => {
+    const fixture = testAuthority();
+    const intent = providerIntent(fixture.request, "paired-synthesis-authority", premiumDrivers);
+    const compileInput = {
+      originalRequest: fixture.request,
+      providerIntent: intent,
+      currentRequestInput: fixture.currentRequestInput,
+      compatibilityInput: fixture.compatibilityInput,
+      semanticCapabilityIndex: fixture.semanticCapabilityIndex,
+    };
+    const compiled = compileSemanticStorefrontDesignIntentV1(compileInput);
+    const expected = compiled.compiledDecision;
+    const dynamic = expected.dynamicCommerceSelection;
+    const { searchExecution: _searchExecution, productTypeMappings, ...dynamicSelection } = dynamic;
+    void _searchExecution;
+    const mismatchedSynthesisDecision = createBoundedStorefrontSynthesisDecision({
+      ...fixture.compatibilityInput,
+      request: {
+        intent: "prompted-design-v2",
+        deterministicSeed: "valid-but-not-compiled-for-this-decision",
+      },
+      exactSelection: expected.exactSelection,
+      pageBlueprintSelectionOverrides: expected.pageBlueprintSelectionOverrides,
+      approvedAssetRoleSelections: expected.approvedAssetRoleSelections,
+      dynamicCommerceSelection: {
+        ...dynamicSelection,
+        productTypeMappings: Object.fromEntries(
+          productTypeMappings.map(({ productTypeId, archetypeId }) => [productTypeId, archetypeId]),
+        ),
+      },
+      promptedExecutionAuthority: {
+        responsiveCapabilityKeys: expected.responsiveArtDirection.responsiveCapabilityKeys,
+        artDirectionCapabilityKeys: expected.responsiveArtDirection.artDirectionCapabilityKeys,
+        approvedAssetRoleKeys: expected.responsiveArtDirection.approvedAssetRoleKeys,
+        desktopNarrativePriority: expected.narrative.desktopPriority,
+        mobileNarrativePriority: expected.narrative.mobilePriority,
+      },
+    });
+
+    expect(mismatchedSynthesisDecision.synthesisFingerprint).not.toBe(
+      compiled.synthesisDecision.synthesisFingerprint,
+    );
+    expect(expected.exactAuthorityFingerprints).toContain(
+      compiled.synthesisDecision.synthesisFingerprint,
+    );
+    expect(expected.exactAuthorityFingerprints).not.toContain(
+      mismatchedSynthesisDecision.synthesisFingerprint,
+    );
+    expect(() =>
+      executeCompiledSemanticStorefrontDesignIntentV1({
+        ...compileInput,
+        compiledDecision: expected,
+        synthesisDecision: mismatchedSynthesisDecision,
+        pageEvidenceAuthority: fixture.fixture.pageEvidenceAuthority,
+        contentFactAuthority: fixture.fixture.contentFactAuthority,
+        approvedAssetPresentations: fixture.fixture.approvedAssetPresentations,
+      }),
+    ).toThrowError(expect.objectContaining({ code: "stale-authority" }));
   });
 });

@@ -2,7 +2,7 @@ import { executeCoordinatedDirection } from "@/application/bounded-storefront-sy
 import { validateCurrentDynamicCommercePresentationAuthority } from "@/application/dynamic-commerce-routes";
 import { wholeStorefrontPlanningInputSchema } from "@/application/whole-storefront-generation-plan";
 import { validateRegisteredSnapshot } from "@/components/registry";
-import { createP10B16LRawKarvonenAcceptanceFixture } from "@/data/demo/p10b-16l-live-provider-acceptance";
+import { createRawKarvonenStorefrontFixture } from "@/data/demo/raw-karvonen-storefront-fixture";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
 import type { ProjectAggregate } from "@/services/storage/project-repository";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
@@ -29,7 +29,7 @@ function rawSnapshotWithCurrentDynamicCommerceAuthority(
 /**
  * Normal Storefront Studio input for P10B-16P-03.
  *
- * Merchant, catalogue, evidence and page-set authority come directly from the retained P10B-16L
+ * Merchant, catalogue, evidence and page-set authority come directly from the neutral raw
  * Karvonen fixture. A deterministic synthesis is used only to obtain the current compact
  * dynamic-commerce authority required by Prompted Storefront Design Request V2. Every generated
  * page, selected frame, navigation item and Design DNA choice is discarded: the browser/server
@@ -37,7 +37,7 @@ function rawSnapshotWithCurrentDynamicCommerceAuthority(
  * by the canonical shared-frame promoter, the neutral legacy BrandSystem and no proposal state.
  */
 function buildP10B16P03RawKarvonenStudioFixture() {
-  const source = createP10B16LRawKarvonenAcceptanceFixture();
+  const source = createRawKarvonenStorefrontFixture();
   const authoritySource = executeCoordinatedDirection({
     planningInput: source.executionPlanningInput,
     siteMapDecision: source.siteMapDecision,

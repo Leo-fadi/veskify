@@ -634,11 +634,14 @@ export function resolveSemanticStorefrontCompatibility(input: {
     stages,
   } as const;
   if (candidates.length === 0) {
+    const firstEmptyStage = stages.find(
+      ({ remainingCandidateCount }) => remainingCandidateCount === 0,
+    )?.stage;
     const diagnostic = safeDiagnostic({
       ...diagnosticBase,
       finalCandidateCount: 0,
       selectedCandidateFingerprint: null,
-      firstEmptyStage: "explicit-avoidances",
+      firstEmptyStage: firstEmptyStage ?? "explicit-avoidances",
       influences: [],
       substitutedPreferencePaths: [],
       influenceDimensions: [],

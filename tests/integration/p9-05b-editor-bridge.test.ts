@@ -5,13 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 import { createP905bLocalDemoGenerateHandler } from "@/app/api/demo/p9-05b/generate/handler";
 import {
+  createP905bLocalDemoAuthority,
   loadP905bLocalDemoEditorSession,
   p905bLocalDemoSession,
   resetP905bLocalDemo,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
+import { createServerWholeStorefrontPlanningHandler } from "@/integrations/ai/whole-storefront-runtime-authority";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
 import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
 import { InMemoryProjectRepository } from "@/services/storage";
@@ -41,8 +42,8 @@ async function generatedBridge() {
   const session = p905bLocalDemoSession(environment);
   const handler = createP905bLocalDemoGenerateHandler({
     environment,
-    createProposalHandler: createWholeStorefrontPlanningRouteHandler({
-      environment,
+    createProposalHandler: createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: provider,
     }),
   });

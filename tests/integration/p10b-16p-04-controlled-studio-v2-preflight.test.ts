@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createP10B16P04WholeStorefrontProposalRouteHandler } from "@/app/api/ai/whole-storefront-proposals/p10b-16p-04-composition.server";
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import {
   dynamicCommerceRouteSectionId,
@@ -17,7 +17,6 @@ import {
   promptedStorefrontStudioGenerationResponseSchema,
 } from "@/application/prompted-storefront-studio";
 import { promptedStorefrontPromptFingerprint } from "@/application/prompted-storefront-design-intent";
-import { createDeterministicWholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
 import { homepageProofContentSchema } from "@/components/registry/homepage-commerce";
 import {
   P10B16P04_COMMERCIAL_DRAFT_ID,
@@ -221,9 +220,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
     const fixture = createP10B16P04RawAurumCommercialFixture();
     const aggregateBefore = canonicalValueString(fixture.aggregate);
     const rawFingerprint = canonicalStorefrontContentFingerprint(fixture.rawDraft);
-    const legacySelector = vi.fn(() => createDeterministicWholeStorefrontPlanningProvider());
-    const route = createWholeStorefrontPlanningRouteHandler({
-      selectProvider: legacySelector,
+    const route = createP10B16P04WholeStorefrontProposalRouteHandler({
       environment,
     });
 
@@ -256,7 +253,6 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
     expect(compactBody).not.toHaveProperty("compiledDecision");
     expect(compactBody).not.toHaveProperty("candidateSnapshot");
     expect(compactBody.merchantPrompt).toBe(exactPrompt);
-    expect(legacySelector).not.toHaveBeenCalled();
     expect(result.lineage).toMatchObject({
       providerId: "openai-prompted-storefront-design-intent-v2",
       modelId: "mocked-p10b-16p-04-design-intent-v2",
@@ -309,7 +305,6 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
     expect(canonicalStorefrontContentFingerprint(rejected.activeDraft)).toBe(rawFingerprint);
     expect(canonicalStorefrontContentFingerprint(rejected.storedDraft)).toBe(rawFingerprint);
     expect(canonicalValueString(fixture.aggregate)).toBe(aggregateBefore);
-    expect(legacySelector).not.toHaveBeenCalled();
 
     const inspection = inspectP10B16P04RealStudioAcceptance(environment);
     expect(inspection).toMatchObject({
@@ -641,9 +636,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
   }, 120_000);
 
   it("enforces the three-call budget without retry or legacy fallback", async () => {
-    const legacySelector = vi.fn(() => createDeterministicWholeStorefrontPlanningProvider());
-    const route = createWholeStorefrontPlanningRouteHandler({
-      selectProvider: legacySelector,
+    const route = createP10B16P04WholeStorefrontProposalRouteHandler({
       environment,
     });
 
@@ -692,13 +685,10 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       failureClassification: null,
       activeAttempt: null,
     });
-    expect(legacySelector).not.toHaveBeenCalled();
   }, 120_000);
 
   it("retains a consumed failure safely and blocks every later provider attempt", async () => {
-    const legacySelector = vi.fn(() => createDeterministicWholeStorefrontPlanningProvider());
-    const route = createWholeStorefrontPlanningRouteHandler({
-      selectProvider: legacySelector,
+    const route = createP10B16P04WholeStorefrontProposalRouteHandler({
       environment,
     });
 
@@ -748,7 +738,6 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       cases: [],
       failedAttempt: failed.failedAttempt,
     });
-    expect(legacySelector).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -759,9 +748,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
   ] as const)(
     "rejects invalid acceptance authority token=%s origin=%s before provider selection",
     async (token, requestOrigin) => {
-      const legacySelector = vi.fn(() => createDeterministicWholeStorefrontPlanningProvider());
-      const route = createWholeStorefrontPlanningRouteHandler({
-        selectProvider: legacySelector,
+      const route = createP10B16P04WholeStorefrontProposalRouteHandler({
         environment,
       });
 
@@ -772,7 +759,6 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
         ok: false,
         failure: { category: "authenticationUnavailable", retryable: false },
       });
-      expect(legacySelector).not.toHaveBeenCalled();
       expect(inspectP10B16P04RealStudioAcceptance(environment)).toMatchObject({
         providerCallCount: 0,
         retryCount: 0,
@@ -789,9 +775,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       OPENAI_CUSTOM_HEADERS: "x-untrusted: must-not-be-used",
       [P10B_16P_04_MOCK_TRANSPORT_FLAG]: "0",
     } as const;
-    const legacySelector = vi.fn(() => createDeterministicWholeStorefrontPlanningProvider());
-    const route = createWholeStorefrontPlanningRouteHandler({
-      selectProvider: legacySelector,
+    const route = createP10B16P04WholeStorefrontProposalRouteHandler({
       environment: untrustedEnvironment,
     });
 
@@ -819,7 +803,6 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       failedAttempt: null,
       cases: [],
     });
-    expect(legacySelector).not.toHaveBeenCalled();
   });
 
   it("keeps configuration, page-loader authority and inspection behind the exact local gate", () => {
