@@ -292,7 +292,7 @@
 
 @media (max-width: 767px) {
   .title {
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     font-size: 1rem;
   }
 
