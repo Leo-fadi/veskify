@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
+import { isCurrentCompatibleCoordinatedDirectionExactSelection } from "@/application/bounded-storefront-synthesis";
 import {
   deriveSemanticCapabilityIndex,
   prepareSemanticStorefrontDesignCompilationAuthority,
@@ -92,6 +93,38 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
     for (const candidate of fixture.semanticIndex.candidates) {
       expect(() => prepared.resolveExecutionAuthority(candidate.selection)).not.toThrow();
     }
+  });
+
+  it("rejects a syntactically valid selection outside the prepared current tuple inventory", () => {
+    const fixture = authority();
+    const prepared = prepareSemanticStorefrontDesignCompilationAuthority({
+      originalRequest: fixture.request,
+      currentRequestInput: fixture.currentRequestInput,
+      compatibilityInput: fixture.compatibilityInput,
+      semanticCapabilityIndex: fixture.semanticIndex,
+    });
+    const [registered] = fixture.semanticIndex.candidates;
+    if (!registered) throw new Error("Missing prepared semantic candidate authority.");
+    const selection = {
+      ...registered.selection,
+      includedOptionalPageFamilyIds: ["unregistered-content-family"],
+    };
+    const { authorityId, authorityVersion, authorityFingerprint, selectionId, ...exact } =
+      selection;
+    void [authorityId, authorityVersion, authorityFingerprint, selectionId];
+
+    expect(
+      isCurrentCompatibleCoordinatedDirectionExactSelection({
+        authority: fixture.compatibilityInput,
+        exactSelection: exact,
+      }),
+    ).toBe(false);
+    expect(() => prepared.resolveExecutionAuthority(selection)).toThrowError(
+      expect.objectContaining({
+        code: "stale-authority",
+        message: "The semantic selection is not part of the prepared current authority.",
+      }),
+    );
   });
 
   it("derives stable metadata-only authority and selects distinct exact structures", () => {

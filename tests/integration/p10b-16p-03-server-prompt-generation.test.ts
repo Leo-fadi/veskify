@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createP10B16P03WholeStorefrontProposalRouteHandler } from "@/app/api/ai/whole-storefront-proposals/p10b-16p-03-composition.server";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
 import {
   PROMPTED_STOREFRONT_STUDIO_CONTRACT_VERSION,
@@ -34,7 +35,6 @@ import {
   loadP10B16P03CurrentEvidenceReferences,
   loadP10B16P03InitialDraftAuthority,
 } from "@/integrations/ai/prompted-storefront-studio-authority.server";
-import type { SelectServerPromptedStorefrontDesignIntentProvider } from "@/integrations/ai/prompted-storefront-studio-handler.server";
 import { projectPromptedStorefrontCompilationToStudioProposal } from "@/integrations/ai/prompted-storefront-studio-handler.server";
 
 const prompt =
@@ -263,13 +263,11 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
     const prompts: string[] = [];
     const route = createWholeStorefrontPlanningRouteHandler({
       promptedAuthority: createP10B16P03ServerPromptedStorefrontStudioAuthority(),
-      selectPromptedProvider: vi.fn(
-        ({ currentAuthority }: Parameters<SelectServerPromptedStorefrontDesignIntentProvider>[0]) =>
-          createP10B16P03MockPromptedStorefrontDesignIntentProvider({
-            scenario: "premium-editorial",
-            compatibilityInput: currentAuthority.compatibilityInput,
-            onRequest: (providerRequest) => prompts.push(providerRequest.merchantPrompt),
-          }),
+      selectPromptedProvider: vi.fn(() =>
+        createP10B16P03MockPromptedStorefrontDesignIntentProvider({
+          scenario: "premium-editorial",
+          onRequest: (providerRequest) => prompts.push(providerRequest.merchantPrompt),
+        }),
       ),
       environment: { VESKIFY_RUNTIME_MODE: "standalone" },
     });
@@ -322,7 +320,7 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
   }, 120_000);
 
   it("rejects browser-supplied authority, intents, decisions, operations and snapshots", async () => {
-    const route = createWholeStorefrontPlanningRouteHandler({
+    const route = createP10B16P03WholeStorefrontProposalRouteHandler({
       environment: { VESKIFY_RUNTIME_MODE: "standalone" },
     });
 
@@ -343,7 +341,7 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
   });
 
   it("produces distinct safe lineage for three semantic merchant directions", async () => {
-    const route = createWholeStorefrontPlanningRouteHandler({
+    const route = createP10B16P03WholeStorefrontProposalRouteHandler({
       environment: { VESKIFY_RUNTIME_MODE: "standalone" },
     });
     const scenarios = [
@@ -471,10 +469,9 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
       let calls = 0;
       const route = createWholeStorefrontPlanningRouteHandler({
         promptedAuthority: createP10B16P03ServerPromptedStorefrontStudioAuthority(),
-        selectPromptedProvider: ({ currentAuthority }) =>
+        selectPromptedProvider: () =>
           createP10B16P03MockPromptedStorefrontDesignIntentProvider({
             scenario: "premium-editorial",
-            compatibilityInput: currentAuthority.compatibilityInput,
             failure,
             onRequest: () => {
               calls += 1;
@@ -505,7 +502,7 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
         loadFixture: () => {
           loads += 1;
           const fixture = createP10B16P03RawKarvonenStudioFixture();
-          if (loads < 4) return fixture;
+          if (loads < 3) return fixture;
           const stale = {
             ...fixture,
             aggregate: structuredClone(fixture.aggregate),
@@ -518,10 +515,9 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
           return stale;
         },
       }),
-      selectPromptedProvider: ({ currentAuthority }) =>
+      selectPromptedProvider: () =>
         createP10B16P03MockPromptedStorefrontDesignIntentProvider({
           scenario: "premium-editorial",
-          compatibilityInput: currentAuthority.compatibilityInput,
           onRequest: () => {
             providerCalls += 1;
           },
@@ -537,5 +533,6 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
       failure: { category: "stale", retryable: false },
     });
     expect(providerCalls).toBe(1);
+    expect(loads).toBe(3);
   });
 });

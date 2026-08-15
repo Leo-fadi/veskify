@@ -2,16 +2,12 @@ import "server-only";
 
 import { timingSafeEqual } from "node:crypto";
 import {
-  deriveSemanticCapabilityIndex,
   SemanticCompatibilityResolutionError,
   type SemanticCompatibilityDiagnostic,
   type PromptedStorefrontDesignCompilationResult,
 } from "@/application/prompted-storefront-design-compiler";
 import {
-  createPromptedStorefrontDesignRequestV2,
-  createSemanticStorefrontDesignRequestV1,
   PromptedStorefrontDesignIntentError,
-  semanticStorefrontCurrentAuthorityFingerprint,
   type SemanticStorefrontDesignIntentProvider,
   type SemanticStorefrontDesignRequestV1,
 } from "@/application/prompted-storefront-design-intent";
@@ -384,53 +380,45 @@ function guardedProvider(provider: SemanticStorefrontDesignIntentProvider) {
 
 function mockedOpenAiTransportProvider(input: {
   request: PromptedStorefrontStudioGenerationRequest;
-  currentAuthority: Parameters<SelectServerPromptedStorefrontDesignIntentProvider>[0]["currentAuthority"];
   failure?: "provider-transport";
 }): SemanticStorefrontDesignIntentProvider {
-  const requestAuthority = createPromptedStorefrontDesignRequestV2(
-    input.currentAuthority.requestInput,
-  );
-  const semanticCurrentAuthorityFingerprint = semanticStorefrontCurrentAuthorityFingerprint(
-    requestAuthority.request.currentAuthority,
-  );
-  const semanticIndex = deriveSemanticCapabilityIndex({
-    authority: input.currentAuthority.compatibilityInput,
-    currentAuthorityFingerprint: semanticCurrentAuthorityFingerprint,
-  });
-  const semanticRequest = createSemanticStorefrontDesignRequestV1(requestAuthority, {
-    ...(input.currentAuthority.semanticRequestAuthority ?? {
-      explicitConstraintAuthority: [],
-      trustedExactHints: { directionPackageId: null, frameFamilyId: null },
-    }),
-    semanticAuthorityFingerprint: semanticIndex.semanticAuthorityFingerprint,
-    semanticInfluenceAuthority: semanticIndex.semanticInfluenceAuthority,
-  });
   const deterministicIntent = createP10B16P03MockPromptedStorefrontDesignIntentProvider({
     scenario: selectP10B16P03MockPromptScenario(input.request.merchantPrompt),
     ...(input.failure ? { failure: input.failure } : {}),
   });
-  return new OpenAiPromptedStorefrontDesignIntentV2Provider({
-    model: P10B_16P_04_MOCK_MODEL_ID,
-    timeoutMs: 4_000,
-    telemetry: { record: recordTelemetry },
-    responses: {
-      async create() {
-        const intent = await deterministicIntent.createDesignIntent(semanticRequest, {
-          currentAuthorityFingerprint: () => semanticCurrentAuthorityFingerprint,
-          semanticAuthorityFingerprint: () => semanticIndex.semanticAuthorityFingerprint,
-        });
-        const { semanticIntentFingerprint: _semanticIntentFingerprint, ...material } = intent;
-        void _semanticIntentFingerprint;
-        return {
-          id: `mocked_p10b16p04_${semanticRequest.requestFingerprint.slice(-24)}`,
-          status: "completed",
-          output: [],
-          output_text: JSON.stringify(material),
-          usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
-        };
-      },
+  const provider: SemanticStorefrontDesignIntentProvider = Object.freeze({
+    id: OPENAI_PROMPTED_STOREFRONT_DESIGN_INTENT_V2_PROVIDER_ID,
+    modelId: P10B_16P_04_MOCK_MODEL_ID,
+    async createDesignIntent(
+      semanticRequest: Parameters<SemanticStorefrontDesignIntentProvider["createDesignIntent"]>[0],
+      validation: Parameters<SemanticStorefrontDesignIntentProvider["createDesignIntent"]>[1],
+    ) {
+      const provider = new OpenAiPromptedStorefrontDesignIntentV2Provider({
+        model: P10B_16P_04_MOCK_MODEL_ID,
+        timeoutMs: 4_000,
+        telemetry: { record: recordTelemetry },
+        responses: {
+          async create() {
+            const intent = await deterministicIntent.createDesignIntent(
+              semanticRequest,
+              validation,
+            );
+            const { semanticIntentFingerprint: _semanticIntentFingerprint, ...material } = intent;
+            void _semanticIntentFingerprint;
+            return {
+              id: `mocked_p10b16p04_${semanticRequest.requestFingerprint.slice(-24)}`,
+              status: "completed",
+              output: [],
+              output_text: JSON.stringify(material),
+              usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+            };
+          },
+        },
+      });
+      return provider.createDesignIntent(semanticRequest, validation);
     },
   });
+  return provider;
 }
 
 export function createP10B16P04PromptedStorefrontProviderSelector({
@@ -438,7 +426,7 @@ export function createP10B16P04PromptedStorefrontProviderSelector({
 }: {
   environment?: AcceptanceEnvironment;
 } = {}): SelectServerPromptedStorefrontDesignIntentProvider {
-  return ({ request, httpRequest, currentAuthority }) => {
+  return ({ request, httpRequest }) => {
     if (!isP10B16P04RealStudioAcceptanceConfigured(environment)) {
       throw new ServerWholeStorefrontAuthorityError("unavailable");
     }
@@ -448,7 +436,6 @@ export function createP10B16P04PromptedStorefrontProviderSelector({
       return guardedProvider(
         mockedOpenAiTransportProvider({
           request,
-          currentAuthority,
           ...(failure ? { failure } : {}),
         }),
       );

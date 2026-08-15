@@ -2,6 +2,8 @@
 
 import {
   AiStorefrontProviderServerError,
+  REGISTERED_STOREFRONT_FOLLOW_UP_OPERATION,
+  WHOLE_STOREFRONT_PROPOSAL_OPERATION_HEADER,
   aiStorefrontProviderResponseSchema,
   isAiStorefrontProviderServerFailureCategory,
   recordStorefrontDiagnostic,
@@ -105,6 +107,7 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
         method: "POST",
         headers: {
           "content-type": "application/json",
+          [WHOLE_STOREFRONT_PROPOSAL_OPERATION_HEADER]: REGISTERED_STOREFRONT_FOLLOW_UP_OPERATION,
           ...(this.#p905bSessionId === undefined
             ? {}
             : { "x-veskify-p9-05b-session": this.#p905bSessionId }),

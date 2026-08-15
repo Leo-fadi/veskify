@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createP10B16P03WholeStorefrontProposalRouteHandler } from "@/app/api/ai/whole-storefront-proposals/p10b-16p-03-composition.server";
 import { createAiStorefrontProposalId } from "@/application/ai-storefront";
 import { promptedStorefrontPromptFingerprint } from "@/application/prompted-storefront-design-intent";
 import {
@@ -122,7 +122,7 @@ describe("P10B-16P-03 prompted Studio runtime client", () => {
 
   it("rejects an internally consistent response bound to a different exact prompt", async () => {
     const submittedRequest = request();
-    const route = createWholeStorefrontPlanningRouteHandler({
+    const route = createP10B16P03WholeStorefrontProposalRouteHandler({
       environment: { VESKIFY_RUNTIME_MODE: "standalone" },
     });
     const serverResponse = await route(

@@ -29,12 +29,6 @@ import {
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
-  acceptP10bLiveSynthesisProposal,
-  P10bLiveSynthesisAcceptanceClientError,
-  rejectP10bLiveSynthesisProposal,
-  synchronizeP10bLiveSynthesisAggregate,
-} from "@/integrations/ai/p10b-live-synthesis-acceptance-client";
-import {
   canDuplicateSection,
   canToggleSectionVisibility,
   CanonicalEditorHistory,
@@ -119,14 +113,7 @@ type LocalDemoBridgeBase = {
   baselineFingerprint: string;
   evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 };
-type LocalDemoBridge =
-  | (LocalDemoBridgeBase & { kind: "p9-05b" })
-  | (LocalDemoBridgeBase & {
-      kind: "p10b-16l";
-      rawDraft: StorefrontSnapshot;
-      reviewBaselineFingerprint: string | null;
-      persistedAggregate: ProjectAggregate;
-    });
+type LocalDemoBridge = LocalDemoBridgeBase & { kind: "p9-05b" };
 type ReadyState = {
   status: "ready";
   aggregate: ProjectAggregate;
@@ -152,26 +139,13 @@ const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRe
 function editorPagesFor(
   draft: StorefrontSnapshot,
   catalogue: ProjectAggregate["catalogue"],
-  localDemoBridge: LocalDemoBridge | undefined,
   representativeRouteIds: Readonly<Record<string, string>> = {},
 ): PageModel[] {
   return projectCanonicalEditorPages({
     draft,
     catalogue,
-    includeAllLegacyPages: localDemoBridge?.kind === "p10b-16l",
     representativeRouteIds,
   });
-}
-
-function p10bLiveHistorySnapshot(
-  snapshot: StorefrontSnapshot,
-  localDemoBridge: LocalDemoBridge | undefined,
-): StorefrontSnapshot {
-  return localDemoBridge?.kind === "p10b-16l" &&
-    localDemoBridge.reviewBaselineFingerprint !== null &&
-    canonicalStorefrontContentFingerprint(snapshot) === localDemoBridge.reviewBaselineFingerprint
-    ? structuredClone(localDemoBridge.rawDraft)
-    : snapshot;
 }
 
 function StatusPanel({
@@ -481,9 +455,7 @@ export function ProjectEditorClient({
     () =>
       storefrontAiProvider ??
       createServerWholeStorefrontPlanningClient({
-        ...(localDemoBridge?.kind === "p9-05b"
-          ? { p905bSessionId: localDemoBridge.sessionId }
-          : {}),
+        ...(localDemoBridge ? { p905bSessionId: localDemoBridge.sessionId } : {}),
       }),
     [localDemoBridge, storefrontAiProvider],
   );
@@ -563,18 +535,11 @@ export function ProjectEditorClient({
         }
         const marker = `veskify:${localDemoBridge.kind}:${localDemoBridge.sessionId}:${localDemoBridge.baselineFingerprint}:${localDemoBridge.authoritativeRevision}`;
         if (window.sessionStorage.getItem(marker) !== "seeded") {
-          await currentRepository.replaceLocalDemoAggregate(
-            localDemoBridge.kind === "p10b-16l"
-              ? localDemoBridge.persistedAggregate
-              : localDemoBridge.aggregate,
-          );
+          await currentRepository.replaceLocalDemoAggregate(localDemoBridge.aggregate);
           window.sessionStorage.setItem(marker, "seeded");
         }
       }
-      const persisted = await currentRepository.get(projectId);
-      return localDemoBridge?.kind === "p10b-16l" && localDemoBridge.proposal !== null
-        ? structuredClone(localDemoBridge.aggregate)
-        : persisted;
+      return currentRepository.get(projectId);
     };
     void load()
       .then((aggregate) => {
@@ -602,7 +567,7 @@ export function ProjectEditorClient({
             pagePathPrefix: `/projects/${projectId}`,
             evidenceReferences: retainedEvidenceReferences,
           });
-          const pages = editorPagesFor(draft, aggregate.catalogue, localDemoBridge);
+          const pages = editorPagesFor(draft, aggregate.catalogue);
           pages.forEach((page) => validateRegisteredPage(page, context));
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
           const nextHistory = new CanonicalEditorHistory({
@@ -651,12 +616,7 @@ export function ProjectEditorClient({
   const editorDraftBase = sessionStorefrontDraft ?? readyState?.draft;
   const editorDraftPages =
     editorDraftBase && readyState
-      ? editorPagesFor(
-          editorDraftBase,
-          readyState.aggregate.catalogue,
-          localDemoBridge,
-          representativeRouteIds,
-        )
+      ? editorPagesFor(editorDraftBase, readyState.aggregate.catalogue, representativeRouteIds)
       : [];
   const readyOriginalPage =
     editorDraftPages.find((item) => item.id === selectedPageId) ?? editorDraftPages[0];
@@ -673,12 +633,7 @@ export function ProjectEditorClient({
     : undefined;
   const visiblePages =
     activeDraft && readyState
-      ? editorPagesFor(
-          activeDraft,
-          readyState.aggregate.catalogue,
-          localDemoBridge,
-          representativeRouteIds,
-        )
+      ? editorPagesFor(activeDraft, readyState.aggregate.catalogue, representativeRouteIds)
       : [];
   const readyContext =
     readyState && readyLocale && activeDraft
@@ -720,7 +675,6 @@ export function ProjectEditorClient({
             resolvedStorefrontAiProvider.currentEvidenceReferencesForProposal(proposalId)
         : undefined,
     initialStorefrontProposal: importedDemoProposal,
-    controlledStorefrontAcceptance: localDemoBridge?.kind === "p10b-16l",
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
     onStorefrontEvidenceAuthority: (evidenceReferences) =>
@@ -748,78 +702,43 @@ export function ProjectEditorClient({
       if (authoritativeRevision === null || !readyState) {
         throw new P905bLocalDemoSynchronizationClientError("stale", 409);
       }
-      if (localDemoBridge.kind === "p9-05b") {
-        const acceptance = await acceptP905bLocalDemoProposal({
-          projectId,
-          sessionId: localDemoBridge.sessionId,
-          proposalId,
-          acceptanceActionId: `acceptance_action_${canonicalValueFingerprint({
-            sessionId: localDemoBridge.sessionId,
-            proposalId,
-            authoritativeRevision,
-          }).slice(-32)}`,
-          expectedAuthorityRevision: authoritativeRevision,
-          expectedProjectRevision: readyState.aggregate.project.revision,
-          expectedDraftId: readyState.draft.id,
-          expectedDraftRevision: readyState.draft.revision,
-        });
-        setAuthoritativeRevision(acceptance.authoritativeRevision);
-        pendingAcceptedReceiptAuthority.current = establishAcceptedAiReceiptClientAuthority(
-          acceptance.receiptId,
-          acceptedSnapshot,
-        );
-        return;
-      }
-      const acceptance = await acceptP10bLiveSynthesisProposal({
+      const acceptance = await acceptP905bLocalDemoProposal({
         projectId,
         sessionId: localDemoBridge.sessionId,
         proposalId,
-        expectedRevision: authoritativeRevision,
-        acceptedSnapshot,
+        acceptanceActionId: `acceptance_action_${canonicalValueFingerprint({
+          sessionId: localDemoBridge.sessionId,
+          proposalId,
+          authoritativeRevision,
+        }).slice(-32)}`,
+        expectedAuthorityRevision: authoritativeRevision,
+        expectedProjectRevision: readyState.aggregate.project.revision,
+        expectedDraftId: readyState.draft.id,
+        expectedDraftRevision: readyState.draft.revision,
       });
       setAuthoritativeRevision(acceptance.authoritativeRevision);
+      pendingAcceptedReceiptAuthority.current = establishAcceptedAiReceiptClientAuthority(
+        acceptance.receiptId,
+        acceptedSnapshot,
+      );
     },
-    onStorefrontRejected:
-      localDemoBridge?.kind === "p10b-16l"
-        ? async ({ proposalId }) => {
-            if (authoritativeRevision === null) return;
-            const rejection = await rejectP10bLiveSynthesisProposal({
-              projectId,
-              sessionId: localDemoBridge.sessionId,
-              proposalId,
-              expectedRevision: authoritativeRevision,
-            });
-            setAuthoritativeRevision(rejection.authoritativeRevision);
-            window.location.reload();
-          }
-        : undefined,
-    projectStorefrontHistorySnapshot: (snapshot) =>
-      p10bLiveHistorySnapshot(snapshot, localDemoBridge),
     onStorefrontHistorySnapshot: async (snapshot) => {
       if (!localDemoBridge) return;
       if (authoritativeRevision === null || !readyState) {
         throw new P905bLocalDemoSynchronizationClientError("stale", 409);
       }
-      const synchronization = await (localDemoBridge.kind === "p9-05b"
-        ? synchronizeP905bLocalDemoAggregate({
-            projectId,
-            sessionId: localDemoBridge.sessionId,
-            expectedRevision: authoritativeRevision,
-            mode: "active",
-            aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
-          })
-        : synchronizeP10bLiveSynthesisAggregate({
-            projectId,
-            sessionId: localDemoBridge.sessionId,
-            expectedRevision: authoritativeRevision,
-            mode: "active",
-            aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
-          }));
+      const synchronization = await synchronizeP905bLocalDemoAggregate({
+        projectId,
+        sessionId: localDemoBridge.sessionId,
+        expectedRevision: authoritativeRevision,
+        mode: "active",
+        aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+      });
       setAuthoritativeRevision(synchronization.authoritativeRevision);
     },
     onStorefrontSnapshot: (snapshot, scope, action, transition) => {
       if (!readyState) return;
-      const authoritativeSnapshot = p10bLiveHistorySnapshot(snapshot, localDemoBridge);
+      const authoritativeSnapshot = snapshot;
       setAcceptedReceiptAuthority(
         action === "applied" ? pendingAcceptedReceiptAuthority.current : undefined,
       );
@@ -830,7 +749,6 @@ export function ProjectEditorClient({
       const authoritativePages = editorPagesFor(
         authoritativeSnapshot,
         readyState.aggregate.catalogue,
-        localDemoBridge,
         representativeRouteIds,
       );
       // Current evidence is established independently by the server/session authority. Snapshot
@@ -956,12 +874,7 @@ export function ProjectEditorClient({
     (agent.visibleState === "proposalReady" || agent.visibleState === "accepting");
   const displayedDraft = proposalReviewSnapshot ?? activeDraft!;
   const displayedPages = proposalReviewSnapshot
-    ? editorPagesFor(
-        proposalReviewSnapshot,
-        state.aggregate.catalogue,
-        undefined,
-        representativeRouteIds,
-      )
+    ? editorPagesFor(proposalReviewSnapshot, state.aggregate.catalogue, representativeRouteIds)
     : visiblePages;
   const workspacePage =
     displayedPages.find(({ id }) => id === selectedPageId) ??
@@ -1020,11 +933,7 @@ export function ProjectEditorClient({
       setActiveLocale(nextLocale);
     },
   };
-  const previewHref = `/projects/${projectId}${workspacePage.slug === "/" ? "" : workspacePage.slug}${
-    localDemoBridge?.kind === "p10b-16l"
-      ? `?p10b-16l-session=${encodeURIComponent(localDemoBridge.sessionId)}`
-      : ""
-  }`;
+  const previewHref = `/projects/${projectId}${workspacePage.slug === "/" ? "" : workspacePage.slug}`;
   const displayedBrandSystem = previewStorefront?.brandSystem ?? activeDraft!.brandSystem;
   const style = brandSystemToCssVariables(displayedBrandSystem) as CSSProperties;
   const canvasPage =
@@ -1148,13 +1057,7 @@ export function ProjectEditorClient({
       completeDraftIsValid = false;
     }
   }
-  const localAcceptanceProposalPending =
-    localDemoBridge?.kind === "p10b-16l" &&
-    localDemoBridge.proposal !== null &&
-    authoritativeRevision === localDemoBridge.authoritativeRevision;
-  const proposalBlocksSave = agent.blocksSave || localAcceptanceProposalPending;
-  const previewBlocked =
-    localDemoBridge?.kind === "p10b-16l" && (proposalBlocksSave || hasUnsavedChanges);
+  const proposalBlocksSave = agent.blocksSave;
   const saving = saveState.status === "saving";
   const mutationsBlocked = saving || proposalBlocksSave;
   const saveDisabled =
@@ -1791,21 +1694,13 @@ export function ProjectEditorClient({
         if (authoritativeRevision === null) {
           throw new P905bLocalDemoSynchronizationClientError("stale", 409);
         }
-        const synchronization = await (localDemoBridge.kind === "p9-05b"
-          ? synchronizeP905bLocalDemoAggregate({
-              projectId,
-              sessionId: localDemoBridge.sessionId,
-              expectedRevision: authoritativeRevision,
-              mode: "saved",
-              aggregate: prepared.aggregate,
-            })
-          : synchronizeP10bLiveSynthesisAggregate({
-              projectId,
-              sessionId: localDemoBridge.sessionId,
-              expectedRevision: authoritativeRevision,
-              mode: "saved",
-              aggregate: prepared.aggregate,
-            }));
+        const synchronization = await synchronizeP905bLocalDemoAggregate({
+          projectId,
+          sessionId: localDemoBridge.sessionId,
+          expectedRevision: authoritativeRevision,
+          mode: "saved",
+          aggregate: prepared.aggregate,
+        });
         setAuthoritativeRevision(synchronization.authoritativeRevision);
       }
       await repository.current!.saveDraft(projectId, prepared.draft, {
@@ -1827,7 +1722,6 @@ export function ProjectEditorClient({
       const pages = editorPagesFor(
         result.draft,
         result.aggregate.catalogue,
-        localDemoBridge,
         representativeRouteIds,
       );
       pages.forEach((savedPage) => editorHistory?.rebase(savedPage));
@@ -1865,8 +1759,7 @@ export function ProjectEditorClient({
       if (
         error instanceof StaleEditorDraftError ||
         error instanceof DraftConflictError ||
-        (error instanceof P905bLocalDemoSynchronizationClientError && error.category === "stale") ||
-        (error instanceof P10bLiveSynthesisAcceptanceClientError && error.category === "stale")
+        (error instanceof P905bLocalDemoSynchronizationClientError && error.category === "stale")
       ) {
         setSaveState({
           status: "stale",
@@ -2047,15 +1940,9 @@ export function ProjectEditorClient({
                     : text.panels.expandContextual}
               </Button>
             </div>
-            {previewBlocked ? (
-              <span aria-disabled="true" className={styles.publishAction}>
-                {text.actions.preview}
-              </span>
-            ) : (
-              <Button href={previewHref} variant="secondary">
-                {text.actions.preview}
-              </Button>
-            )}
+            <Button href={previewHref} variant="secondary">
+              {text.actions.preview}
+            </Button>
             <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
               {saveState.status === "saving" ? text.actions.savingDraft : text.actions.saveDraft}
             </Button>
@@ -2066,7 +1953,7 @@ export function ProjectEditorClient({
             ) : (
               <Button
                 href={
-                  localDemoBridge?.kind === "p9-05b"
+                  localDemoBridge
                     ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}${usableAcceptedReceiptAuthority ? `&accepted-receipt=${encodeURIComponent(usableAcceptedReceiptAuthority.receiptId)}` : ""}`
                     : `/projects/${projectId}/publish`
                 }
@@ -2138,15 +2025,9 @@ export function ProjectEditorClient({
               {productTypeMappingList}
               {outlineList}
               {sectionActions}
-              {previewBlocked ? (
-                <span aria-disabled="true" className={styles.previewLink}>
-                  {text.navigation.viewSelectedPage}
-                </span>
-              ) : (
-                <Link className={styles.previewLink} href={previewHref}>
-                  {text.navigation.viewSelectedPage}
-                </Link>
-              )}
+              <Link className={styles.previewLink} href={previewHref}>
+                {text.navigation.viewSelectedPage}
+              </Link>
               {renderDraftSafeguards(false)}
             </aside>
           ) : null}

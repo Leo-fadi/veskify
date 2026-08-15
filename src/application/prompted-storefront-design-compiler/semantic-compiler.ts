@@ -49,6 +49,11 @@ type SemanticStorefrontDesignCompilationAuthorityInput = Readonly<{
   maximumCandidateEvaluations?: number;
 }>;
 
+export type SemanticStorefrontDesignRequestAuthority = Readonly<{
+  explicitConstraintAuthority: SemanticStorefrontDesignRequestV1["explicitConstraintAuthority"];
+  trustedExactHints: SemanticStorefrontDesignRequestV1["trustedExactHints"];
+}>;
+
 export type CompileSemanticStorefrontDesignIntentV1Input =
   SemanticStorefrontDesignCompilationAuthorityInput &
     Readonly<{
@@ -82,8 +87,9 @@ function cached<K, V extends object>(cache: Map<K, V>, key: K, create: () => V):
   return value;
 }
 
-export function prepareSemanticStorefrontDesignCompilationAuthority(
-  input: SemanticStorefrontDesignCompilationAuthorityInput,
+export function prepareCurrentSemanticStorefrontDesignCompilationAuthority(
+  input: Omit<SemanticStorefrontDesignCompilationAuthorityInput, "originalRequest"> &
+    Readonly<{ semanticRequestAuthority: SemanticStorefrontDesignRequestAuthority }>,
 ) {
   const currentExact = createPromptedStorefrontDesignRequestV2(input.currentRequestInput);
   const candidateBudget =
@@ -108,13 +114,11 @@ export function prepareSemanticStorefrontDesignCompilationAuthority(
       ...candidateBudget,
     });
   const semanticRequest = createSemanticStorefrontDesignRequestV1(currentExact, {
-    explicitConstraintAuthority: input.originalRequest.explicitConstraintAuthority,
-    trustedExactHints: input.originalRequest.trustedExactHints,
+    explicitConstraintAuthority: input.semanticRequestAuthority.explicitConstraintAuthority,
+    trustedExactHints: input.semanticRequestAuthority.trustedExactHints,
     semanticAuthorityFingerprint: semanticCapabilityIndex.semanticAuthorityFingerprint,
     semanticInfluenceAuthority: semanticCapabilityIndex.semanticInfluenceAuthority,
   });
-  if (canonicalValueString(semanticRequest) !== canonicalValueString(input.originalRequest))
-    fail("The semantic request or current compatibility authority changed.");
   const executionAuthorities = new Map<
     string,
     ReturnType<typeof resolvePromptedStorefrontSemanticExecutionAuthority>
@@ -158,6 +162,30 @@ export function prepareSemanticStorefrontDesignCompilationAuthority(
     resolveExecutionAuthority,
     resolveSynthesisDecision,
   });
+}
+
+export function prepareSemanticStorefrontDesignCompilationAuthority(
+  input: SemanticStorefrontDesignCompilationAuthorityInput,
+) {
+  const prepared = prepareCurrentSemanticStorefrontDesignCompilationAuthority({
+    currentRequestInput: input.currentRequestInput,
+    compatibilityInput: input.compatibilityInput,
+    semanticRequestAuthority: {
+      explicitConstraintAuthority: input.originalRequest.explicitConstraintAuthority,
+      trustedExactHints: input.originalRequest.trustedExactHints,
+    },
+    ...(input.semanticCapabilityIndex === undefined
+      ? {}
+      : { semanticCapabilityIndex: input.semanticCapabilityIndex }),
+    ...(input.maximumCandidateEvaluations === undefined
+      ? {}
+      : { maximumCandidateEvaluations: input.maximumCandidateEvaluations }),
+  });
+  if (
+    canonicalValueString(prepared.semanticRequest) !== canonicalValueString(input.originalRequest)
+  )
+    fail("The semantic request or current compatibility authority changed.");
+  return prepared;
 }
 
 export function compileSemanticStorefrontDesignIntentV1(

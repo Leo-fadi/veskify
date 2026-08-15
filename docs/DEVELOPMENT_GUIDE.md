@@ -86,8 +86,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline includes the P10B-16P-04 real Storefront Studio Design Intent
-acceptance on 15 August 2026. Phase 9 is
+The verified v1.3.0 source baseline includes the P10B-16P-05A active production-path and compiler
+rationalisation on 15 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
 BrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction
@@ -98,8 +98,9 @@ commercial PDP profiles, P10B-12 content/support page families, P10B-13 commerce
 presentation, the P10B-14 complete-store convergence proof, P10B-15 bounded storefront synthesis,
 P10B-16 coordinated direction/diversity control, P10B-16P-01 dynamic commerce route archetypes,
 P10B-16P-02A/P10B-16P-02B prompted Design Intent V2 authority and deterministic compilation, and
-P10B-16P-03 normal Studio generation and P10B-16P-04 real-provider acceptance are **Baseline**.
-P10B-16P-02 is **Baseline**; P10B-17 and P10B-18 remain **Planned**.
+P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, and P10B-16P-05A
+active-path/compiler rationalisation are **Baseline**. P10B-16P-02 is **Baseline**;
+P10B-16P-05B, P10B-17, and P10B-18 remain **Planned**.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -119,7 +120,34 @@ exact storefronts with one materialization each; A and B rejected cleanly, while
 Accept, Undo/Redo, explicit Save, reload, and normal Preview. The cumulative task ledger is 16 calls
 with zero retry/fallback, zero publication, and unchanged protected commerce/media. This is not
 production authentication, Vesko staging, or production evidence. Search execution remains fail
-closed, and P10B-16L is Deprecated compatibility-only pending a dedicated consumer-verified cleanup.
+closed. P10B-16P-05A makes that semantic route the only active initial-generation path and reduces
+the prompted compiler to one coordinator/resolver/exact-decision/executor chain with one
+materialization boundary. The active P10B-16L executable-intent routes/providers/runtime are
+removed; its historical evidence and required neutral migration/safety fixtures remain Deprecated
+compatibility-only. P9/Lumo live generation is isolated historical/deprecated authority, while its
+proven publication/migration fixtures remain. The P10B-16P-04 acceptance composition remains
+production-disabled through P10B-18. P10B-16P-05B owns final consumer-verified cleanup after
+P10B-18.
+
+The canonical search query/results adapter is the next focused product task. Search presentation is
+registered, but execution continues to fail closed until that exact transient authority exists.
+
+For normal initial generation, follow this ownership chain and do not add a parallel composition:
+
+```text
+Storefront Studio
+  → /api/ai/whole-storefront-proposals
+  → canonical prompted server handler
+  → trusted current authority and semantic provider selector
+  → semantic compatibility resolution
+  → exact compiled decision
+  → coordinator and sole executor/materializer
+  → isolated proposal
+```
+
+Standalone P03 and controlled P04 compositions inject into this handler only outside production.
+Registered follow-up execution remains separately tagged and is not an alternative initial-generation
+service.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
 generated manifest, executable PageBlueprint profiles, registered complete page-set/site-map
@@ -242,8 +270,8 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-04 are Baseline; P10B-16P-02 is
-Baseline; P10B-17 and P10B-18 remain Planned. Their ownership
+P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-05A are Baseline; P10B-16P-02 is
+Baseline; P10B-16P-05B, P10B-17, and P10B-18 remain Planned. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing

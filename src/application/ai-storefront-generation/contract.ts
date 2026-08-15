@@ -25,6 +25,8 @@ export const storefrontGenerationCapabilitySchema = z.enum([
   "approvedColorTypographyDirection",
   "registeredWholeStorefrontDirection",
 ]);
+export const WHOLE_STOREFRONT_PROPOSAL_OPERATION_HEADER = "x-veskify-storefront-operation" as const;
+export const REGISTERED_STOREFRONT_FOLLOW_UP_OPERATION = "registeredStorefrontFollowUpV1" as const;
 export type StorefrontGenerationCapability = z.infer<typeof storefrontGenerationCapabilitySchema>;
 export const storefrontStyleDirectionSchema = z.enum([
   "warmPremium",

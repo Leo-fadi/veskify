@@ -13,7 +13,6 @@ import {
   requestWholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 import { P9_05A_PROJECT_ID } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   canonicalStorefrontContentFingerprint,
@@ -29,6 +28,10 @@ import {
   resetP905bLocalDemo,
   resetP905bLocalDemoProject,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
+import {
+  createServerWholeStorefrontPlanningHandler,
+  unavailableServerWholeStorefrontPlanningAuthority,
+} from "@/integrations/ai/whole-storefront-runtime-authority";
 import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
 
 const demoEnvironment = {
@@ -138,8 +141,8 @@ describe("P9-05B local demo server authority", () => {
     ).resolves.toMatchObject({
       metadata: { authoritativePlanningFingerprint: directPlan.fingerprint },
     });
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment: demoEnvironment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(demoEnvironment),
       selectProvider: () => mockedDirectionProvider("premiumEditorial", reached),
     });
 
@@ -169,13 +172,8 @@ describe("P9-05B local demo server authority", () => {
 
   it("fails closed outside explicit local demo configuration before selecting a provider", async () => {
     const reached = vi.fn();
-    const environment = {
-      NODE_ENV: "test",
-      VESKIFY_RUNTIME_MODE: "integrated",
-      VESKIFY_AI_PROVIDER: "openai",
-    } as const;
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: unavailableServerWholeStorefrontPlanningAuthority,
       selectProvider: () => mockedDirectionProvider("modernTechnical", reached),
     });
 
@@ -243,8 +241,8 @@ describe("P9-05B local demo server authority", () => {
     );
 
     const reached = vi.fn();
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment: demoEnvironment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(demoEnvironment),
       selectProvider: () => mockedTokenRefinementProvider(reached),
     });
     const response = await handler(await proposalRequest(p9r07ExactDesignSystemRequest));
@@ -310,8 +308,8 @@ describe("P9-05B local demo server authority", () => {
     expect(request.approvedAssetContext).toEqual(wholeStorefrontRequest.approvedAssetContext);
 
     const reached = vi.fn();
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment: demoEnvironment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(demoEnvironment),
       selectProvider: () => mockedDirectionProvider("modernTechnical", reached),
     });
     const response = await handler(await proposalRequest(homepageOnlyInstruction));
@@ -340,8 +338,8 @@ describe("P9-05B local demo server authority", () => {
       demoEnvironment,
     );
     const staleIntent = { ...storefrontIntent, instruction: homepageOnlyInstruction };
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment: demoEnvironment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(demoEnvironment),
       selectProvider: () => mockedDirectionProvider("modernTechnical", reached),
     });
     const response = await handler(

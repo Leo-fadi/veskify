@@ -29,8 +29,8 @@ const semanticCompatibilityResolutionPath = join(
   "semantic-compatibility-resolution.ts",
 );
 const semanticCompilerPath = join(compilerRoot, "semantic-compiler.ts");
-const semanticExecutorPath = join(compilerRoot, "semantic-executor.ts");
 const exactExecutorPath = join(compilerRoot, "executor.ts");
+const compilerIndexPath = join(compilerRoot, "index.ts");
 const factorizedSelectionPath = join(
   root,
   "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
@@ -263,13 +263,16 @@ describe("P10B-16P-02A prompted design-intent architecture boundaries", () => {
     }
   });
 
-  it("keeps complete storefront materialization behind the semantic and exact executors", () => {
-    const semanticExecutor = source(semanticExecutorPath);
-    const exactExecutor = source(exactExecutorPath);
+  it("keeps complete storefront materialization behind one prompted executor", () => {
+    const executor = source(exactExecutorPath);
+    const promptedMaterializers = sourceFiles(compilerRoot).filter((path) =>
+      source(path).includes("executeBoundedStorefrontSynthesis"),
+    );
 
-    expect(semanticExecutor).toContain('from "./executor"');
-    expect(semanticExecutor).toContain("executeExactCompiledPromptedStorefrontDecision");
-    expect(exactExecutor).toContain("executeBoundedStorefrontSynthesis");
+    expect(executor).toContain("executeCompiledSemanticStorefrontDesignIntentV1");
+    expect(executor).toContain("executeBoundedStorefrontSynthesis");
+    expect(promptedMaterializers).toEqual([exactExecutorPath]);
+    expect(existsSync(join(compilerRoot, "semantic-executor.ts"))).toBe(false);
     for (const path of [
       semanticCapabilityFeaturesPath,
       semanticInfluenceAuthorityPath,
@@ -281,6 +284,21 @@ describe("P10B-16P-02A prompted design-intent architecture boundaries", () => {
         /\bexecuteBoundedStorefrontSynthesis\b/u,
       );
     }
+  });
+
+  it("exports only the supported prompted compiler surface", () => {
+    const compilerIndex = source(compilerIndexPath);
+
+    expect(compilerIndex).not.toContain("export *");
+    expect(compilerIndex).toContain("runPromptedStorefrontDesignCompilation");
+    expect(compilerIndex).toContain("compileSemanticStorefrontDesignIntentV1");
+    expect(compilerIndex).toContain("executeCompiledSemanticStorefrontDesignIntentV1");
+    expect(compilerIndex).not.toContain(
+      "prepareCurrentSemanticStorefrontDesignCompilationAuthority",
+    );
+    expect(compilerIndex).not.toContain("LocatedPreference");
+    expect(compilerIndex).not.toContain("resolvePromptedStorefrontExactSlotOverrides");
+    expect(compilerIndex).not.toContain("executeExactCompiledPromptedStorefrontDecision");
   });
 
   it("keeps the OpenAI semantic provider independent of exact registry and compiler internals", () => {
@@ -309,16 +327,19 @@ describe("P10B-16P-02A prompted design-intent architecture boundaries", () => {
     }
   });
 
-  it("routes the normal prompted Studio operation through semantic V2 without an exact-key fallback", () => {
+  it("routes only explicitly tagged Studio and follow-up operations through their owned paths", () => {
     const normalRoute = source(proposalRoutePath);
     const studioHandler = source(studioHandlerPath);
     const provider = source(providerPath);
 
     expect(normalRoute).toContain("PROMPTED_STOREFRONT_STUDIO_OPERATION");
+    expect(normalRoute).toContain("WHOLE_STOREFRONT_PROPOSAL_OPERATION_HEADER");
+    expect(normalRoute).toContain("REGISTERED_STOREFRONT_FOLLOW_UP_OPERATION");
+    expect(normalRoute).toContain("if (promptedOperation && !followUpOperation)");
+    expect(normalRoute).toContain("if (followUpOperation && !promptedOperation)");
     expect(normalRoute).toContain("return promptedHandler(request)");
-    expect(normalRoute.indexOf("return promptedHandler(request)")).toBeLessThan(
-      normalRoute.indexOf("return legacyHandler(request)"),
-    );
+    expect(normalRoute).toContain("return legacyHandler(request)");
+    expect(normalRoute).toContain("{ status: 400 }");
     expect(studioHandler).toContain("runPromptedStorefrontDesignCompilation");
     expect(studioHandler).toContain("SemanticStorefrontDesignIntentProvider");
     expect(studioHandler).not.toMatch(/\b(?:selectionId|executableIntentId)\b/u);

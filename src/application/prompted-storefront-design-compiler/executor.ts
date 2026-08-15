@@ -1,5 +1,5 @@
 import {
-  createBoundedStorefrontSynthesisDecision,
+  boundedStorefrontSynthesisDecisionSchema,
   executeBoundedStorefrontSynthesis,
   type BoundedStorefrontSynthesisDecision,
   type BoundedStorefrontSynthesisResult,
@@ -15,9 +15,11 @@ import type { PageFactEvidenceAuthority } from "@/application/storefront-site-ma
 import type { ApprovedAssetPresentation } from "@/application/whole-storefront-generation-plan";
 import { canonicalValueString } from "@/domain/storefront";
 import {
+  compiledPromptedStorefrontDesignDecisionV2Schema,
   PromptedStorefrontDesignCompilerError,
   type CompiledPromptedStorefrontDesignDecisionV2,
 } from "./contract";
+import type { CompileSemanticStorefrontDesignIntentV1Input } from "./semantic-compiler";
 
 export type ExecutedPromptedStorefrontDesignDecisionV2 = Readonly<{
   compiledDecision: CompiledPromptedStorefrontDesignDecisionV2;
@@ -66,11 +68,11 @@ function selectedProfileIdentities(
   ].sort();
 }
 
-export function executeExactCompiledPromptedStorefrontDecision(
+function executeExactCompiledPromptedStorefrontDecision(
   input: Readonly<{
     compiledDecision: CompiledPromptedStorefrontDesignDecisionV2;
+    synthesisDecision: BoundedStorefrontSynthesisDecision;
     compatibilityInput: CompatibleCoordinatedDirectionNarrowingInput;
-    deterministicSeed: string;
     pageEvidenceAuthority: PageFactEvidenceAuthority;
     contentFactAuthority: ContentSupportFactAuthority;
     approvedAssetPresentations: readonly ApprovedAssetPresentation[];
@@ -80,7 +82,7 @@ export function executeExactCompiledPromptedStorefrontDecision(
   const dynamic = dynamicCommerceSelection(expected);
   const synthesisInput = {
     ...input.compatibilityInput,
-    request: { intent: "prompted-design-v2", deterministicSeed: input.deterministicSeed } as const,
+    request: input.synthesisDecision.request,
     exactSelection: expected.exactSelection,
     pageBlueprintSelectionOverrides: expected.pageBlueprintSelectionOverrides,
     approvedAssetRoleSelections: expected.approvedAssetRoleSelections,
@@ -93,15 +95,7 @@ export function executeExactCompiledPromptedStorefrontDecision(
       mobileNarrativePriority: expected.narrative.mobilePriority,
     },
   };
-  let synthesisDecision: BoundedStorefrontSynthesisDecision;
-  try {
-    synthesisDecision = createBoundedStorefrontSynthesisDecision(synthesisInput);
-  } catch (error) {
-    return fail(
-      "The compiled design selection is not executable by current synthesis authority.",
-      error,
-    );
-  }
+  const synthesisDecision = input.synthesisDecision;
   const contentProfileIds = new Set(
     listCommercialContentSupportProfiles().flatMap(({ profile }) => (profile ? [profile.id] : [])),
   );
@@ -109,6 +103,7 @@ export function executeExactCompiledPromptedStorefrontDecision(
     listCommercialUtilityProfiles().flatMap(({ profile }) => (profile ? [profile.id] : [])),
   );
   if (
+    synthesisDecision.request.intent !== "prompted-design-v2" ||
     expected.designDna.authorityFingerprint !==
       `compiled-${synthesisDecision.designDna.fingerprint}` ||
     synthesisDecision.designDna.directionId !== expected.designDna.directionId ||
@@ -153,4 +148,54 @@ export function executeExactCompiledPromptedStorefrontDecision(
   } catch (error) {
     return fail("The compiled prompted design could not be materialized atomically.", error);
   }
+}
+
+export type ExecuteCompiledSemanticStorefrontDesignIntentV1Input =
+  CompileSemanticStorefrontDesignIntentV1Input &
+    Readonly<{
+      compiledDecision: unknown;
+      synthesisDecision: unknown;
+      pageEvidenceAuthority: PageFactEvidenceAuthority;
+      contentFactAuthority: ContentSupportFactAuthority;
+      approvedAssetPresentations: readonly ApprovedAssetPresentation[];
+    }>;
+
+/** The sole prompted-generation executor and complete materialization boundary. */
+export function executeCompiledSemanticStorefrontDesignIntentV1(
+  input: ExecuteCompiledSemanticStorefrontDesignIntentV1Input,
+): ExecutedPromptedStorefrontDesignDecisionV2 {
+  const supplied = compiledPromptedStorefrontDesignDecisionV2Schema.safeParse(
+    input.compiledDecision,
+  );
+  const suppliedSynthesis = boundedStorefrontSynthesisDecisionSchema.safeParse(
+    input.synthesisDecision,
+  );
+  if (!supplied.success || !suppliedSynthesis.success) {
+    throw new PromptedStorefrontDesignCompilerError(
+      "invalid-input",
+      "The compiled semantic storefront decision is invalid.",
+      { cause: supplied.success ? suppliedSynthesis.error : supplied.error },
+    );
+  }
+  const compiled = supplied.data;
+  if (
+    compiled.identity.requestFingerprint !== input.originalRequest.requestFingerprint ||
+    compiled.identity.promptFingerprint !== input.originalRequest.promptFingerprint ||
+    compiled.identity.providerIntentFingerprint !==
+      input.providerIntent.semanticIntentFingerprint ||
+    !compiled.exactAuthorityFingerprints.includes(suppliedSynthesis.data.synthesisFingerprint)
+  ) {
+    throw new PromptedStorefrontDesignCompilerError(
+      "stale-authority",
+      "The compiled semantic storefront decision does not match current authority.",
+    );
+  }
+  return executeExactCompiledPromptedStorefrontDecision({
+    compiledDecision: compiled,
+    synthesisDecision: suppliedSynthesis.data,
+    compatibilityInput: input.compatibilityInput,
+    pageEvidenceAuthority: input.pageEvidenceAuthority,
+    contentFactAuthority: input.contentFactAuthority,
+    approvedAssetPresentations: input.approvedAssetPresentations,
+  });
 }

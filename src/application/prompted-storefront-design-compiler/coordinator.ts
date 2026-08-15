@@ -1,8 +1,5 @@
 import {
-  createPromptedStorefrontDesignRequestV2,
-  createSemanticStorefrontDesignRequestV1,
-  semanticStorefrontCurrentAuthorityFingerprint,
-  validateSemanticStorefrontDesignIntentV1,
+  type createPromptedStorefrontDesignRequestV2,
   type CreatePromptedStorefrontDesignRequestV2Input,
   type SemanticStorefrontDesignIntentProvider,
   type SemanticStorefrontDesignRequestV1,
@@ -23,20 +20,16 @@ import {
   PromptedStorefrontDesignCompilerError,
   type CompiledPromptedStorefrontDesignDecisionV2,
 } from "./contract";
-import {
-  assertPromptedStorefrontPlanningAuthorityBound,
-  type PromptedStorefrontCompilerAuthorityInput,
-} from "./compiler";
-import { type ExecutedPromptedStorefrontDesignDecisionV2 } from "./executor";
-import {
-  compileSemanticStorefrontDesignIntentV1,
-  type CompileSemanticStorefrontDesignIntentV1Input,
-} from "./semantic-compiler";
+import { type PromptedStorefrontCompilerAuthorityInput } from "./compiler";
 import {
   executeCompiledSemanticStorefrontDesignIntentV1,
-  type ExecuteCompiledSemanticStorefrontDesignIntentV1Input,
-} from "./semantic-executor";
-import { deriveSemanticCapabilityIndex } from "./semantic-compatibility-resolution";
+  type ExecutedPromptedStorefrontDesignDecisionV2,
+} from "./executor";
+import {
+  compileSemanticStorefrontDesignIntentV1,
+  prepareCurrentSemanticStorefrontDesignCompilationAuthority,
+  type CompileSemanticStorefrontDesignIntentV1Input,
+} from "./semantic-compiler";
 
 export type PromptedStorefrontDesignCompilationAuthority = Readonly<{
   requestInput: CreatePromptedStorefrontDesignRequestV2Input;
@@ -50,17 +43,12 @@ export type PromptedStorefrontDesignCompilationAuthority = Readonly<{
   }>;
 }>;
 
-type CompiledDecisionExecutor = (
-  input: ExecuteCompiledSemanticStorefrontDesignIntentV1Input,
-) => ExecutedPromptedStorefrontDesignDecisionV2;
-
 export type RunPromptedStorefrontDesignCompilationInput = Readonly<{
   provider: SemanticStorefrontDesignIntentProvider;
   loadCurrentAuthority: () =>
     | PromptedStorefrontDesignCompilationAuthority
     | Promise<PromptedStorefrontDesignCompilationAuthority>;
   maximumCandidateEvaluations?: number;
-  executeCompiledDecision?: CompiledDecisionExecutor;
 }>;
 
 export type PromptedStorefrontDesignCompilationEvidence = Readonly<{
@@ -114,15 +102,6 @@ function stale(message: string): never {
   throw new PromptedStorefrontDesignCompilerError("stale-authority", message);
 }
 
-function assertBoundPlanningAuthority(
-  authority: PromptedStorefrontDesignCompilationAuthority,
-): void {
-  assertPromptedStorefrontPlanningAuthorityBound({
-    currentRequestInput: authority.requestInput,
-    compatibilityInput: authority.compatibilityInput,
-  });
-}
-
 function assertSameAuthority(
   before: ReturnType<typeof createPromptedStorefrontDesignRequestV2>,
   after: ReturnType<typeof createPromptedStorefrontDesignRequestV2>,
@@ -138,25 +117,20 @@ function assertSameAuthority(
   }
 }
 
-function createCurrentSemanticAuthority(authority: PromptedStorefrontDesignCompilationAuthority) {
-  const exact = createPromptedStorefrontDesignRequestV2(authority.requestInput);
-  const currentAuthorityFingerprint = semanticStorefrontCurrentAuthorityFingerprint(
-    exact.request.currentAuthority,
-  );
-  const semanticIndex = deriveSemanticCapabilityIndex({
-    authority: authority.compatibilityInput,
-    currentAuthorityFingerprint,
-  });
+function createCurrentSemanticAuthority(
+  authority: PromptedStorefrontDesignCompilationAuthority,
+  maximumCandidateEvaluations?: number,
+) {
   const requestAuthority = authority.semanticRequestAuthority ?? {
     explicitConstraintAuthority: [],
     trustedExactHints: { directionPackageId: null, frameFamilyId: null },
   };
-  const semanticRequest = createSemanticStorefrontDesignRequestV1(exact, {
-    ...requestAuthority,
-    semanticAuthorityFingerprint: semanticIndex.semanticAuthorityFingerprint,
-    semanticInfluenceAuthority: semanticIndex.semanticInfluenceAuthority,
+  return prepareCurrentSemanticStorefrontDesignCompilationAuthority({
+    currentRequestInput: authority.requestInput,
+    compatibilityInput: authority.compatibilityInput,
+    semanticRequestAuthority: requestAuthority,
+    ...(maximumCandidateEvaluations === undefined ? {} : { maximumCandidateEvaluations }),
   });
-  return { exact, semanticIndex, semanticRequest, currentAuthorityFingerprint };
 }
 
 function protectedMediaAuthorityFingerprint(
@@ -463,25 +437,24 @@ export async function runPromptedStorefrontDesignCompilation(
   input: RunPromptedStorefrontDesignCompilationInput,
 ): Promise<PromptedStorefrontDesignCompilationResult> {
   const before = await input.loadCurrentAuthority();
-  assertBoundPlanningAuthority(before);
-  const initial = createCurrentSemanticAuthority(before);
+  const initial = createCurrentSemanticAuthority(before, input.maximumCandidateEvaluations);
   const protectedBefore = protectedAuthorityFingerprints(before);
   const materializationAuthorityBefore = materializationAuthorityFingerprint(before);
 
   const providerIntent = await input.provider.createDesignIntent(initial.semanticRequest, {
     currentAuthorityFingerprint: () => initial.currentAuthorityFingerprint,
-    semanticAuthorityFingerprint: () => initial.semanticIndex.semanticAuthorityFingerprint,
+    semanticAuthorityFingerprint: () =>
+      initial.semanticCapabilityIndex.semanticAuthorityFingerprint,
   });
 
   const refreshed = await input.loadCurrentAuthority();
-  assertBoundPlanningAuthority(refreshed);
-  const current = createCurrentSemanticAuthority(refreshed);
-  assertSameAuthority(initial.exact, current.exact);
+  const current = createCurrentSemanticAuthority(refreshed, input.maximumCandidateEvaluations);
+  assertSameAuthority(initial.currentExact, current.currentExact);
   if (
     canonicalValueString(initial.semanticRequest) !==
       canonicalValueString(current.semanticRequest) ||
-    initial.semanticIndex.semanticAuthorityFingerprint !==
-      current.semanticIndex.semanticAuthorityFingerprint
+    initial.semanticCapabilityIndex.semanticAuthorityFingerprint !==
+      current.semanticCapabilityIndex.semanticAuthorityFingerprint
   ) {
     stale("Current semantic compatibility authority changed after the provider response.");
   }
@@ -499,46 +472,35 @@ export async function runPromptedStorefrontDesignCompilation(
     );
   }
 
-  const { semanticIntentFingerprint: _semanticIntentFingerprint, ...providerIntentMaterial } =
-    providerIntent;
-  void _semanticIntentFingerprint;
-  const validatedIntent = validateSemanticStorefrontDesignIntentV1({
-    request: current.semanticRequest,
-    validation: {
-      currentAuthorityFingerprint: () => current.currentAuthorityFingerprint,
-      semanticAuthorityFingerprint: () => current.semanticIndex.semanticAuthorityFingerprint,
-    },
-    intent: providerIntentMaterial,
-  });
   const compileInput: CompileSemanticStorefrontDesignIntentV1Input = {
     originalRequest: initial.semanticRequest,
-    providerIntent: validatedIntent,
+    providerIntent,
     currentRequestInput: refreshed.requestInput,
     compatibilityInput: refreshed.compatibilityInput,
-    semanticCapabilityIndex: current.semanticIndex,
+    semanticCapabilityIndex: current.semanticCapabilityIndex,
+    preparedAuthority: current,
     ...(input.maximumCandidateEvaluations === undefined
       ? {}
       : { maximumCandidateEvaluations: input.maximumCandidateEvaluations }),
   };
   const compiled = compileSemanticStorefrontDesignIntentV1(compileInput);
   const compiledDecision = compiled.compiledDecision;
-  const executeCompiledDecision =
-    input.executeCompiledDecision ?? executeCompiledSemanticStorefrontDesignIntentV1;
   let materializationCount = 0;
-  const executeMaterialization: CompiledDecisionExecutor = (executionInput) => {
+  const executeMaterialization = () => {
     materializationCount += 1;
     if (materializationCount > 1) {
       stale("Prompted storefront compilation attempted more than one complete materialization.");
     }
-    return executeCompiledDecision(executionInput);
+    return executeCompiledSemanticStorefrontDesignIntentV1({
+      ...compileInput,
+      compiledDecision,
+      synthesisDecision: compiled.synthesisDecision,
+      pageEvidenceAuthority: refreshed.pageEvidenceAuthority,
+      contentFactAuthority: refreshed.contentFactAuthority,
+      approvedAssetPresentations: refreshed.approvedAssetPresentations,
+    });
   };
-  const execution = executeMaterialization({
-    ...compileInput,
-    compiledDecision,
-    pageEvidenceAuthority: refreshed.pageEvidenceAuthority,
-    contentFactAuthority: refreshed.contentFactAuthority,
-    approvedAssetPresentations: refreshed.approvedAssetPresentations,
-  });
+  const execution = executeMaterialization();
   const completedMaterializationCount = requireExactlyOneMaterialization(materializationCount);
   const candidate = execution.synthesis.materialization.snapshot;
   const protectedAfter = assertMaterializedProtectedAuthority(refreshed, execution);
@@ -555,8 +517,8 @@ export async function runPromptedStorefrontDesignCompilation(
       modelId: input.provider.modelId,
       requestFingerprint: initial.semanticRequest.requestFingerprint,
       promptFingerprint: initial.semanticRequest.promptFingerprint,
-      providerIntentFingerprint: validatedIntent.semanticIntentFingerprint,
-      semanticAuthorityFingerprint: current.semanticIndex.semanticAuthorityFingerprint,
+      providerIntentFingerprint: compiledDecision.identity.providerIntentFingerprint,
+      semanticAuthorityFingerprint: current.semanticCapabilityIndex.semanticAuthorityFingerprint,
       semanticResolutionFingerprint: compiled.resolution.diagnostic.diagnosticFingerprint,
       explicitConstraintFingerprint: `semantic-explicit-constraints-${canonicalValueFingerprint(
         current.semanticRequest.explicitConstraintAuthority,

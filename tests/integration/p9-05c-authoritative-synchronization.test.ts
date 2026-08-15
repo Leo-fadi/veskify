@@ -6,6 +6,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   buildP905bLocalDemoRequest,
+  createP905bLocalDemoAuthority,
   inspectP905bLocalDemo,
   loadP905bLocalDemoEditorSession,
   p905bLocalDemoRepository,
@@ -13,7 +14,7 @@ import {
   resetP905bLocalDemo,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createServerWholeStorefrontPlanningHandler } from "@/integrations/ai/whole-storefront-runtime-authority";
 import { createP905bLocalDemoSynchronizationHandler } from "@/app/api/demo/p9-05b/synchronize/handler";
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
@@ -103,8 +104,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
     );
 
     const reached = vi.fn();
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: () => provider("modernTechnical", reached),
     });
     const request = await buildP905bLocalDemoRequest(
@@ -130,8 +131,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
     const session = p905bLocalDemoSession(environment);
     const before = await inspectP905bLocalDemo(environment);
     const reached = vi.fn();
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: () => tokenRefinementProvider(reached),
     });
     const request = await buildP905bLocalDemoRequest(p905dExactTokenRefinementRequest, environment);
@@ -200,8 +201,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
   it("synchronizes an accepted initial direction before a warm colour follow-up uses its saved baseline", async () => {
     const session = p905bLocalDemoSession(environment);
     const selectedDirections: string[] = [];
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: () =>
         provider("premiumEditorial", () => {
           selectedDirections.push("premiumEditorial");
@@ -273,8 +274,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
       "Keep the structure, but make the colours warmer and more approachable.",
       environment,
     );
-    const followupHandler = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const followupHandler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: () =>
         tokenRefinementProvider(() => {
           selectedDirections.push("validatedTokenRefinement");
@@ -348,8 +349,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
   it("rejects a duplicate follow-up proposal after synchronization before provider selection", async () => {
     const { session } = await synchronizeSavedAggregate();
     const selected = vi.fn(() => provider());
-    const handler = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: selected,
     });
     const request = await buildP905bLocalDemoRequest(
@@ -438,8 +439,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
         },
         body: JSON.stringify(request),
       });
-    const failing = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const failing = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: () => ({
         ...provider(),
         createPlan: () => Promise.reject(new Error("provider unavailable")),
@@ -447,8 +448,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
     });
     expect((await failing(requestFor())).status).toBe(503);
 
-    const retry = createWholeStorefrontPlanningRouteHandler({
-      environment,
+    const retry = createServerWholeStorefrontPlanningHandler({
+      authority: createP905bLocalDemoAuthority(environment),
       selectProvider: () => provider(),
     });
     expect((await retry(requestFor())).status).toBe(200);
