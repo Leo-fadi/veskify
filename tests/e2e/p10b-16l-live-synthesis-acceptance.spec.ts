@@ -274,17 +274,23 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   );
   await page
     .locator("#dynamic-commerce-representative-route")
-    .selectOption({ label: "Myrskyluodon Maija — /collections/myrskyluodon-maija" });
+    .selectOption({ label: "Myrskyluodon Maija" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/collections/myrskyluodon-maija",
+  );
   await expect(
     proposalCanvas.locator('[data-component="dynamicCollectionCommerce"]'),
   ).toBeVisible();
   await selectOptionMatching(
     storefrontPage,
-    /High-consideration product-page design archetype|Harkitun oston tuotesivumalli/i,
+    /Configurable product-page design archetype|Muunneltavan tuotteen tuotesivumalli/i,
   );
   await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Festive Feeniks Lux Oval timanttisormus — /products/product-karvonen-06",
+    label: "Festive Feeniks Lux Oval timanttisormus",
   });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/product-karvonen-06",
+  );
   await expect(
     proposalCanvas.getByRole("heading", {
       name: "Festive Feeniks Lux Oval timanttisormus",
@@ -292,7 +298,7 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
     }),
   ).toBeVisible();
   await expect(
-    proposalCanvas.getByRole("region", { name: /Product gallery|Tuotekuvat/ }),
+    proposalCanvas.getByRole("region", { name: /Product gallery|Tuotegalleria/ }),
   ).toBeVisible();
   await storefrontPage.selectOption(homePageId);
   await expect(proposalCanvas.locator('[data-component="homepageHero"]')).toBeVisible();
@@ -332,7 +338,10 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   );
   await page
     .locator("#dynamic-commerce-representative-route")
-    .selectOption({ label: "Myrskyluodon Maija — /collections/myrskyluodon-maija" });
+    .selectOption({ label: "Myrskyluodon Maija" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/collections/myrskyluodon-maija",
+  );
   const previewLink = page
     .getByRole("link", { name: /Esikatsele kauppaa|Preview storefront/ })
     .first();
@@ -355,11 +364,14 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   await expect(reloadedStorefrontPage.locator("option")).toHaveCount(canonicalDesignAuthorityCount);
   await selectOptionMatching(
     reloadedStorefrontPage,
-    /High-consideration product-page design archetype|Harkitun oston tuotesivumalli/i,
+    /Configurable product-page design archetype|Muunneltavan tuotteen tuotesivumalli/i,
   );
   await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Festive Feeniks Lux Oval timanttisormus — /products/product-karvonen-06",
+    label: "Festive Feeniks Lux Oval timanttisormus",
   });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/product-karvonen-06",
+  );
   const productPreview = page
     .getByRole("link", { name: /Esikatsele kauppaa|Preview storefront/ })
     .first();
