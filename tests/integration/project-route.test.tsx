@@ -172,6 +172,29 @@ describe("seed project route", () => {
     expect(screen.getByText("Current locale: FI")).toBeVisible();
   });
 
+  it("initializes from an enabled routed locale and preserves it in storefront links", async () => {
+    const { repository } = repositoryWithGet(() => Promise.resolve(aggregate()));
+    render(
+      <ProjectPreviewClient
+        initialLocale="fi"
+        projectId={aurumNordicSeed.project.id}
+        repositoryFactory={() => repository}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Tehty pohjoiseen valoon" })).toBeVisible();
+    expect(screen.getByText("Current locale: FI")).toBeVisible();
+    expect(
+      within(screen.getByRole("navigation", { name: "Päänavigaatio" })).getByRole("link", {
+        name: "Sormukset",
+      }),
+    ).toHaveAttribute("href", "/projects/project_aurum_nordic/collections/rings?locale=fi");
+    expect(screen.getByRole("link", { name: "Aurora-sormus" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/products/aurora-ring-585?locale=fi",
+    );
+  });
+
   it("falls back to the primary locale when Finnish content is missing", async () => {
     const value = aggregate();
     const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);

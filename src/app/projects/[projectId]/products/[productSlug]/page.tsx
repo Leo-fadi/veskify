@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { ProductPreviewClient } from "./product-preview-client";
+import {
+  parseP10B16P04UtilityContextParameter,
+  parsePreviewLocaleParameter,
+  type PreviewRouteParameter,
+} from "../../preview-mode";
 import { loadP10B16P03CurrentEvidenceReferences } from "@/integrations/ai/prompted-storefront-studio-authority.server";
 import {
   loadP10B16P04CurrentEvidenceReferences,
@@ -14,12 +19,23 @@ export default async function ProductPage({
   params: Promise<{ projectId: string; productSlug: string }>;
   searchParams: Promise<{
     "p10b-16p-04-proposal"?: string;
+    "p10b-16p-04-utility"?: PreviewRouteParameter;
+    locale?: PreviewRouteParameter;
   }>;
 }) {
   const { projectId, productSlug } = await params;
   const httpHeaders = await headers();
   const query = await searchParams;
   const proposalFingerprint = query["p10b-16p-04-proposal"];
+  const utility = parseP10B16P04UtilityContextParameter(query["p10b-16p-04-utility"]);
+  const locale = parsePreviewLocaleParameter(query.locale);
+  if (!utility.valid || !locale.valid) notFound();
+  const utilityContext = utility.value;
+  const p10b16p04Evidence = loadP10B16P04CurrentEvidenceReferences({
+    projectId,
+    httpHeaders,
+  });
+  if (utilityContext && !p10b16p04Evidence) notFound();
   const proposalAggregate = proposalFingerprint
     ? loadP10B16P04ProposalPreviewAuthority({
         projectId,
@@ -29,13 +45,14 @@ export default async function ProductPage({
     : undefined;
   if (proposalFingerprint && !proposalAggregate) notFound();
   const initialEvidenceReferences =
-    loadP10B16P04CurrentEvidenceReferences({ projectId, httpHeaders }) ??
-    (await loadP10B16P03CurrentEvidenceReferences({ projectId }));
+    p10b16p04Evidence ?? (await loadP10B16P03CurrentEvidenceReferences({ projectId }));
   return (
     <ProductPreviewClient
       productId={projectId}
       productSlug={productSlug}
       initialEvidenceReferences={initialEvidenceReferences}
+      {...(locale.value ? { initialLocale: locale.value } : {})}
+      {...(utilityContext ? { p10b16p04UtilityContext: utilityContext } : {})}
       {...(proposalAggregate
         ? {
             initialAggregate: proposalAggregate,

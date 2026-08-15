@@ -229,16 +229,37 @@ describe("P10B-16P-06 canonical standalone search adapter", () => {
     expect(url).not.toContain("%2520");
     expect(
       splitStorefrontSearchFormTarget({
-        routePath: "/projects/project_aurum/search?p9-05b-session=safe-session&q=old",
+        routePath:
+          "/projects/project_aurum/search?p9-05b-session=safe-session&p10b-16p-04-utility=populated&q=old",
         locale: "en",
       }),
     ).toEqual({
       action: "/projects/project_aurum/search",
       hiddenInputs: [
         { name: "p9-05b-session", value: "safe-session" },
+        { name: "p10b-16p-04-utility", value: "populated" },
         { name: "locale", value: "en" },
       ],
     });
+    expect(() =>
+      buildStorefrontSearchUrl({
+        routePath: "/projects/project_aurum/search?p10b-16p-04-utility=unknown",
+        rawQuery: "ring",
+        locale: "en",
+      }),
+    ).toThrowError(
+      expect.objectContaining<Partial<StorefrontSearchError>>({ code: "invalid-request" }),
+    );
+    expect(() =>
+      splitStorefrontSearchFormTarget({
+        routePath:
+          "/projects/project_aurum/search?p10b-16p-04-utility=empty&" +
+          "p10b-16p-04-utility=populated",
+        locale: "en",
+      }),
+    ).toThrowError(
+      expect.objectContaining<Partial<StorefrontSearchError>>({ code: "invalid-request" }),
+    );
   });
 
   it("ranks exact and localized fields deterministically without exposing internal fields", () => {

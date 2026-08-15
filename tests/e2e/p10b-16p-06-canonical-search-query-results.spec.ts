@@ -326,6 +326,21 @@ test("canonical search remains transient across draft reload and published rende
       query: "sormus",
     }),
   );
+  await page.getByRole("button", { name: "Näytä tuote" }).first().click();
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname.endsWith("/products/aurora-ring-585") && url.searchParams.get("locale") === "fi"
+    );
+  });
+  await expect(page.getByRole("heading", { level: 1, name: "Aurora-sormus 585" })).toBeVisible();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator('.project-preview[lang="fi"]')).toBeVisible();
+  await page.getByRole("link", { name: "Storefront home" }).click();
+  await expect(page).toHaveURL((url) => {
+    return url.pathname === `/projects/${projectId}` && url.searchParams.get("locale") === "fi";
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator('.project-preview[lang="fi"]')).toBeVisible();
 
   await page.goto(editorUrl, { waitUntil: "domcontentloaded" });
   await openEditorAssistant(page);
@@ -361,7 +376,7 @@ test("canonical search remains transient across draft reload and published rende
   );
   const proposalFingerprint = result.lineage.candidateSnapshotFingerprint;
   await page.goto(
-    `${draftSearchPath}?q=925&locale=en&p10b-16p-04-proposal=${encodeURIComponent(proposalFingerprint)}`,
+    `${draftSearchPath}?q=925&locale=en&p10b-16p-04-proposal=${encodeURIComponent(proposalFingerprint)}&p10b-16p-04-utility=populated`,
     { waitUntil: "domcontentloaded", timeout: 120_000 },
   );
   await expectResults({
@@ -375,6 +390,7 @@ test("canonical search remains transient across draft reload and published rende
     await expect(form.locator('input[name="p10b-16p-04-proposal"]')).toHaveValue(
       proposalFingerprint,
     );
+    await expect(form.locator('input[name="p10b-16p-04-utility"]')).toHaveValue("populated");
   }
   evidence.push(
     await captureP10B16P06SearchEvidence({
@@ -385,6 +401,21 @@ test("canonical search remains transient across draft reload and published rende
       locale: "en",
       query: "925",
     }),
+  );
+  const proposalCart = page.locator('[data-frame-utility="cart"]').first();
+  await expect(proposalCart).toHaveAttribute("href", /p10b-16p-04-utility=populated/u);
+  await page.getByRole("button", { name: "View product" }).first().click();
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname.startsWith(`/projects/${projectId}/products/`) &&
+      url.searchParams.get("p10b-16p-04-proposal") === proposalFingerprint &&
+      url.searchParams.get("p10b-16p-04-utility") === "populated" &&
+      url.searchParams.get("locale") === "en"
+    );
+  });
+  await expect(page.getByRole("link", { name: "Storefront home" })).toHaveAttribute(
+    "href",
+    /p10b-16p-04-utility=populated/u,
   );
   expect(await storedDraftBytes(page)).toBe(storedBefore);
   assertOffline(requests, 1);

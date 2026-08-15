@@ -29,8 +29,10 @@ import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services
 import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
+  previewNavigationSuffix,
   previewPathPrefix,
   selectedSnapshotId,
+  type P10B16P04UtilityContext,
   type SnapshotKind,
 } from "../../preview-mode";
 import { HistoricalPreviewActions } from "../../historical-preview-actions";
@@ -109,6 +111,8 @@ export function CollectionPreviewClient({
   publishedSessionId,
   initialAggregate,
   proposalCandidateFingerprint,
+  p10b16p04UtilityContext,
+  initialLocale,
   initialEvidenceReferences = emptyEvidenceReferences,
 }: {
   projectId: string;
@@ -126,6 +130,8 @@ export function CollectionPreviewClient({
   publishedSessionId?: string;
   initialAggregate?: ProjectAggregate;
   proposalCandidateFingerprint?: string;
+  p10b16p04UtilityContext?: P10B16P04UtilityContext;
+  initialLocale?: Locale;
   initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 }) {
   const effectiveRenderTarget =
@@ -135,12 +141,6 @@ export function CollectionPreviewClient({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [activeLocale, setActiveLocale] = useState<Locale>();
-  const previewQuerySuffix = publishedSessionId
-    ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-    : proposalCandidateFingerprint
-      ? `?p10b-16p-04-proposal=${encodeURIComponent(proposalCandidateFingerprint)}`
-      : "";
-
   useEffect(() => {
     let cancelled = false;
     const aggregateSource = initialAggregate
@@ -166,6 +166,16 @@ export function CollectionPreviewClient({
         );
         if (!draft) return setState({ status: "missingDraft" });
         try {
+          const initialActiveLocale =
+            initialLocale && aggregate.project.enabledLocales.includes(initialLocale)
+              ? initialLocale
+              : aggregate.project.primaryLocale;
+          const initialQuerySuffix = previewNavigationSuffix({
+            publishedSessionId,
+            proposalCandidateFingerprint,
+            p10b16p04UtilityContext,
+            ...(initialLocale ? { locale: initialActiveLocale } : {}),
+          });
           const route = `/collections/${collectionSlug}`;
           const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
             (entry) => entry.kind === "collection" && entry.route === route,
@@ -207,14 +217,14 @@ export function CollectionPreviewClient({
             });
           }
           const context = createStorefrontRenderContext({
-            activeLocale: aggregate.project.primaryLocale,
+            activeLocale: initialActiveLocale,
             primaryLocale: aggregate.project.primaryLocale,
             enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
             evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-            pagePathSuffix: previewQuerySuffix,
+            pagePathSuffix: initialQuerySuffix,
             renderTarget: effectiveRenderTarget,
           });
           void renderStorefrontPage(page, context);
@@ -231,7 +241,7 @@ export function CollectionPreviewClient({
               commercePresentation.projection,
             );
           }
-          setActiveLocale(aggregate.project.primaryLocale);
+          setActiveLocale(initialActiveLocale);
           setState({
             status: "success",
             aggregate,
@@ -259,8 +269,9 @@ export function CollectionPreviewClient({
     historicalSnapshotId,
     initialAggregate,
     initialEvidenceReferences,
+    initialLocale,
+    p10b16p04UtilityContext,
     projectId,
-    previewQuerySuffix,
     proposalCandidateFingerprint,
     effectiveRenderTarget,
     snapshotKind,
@@ -335,6 +346,12 @@ export function CollectionPreviewClient({
   if (state.status !== "success") return null;
 
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
+  const previewQuerySuffix = previewNavigationSuffix({
+    publishedSessionId,
+    proposalCandidateFingerprint,
+    p10b16p04UtilityContext,
+    ...(initialLocale || locale !== state.aggregate.project.primaryLocale ? { locale } : {}),
+  });
   const context = createStorefrontRenderContext({
     activeLocale: locale,
     primaryLocale: state.aggregate.project.primaryLocale,

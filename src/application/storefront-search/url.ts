@@ -16,9 +16,18 @@ export const STOREFRONT_SEARCH_SAFE_SESSION_PARAMETER_NAMES = [
   "p10b-16p-04-utility",
 ] as const;
 
+export const P10B16P04_SEARCH_UTILITY_CONTEXTS = ["empty", "populated"] as const;
+export type P10B16P04SearchUtilityContext = (typeof P10B16P04_SEARCH_UTILITY_CONTEXTS)[number];
+
 type SafeSessionParameterName = (typeof STOREFRONT_SEARCH_SAFE_SESSION_PARAMETER_NAMES)[number];
 
 export type StorefrontSearchHiddenInput = Readonly<{ name: string; value: string }>;
+
+export function isP10B16P04SearchUtilityContext(
+  value: string,
+): value is P10B16P04SearchUtilityContext {
+  return P10B16P04_SEARCH_UTILITY_CONTEXTS.some((candidate) => candidate === value);
+}
 
 function routeTarget(routePath: string): {
   action: string;
@@ -44,6 +53,16 @@ function routeTarget(routePath: string): {
       throw new StorefrontSearchError(
         "invalid-request",
         `The preserved search session parameter ${name} is invalid.`,
+      );
+    }
+    if (
+      name === "p10b-16p-04-utility" &&
+      values[0] !== undefined &&
+      !isP10B16P04SearchUtilityContext(values[0])
+    ) {
+      throw new StorefrontSearchError(
+        "invalid-request",
+        "The preserved search utility context is invalid.",
       );
     }
     if (values[0] !== undefined) safeSessionInputs.push({ name, value: values[0] });

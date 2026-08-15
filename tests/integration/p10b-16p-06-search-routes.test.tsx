@@ -2,8 +2,14 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SearchPreviewClient } from "@/app/projects/[projectId]/search/search-preview-client";
 import {
+  parseP10B16P04UtilityContextParameter,
+  parsePreviewLocaleParameter,
+  previewNavigationSuffix,
+} from "@/app/projects/[projectId]/preview-mode";
+import {
   parseStorefrontSearchContextParameter,
   parseStorefrontSearchRouteRequest,
+  parseStorefrontSearchUtilityContextParameter,
 } from "@/app/projects/[projectId]/search/search-route-parameters";
 import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
 import type { LocalizedText } from "@/domain/shared";
@@ -39,6 +45,21 @@ function aggregateWithDynamicPublishedSnapshot() {
 
 describe("P10B-16P-06 storefront search routes", () => {
   it("parses only bounded transient search state and rejects malformed supported parameters", () => {
+    expect(parsePreviewLocaleParameter("fi")).toEqual({ valid: true, value: "fi" });
+    expect(parsePreviewLocaleParameter(["en", "fi"])).toEqual({ valid: false });
+    expect(parsePreviewLocaleParameter("sv")).toEqual({ valid: false });
+    expect(parseP10B16P04UtilityContextParameter("populated")).toEqual({
+      valid: true,
+      value: "populated",
+    });
+    expect(parseP10B16P04UtilityContextParameter("unknown")).toEqual({ valid: false });
+    expect(
+      previewNavigationSuffix({
+        proposalCandidateFingerprint: "candidate fingerprint",
+        p10b16p04UtilityContext: "populated",
+        locale: "fi",
+      }),
+    ).toBe("?p10b-16p-04-proposal=candidate+fingerprint&p10b-16p-04-utility=populated&locale=fi");
     expect(
       parseStorefrontSearchRouteRequest({
         parameters: {
@@ -95,6 +116,54 @@ describe("P10B-16P-06 storefront search routes", () => {
     expect(
       parseStorefrontSearchContextParameter({ "p10b-16p-04-proposal": "" }, "p10b-16p-04-proposal"),
     ).toEqual({ valid: false });
+    expect(parseStorefrontSearchUtilityContextParameter({})).toEqual({ valid: true });
+    expect(
+      parseStorefrontSearchUtilityContextParameter({ "p10b-16p-04-utility": "empty" }),
+    ).toEqual({ valid: true, value: "empty" });
+    expect(
+      parseStorefrontSearchUtilityContextParameter({ "p10b-16p-04-utility": "populated" }),
+    ).toEqual({ valid: true, value: "populated" });
+    expect(
+      parseStorefrontSearchUtilityContextParameter({ "p10b-16p-04-utility": "unknown" }),
+    ).toEqual({ valid: false });
+    expect(
+      parseStorefrontSearchUtilityContextParameter({
+        "p10b-16p-04-utility": ["empty", "populated"],
+      }),
+    ).toEqual({ valid: false });
+  });
+
+  it("preserves the authorized utility and Finnish locale across storefront navigation", async () => {
+    const aggregate = p10b16p01DynamicCommerceAggregate();
+    render(
+      <SearchPreviewClient
+        initialAggregate={aggregate}
+        p10b16p04UtilityContext="populated"
+        projectId={aggregate.project.id}
+        proposalCandidateFingerprint="candidate-safe-fingerprint"
+        searchParameters={{ q: "sormus", locale: "fi" }}
+      />,
+    );
+
+    expect(await screen.findByText(/Hakutulokset haulle/)).toBeVisible();
+    for (const form of screen.getAllByRole("search")) {
+      expect(form.querySelector('input[name="p10b-16p-04-proposal"]')).toHaveValue(
+        "candidate-safe-fingerprint",
+      );
+      expect(form.querySelector('input[name="p10b-16p-04-utility"]')).toHaveValue("populated");
+      expect(form.querySelector('input[name="locale"]')).toHaveValue("fi");
+    }
+    const expectedSuffix =
+      "?p10b-16p-04-proposal=candidate-safe-fingerprint&" +
+      "p10b-16p-04-utility=populated&locale=fi";
+    expect(screen.getByRole("link", { name: "Verkkokaupan etusivu" })).toHaveAttribute(
+      "href",
+      `/projects/${aggregate.project.id}${expectedSuffix}`,
+    );
+    expect(screen.getAllByRole("link", { name: "Aurum Nordic" })[0]).toHaveAttribute(
+      "href",
+      `/projects/${aggregate.project.id}${expectedSuffix}`,
+    );
   });
 
   it("renders canonical proposal search results without persisting query state", async () => {

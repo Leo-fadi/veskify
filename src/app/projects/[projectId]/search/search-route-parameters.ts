@@ -1,7 +1,9 @@
 import {
   STOREFRONT_SEARCH_DEFAULT_PAGE_SIZE,
   STOREFRONT_SEARCH_REQUEST_CONTRACT_VERSION,
+  isP10B16P04SearchUtilityContext,
   storefrontSearchRequestV1Schema,
+  type P10B16P04SearchUtilityContext,
   type StorefrontSearchRequestV1,
 } from "@/application/storefront-search";
 import type { Locale } from "@/domain/shared";
@@ -24,6 +26,16 @@ export function parseStorefrontSearchContextParameter(
     return { valid: false };
   }
   return { valid: true, value };
+}
+
+export function parseStorefrontSearchUtilityContextParameter(
+  parameters: StorefrontSearchRouteParameters,
+): Readonly<{ valid: true; value?: P10B16P04SearchUtilityContext }> | Readonly<{ valid: false }> {
+  const parsed = parseStorefrontSearchContextParameter(parameters, "p10b-16p-04-utility");
+  if (!parsed.valid) return { valid: false };
+  const value = parsed.value;
+  if (value === undefined) return { valid: true };
+  return isP10B16P04SearchUtilityContext(value) ? { valid: true, value } : { valid: false };
 }
 
 function single(parameters: StorefrontSearchRouteParameters, name: string): string | undefined {

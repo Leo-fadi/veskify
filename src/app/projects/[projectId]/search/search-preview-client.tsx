@@ -28,8 +28,10 @@ import {
 import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
+  previewNavigationSuffix,
   previewPathPrefix,
   selectedSnapshotId,
+  type P10B16P04UtilityContext,
   type SnapshotKind,
 } from "../preview-mode";
 import { HistoricalPreviewActions } from "../historical-preview-actions";
@@ -149,24 +151,6 @@ function StatusPanel({
   );
 }
 
-function navigationSuffix({
-  publishedSessionId,
-  proposalCandidateFingerprint,
-  locale,
-}: {
-  publishedSessionId?: string;
-  proposalCandidateFingerprint?: string;
-  locale: StorefrontSearchRequestV1["locale"];
-}) {
-  const parameters = new URLSearchParams();
-  if (publishedSessionId) parameters.set("p9-05b-session", publishedSessionId);
-  if (proposalCandidateFingerprint) {
-    parameters.set("p10b-16p-04-proposal", proposalCandidateFingerprint);
-  }
-  parameters.set("locale", locale);
-  return `?${parameters.toString()}`;
-}
-
 export function SearchPreviewClient({
   projectId,
   searchParameters,
@@ -179,6 +163,7 @@ export function SearchPreviewClient({
   publishedSessionId,
   initialAggregate,
   proposalCandidateFingerprint,
+  p10b16p04UtilityContext,
   initialEvidenceReferences = emptyEvidenceReferences,
   onNavigateProduct,
   onContinueShopping,
@@ -194,6 +179,7 @@ export function SearchPreviewClient({
   publishedSessionId?: string;
   initialAggregate?: ProjectAggregate;
   proposalCandidateFingerprint?: string;
+  p10b16p04UtilityContext?: P10B16P04UtilityContext;
   initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
   onNavigateProduct?: (intent: ProductNavigationIntent) => void;
   onContinueShopping?: () => void;
@@ -393,9 +379,10 @@ export function SearchPreviewClient({
   }
   if (state.status !== "success") return null;
 
-  const suffix = navigationSuffix({
+  const suffix = previewNavigationSuffix({
     publishedSessionId,
     proposalCandidateFingerprint,
+    p10b16p04UtilityContext,
     locale: state.request.locale,
   });
   const pathPrefix = previewPathPrefix(projectId, snapshotKind, historicalSnapshotId);
