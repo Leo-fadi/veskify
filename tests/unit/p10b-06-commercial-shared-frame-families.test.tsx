@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -305,21 +305,23 @@ describe("P10B-06 commercial shared-frame families", () => {
       expect(document.body.style.overflow).toBe("hidden");
       expect(container.querySelector("main")?.inert).toBe(true);
 
-      mediaListeners.forEach((listener) =>
-        listener({ matches: true, media: "(min-width: 64rem)" } as MediaQueryListEvent),
-      );
+      act(() => {
+        mediaListeners.forEach((listener) =>
+          listener({ matches: true, media: "(min-width: 64rem)" } as MediaQueryListEvent),
+        );
+      });
 
-      await waitFor(() =>
-        expect(screen.queryByRole("dialog", { name: "Mobile navigation" })).toBeNull(),
-      );
-      expect(document.body.style.overflow).toBe("");
-      expect(container.querySelector("main")?.inert).not.toBe(true);
-      expect(container.querySelector("footer")?.inert).not.toBe(true);
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog", { name: "Mobile navigation" })).toBeNull();
+        expect(document.body.style.overflow).toBe("");
+        expect(container.querySelector("main")?.inert).not.toBe(true);
+        expect(container.querySelector("footer")?.inert).not.toBe(true);
+      });
       expect(
         container.querySelector<HTMLElement>('[data-frame-region="desktop-header-layout"] a'),
       ).toHaveFocus();
-      cleanup();
     } finally {
+      cleanup();
       Object.defineProperty(window, "matchMedia", {
         configurable: true,
         value: originalMatchMedia,

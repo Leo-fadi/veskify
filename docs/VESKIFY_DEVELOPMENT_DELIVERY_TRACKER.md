@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 16 August 2026, P10B-17 responsive, accessibility and performance closure                                           |
+| Baseline                    | 16 August 2026, accepted P10B-18A commercial-authority audit                                                        |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -66,8 +66,11 @@ required evidence are accepted.
 | ☑    | P10B-16P-05A | Active production-path and compiler rationalisation  | **Baseline** | Generation route/compiler            | P10B-16P-04                               | One semantic initial-generation composition; one coordinator/resolver/decision/executor chain; A/B/C replay; migration/publication/protected-state regressions     |
 | ☑    | P10B-16P-06  | Canonical search query/results adapter               | **Baseline** | Search runtime/commerce presentation | P10B-16P-05A and dynamic-search authority | Transient exact canonical query/results; ranking/filter/pagination; lifecycle non-persistence; EN/FI browser and publication evidence; protected commerce/media    |
 | ☑    | P10B-17      | Responsive, accessibility and performance closure    | **Baseline** | Design system and QA                 | P10B-16P-06 and implemented families      | Registered transformations; four-width EN/FI geometry; keyboard/semantic/contrast; bounded performance/build budgets; browser and retained human visual evidence   |
-| ☐    | P10B-18      | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA        | All prior P10B tasks                      | 100+ configurations and fingerprint-stratified human review                                                                                                        |
-| ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Planned**  | Generation architecture/evidence     | P10B-16P-05A and P10B-18                  | Consumer-proven removal/archival of remaining historical scaffolding with migration and evidence retention                                                         |
+| ☐    | P10B-18      | Commercial quality and scale gate                    | **Partial**  | Product owner, generation, QA        | All prior P10B tasks                      | Accepted audit, source-authority upgrade, then 100+ configurations and fingerprint-stratified human review                                                         |
+| ☑    | P10B-18A     | Commercial authority audit and ceiling diagnosis     | **Baseline** | Product owner, generation, QA        | P10B-17 and current authority             | Accepted 72-case matrix, 18-store/108-capture human review, protected commerce/media, zero provider/Vesko/publication traffic                                      |
+| ☐    | P10B-18B     | Commercial source-authority quality upgrade          | **Planned**  | Generation/component/profile owners  | Accepted P10B-18A                         | Six coherent packages with focused and integrated browser/human evidence against the frozen audit baseline                                                         |
+| ☐    | P10B-18C     | 100+ commercial quality and diversity gate           | **Planned**  | Product owner, generation, QA        | Accepted and integrated P10B-18B packages | 100+ complete configurations, protected-state/diversity gates and fingerprint-stratified four-width retained human review                                          |
+| ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Planned**  | Generation architecture/evidence     | P10B-16P-05A and P10B-18C                 | Consumer-proven removal/archival of remaining historical scaffolding with migration and evidence retention                                                         |
 
 ## P10C checklist
 
@@ -173,16 +176,17 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
-P10B-16P-02 is **Baseline**. P10B-16P-05B and P10B-18 remain **Planned**. P10B-16P-04 acceptance evidence is retained
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, and accepted P10B-18A are
+**Baseline**. P10B-16P-02 is **Baseline**. Parent P10B-18 remains **Partial**; P10B-18B and
+P10B-18C remain **Planned**. P10B-16P-04 acceptance evidence is retained
 in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-16P-05B follows P10B-18 as the final consumer-verified historical cleanup. P10B-18 is the next
-focused product task.
+P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18B is the
+next focused product task.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -648,7 +652,7 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 - **Evidence:** Architecture/dependency checks, provider/security and semantic compiler/executor
   tests, deterministic Prompt A/B/C replay, Prompt C lifecycle, dynamic-route migration,
   publication separation, and protected commerce/media regressions. The P10B-16P-04 acceptance
-  composition remains production-disabled through P10B-18.
+  composition remains production-disabled through P10B-18C.
 - **Non-goal:** Search execution, visual redesign, new provider behavior, P10B-17/P10B-18, final
   historical cleanup, publication, or Vesko integration.
 
@@ -682,14 +686,15 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 
 - **Outcome:** Remove or archive remaining P10B-16L, P9/Lumo, and P04 acceptance scaffolding only
   after current quality/scale evidence no longer consumes it.
-- **Status:** **Planned** after P10B-18.
-- **Depends on:** P10B-16P-05A and P10B-18.
+- **Status:** **Planned** after P10B-18C.
+- **Depends on:** P10B-16P-05A and P10B-18C.
 - **Done when:** Consumer search proves no active, migration, publication, replay, or retained
   evidence dependency; final removal preserves historical records and all valid snapshots/artifacts.
 - **Non-goal:** Deleting P10B-18 visual fixtures or compatibility data before their removal gate.
 
-P10B-17 is Baseline. P10B remains Partial; P10B-18 is the next focused product task and the
-P10B-16P-05B final historical cleanup remains Planned after P10B-18.
+P10B-17 and accepted P10B-18A are Baseline. Parent P10B-18 and P10B remain Partial; P10B-18B is the
+next focused product task, P10B-18C remains Planned after it, and P10B-16P-05B remains Planned after
+P10B-18C.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
@@ -710,14 +715,15 @@ P10B-16P-05B final historical cleanup remains Planned after P10B-18.
 - **Evidence:** Automated geometry, accessibility, performance, build-budget, lifecycle-renderer,
   and browser matrices plus retained representative four-width human visual review correlated to
   current authority and protected commerce/media fingerprints.
-- **Non-goal:** P10B-18 designer-grade commercial quality or 100+ scale, Vesko integration/staging,
-  production authentication/performance/readiness, or visual approval from isolated component
-  screenshots.
+- **Non-goal:** P10B-18B source-authority improvement, P10B-18C designer-grade commercial quality
+  or 100+ scale, Vesko integration/staging, production authentication/performance/readiness, or
+  visual approval from isolated component screenshots.
 
 #### P10B-18 — Commercial quality and scale gate
 
 - **Outcome:** Prove repeated generation of publishable, premium, materially different complete
   storefronts.
+- **Status:** **Partial**. P10B-18A is Baseline; P10B-18B and P10B-18C remain Planned.
 - **Authority:** Existing golden-store/human-review evidence plus the P10B synthesis and fingerprint
   authorities.
 - **Depends on:** P10B-17 and every prior P10B task.
@@ -730,6 +736,53 @@ P10B-16P-05B final historical cleanup remains Planned after P10B-18.
 - **Evidence:** Scale-generation ledger, fingerprint/diversity analysis, complete capability-chain
   correlations, retained screenshots, and explicit human acceptance.
 - **Non-goal:** P10C merchant editing, Vesko staging, or production-readiness claims.
+
+#### P10B-18A — Commercial authority audit and quality-ceiling diagnosis
+
+- **Outcome:** Establish the exact commercial ceiling of current registered source authority and
+  assign each observed defect to fixture/source evidence, compatibility, materializer/renderer
+  consumption or missing evaluation authority before any redesign.
+- **Status:** **Baseline**. Accepted by the product owner on 16 August 2026 under
+  [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
+- **Depends on:** P10B-17 and current registered synthesis, profile, renderer, asset and commerce
+  authority.
+- **Done:** A deterministic 72-case matrix, 18-store/108-capture retained human review and exact
+  authority/fingerprint evidence diagnose the current ceiling, preserve canonical commerce/media,
+  and freeze six conditional P10B-18B packages with zero OpenAI/provider, Vesko or publication
+  traffic.
+- **Evidence:** Current authority inventory and reachability, compatibility funnels, fixed-backbone
+  semantic-influence proof, exact collapse witnesses, strongest/typical/weak store review, frozen
+  issue denominators, protected-state parity and accepted checkpoint crosswalk.
+- **Non-goal:** Implementing P10B-18B, proving those packages improve quality, satisfying P10B-18C,
+  or closing parent P10B-18/P10B.
+
+#### P10B-18B — Commercial source-authority quality upgrade
+
+- **Outcome:** Implement the accepted coherent improvements to current Design DNA, compatibility,
+  profiles, component consumers, asset-role selection and evaluation authority.
+- **Status:** **Planned**.
+- **Depends on:** Accepted P10B-18A and its frozen package order/ownership.
+- **Done when:** Every implemented package has focused positive/fail-closed evidence and the
+  integrated authority produces improved multi-surface output against the frozen P10B-18A
+  baseline without protected commerce/media drift.
+- **Required evidence:** Contract/deterministic/integration evidence as applicable plus exact
+  multi-width browser captures and retained human comparison for the changed authority.
+- **Non-goal:** A second canonical model, page graph, component platform, renderer, commerce model,
+  generated imagery, or an automatic claim that P10B-18C passed.
+
+#### P10B-18C — 100+ commercial quality and diversity gate
+
+- **Outcome:** Prove final breadth, meaningful diversity and designer-grade commercial quality on
+  the integrated P10B-18B authority.
+- **Status:** **Planned**.
+- **Depends on:** Accepted and integrated P10B-18B packages.
+- **Done when:** At least 100 complete bounded configurations pass snapshot validity, protected-
+  state parity, exact/near-duplicate and structural-distribution gates, and a fingerprint-
+  stratified representative subset passes retained four-width human commercial review.
+- **Required evidence:** Reproducible scale ledger, exact authority/fingerprints, complete-surface
+  captures, explicit product-owner acceptance and unchanged protected commerce/media.
+- **Non-goal:** Treating P10B-18A evidence, registry counts, configuration count, automated checks,
+  or one polished store as final commercial acceptance.
 
 ### P10C — Storefront Studio Editing Experience v1
 
@@ -957,4 +1010,4 @@ P10B-16P-05B final historical cleanup remains Planned after P10B-18.
 - **Depends on:** P11-10.
 - **Done when:** The stated outcome and required evidence are accepted.
 - **Required evidence:** Security, load, recovery, telemetry, and controlled-pilot evidence.
-  **Non-goal:** New design, editor, advanced-media, or commerce scope.
+- **Non-goal:** New design, editor, advanced-media, or commerce scope.

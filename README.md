@@ -7,8 +7,9 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
-v1 is **Partial / active**: P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-04 are
-Baseline.
+v1 is **Partial / active**: P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A,
+P10B-16P-06, and the accepted P10B-18A commercial-authority audit are Baseline. Parent P10B-18
+remains Partial; P10B-18B and P10B-18C remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -22,8 +23,10 @@ review, reject/accept, undo/redo, save/reload, and Preview journey. P10B-16P-04 
 authorized real OpenAI Design Intent evidence through that normal production-disabled Studio path:
 three final materially different Prompt A/B/C proposals, clean A/B rejection, and C
 Accept/Undo/Redo/Save/reload/Preview with zero publication and unchanged protected commerce/media.
-P10B-16P-02 and both of its slices are Baseline. P10B-17 and P10B-18 remain Planned. Search
-execution remains fail closed, and P10B-16L is Deprecated compatibility-only infrastructure.
+P10B-16P-02 and both of its slices are Baseline. Canonical `/search` execution is Baseline through
+one provider-neutral transient query/results adapter across draft, proposal, saved/history and
+published routes. P10B-16L is Deprecated compatibility-only infrastructure, and P10B-16P-05B
+remains Planned after P10B-18C.
 
 ## Product boundary
 
@@ -75,10 +78,12 @@ It is not a P10A closure requirement.
 
 ## Commercial limitation and next milestone
 
-Current output can be a clean, responsive catalogue storefront, but it has limited brand
-distinction and has not passed a current commercial human visual-quality gate. P10B Commercial
-Storefront Generation System v1 is the active product phase and the first phase allowed to make a
-commercial-quality claim.
+P10B-18A's accepted deterministic and human-reviewed audit proves the current authority ceiling and
+freezes its improvement plan; it does not accept designer-grade commercial quality. Current output
+can be a clean, responsive catalogue storefront, but source-authority, compatibility and renderer-
+consumption defects still limit brand distinction. P10B-18B remains Planned to improve that
+authority, and P10B-18C remains Planned for the 100+ quality/diversity gate. P10B Commercial
+Storefront Generation System v1 therefore remains Partial.
 
 Its target is:
 
@@ -165,6 +170,7 @@ high-risk validation.
 - [Capability evidence ledger](docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md)
 - [P10A phase closure record](docs/P10A_PHASE_CLOSURE.md)
 - [P10B commercial storefront generation architecture](docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md)
+- [P10B-18 commercial quality audit](docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md)
 - [Development guide](docs/DEVELOPMENT_GUIDE.md)
 - [Binding repository constitution](AGENTS.md)
 - [Architecture decisions](docs/adr/README.md)
@@ -175,8 +181,8 @@ Historical phase records retain their original evidence meaning. Superseded expo
 
 ## Non-claim
 
-This repository does not claim current P10B commercial visual acceptance, merchant-complete
-Storefront Studio editing, complete Vesko integration, Vesko staging acceptance, production
-readiness, or production operation.
+This repository does not claim P10B-18B source-authority implementation, P10B-18C designer-grade
+commercial quality/100+ scale acceptance, merchant-complete Storefront Studio editing, complete
+Vesko integration, Vesko staging acceptance, production readiness, or production operation.
 
 Owner: Vesko Oy
