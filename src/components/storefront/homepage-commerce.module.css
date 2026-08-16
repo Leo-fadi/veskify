@@ -100,7 +100,11 @@
   max-height: min(36rem, 65vh);
 }
 
-.variant_minimal {
+.variant_minimal,
+.variant_restrained,
+.promotion[data-responsive-transformations~="campaignCondense"] {
+  grid-template-columns: minmax(0, 42rem);
+  justify-content: center;
   min-height: auto;
 }
 
@@ -354,7 +358,7 @@
 
 .action {
   align-items: center;
-  min-height: var(--brand-control-height, 2.75rem);
+  min-height: max(2.75rem, var(--brand-control-height, 2.75rem));
   border: var(--brand-border-width, 1px) solid var(--brand-color-border);
   border-radius: var(--brand-control-radius, var(--brand-radius));
   display: inline-flex;
@@ -461,6 +465,7 @@
 }
 
 .collectionCard {
+  align-content: start;
   background: var(--brand-color-surface);
   border: var(--brand-border-width, 1px) solid var(--brand-color-border);
   border-radius: var(--brand-radius);
@@ -468,6 +473,7 @@
   color: var(--brand-color-text);
   display: grid;
   gap: calc(0.75rem * var(--brand-density-content, 1));
+  height: 100%;
   padding: var(--brand-card-inset, 1rem);
 }
 
@@ -488,6 +494,7 @@
 .collectionCard figure {
   aspect-ratio: var(--brand-media-ratio, 4 / 3);
   margin: 0;
+  max-block-size: 32rem;
   overflow: hidden;
 }
 
@@ -503,7 +510,7 @@
   color: var(--brand-color-primary);
   font-size: 1.125rem;
   font-weight: 650;
-  min-height: var(--brand-control-height, 2.75rem);
+  min-height: max(2.75rem, var(--brand-control-height, 2.75rem));
   text-align: start;
 }
 
@@ -567,13 +574,17 @@
   display: grid;
   gap: var(--brand-grid-gap);
   grid-template-columns: repeat(var(--homepage-columns), minmax(0, 1fr));
+  max-width: 100%;
   min-height: 18rem;
+  width: 100%;
 }
 
 .storyGallery .editorialMedia {
   aspect-ratio: var(--brand-media-ratio, 4 / 5);
+  max-width: 100%;
   min-height: 0;
   overflow: hidden;
+  width: 100%;
 }
 
 .variant_imageText .storyGallery .editorialMedia,
@@ -668,6 +679,7 @@
   text-align: center;
 }
 
+/* Tablet authority ends immediately below the registered 1024px desktop target. */
 @media (max-width: 63.99rem) {
   .root {
     padding-block: clamp(
@@ -677,24 +689,29 @@
     );
   }
 
-  .hero,
-  .promotion,
-  .editorialStory,
-  .variant_lookbookGallery.editorialStory,
-  .variant_asymmetric {
+  .hero[data-responsive-transformations~="splitToStack"],
+  .hero[data-responsive-transformations~="mediaFirstStack"],
+  .hero[data-responsive-transformations~="asymmetricReflow"],
+  .hero[data-responsive-transformations~="campaignReflow"],
+  .promotion[data-responsive-transformations~="campaignSplitStack"],
+  .promotion[data-responsive-transformations~="campaignEditorialReflow"],
+  .promotion[data-responsive-transformations~="campaignMediaFirst"],
+  .editorialStory[data-responsive-transformations~="storySplitStack"],
+  .editorialStory[data-responsive-transformations~="storyReorder"],
+  .editorialStory[data-responsive-transformations~="lookbookCarousel"] {
     grid-template-columns: 1fr;
     min-height: auto;
   }
 
-  .promotion.variant_imageLed {
+  .promotion[data-responsive-transformations~="campaignMediaFirst"] {
     grid-template-columns: 1fr;
   }
 
-  .variant_brandStory .storyGallery {
+  .editorialStory[data-responsive-transformations~="storyReorder"] .storyGallery {
     order: -1;
   }
 
-  .variant_lookbookGallery .storyGallery {
+  .editorialStory[data-responsive-transformations~="lookbookCarousel"] .storyGallery {
     display: flex;
     max-width: 100%;
     overflow-x: auto;
@@ -702,13 +719,14 @@
     scroll-snap-type: x mandatory;
   }
 
-  .variant_lookbookGallery .storyGallery .editorialMedia {
+  .editorialStory[data-responsive-transformations~="lookbookCarousel"]
+    .storyGallery
+    .editorialMedia {
     flex: 0 0 min(82vw, 24rem);
     scroll-snap-align: start;
   }
 
-  .variant_proofGrid .proofGrid,
-  .variant_serviceAssurance .proofGrid {
+  .proof[data-responsive-transformations~="proofGridStack"] .proofGrid {
     grid-template-columns: 1fr;
   }
 
@@ -720,28 +738,25 @@
     grid-template-columns: repeat(min(2, var(--homepage-columns)), minmax(0, 1fr));
   }
 
-  .collectionGrid[data-item-count="3"][data-column-count="3"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .variant_campaignMerchandising {
+  .hero[data-responsive-transformations~="campaignReflow"] {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto auto;
   }
 
-  .variant_campaignMerchandising .heroMedia,
-  .variant_campaignMerchandising .heroMerchandising,
-  .variant_campaignMerchandising .heroCopy,
-  .variant_campaignMerchandising > .actions {
+  .hero[data-responsive-transformations~="campaignReflow"] .heroMedia,
+  .hero[data-responsive-transformations~="campaignReflow"] .heroMerchandising,
+  .hero[data-responsive-transformations~="campaignReflow"] .heroCopy,
+  .hero[data-responsive-transformations~="campaignReflow"] > .actions {
     grid-column: 1;
     grid-row: auto;
   }
 
-  .variant_campaignMerchandising .heroMedia {
+  .hero[data-responsive-transformations~="campaignReflow"] .heroMedia {
     min-height: 24rem;
   }
 }
 
+/* Mobile authority ends immediately below the registered 768px tablet target. */
 @media (max-width: 47.99rem) {
   .root {
     gap: clamp(1.25rem, calc(var(--brand-grid-gap) * 0.8), 2rem);
@@ -753,16 +768,19 @@
     padding-inline: 1rem;
   }
 
-  .hero,
-  .promotion,
-  .editorialStory,
-  .variant_lookbookGallery.editorialStory,
-  .variant_asymmetric {
+  .hero[data-responsive-transformations~="overlayToContained"],
+  .hero[data-responsive-transformations~="restrainedCondense"],
+  .promotion[data-responsive-transformations~="campaignOverlaySwitch"],
+  .promotion[data-responsive-transformations~="campaignCondense"],
+  .editorialStory[data-responsive-transformations~="processCondense"],
+  .editorialStory[data-responsive-transformations~="continuationCondense"],
+  .proof[data-responsive-transformations~="serviceCondense"] {
     grid-template-columns: 1fr;
     min-height: auto;
   }
 
-  .variant_fullBleedOverlay .media_background {
+  .hero[data-responsive-transformations~="overlayToContained"] .media_background,
+  .promotion[data-responsive-transformations~="campaignOverlaySwitch"] .media_background {
     grid-area: auto;
     height: auto;
     inset: auto;
@@ -773,12 +791,16 @@
     position: relative;
   }
 
-  .variant_fullBleedOverlay .media_background::after {
+  .hero[data-responsive-transformations~="overlayToContained"] .media_background::after,
+  .promotion[data-responsive-transformations~="campaignOverlaySwitch"] .media_background::after {
     content: none;
   }
 
-  .variant_fullBleedOverlay[data-copy-treatment="overlay"] .heroCopy,
-  .variant_fullBleedOverlay[data-copy-treatment="overlay"] .heroCopy p {
+  .hero[data-responsive-transformations~="overlayToContained"][data-copy-treatment="overlay"]
+    .heroCopy,
+  .hero[data-responsive-transformations~="overlayToContained"][data-copy-treatment="overlay"]
+    .heroCopy
+    p {
     color: inherit;
   }
 
@@ -787,7 +809,7 @@
     min-height: 15rem;
   }
 
-  .variant_campaignMerchandising .heroMedia {
+  .hero[data-responsive-transformations~="campaignReflow"] .heroMedia {
     min-height: min(22rem, 55vh);
   }
 
@@ -800,17 +822,18 @@
     grid-template-columns: 1fr;
   }
 
-  .variant_restrained,
-  .variant_continuationCta.editorialStory {
+  .hero[data-responsive-transformations~="restrainedCondense"],
+  .promotion[data-responsive-transformations~="campaignCondense"],
+  .editorialStory[data-responsive-transformations~="continuationCondense"] {
     gap: 0.75rem;
     padding-block: clamp(2rem, calc(var(--brand-section-rhythm) * 0.28), 3.25rem);
   }
 
-  .variant_craftProcess .processList {
+  .editorialStory[data-responsive-transformations~="processCondense"] .processList {
     gap: 0.75rem;
   }
 
-  .variant_serviceAssurance .proofGrid article {
+  .proof[data-responsive-transformations~="serviceCondense"] .proofGrid article {
     padding: 1rem;
   }
 
@@ -826,5 +849,14 @@
 @media (min-width: 90rem) {
   .root {
     gap: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout_row,
+  .layout_carousel,
+  .editorialStory[data-responsive-transformations~="lookbookCarousel"] .storyGallery {
+    scroll-behavior: auto;
+    scroll-snap-type: none;
   }
 }

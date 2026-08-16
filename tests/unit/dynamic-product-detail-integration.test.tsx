@@ -97,6 +97,8 @@ describe("P6-03 dynamic PDP option integration", () => {
     const initial = deferred<unknown>();
     renderIntegrated(watchProductFixture, { resolver: { resolve: () => initial.promise } });
     expect(screen.getByRole("status")).toHaveTextContent("Updating product options…");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status").className).toContain("resolutionShell");
     expect(screen.queryByRole("button", { name: "Add to cart" })).toBeNull();
 
     initial.resolve({ purchasable: false });

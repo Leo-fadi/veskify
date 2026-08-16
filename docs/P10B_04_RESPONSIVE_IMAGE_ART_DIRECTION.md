@@ -212,3 +212,16 @@ P10B-14/P10B-17/P10B-18 gate and is not manufactured by this baseline.
 - canonical product-media mutation, reordered membership, or a second product/media model;
 - a second asset registry, responsive-state store, component compatibility engine, breakpoint
   vocabulary, compiler or publisher.
+
+## Current P10B-17 continuation
+
+P10B-17 preserves this art-direction contract and adds bounded delivery semantics at the shared
+image renderer: primary media is eager/high-priority, while content, merchandising, and thumbnail
+media use lazy loading with role-specific `sizes`, fetch priority, and async decoding. Homepage,
+collection, PDP, card, content, and utility consumers declare only that presentation role; the
+registered crop, focal point, ratio, overlay, derivative, source identity, and responsive
+breakpoint authority still determine the rendered image.
+
+These loading and sizing choices neither replace nor reorder canonical product media and introduce
+no second asset registry. Source-image quality and retained cross-store art-direction quality remain
+P10B-18 concerns.

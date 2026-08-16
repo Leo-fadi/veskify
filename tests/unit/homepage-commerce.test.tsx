@@ -496,7 +496,10 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     expect(css).toContain(
       '.collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"]',
     );
-    expect(css).toContain('.collectionGrid[data-item-count="3"][data-column-count="3"]');
+    expect(css).not.toContain('.collectionGrid[data-item-count="3"][data-column-count="3"]');
+    expect(css).toMatch(
+      /@media \(max-width: 63\.99rem\)[\s\S]*repeat\(min\(2, var\(--homepage-columns\)\)/,
+    );
   });
 
   it("renders reusable product cards only from canonical product-list bindings", () => {
@@ -1235,12 +1238,40 @@ describe("P6-05 dynamic homepage commerce component family", () => {
       expect(definition.responsiveRules[0]?.allowHorizontalOverflow).toBe(false);
       expect(definition.accessibilityRequirements.keyboard).toMatch(/keyboard/i);
     }
-    render(renderHomepageCommerce(rendererInput(featuredProductsInstance())));
+    const products = render(renderHomepageCommerce(rendererInput(featuredProductsInstance())));
     expect(
       document.querySelector("[data-responsive-layout='product-type-independent']"),
     ).toBeInTheDocument();
+    expect(
+      products.container.querySelector("[data-component='homepageFeaturedProducts']"),
+    ).toHaveAttribute("data-responsive-transformations", "preserveRegistered");
     expect(document.querySelector("[data-product-type='watch']")).toBeInTheDocument();
     expect(document.querySelector("[data-product-type='ring']")).toBeInTheDocument();
+
+    const hero = render(renderHomepageCommerce(rendererInput(heroInstance())));
+    expect(hero.container.querySelector("[data-component='homepageHero']")).toHaveAttribute(
+      "data-responsive-transformations",
+      "splitToStack",
+    );
+    expect(hero.container.querySelector("[data-component='homepageHero']")).toHaveAttribute(
+      "data-responsive-tablet",
+      "splitToStack",
+    );
+    expect(hero.container.querySelector("[data-component='homepageHero']")).toHaveAttribute(
+      "data-responsive-desktop",
+      "",
+    );
+    const promotion = render(renderHomepageCommerce(rendererInput(promotionInstance())));
+    expect(
+      promotion.container.querySelector("[data-component='homepagePromotion']"),
+    ).toHaveAttribute("data-responsive-transformations", "campaignSplitStack");
+
+    const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
+    expect(css).toContain('data-responsive-transformations~="splitToStack"');
+    expect(css).toContain('data-responsive-transformations~="campaignSplitStack"');
+    expect(css).toContain('data-responsive-transformations~="lookbookCarousel"');
+    expect(css).not.toContain('data-item-count="3"][data-column-count="3"');
+    expect(css).toContain("prefers-reduced-motion: reduce");
   });
 
   it("keeps homepage modules free of route, Puck, provider, storage and commerce-mutation imports", () => {

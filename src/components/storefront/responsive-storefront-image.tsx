@@ -12,6 +12,45 @@ import styles from "./responsive-storefront-image.module.css";
 
 type ArtStyle = CSSProperties & Record<`--art-${string}`, string>;
 
+export type StorefrontImageLoadingRole = "primary" | "content" | "merchandising" | "thumbnail";
+
+const loadingAuthority: Readonly<
+  Record<
+    StorefrontImageLoadingRole,
+    Readonly<{
+      loading: "eager" | "lazy";
+      fetchPriority: "high" | "low" | "auto";
+      decoding: "async";
+      sizes: string;
+    }>
+  >
+> = {
+  primary: {
+    loading: "eager",
+    fetchPriority: "high",
+    decoding: "async",
+    sizes: "100vw",
+  },
+  content: {
+    loading: "lazy",
+    fetchPriority: "auto",
+    decoding: "async",
+    sizes: "(max-width: 767px) 100vw, (max-width: 1439px) 75vw, 64rem",
+  },
+  merchandising: {
+    loading: "lazy",
+    fetchPriority: "auto",
+    decoding: "async",
+    sizes: "(max-width: 767px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 33vw, 25vw",
+  },
+  thumbnail: {
+    loading: "lazy",
+    fetchPriority: "low",
+    decoding: "async",
+    sizes: "6rem",
+  },
+};
+
 const media: Readonly<Record<ResponsiveImageBreakpoint, string>> = {
   mobile: "(max-width: 767px)",
   tablet: "(min-width: 768px) and (max-width: 1023px)",
@@ -57,12 +96,15 @@ export function ResponsiveStorefrontImage({
   authority,
   alt,
   className,
+  loadingRole = "content",
 }: {
   asset: AssetRef;
   authority?: ResponsiveImageAuthority;
   alt: string;
   className?: string;
+  loadingRole?: StorefrontImageLoadingRole;
 }) {
+  const loading = loadingAuthority[loadingRole];
   if (!authority) {
     const external = safeExternalUrlSchema.safeParse(asset.url);
     return external.success ? (
@@ -70,12 +112,28 @@ export function ResponsiveStorefrontImage({
       <img
         alt={alt}
         className={className}
+        data-image-loading-role={loadingRole}
+        decoding={loading.decoding}
+        fetchPriority={loading.fetchPriority}
         height={900}
+        loading={loading.loading}
+        sizes={loading.sizes}
         src={new URL(external.data.trim()).href}
         width={1200}
       />
     ) : (
-      <Image alt={alt} className={className} height={900} src={asset.url} width={1200} />
+      <Image
+        alt={alt}
+        className={className}
+        data-image-loading-role={loadingRole}
+        decoding={loading.decoding}
+        fetchPriority={loading.fetchPriority}
+        height={900}
+        loading={loading.loading}
+        sizes={loading.sizes}
+        src={asset.url}
+        width={1200}
+      />
     );
   }
   const resolved = Object.fromEntries(
@@ -100,6 +158,7 @@ export function ResponsiveStorefrontImage({
       data-art-direction-contract={authority.contractVersion}
       data-art-direction-fingerprint={authority.fingerprint}
       data-art-direction-source-id={authority.source.assetId}
+      data-image-loading-role={loadingRole}
       style={style}
     >
       <picture className={styles.picture}>
@@ -119,11 +178,23 @@ export function ResponsiveStorefrontImage({
             data-art-selected-breakpoint={resolved[breakpoint].selectedBreakpoint}
             key={breakpoint}
             media={media[breakpoint]}
+            sizes={loading.sizes}
             srcSet={sourceUrl}
           />
         ))}
         {/* The source URL is immutable authority; CDN derivative URL materialization is deferred. */}
-        <img alt={alt} className={styles.image} height={900} src={sourceUrl} width={1200} />
+        <img
+          alt={alt}
+          className={styles.image}
+          data-image-loading-role={loadingRole}
+          decoding={loading.decoding}
+          fetchPriority={loading.fetchPriority}
+          height={900}
+          loading={loading.loading}
+          sizes={loading.sizes}
+          src={sourceUrl}
+          width={1200}
+        />
       </picture>
     </span>
   );

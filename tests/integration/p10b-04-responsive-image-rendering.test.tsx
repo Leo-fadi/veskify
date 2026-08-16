@@ -114,11 +114,60 @@ describe("P10B-04 responsive image renderer integration", () => {
       />,
     );
     expect(rendered.getByRole("img", { name: "Canonical product" })).toBeVisible();
-    expect(rendered.container.querySelectorAll("picture source")).toHaveLength(4);
+    const image = rendered.getByRole("img", { name: "Canonical product" });
+    const sources = [...rendered.container.querySelectorAll("picture source")];
+    expect(sources).toHaveLength(4);
+    expect(new Set(sources.map((source) => source.getAttribute("srcset")))).toEqual(
+      new Set([image.getAttribute("src")]),
+    );
+    expect(image).toHaveAttribute("loading", "lazy");
+    expect(image).toHaveAttribute("decoding", "async");
+    expect(image).toHaveAttribute("fetchpriority", "auto");
+    expect(image).toHaveAttribute(
+      "sizes",
+      "(max-width: 767px) 100vw, (max-width: 1439px) 75vw, 64rem",
+    );
     expect(rendered.container.querySelector("[data-art-direction-fingerprint]")).toHaveAttribute(
       "data-art-direction-fingerprint",
       authority.fingerprint,
     );
+  });
+
+  it("applies bounded loading and intrinsic-size authority by presentation role", () => {
+    const asset = {
+      id: "asset_role_test",
+      url: "https://assets.example.test/image.jpg",
+      decorative: false,
+      alt: { en: "Role-aware image" },
+    };
+    const cases = [
+      { role: "primary" as const, loading: "eager", priority: "high", sizes: "100vw" },
+      {
+        role: "merchandising" as const,
+        loading: "lazy",
+        priority: "auto",
+        sizes: "(max-width: 767px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 33vw, 25vw",
+      },
+      { role: "thumbnail" as const, loading: "lazy", priority: "low", sizes: "6rem" },
+    ];
+
+    for (const expected of cases) {
+      const rendered = render(
+        <ResponsiveStorefrontImage
+          alt="Role-aware image"
+          asset={asset}
+          loadingRole={expected.role}
+        />,
+      );
+      const image = rendered.getByRole("img", { name: "Role-aware image" });
+      expect(image).toHaveAttribute("data-image-loading-role", expected.role);
+      expect(image).toHaveAttribute("loading", expected.loading);
+      expect(image).toHaveAttribute("fetchpriority", expected.priority);
+      expect(image).toHaveAttribute("decoding", "async");
+      expect(image).toHaveAttribute("sizes", expected.sizes);
+      expect(image).toHaveAttribute("src", asset.url);
+      rendered.unmount();
+    }
   });
 
   it("preserves exact art direction across JSON save-and-reload projection", () => {

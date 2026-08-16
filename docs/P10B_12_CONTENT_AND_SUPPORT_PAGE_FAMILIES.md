@@ -86,3 +86,15 @@ and makes no provider request.
 P10B remains Partial. P10B-10 and P10B-11 commerce profiles, P10B-13 utility pages, P10B-14's
 complete-storefront slice, synthesis/direction work, and P10B-18 commercial quality/scale closure
 remain separate work. This task does not claim final commercial visual-quality acceptance.
+
+## Current P10B-17 continuation
+
+P10B-17 makes each existing content/support variant consume responsive execution derived from its
+registered anatomy. Reading width, campaign opening hierarchy, contact/location directory layout,
+and responsive media now follow the shared breakpoints; labelled regions, controls, and focus
+behavior use the shared semantic-accessibility treatment. The fifteen profile identities and their
+approved-fact requirements do not change. Optional evidence and assets still omit or fail closed
+under the original family policy.
+
+No content registry, PageBlueprint, renderer, snapshot, evidence, commerce, or media authority was
+added or mutated. P10B-18 retains final multi-page editorial/support quality and scale review.

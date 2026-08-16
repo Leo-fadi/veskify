@@ -61,6 +61,131 @@ const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRe
 const defaultCommerceAdapter = createCatalogueStorefrontCommerceRouteAdapter();
 const emptyEvidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]> = [];
 const ignorePrimaryAction: ProductPrimaryActionIntentCallback = () => undefined;
+
+type PreparedProductPreview = Readonly<{ state: LoadState; activeLocale?: Locale }>;
+
+function prepareProductPreview({
+  aggregate,
+  evidenceReferences,
+  productSlug,
+  projectId,
+  snapshotKind,
+  historicalSnapshotId,
+  initialLocale,
+  publishedSessionId,
+  proposalCandidateFingerprint,
+  p10b16p04UtilityContext,
+  effectiveRenderTarget,
+  commerceAdapter,
+}: Readonly<{
+  aggregate: ProjectAggregate;
+  evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
+  productSlug: string;
+  projectId: string;
+  snapshotKind: SnapshotKind;
+  historicalSnapshotId?: string;
+  initialLocale?: Locale;
+  publishedSessionId?: string;
+  proposalCandidateFingerprint?: string;
+  p10b16p04UtilityContext?: P10B16P04UtilityContext;
+  effectiveRenderTarget: RouteRenderTarget;
+  commerceAdapter: StorefrontCommerceRouteAdapter;
+}>): PreparedProductPreview {
+  const draft = aggregate.snapshots.find(
+    (snapshot) =>
+      snapshot.id === selectedSnapshotId(aggregate.project, snapshotKind, historicalSnapshotId),
+  );
+  if (!draft) return { state: { status: "missingDraft" } };
+  try {
+    const activeLocale =
+      initialLocale && aggregate.project.enabledLocales.includes(initialLocale)
+        ? initialLocale
+        : aggregate.project.primaryLocale;
+    const initialQuerySuffix = previewNavigationSuffix({
+      publishedSessionId,
+      proposalCandidateFingerprint,
+      p10b16p04UtilityContext,
+      ...(initialLocale ? { locale: activeLocale } : {}),
+    });
+    const route = `/products/${productSlug}`;
+    const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
+      (entry) => entry.kind === "product" && entry.route === route,
+    );
+    const productPage = draft.dynamicCommercePresentation
+      ? dynamicRoute
+        ? resolveDynamicCommerceRoutePage({
+            snapshot: draft,
+            catalogue: aggregate.catalogue,
+            routeId: dynamicRoute.id,
+          }).page
+        : undefined
+      : draft.pages.find((page) => page.type === "product" && page.slug === route);
+    if (!productPage) return { state: { status: "missingProductPage" } };
+    const dynamicProduct = productPage.sections.find(
+      (section) => section.component === "dynamicProductDetail",
+    );
+    const canonicalProductId =
+      (dynamicRoute?.kind === "product" ? dynamicRoute.productId : undefined) ??
+      dynamicProduct?.content.productId ??
+      productPage.sections.find((section) => section.component === "productInfo")?.content
+        .productId;
+    const product = aggregate.catalogue.products.find((item) => item.id === canonicalProductId);
+    if (!product) return { state: { status: "productNotFound" } };
+    const context = createStorefrontRenderContext({
+      activeLocale,
+      primaryLocale: aggregate.project.primaryLocale,
+      enabledLocales: aggregate.project.enabledLocales,
+      catalogue: aggregate.catalogue,
+      snapshot: draft,
+      evidenceReferences,
+      pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+      pagePathSuffix: initialQuerySuffix,
+      renderTarget: effectiveRenderTarget,
+    });
+    validateRegisteredPage(productPage, context);
+    const references = dynamicProduct
+      ? [dynamicProduct.content.productId]
+      : productPage.sections
+          .filter((section) =>
+            ["productGallery", "productInfo", "productOptions"].includes(section.component),
+          )
+          .map((section) => section.content.productId);
+    if (!references.length || references.some((reference) => reference !== product.id)) {
+      throw new Error("Product page references do not match the canonical product.");
+    }
+    void renderStorefrontPage(productPage, context);
+    const commercePresentation = commerceAdapter.product({
+      aggregate,
+      evidenceReferences,
+      snapshot: draft,
+      page: productPage,
+      product,
+    });
+    if (commercePresentation) {
+      validateDynamicProductDetailRoutePresentation(
+        commercePresentation.instance,
+        commercePresentation.projection,
+      );
+      if (commercePresentation.productContext.productId !== product.id) {
+        throw new Error("The dynamic product route resolved a different canonical product.");
+      }
+    }
+    return {
+      activeLocale,
+      state: {
+        status: "success",
+        aggregate,
+        draft,
+        productPage,
+        commercePresentation,
+        evidenceReferences,
+      },
+    };
+  } catch {
+    return { state: { status: "validationFailure" } };
+  }
+}
+
 function StatusPanel({
   title,
   message,
@@ -130,11 +255,35 @@ function ProductPreviewLoader({
   const effectiveRenderTarget =
     renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
   const repository = useRef<ProjectRepository | undefined>(undefined);
-  repository.current ??= repositoryFactory();
   const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [activeLocale, setActiveLocale] = useState<Locale>();
+  const [initialPrepared] = useState<PreparedProductPreview | undefined>(() =>
+    initialAggregate
+      ? prepareProductPreview({
+          aggregate: structuredClone(initialAggregate),
+          evidenceReferences: structuredClone(initialEvidenceReferences),
+          productSlug,
+          projectId,
+          snapshotKind,
+          historicalSnapshotId,
+          initialLocale,
+          publishedSessionId,
+          proposalCandidateFingerprint,
+          p10b16p04UtilityContext,
+          effectiveRenderTarget,
+          commerceAdapter,
+        })
+      : undefined,
+  );
+  const skipPreparedInitialEffect = useRef(Boolean(initialPrepared));
+  const [state, setState] = useState<LoadState>(initialPrepared?.state ?? { status: "loading" });
+  const [activeLocale, setActiveLocale] = useState<Locale | undefined>(
+    initialPrepared?.activeLocale,
+  );
   useEffect(() => {
+    if (skipPreparedInitialEffect.current) {
+      skipPreparedInitialEffect.current = false;
+      return;
+    }
     let cancelled = false;
     const aggregateSource = initialAggregate
       ? Promise.resolve({
@@ -145,107 +294,29 @@ function ProductPreviewLoader({
         ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId }).then(
             ({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }),
           )
-        : repository.current!.get(projectId).then((aggregate) => ({
+        : (repository.current ??= repositoryFactory()).get(projectId).then((aggregate) => ({
             aggregate,
             evidenceReferences: structuredClone(initialEvidenceReferences),
           }));
     aggregateSource
       .then(({ aggregate, evidenceReferences }) => {
         if (cancelled) return;
-        const draft = aggregate.snapshots.find(
-          (snapshot) =>
-            snapshot.id ===
-            selectedSnapshotId(aggregate.project, snapshotKind, historicalSnapshotId),
-        );
-        if (!draft) return setState({ status: "missingDraft" });
-        try {
-          const initialActiveLocale =
-            initialLocale && aggregate.project.enabledLocales.includes(initialLocale)
-              ? initialLocale
-              : aggregate.project.primaryLocale;
-          const initialQuerySuffix = previewNavigationSuffix({
-            publishedSessionId,
-            proposalCandidateFingerprint,
-            p10b16p04UtilityContext,
-            ...(initialLocale ? { locale: initialActiveLocale } : {}),
-          });
-          const route = `/products/${productSlug}`;
-          const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
-            (entry) => entry.kind === "product" && entry.route === route,
-          );
-          const productPage = draft.dynamicCommercePresentation
-            ? dynamicRoute
-              ? resolveDynamicCommerceRoutePage({
-                  snapshot: draft,
-                  catalogue: aggregate.catalogue,
-                  routeId: dynamicRoute.id,
-                }).page
-              : undefined
-            : draft.pages.find((page) => page.type === "product" && page.slug === route);
-          if (!productPage) return setState({ status: "missingProductPage" });
-          const dynamicProduct = productPage.sections.find(
-            (section) => section.component === "dynamicProductDetail",
-          );
-          const canonicalProductId =
-            (dynamicRoute?.kind === "product" ? dynamicRoute.productId : undefined) ??
-            dynamicProduct?.content.productId ??
-            productPage.sections.find((section) => section.component === "productInfo")?.content
-              .productId;
-          const product = aggregate.catalogue.products.find(
-            (item) => item.id === canonicalProductId,
-          );
-          if (!product) return setState({ status: "productNotFound" });
-          const context = createStorefrontRenderContext({
-            activeLocale: initialActiveLocale,
-            primaryLocale: aggregate.project.primaryLocale,
-            enabledLocales: aggregate.project.enabledLocales,
-            catalogue: aggregate.catalogue,
-            snapshot: draft,
-            evidenceReferences,
-            pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-            pagePathSuffix: initialQuerySuffix,
-            renderTarget: effectiveRenderTarget,
-          });
-          validateRegisteredPage(productPage, context);
-          const references = dynamicProduct
-            ? [dynamicProduct.content.productId]
-            : productPage.sections
-                .filter((section) =>
-                  ["productGallery", "productInfo", "productOptions"].includes(section.component),
-                )
-                .map((section) => section.content.productId);
-          if (!references.length || references.some((reference) => reference !== product.id))
-            throw new Error("Product page references do not match the canonical product.");
-          void renderStorefrontPage(productPage, context);
-          const commercePresentation = commerceAdapter.product({
-            aggregate,
-            evidenceReferences,
-            snapshot: draft,
-            page: productPage,
-            product,
-          });
-          if (commercePresentation) {
-            validateDynamicProductDetailRoutePresentation(
-              commercePresentation.instance,
-              commercePresentation.projection,
-            );
-            if (commercePresentation.productContext.productId !== product.id) {
-              throw new Error("The dynamic product route resolved a different canonical product.");
-            }
-          }
-          setActiveLocale(initialActiveLocale);
-          setState({
-            status: "success",
-            aggregate,
-            draft,
-            productPage,
-            commercePresentation,
-            evidenceReferences,
-          });
-          return;
-        } catch {
-          return setState({ status: "validationFailure" });
-        }
+        const prepared = prepareProductPreview({
+          aggregate,
+          evidenceReferences,
+          productSlug,
+          projectId,
+          snapshotKind,
+          historicalSnapshotId,
+          initialLocale,
+          publishedSessionId,
+          proposalCandidateFingerprint,
+          p10b16p04UtilityContext,
+          effectiveRenderTarget,
+          commerceAdapter,
+        });
+        setActiveLocale(prepared.activeLocale);
+        setState(prepared.state);
       })
       .catch((error: unknown) => {
         if (!cancelled)
@@ -265,6 +336,7 @@ function ProductPreviewLoader({
     productSlug,
     projectId,
     proposalCandidateFingerprint,
+    repositoryFactory,
     effectiveRenderTarget,
     snapshotKind,
     publishedSessionId,

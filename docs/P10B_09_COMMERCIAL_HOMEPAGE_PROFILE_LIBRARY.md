@@ -138,3 +138,16 @@ collection/search profiles, PDP profiles, content/support or utility pages, the 
 vertical slice, synthesis, coordinated directions/diversity control, final responsive/a11y/
 performance closure, or the commercial quality/scale gate. It adds no merchant editor/P10C,
 Vesko, generated-media, provider, save, or publication operation.
+
+## Current P10B-17 continuation
+
+P10B-17 leaves all six PageBlueprint profiles and narrative sequences intact while passing the
+selected anatomy's centrally derived breakpoint execution into every hero, campaign, editorial,
+proof, trust, and merchandising section. Registered transformations now own stacking, ordering,
+contained overlays, bounded media height, horizontal overflow behavior, and reduced-motion
+fallbacks. Primary first-impression media and downstream merchandising also use their distinct
+shared image-loading roles and responsive `sizes` authority.
+
+No homepage profile, section family, registry, snapshot, commerce binding, or approved-asset
+authority changed. P10B-18 still owns repeated human review of complete-homepage commercial
+quality and diversity.

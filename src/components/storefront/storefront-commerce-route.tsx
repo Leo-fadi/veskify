@@ -9,6 +9,8 @@ import type {
 import {
   renderRegisteredSection,
   resolveStorefrontNavigationPath,
+  storefrontMainContentId,
+  withCurrentStorefrontPage,
   type StorefrontRenderContext,
 } from "@/components/registry";
 import type { Locale } from "@/domain/shared";
@@ -69,16 +71,17 @@ export function StorefrontProductCommerceRoute(
       onPrimaryAction: IntegratedDynamicProductDetailInput["onPrimaryAction"];
     }>,
 ) {
+  const context = withCurrentStorefrontPage(props.context, props.page);
   return (
     <Fragment>
-      {announcement(props.page, props.context)}
-      {chrome(props.page, props.context, "header")}
-      <main>
+      {announcement(props.page, context)}
+      {chrome(props.page, context, "header")}
+      <main id={storefrontMainContentId} tabIndex={-1}>
         <IntegratedDynamicProductDetail
           activeLocale={props.activeLocale}
           instance={props.presentation.instance}
           onNavigateProduct={(intent) => {
-            const path = resolveStorefrontNavigationPath(props.context, intent);
+            const path = resolveStorefrontNavigationPath(context, intent);
             if (path && typeof window !== "undefined") window.location.assign(path);
           }}
           onPrimaryAction={props.onPrimaryAction}
@@ -90,7 +93,7 @@ export function StorefrontProductCommerceRoute(
           target={props.target}
         />
       </main>
-      {chrome(props.page, props.context, "footer")}
+      {chrome(props.page, context, "footer")}
     </Fragment>
   );
 }
@@ -105,24 +108,27 @@ export function StorefrontCollectionCommerceRoute(
       onSortIntent: (intent: CollectionSortIntent) => void;
     }>,
 ) {
+  const context = withCurrentStorefrontPage(props.context, props.page);
   return (
     <Fragment>
-      {announcement(props.page, props.context)}
-      {chrome(props.page, props.context, "header")}
-      {renderDynamicCollectionCommerce({
-        target: props.target,
-        instance: props.presentation.instance,
-        projection: props.presentation.projection,
-        activeLocale: props.activeLocale,
-        primaryLocale: props.primaryLocale,
-        loading: { status: "ready" },
-        resolveAssetUrl: props.presentation.resolveAssetUrl,
-        onNavigateProduct: props.onNavigateProduct,
-        onNavigateCollection: props.onNavigateCollection,
-        onFilterIntent: props.onFilterIntent,
-        onSortIntent: props.onSortIntent,
-      })}
-      {chrome(props.page, props.context, "footer")}
+      {announcement(props.page, context)}
+      {chrome(props.page, context, "header")}
+      <main id={storefrontMainContentId} tabIndex={-1}>
+        {renderDynamicCollectionCommerce({
+          target: props.target,
+          instance: props.presentation.instance,
+          projection: props.presentation.projection,
+          activeLocale: props.activeLocale,
+          primaryLocale: props.primaryLocale,
+          loading: { status: "ready" },
+          resolveAssetUrl: props.presentation.resolveAssetUrl,
+          onNavigateProduct: props.onNavigateProduct,
+          onNavigateCollection: props.onNavigateCollection,
+          onFilterIntent: props.onFilterIntent,
+          onSortIntent: props.onSortIntent,
+        })}
+      </main>
+      {chrome(props.page, context, "footer")}
     </Fragment>
   );
 }
@@ -140,29 +146,32 @@ export function StorefrontSearchCommerceRoute(
       onContinueShopping: () => void;
     }>,
 ) {
+  const context = withCurrentStorefrontPage(props.context, props.page);
   const rejectCollectionOnlyIntent = () => {
     throw new Error("Search presentation cannot emit collection-only intents.");
   };
   return (
     <Fragment>
-      {announcement(props.page, props.context)}
-      {chrome(props.page, props.context, "header")}
-      {renderDynamicCollectionCommerce({
-        target: props.target,
-        instance: props.presentation.instance,
-        projection: props.presentation.projection,
-        activeLocale: props.activeLocale,
-        primaryLocale: props.primaryLocale,
-        loading: { status: "ready" },
-        search: props.presentation.search,
-        resolveAssetUrl: props.presentation.resolveAssetUrl,
-        onNavigateProduct: props.onNavigateProduct,
-        onNavigateCollection: rejectCollectionOnlyIntent,
-        onFilterIntent: rejectCollectionOnlyIntent,
-        onSortIntent: rejectCollectionOnlyIntent,
-        onContinueShopping: props.onContinueShopping,
-      })}
-      {chrome(props.page, props.context, "footer")}
+      {announcement(props.page, context)}
+      {chrome(props.page, context, "header")}
+      <main id={storefrontMainContentId} tabIndex={-1}>
+        {renderDynamicCollectionCommerce({
+          target: props.target,
+          instance: props.presentation.instance,
+          projection: props.presentation.projection,
+          activeLocale: props.activeLocale,
+          primaryLocale: props.primaryLocale,
+          loading: { status: "ready" },
+          search: props.presentation.search,
+          resolveAssetUrl: props.presentation.resolveAssetUrl,
+          onNavigateProduct: props.onNavigateProduct,
+          onNavigateCollection: rejectCollectionOnlyIntent,
+          onFilterIntent: rejectCollectionOnlyIntent,
+          onSortIntent: rejectCollectionOnlyIntent,
+          onContinueShopping: props.onContinueShopping,
+        })}
+      </main>
+      {chrome(props.page, context, "footer")}
     </Fragment>
   );
 }

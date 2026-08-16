@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import type { StorefrontRenderContext } from "@/components/registry/contract";
+import {
+  storefrontMainContentId,
+  type StorefrontRenderContext,
+} from "@/components/registry/contract";
 import { splitStorefrontSearchFormTarget } from "@/application/storefront-search";
 import {
   commercialSharedFrameProfiles,
@@ -28,6 +31,16 @@ function navigationHref(
   if (item.target.type === "external") return item.target.url;
   if (item.target.type === "page") return context.pagePaths[item.target.pageId] ?? "#";
   return context.pagePaths[item.target.routeId] ?? "#";
+}
+
+function isCurrentNavigationItem(
+  item: StorefrontRenderContext["navigation"]["primary"][number],
+  context: StorefrontRenderContext,
+) {
+  if (!context.currentPageId || item.target.type === "external") return false;
+  return item.target.type === "page"
+    ? item.target.pageId === context.currentPageId
+    : item.target.routeId === context.currentPageId;
 }
 
 function fallbackByHeader(variant: HeaderVariant): CommercialSharedFrameProfile {
@@ -74,6 +87,19 @@ function frameDestination(context: StorefrontRenderContext, familyId: "search-re
     (candidate) => candidate.kind === "search",
   );
   return route ? context.pagePaths[route.id] : undefined;
+}
+
+function isCurrentFrameDestination(
+  context: StorefrontRenderContext,
+  familyId: "search-results" | "cart",
+) {
+  if (!context.currentPageId) return false;
+  const page = context.pages.find((candidate) => candidate.pageFamily?.familyId === familyId);
+  if (page?.id === context.currentPageId) return true;
+  if (familyId !== "search-results") return false;
+  return context.dynamicCommercePresentation?.routeInventory.some(
+    (candidate) => candidate.kind === "search" && candidate.id === context.currentPageId,
+  );
 }
 
 export function StorefrontSearchForm({
@@ -147,7 +173,7 @@ function UtilityControls({
           {context.activeLocale === "fi" ? "Ostoskori" : "Cart"}
         </a>
       ) : null}
-      <div aria-label={context.activeLocale === "fi" ? "Kielivalinta" : "Language"}>
+      <div aria-label={context.activeLocale === "fi" ? "Kielivalinta" : "Language"} role="group">
         {context.enabledLocales.map((locale) => (
           <button
             aria-pressed={locale === context.activeLocale}
@@ -180,7 +206,11 @@ function PrimaryNavigation({
           const href = navigationHref(item, context);
           return href ? (
             <li key={item.id}>
-              <a href={href} onClick={onNavigate}>
+              <a
+                aria-current={isCurrentNavigationItem(item, context) ? "page" : undefined}
+                href={href}
+                onClick={onNavigate}
+              >
                 {localized(item.label, context)}
               </a>
             </li>
@@ -209,7 +239,9 @@ export function CommercialStoreHeader({
   const profile = profileFor(context, variant, "header");
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const restoreDesktopFocusRef = useRef(false);
   const menuId = useId();
   const trapsFocus = profile.mobileNavigationMode !== "stacked-disclosure";
 
@@ -218,11 +250,51 @@ export function CommercialStoreHeader({
     panelRef.current?.querySelector<HTMLElement>("a, button, input:not([type='hidden'])")?.focus();
     if (!trapsFocus) return;
     const previousOverflow = document.body.style.overflow;
+    const inertPageSiblings = [...(headerRef.current?.parentElement?.children ?? [])].filter(
+      (sibling): sibling is HTMLElement =>
+        sibling instanceof HTMLElement && sibling !== headerRef.current,
+    );
+    const inertHeaderSiblings = [...(headerRef.current?.children ?? [])].filter(
+      (sibling): sibling is HTMLElement =>
+        sibling instanceof HTMLElement && sibling !== panelRef.current,
+    );
+    const inertElements = [...inertPageSiblings, ...inertHeaderSiblings];
+    const previousInert = inertElements.map((element) => [element, element.inert] as const);
     document.body.style.overflow = "hidden";
+    inertElements.forEach((element) => {
+      element.inert = true;
+    });
     return () => {
       document.body.style.overflow = previousOverflow;
+      previousInert.forEach(([element, inert]) => {
+        element.inert = inert;
+      });
     };
   }, [open, trapsFocus]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const desktopViewport = window.matchMedia("(min-width: 64rem)");
+    const closeAtDesktop = (event: MediaQueryListEvent) => {
+      if (!event.matches) return;
+      setOpen((currentOpen) => {
+        if (currentOpen) restoreDesktopFocusRef.current = true;
+        return false;
+      });
+    };
+    desktopViewport.addEventListener("change", closeAtDesktop);
+    return () => desktopViewport.removeEventListener("change", closeAtDesktop);
+  }, []);
+
+  useEffect(() => {
+    if (open || !restoreDesktopFocusRef.current) return;
+    restoreDesktopFocusRef.current = false;
+    headerRef.current
+      ?.querySelector<HTMLElement>(
+        '[data-frame-region="desktop-header-layout"] a, [data-frame-region="desktop-header-layout"] button, [data-frame-region="desktop-header-layout"] input',
+      )
+      ?.focus();
+  }, [open]);
 
   function closeMenu() {
     setOpen(false);
@@ -257,6 +329,7 @@ export function CommercialStoreHeader({
   const mobileLabel = context.activeLocale === "fi" ? "Mobiilinavigaatio" : "Mobile navigation";
   const menuLabel = context.activeLocale === "fi" ? "Valikko" : "Menu";
   const closeLabel = context.activeLocale === "fi" ? "Sulje" : "Close";
+  const currentSearchPage = isCurrentFrameDestination(context, "search-results");
   const serviceItems = context.navigation.footer.flatMap((item) => {
     const href = navigationHref(item, context);
     return href ? [{ href, item }] : [];
@@ -270,8 +343,13 @@ export function CommercialStoreHeader({
       data-header-variant={profile.headerVariant}
       data-mobile-navigation-mode={profile.mobileNavigationMode}
       data-responsive-transformations={profile.responsiveTransformationIds.join(" ")}
+      data-current-search-page={currentSearchPage || undefined}
       data-search-placement={profile.searchPlacement}
+      ref={headerRef}
     >
+      <a className={styles.skipLink} href={`#${storefrontMainContentId}`}>
+        {context.activeLocale === "fi" ? "Siirry pääsisältöön" : "Skip to main content"}
+      </a>
       {profile.serviceStrip === "canonical-footer-navigation" && hasSubstantiveServiceNavigation ? (
         <nav
           aria-label={context.activeLocale === "fi" ? "Palvelulinkit" : "Service links"}
@@ -327,28 +405,31 @@ export function CommercialStoreHeader({
         </button>
       </div>
       {open ? (
-        <div
-          aria-label={mobileLabel}
-          aria-modal={trapsFocus || undefined}
-          className={styles.mobilePanel}
-          data-frame-region="mobile-navigation"
-          data-mobile-mode={profile.mobileNavigationMode}
-          id={menuId}
-          onKeyDown={handleMenuKeyDown}
-          ref={panelRef}
-          role={trapsFocus ? "dialog" : "region"}
-        >
-          <PrimaryNavigation context={context} label={mobileLabel} onNavigate={closeMenu} />
-          <UtilityControls
-            context={context}
-            onNavigate={closeMenu}
-            showCart={showCart}
-            showSearch={showSearch}
-          />
-          <button className={styles.closeButton} onClick={closeMenu} type="button">
-            {context.activeLocale === "fi" ? "Sulje" : "Close"}
-          </button>
-        </div>
+        <>
+          {trapsFocus ? <div aria-hidden="true" className={styles.mobileBackdrop} /> : null}
+          <div
+            aria-label={mobileLabel}
+            aria-modal={trapsFocus || undefined}
+            className={styles.mobilePanel}
+            data-frame-region="mobile-navigation"
+            data-mobile-mode={profile.mobileNavigationMode}
+            id={menuId}
+            onKeyDown={handleMenuKeyDown}
+            ref={panelRef}
+            role={trapsFocus ? "dialog" : "region"}
+          >
+            <PrimaryNavigation context={context} label={mobileLabel} onNavigate={closeMenu} />
+            <UtilityControls
+              context={context}
+              onNavigate={closeMenu}
+              showCart={showCart}
+              showSearch={showSearch}
+            />
+            <button className={styles.closeButton} onClick={closeMenu} type="button">
+              {context.activeLocale === "fi" ? "Sulje" : "Close"}
+            </button>
+          </div>
+        </>
       ) : null}
     </header>
   );
@@ -367,7 +448,12 @@ function NavigationList({
         const href = navigationHref(item, context);
         return href ? (
           <li key={item.id}>
-            <a href={href}>{localized(item.label, context)}</a>
+            <a
+              aria-current={isCurrentNavigationItem(item, context) ? "page" : undefined}
+              href={href}
+            >
+              {localized(item.label, context)}
+            </a>
           </li>
         ) : null;
       })}

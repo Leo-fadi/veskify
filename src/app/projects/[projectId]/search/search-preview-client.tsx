@@ -45,6 +45,11 @@ type SearchPortFactory = (aggregate: ProjectAggregate) => StorefrontProductSearc
 type Snapshot = ProjectAggregate["snapshots"][number];
 type SearchPage = Snapshot["pages"][number];
 type RouteRenderTarget = "preview" | "published";
+type SearchPortCache = Readonly<{
+  catalogueAuthorityFingerprint: string;
+  factory: SearchPortFactory;
+  port: StorefrontProductSearchPort;
+}>;
 
 type LoadState =
   | { status: "loading" }
@@ -188,6 +193,7 @@ export function SearchPreviewClient({
     renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
+  const searchPortCache = useRef<SearchPortCache | undefined>(undefined);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const requestedLocale = searchParameters.locale === "fi" ? "fi" : "en";
@@ -236,8 +242,19 @@ export function SearchPreviewClient({
               route.kind === "product" ? [{ productId: route.productId, route: route.route }] : [],
             ),
           });
+          const catalogueAuthorityFingerprint = searchAuthority.catalogueFingerprint;
+          if (
+            searchPortCache.current?.factory !== searchPortFactory ||
+            searchPortCache.current.catalogueAuthorityFingerprint !== catalogueAuthorityFingerprint
+          ) {
+            searchPortCache.current = {
+              catalogueAuthorityFingerprint,
+              factory: searchPortFactory,
+              port: searchPortFactory(aggregate),
+            };
+          }
           const results = validateStorefrontSearchResultForRequest({
-            result: searchPortFactory(aggregate).search(request, searchAuthority),
+            result: searchPortCache.current.port.search(request, searchAuthority),
             request,
             authority: searchAuthority,
           });

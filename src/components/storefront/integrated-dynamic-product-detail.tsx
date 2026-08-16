@@ -13,6 +13,7 @@ import {
   type DynamicProductDetailRendererInput,
   type ProductPrimaryActionPresentation,
 } from "./dynamic-product-detail";
+import styles from "./dynamic-product-detail.module.css";
 
 const incompleteMessage: LocalizedText = {
   en: "Complete the required product options before continuing.",
@@ -136,8 +137,11 @@ export function IntegratedDynamicProductDetail(input: IntegratedDynamicProductDe
     const message = snapshot.message ?? unavailableMessage;
     return (
       <section
+        aria-busy={snapshot.phase === "loading" || undefined}
         aria-live="polite"
+        className={styles.resolutionShell}
         data-component="dynamicProductDetail"
+        data-loading-product-option-count={input.productContext.optionGroups.length}
         data-resolution-state={snapshot.phase}
         role="status"
       >

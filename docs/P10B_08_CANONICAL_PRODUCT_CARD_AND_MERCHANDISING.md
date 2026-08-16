@@ -154,3 +154,18 @@ P10B-08 does not implement P10B-06 shared-frame families, P10B-07 hero/editorial
 P10B-10 collection/search profiles, P10B-11 PDP profiles, P10B-13 utility pages, P10B-15 synthesis,
 commerce writes, local cart ownership, generated product media, a second product model, or a second
 component/image/publishing authority. It does not claim P10B-18 retained human commercial closure.
+
+## Current P10B-17 continuation
+
+P10B-17 keeps this singleton card family and exposes each selected anatomy's registered
+transformations by mobile, tablet, desktop, and wide breakpoint. The renderer applies condensed,
+stacked, reordered, or dense treatments only where the anatomy registered them; tablet therefore
+keeps the selected anatomy instead of inheriting an unregistered compact layout. Card media uses
+the shared merchandising loading role, and title/action focus, minimum targets, contained canonical
+media, and reduced-motion behavior are consistent across collection, search, homepage, related,
+and utility contexts.
+
+Presentation windows and responsive grids may bound how many cards render at once, but they retain
+canonical product fingerprints and never rewrite product identity, ordering, price, availability,
+or media. No card registry or product model was added. P10B-18 remains the commercial
+merchandising-quality and scale gate.

@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 const ARCHIVE_TIMESTAMP = new Date("2000-01-01T00:00:00Z");
-const EXPORTER_VERSION = "1.1.1";
+const EXPORTER_VERSION = "1.1.2";
 const PORTRAIT_WIDTH = 9360;
 const LANDSCAPE_WIDTH = 12960;
 const HYPERLINK_RELATIONSHIP_TYPE =
@@ -213,6 +213,7 @@ const tableXml = (rows, pageWidth, layout, hyperlinks) => {
   const headers = rows[0];
   const widths = tableWidths(headers, pageWidth, layout);
   const traceability = isTraceabilityHeaders(headers);
+  const revisionHistory = stripInlineMarkdown(headers[0] ?? "") === "Revision";
   const compact = (layout === "tracker" && headers.length === 7) || traceability;
   const centeredColumns = new Set(
     headers
@@ -240,7 +241,7 @@ const tableXml = (rows, pageWidth, layout, hyperlinks) => {
         .join("");
       const rowProperties = [
         rowIndex === 0 ? "<w:tblHeader/>" : "",
-        rowIndex === 0 || traceability || compact ? "<w:cantSplit/>" : "",
+        rowIndex === 0 || traceability || revisionHistory || compact ? "<w:cantSplit/>" : "",
       ].join("");
       return `<w:tr><w:trPr>${rowProperties}</w:trPr>${cells}</w:tr>`;
     })

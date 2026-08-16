@@ -3,6 +3,11 @@ import { resolveLocalizedText, localizedTextSchema } from "@/domain/shared";
 import { defineComponent, type StorefrontRenderContext } from "./contract";
 import type { CommerceUtilityActionId } from "@/domain/commerce-utility";
 import { ResponsiveStorefrontImage } from "@/components/storefront/responsive-storefront-image";
+import {
+  resolveResponsiveExecutionAuthority,
+  responsiveExecutionDataAttributes,
+} from "@/components/storefront/responsive-execution";
+import { adaptV1ComponentDefinitionToV2 } from "./v2-compatibility";
 import styles from "@/components/storefront/commerce-utility.module.css";
 
 const variants = [
@@ -59,6 +64,12 @@ const money = (amount: number, currency: "EUR", context: StorefrontRenderContext
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(amount);
+
+function utilityResponsiveAttributes(variant: (typeof variants)[number]) {
+  const anatomy = currentCommerceUtilityDefinition.commercialAnatomy;
+  if (!anatomy) throw new Error("Commerce utility requires registered responsive anatomy.");
+  return responsiveExecutionDataAttributes(resolveResponsiveExecutionAuthority(anatomy, variant));
+}
 
 export const commerceUtilityContentSchema = z
   .object({
@@ -135,15 +146,22 @@ function ContinueShopping({ context }: { context: StorefrontRenderContext }) {
 function CartPresentation({
   context,
   placement,
+  variant,
 }: {
   context: StorefrontRenderContext;
   placement: "inline" | "aside";
+  variant: "cart";
 }) {
   const runtime = context.commerceUtilityRuntime;
   const copy = labels(context);
   if (!runtime || runtime.kind !== "cart") {
     return (
-      <section className={styles.state} data-utility-state="unavailable" role="status">
+      <section
+        {...utilityResponsiveAttributes(variant)}
+        className={styles.state}
+        data-utility-state="unavailable"
+        role="status"
+      >
         <h1>{copy.cart}</h1>
         <p>
           {context.activeLocale === "fi"
@@ -153,13 +171,19 @@ function CartPresentation({
       </section>
     );
   }
+  const productById = new Map(context.catalogue.products.map((product) => [product.id, product]));
   const resolvedLines = runtime.lines.flatMap((line) => {
-    const product = context.catalogue.products.find((candidate) => candidate.id === line.productId);
+    const product = productById.get(line.productId);
     return product ? [{ line, product }] : [];
   });
   if (resolvedLines.length !== runtime.lines.length) {
     return (
-      <section className={styles.state} data-utility-state="unavailable" role="status">
+      <section
+        {...utilityResponsiveAttributes(variant)}
+        className={styles.state}
+        data-utility-state="unavailable"
+        role="status"
+      >
         <h1>{copy.cart}</h1>
         <p>
           {context.activeLocale === "fi"
@@ -171,8 +195,14 @@ function CartPresentation({
   }
   if (runtime.lines.length === 0) {
     return (
-      <section className={styles.empty} data-utility-state="cart-empty" aria-live="polite">
-        <h2>{copy.cart}</h2>
+      <section
+        {...utilityResponsiveAttributes(variant)}
+        aria-atomic="true"
+        aria-live="polite"
+        className={styles.empty}
+        data-utility-state="cart-empty"
+      >
+        <h1>{copy.cart}</h1>
         <p>{context.activeLocale === "fi" ? "Ostoskorisi on tyhjä." : "Your cart is empty."}</p>
         <ContinueShopping context={context} />
       </section>
@@ -180,6 +210,7 @@ function CartPresentation({
   }
   return (
     <section
+      {...utilityResponsiveAttributes(variant)}
       className={styles.cart}
       data-utility-state="cart-populated"
       data-summary-placement={placement}
@@ -190,6 +221,7 @@ function CartPresentation({
         <ul>
           {resolvedLines.map(({ line, product }) => {
             const productImage = product.images[0];
+            const productTitle = text(product.title, context);
             return (
               <li
                 key={line.lineId}
@@ -202,10 +234,11 @@ function CartPresentation({
                     alt={text(productImage.alt ?? product.title, context)}
                     asset={productImage}
                     className={styles.lineMedia}
+                    loadingRole="merchandising"
                   />
                 ) : null}
                 <div className={styles.lineIdentity}>
-                  <h2>{text(product.title, context)}</h2>
+                  <h2>{productTitle}</h2>
                   {line.unitPrice ? (
                     <p className={styles.unitPrice}>
                       {money(line.unitPrice.amount, line.unitPrice.currency, context)}
@@ -218,7 +251,7 @@ function CartPresentation({
                   ) : null}
                 </div>
                 <div className={styles.lineActions}>
-                  <span>
+                  <span aria-atomic="true" aria-live="polite">
                     {copy.quantity}: {line.quantity}
                   </span>
                   {supports(context, "change-quantity") ? (
@@ -226,7 +259,7 @@ function CartPresentation({
                       {line.quantity > line.minimumQuantity ? (
                         <UtilityAction
                           action="change-quantity"
-                          accessibleLabel={copy.decreaseQuantity}
+                          accessibleLabel={`${copy.decreaseQuantity}: ${productTitle}`}
                           label="−"
                           context={context}
                           lineId={line.lineId}
@@ -238,7 +271,7 @@ function CartPresentation({
                       line.quantity < line.maximumQuantity ? (
                         <UtilityAction
                           action="change-quantity"
-                          accessibleLabel={copy.increaseQuantity}
+                          accessibleLabel={`${copy.increaseQuantity}: ${productTitle}`}
                           label="+"
                           context={context}
                           lineId={line.lineId}
@@ -250,6 +283,7 @@ function CartPresentation({
                   ) : null}
                   <UtilityAction
                     action="remove-line"
+                    accessibleLabel={`${copy.remove}: ${productTitle}`}
                     label={copy.remove}
                     context={context}
                     lineId={line.lineId}
@@ -299,14 +333,21 @@ function CartPresentation({
 function StatePresentation({
   content,
   context,
+  variant,
 }: {
   content: z.infer<typeof commerceUtilityContentSchema>;
   context: StorefrontRenderContext;
+  variant: Exclude<(typeof variants)[number], "cart"> | "cart";
 }) {
   const runtime = context.commerceUtilityRuntime;
   if (!runtime) {
     return (
-      <section className={styles.state} data-utility-state="unavailable" role="status">
+      <section
+        {...utilityResponsiveAttributes(variant)}
+        className={styles.state}
+        data-utility-state="unavailable"
+        role="status"
+      >
         <h1>{text(content.heading, context)}</h1>
         <p>{text(content.body, context)}</p>
       </section>
@@ -326,9 +367,15 @@ function StatePresentation({
   const isCheckout = runtime.kind === "checkout";
   return (
     <section
+      {...utilityResponsiveAttributes(variant)}
+      aria-atomic={runtime.kind === "error" || runtime.kind === "loading" ? "true" : undefined}
+      aria-busy={runtime.kind === "loading" ? "true" : undefined}
+      aria-live={
+        runtime.kind === "error" ? "assertive" : runtime.kind === "loading" ? "polite" : undefined
+      }
       className={styles.state}
       data-utility-state={runtime.kind}
-      aria-live={runtime.kind === "error" || runtime.kind === "loading" ? "polite" : undefined}
+      role={runtime.kind === "error" ? "alert" : runtime.kind === "loading" ? "status" : undefined}
     >
       <h1>{runtime.kind === "loading" ? copy.loading : text(content.heading, context)}</h1>
       <p>{body}</p>
@@ -401,8 +448,10 @@ export const commerceUtilityDefinition = defineComponent({
   },
   renderer: ({ content, props, context, variant }) =>
     variant === "cart" && context.commerceUtilityRuntime?.kind !== "loading" ? (
-      <CartPresentation context={context} placement={props.summaryPlacement} />
+      <CartPresentation context={context} placement={props.summaryPlacement} variant={variant} />
     ) : (
-      <StatePresentation content={content} context={context} />
+      <StatePresentation content={content} context={context} variant={variant} />
     ),
 });
+
+const currentCommerceUtilityDefinition = adaptV1ComponentDefinitionToV2(commerceUtilityDefinition);

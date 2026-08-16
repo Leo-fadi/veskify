@@ -54,7 +54,7 @@
 }
 .line h2,
 .state h1,
-.empty h2 {
+.empty h1 {
   margin: 0;
   font-family: var(--brand-font-heading, inherit);
   font-size: var(--brand-type-heading-size, 2rem);
@@ -154,7 +154,8 @@
   color: var(--brand-color-text);
 }
 .action[data-action-tone="quiet"] {
-  min-height: 2.25rem;
+  min-width: var(--brand-control-height, 2.75rem);
+  min-height: var(--brand-control-height, 2.75rem);
   border-color: transparent;
   background: transparent;
   color: var(--brand-color-text);
@@ -164,36 +165,37 @@
 }
 .action:hover,
 .action:focus-visible {
-  outline: 2px solid var(--brand-color-accent);
+  outline: 2px solid var(--brand-focus-ring-inner, #fff);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--brand-focus-ring-outer, #000);
 }
 .filters {
   color: var(--brand-color-muted);
 }
 @media (max-width: 63.999rem) {
-  .cart {
+  .cart[data-responsive-transformations~="utilityStack"] {
     grid-template-columns: 1fr;
   }
-  .summary {
+  .cart[data-responsive-transformations~="utilityStack"] .summary {
     position: static;
   }
-  .line {
+  .cart[data-responsive-transformations~="utilityStack"] .line {
     grid-template-columns: 4.5rem minmax(0, 1fr);
   }
-  .lineMedia {
+  .cart[data-responsive-transformations~="utilityStack"] .lineMedia {
     width: 4.5rem;
   }
-  .lineActions {
+  .cart[data-responsive-transformations~="utilityStack"] .lineActions {
     grid-column: 1 / -1;
   }
-  .linePrice {
+  .cart[data-responsive-transformations~="utilityStack"] .linePrice {
     grid-column: 2;
   }
-  .actions {
+  [data-responsive-transformations~="utilityStack"] .actions {
     align-items: stretch;
     flex-direction: column;
   }
-  .actions .action {
+  [data-responsive-transformations~="utilityStack"] .actions .action {
     width: 100%;
   }
 }
@@ -210,7 +212,7 @@
     padding: 1rem;
   }
 
-  .line {
+  .cart[data-responsive-transformations~="utilityStack"] .line {
     grid-template-columns: 4.5rem minmax(0, 1fr);
   }
 

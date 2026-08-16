@@ -176,3 +176,16 @@ Partial; P10B-06 and P10B-08 through P10B-18 remain Planned.
 - No P10B-12 complete content/support profile library.
 - No P10B-15 synthesis engine.
 - No generated claims, generated media, provider call or production CDN transform.
+
+## Current P10B-17 continuation
+
+P10B-17 makes the existing homepage hero, campaign, editorial, lookbook, proof, and continuation
+anatomies execute their registered mobile/tablet transformation IDs instead of inheriting generic
+layout changes. The current families now bound media and copy, stack or reorder only where the
+selected anatomy permits it, keep campaign and proof controls usable, and disable carousel motion
+and snap behavior under reduced-motion preference. Exact narrative roles, approved evidence,
+assets, surfaces, and art direction remain unchanged.
+
+This adds no family, variant, PageBlueprint, registry, or copy authority and does not mutate the
+snapshot, commerce, or media. P10B-18 retains the cross-store commercial storytelling and visual
+quality gate.

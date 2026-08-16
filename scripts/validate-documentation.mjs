@@ -153,7 +153,8 @@ requireText("docs/VESKIFY_SDD.md", [
   "There is no Vesko staging or production evidence",
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
-  "P10B-16P-05A active-path/compiler rationalisation, and P10B-16P-06 canonical search query/results\nauthority are Baseline",
+  "P10B-16P-05A active-path/compiler rationalisation, P10B-16P-06 canonical search query/results\nauthority, and P10B-17 responsive/accessibility/performance closure are Baseline",
+  "### 10.25 P10B-17 responsive, accessibility and performance closure",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
   "### 10.23 P10B-16P-05A active production-path and compiler rationalisation",
@@ -191,7 +192,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "**Status:** Binding architecture. P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and\nP10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18\nremain **Planned**.",
+  "**Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and\nP10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B and P10B-18 remain\n**Planned**.",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -252,16 +253,16 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B-16P-05A\nactive-path/compiler rationalisation, and P10B-16P-06 canonical search query/results authority are\n**Baseline**.",
-  "P10B-16P-05B, P10B-17, and P10B-18 remain **Planned**.",
+  "P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B-16P-05A\nactive-path/compiler rationalisation, P10B-16P-06 canonical search query/results authority, and\nP10B-17 responsive/accessibility/performance closure are **Baseline**.",
+  "P10B-16P-05B and P10B-18 remain **Planned**.",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 31) {
-  failures.push("Delivery tracker must contain exactly thirty-one completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 32) {
+  failures.push("Delivery tracker must contain exactly thirty-two completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -288,6 +289,7 @@ const expectedPlannedP10bChecklistIds = lockedP10BTasks
         "P10B-14",
         "P10B-15",
         "P10B-16",
+        "P10B-17",
       ].includes(taskId),
   );
 if (
@@ -315,12 +317,13 @@ if (
   !/^\| ☑\s+\| P10B-16P-04\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-05A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-06\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-17\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 Baseline, and keep P10B-16P-05B, P10B-17 and P10B-18 Planned",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 Baseline, and keep P10B-16P-05B and P10B-18 Planned",
   );
 }
 

@@ -69,3 +69,15 @@ Production Vesko cart, checkout, search, authentication, and payment adapters re
 integration work. This Baseline claims no Vesko endpoint, AI/semantic/vector/fuzzy search,
 recommendations, personalization, analytics, or operational cart/checkout behavior. Runtime
 adapters still fail closed when they do not supply a matching state or executable action.
+
+## Current P10B-17 continuation
+
+P10B-17 makes cart, checkout-boundary, empty, loading, error, no-results, and not-found surfaces
+consume responsive execution derived from the existing utility anatomy. Bounded controls use the
+paired Design DNA focus treatment and localized accessible labels; loading, quantity, empty, and
+error changes expose appropriate busy/live/alert semantics. Cart-line product media uses the shared
+merchandising loading role, and responsive layout remains governed by the selected utility variant.
+
+Runtime utility state remains read-only and non-persistent; no cart, checkout, search, product,
+snapshot, renderer, or media authority was added or mutated. P10B-18 remains the customer-facing
+utility-quality and scale gate, while operational commerce remains Vesko/P11-owned.

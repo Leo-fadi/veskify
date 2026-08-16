@@ -193,53 +193,88 @@ function projectionFor(
   placements: readonly ApprovedAssetPlacementOperation[] = [],
   presentations: readonly ApprovedAssetPresentation[] = [],
   productCardArtContext?: Readonly<{ component: ComponentDefinitionV2; variant: string }>,
-): ComponentProjectionContext {
+): Readonly<{
+  projection: ComponentProjectionContext;
+  productById: ReadonlyMap<string, StorefrontRenderContext["catalogue"]["products"][number]>;
+  assetUrlById: ReadonlyMap<string, string>;
+}> {
   const revision = `catalogue-${context.catalogue.id}`;
-  const products: ProductPresentationContext[] = context.catalogue.products.map((product) => ({
-    productId: product.id,
-    productTypeId: canonicalProductTypePresentationId(product.productType),
-    sku: product.sku ?? product.id,
-    title: product.title,
-    ...(product.description === undefined ? {} : { description: product.description }),
-    ...(product.price === undefined
-      ? {
-          priceUnavailableReason: product.priceUnavailableReason ?? {
-            en: "Price unavailable",
-            fi: "Hinta ei saatavilla",
-          },
-        }
-      : {
-          price: product.price,
-        }),
-    ...(product.compareAtPrice === undefined
-      ? {}
-      : {
-          compareAtPrice: product.compareAtPrice,
-        }),
-    availability:
-      product.availabilityLabel ??
-      (product.stockStatus === "inStock"
-        ? { en: "In stock", fi: "Varastossa" }
-        : product.stockStatus === "lowStock"
-          ? { en: "Limited availability", fi: "Rajoitetusti saatavilla" }
-          : product.stockStatus === "outOfStock"
-            ? { en: "Currently unavailable", fi: "Ei tällä hetkellä saatavilla" }
-            : {
-                en: "Availability unavailable",
-                fi: "Saatavuus ei saatavilla",
-              }),
-    media: product.images.map((image, index) => ({
+  const products: ProductPresentationContext[] = [];
+  const assets: StorefrontAssetMetadata[] = [];
+  const productById = new Map<string, StorefrontRenderContext["catalogue"]["products"][number]>();
+  const assetUrlById = new Map<string, string>();
+  const assetIds = new Set<string>();
+  for (const product of context.catalogue.products) {
+    productById.set(product.id, product);
+    const media: ProductPresentationContext["media"] = product.images.map((image, index) => ({
       assetId: image.id,
       role: index === 0 ? ("main" as const) : ("alternative" as const),
       ...(image.alt === undefined ? {} : { alt: image.alt }),
-    })),
-    attributeGroups: [],
-    optionGroups: [],
-    selectedValues: [],
-    unavailableCombinations: [],
-    relatedProductIds: [],
-    revision,
-  }));
+    }));
+    products.push({
+      productId: product.id,
+      productTypeId: canonicalProductTypePresentationId(product.productType),
+      sku: product.sku ?? product.id,
+      title: product.title,
+      ...(product.description === undefined ? {} : { description: product.description }),
+      ...(product.price === undefined
+        ? {
+            priceUnavailableReason: product.priceUnavailableReason ?? {
+              en: "Price unavailable",
+              fi: "Hinta ei saatavilla",
+            },
+          }
+        : { price: product.price }),
+      ...(product.compareAtPrice === undefined ? {} : { compareAtPrice: product.compareAtPrice }),
+      availability:
+        product.availabilityLabel ??
+        (product.stockStatus === "inStock"
+          ? { en: "In stock", fi: "Varastossa" }
+          : product.stockStatus === "lowStock"
+            ? { en: "Limited availability", fi: "Rajoitetusti saatavilla" }
+            : product.stockStatus === "outOfStock"
+              ? { en: "Currently unavailable", fi: "Ei tällä hetkellä saatavilla" }
+              : {
+                  en: "Availability unavailable",
+                  fi: "Saatavuus ei saatavilla",
+                }),
+      media,
+      attributeGroups: [],
+      optionGroups: [],
+      selectedValues: [],
+      unavailableCombinations: [],
+      relatedProductIds: [],
+      revision,
+    });
+    product.images.forEach((image, index) => {
+      const mediaItem = media[index];
+      assetUrlById.set(image.id, image.url);
+      assetIds.add(image.id);
+      assets.push({
+        assetId: image.id,
+        role: index === 0 ? "productMainImage" : "productAlternativeImage",
+        ...(image.alt === undefined ? { decorative: true } : { alt: image.alt, decorative: false }),
+        provenance: { kind: "canonicalProductMedia", sourceId: product.id },
+        approvalStatus: "approved",
+        usageRights: "merchantOwned",
+        responsiveCrops: [],
+        revision,
+        ...(productCardArtContext && mediaItem
+          ? {
+              artDirection: createCanonicalProductMediaResponsiveAuthority({
+                component: productCardArtContext.component,
+                variant: productCardArtContext.variant,
+                brandSystem: context.brandSystem,
+                productId: product.id,
+                media: mediaItem,
+                revision,
+                assetSlotId: "productMedia",
+              }),
+            }
+          : {}),
+      });
+    });
+  }
   const collectionPlacements = placements.filter(
     (placement) => placement.assetSlotId === "collectionMedia",
   );
@@ -267,38 +302,16 @@ function projectionFor(
       revision,
     }),
   );
-  const assets: StorefrontAssetMetadata[] = context.catalogue.products.flatMap((product) => {
-    const productContext = products.find((candidate) => candidate.productId === product.id)!;
-    return product.images.map((image, index) => {
-      const media = productContext.media[index];
-      return {
-        assetId: image.id,
-        role: index === 0 ? ("productMainImage" as const) : ("productAlternativeImage" as const),
-        ...(image.alt === undefined ? { decorative: true } : { alt: image.alt, decorative: false }),
-        provenance: { kind: "canonicalProductMedia" as const, sourceId: product.id },
-        approvalStatus: "approved" as const,
-        usageRights: "merchantOwned" as const,
-        responsiveCrops: [],
-        revision,
-        ...(productCardArtContext && media
-          ? {
-              artDirection: createCanonicalProductMediaResponsiveAuthority({
-                component: productCardArtContext.component,
-                variant: productCardArtContext.variant,
-                brandSystem: context.brandSystem,
-                productId: product.id,
-                media,
-                revision,
-                assetSlotId: "productMedia",
-              }),
-            }
-          : {}),
-      };
-    });
-  });
+  const presentationByAssetId = new Map(
+    presentations.map((presentation) => [presentation.assetId, presentation]),
+  );
+  for (const presentation of presentations) {
+    assetUrlById.set(presentation.assetId, presentation.asset.url);
+  }
   placements.forEach((placement) => {
-    if (assets.some((asset) => asset.assetId === placement.assetId)) return;
-    const presentation = presentations.find((candidate) => candidate.assetId === placement.assetId);
+    if (assetIds.has(placement.assetId)) return;
+    const presentation = presentationByAssetId.get(placement.assetId);
+    assetIds.add(placement.assetId);
     assets.push({
       assetId: placement.assetId,
       role: placement.role,
@@ -326,20 +339,24 @@ function projectionFor(
     });
   });
   return {
-    products,
-    collections,
-    assets,
-    navigation: [...context.navigation.primary, ...context.navigation.footer].map((item) => ({
-      navigationId: item.id,
-      revision,
-    })),
-    projectBrandContexts: [
-      { projectId: `project_${context.catalogue.id}`, brandSystemRefs: [], revision },
-    ],
-    localizedContents: [],
-    evidenceReferences: [...(context.evidenceReferences ?? [])],
-    productListRevision: revision,
-    collectionListRevision: revision,
+    projection: {
+      products,
+      collections,
+      assets,
+      navigation: [...context.navigation.primary, ...context.navigation.footer].map((item) => ({
+        navigationId: item.id,
+        revision,
+      })),
+      projectBrandContexts: [
+        { projectId: `project_${context.catalogue.id}`, brandSystemRefs: [], revision },
+      ],
+      localizedContents: [],
+      evidenceReferences: [...(context.evidenceReferences ?? [])],
+      productListRevision: revision,
+      collectionListRevision: revision,
+    },
+    productById,
+    assetUrlById,
   };
 }
 
@@ -349,24 +366,18 @@ function instanceFor(
   variant: string,
   content: unknown,
   props: unknown,
-  placements: readonly ApprovedAssetPlacementOperation[],
+  componentPlacements: readonly ApprovedAssetPlacementOperation[],
   context: StorefrontRenderContext,
+  projection: ComponentProjectionContext,
+  productById: ReadonlyMap<string, StorefrontRenderContext["catalogue"]["products"][number]>,
 ): ComponentInstanceV2 {
-  const componentPlacements = placements.filter(
-    (placement) => placement.componentId === sectionId && placement.componentType === component,
-  );
-  const projection = projectionFor(context, componentPlacements);
   const revision = `catalogue-${context.catalogue.id}`;
   const contentRecord = z.record(z.string(), z.unknown()).parse(content);
   const persistedProductIds =
     component === "homepageFeaturedProducts" && Array.isArray(contentRecord.productIds)
       ? contentRecord.productIds.map((id) => z.string().parse(id))
       : undefined;
-  if (
-    persistedProductIds?.some(
-      (id) => !projection.products.some((product) => product.productId === id),
-    )
-  ) {
+  if (persistedProductIds?.some((id) => !productById.has(id))) {
     throw new Error(
       "A persisted homepage product-list binding no longer resolves in canonical commerce.",
     );
@@ -474,7 +485,7 @@ function instanceFor(
         ? assetAssignments
         : component === "homepageFeaturedProducts"
           ? productIds.flatMap((productId) => {
-              const product = context.catalogue.products.find((item) => item.id === productId);
+              const product = productById.get(productId);
               if (!product) {
                 throw new Error(
                   "A persisted homepage product-list binding no longer resolves in canonical commerce.",
@@ -526,10 +537,15 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
       context,
     }) => {
       const componentDefinition = veskifyComponentRegistryV2.get(input.component);
+      const componentPlacements = approvedAssetPlacements.filter(
+        (placement) =>
+          placement.componentId === sectionId && placement.componentType === input.component,
+      );
+      const placementByAssetId = new Map(
+        approvedAssetPlacements.map((placement) => [placement.assetId, placement]),
+      );
       const migratedPresentations = approvedAssetPresentations.map((presentation) => {
-        const placement = approvedAssetPlacements.find(
-          (candidate) => candidate.assetId === presentation.assetId,
-        );
+        const placement = placementByAssetId.get(presentation.assetId);
         return placement?.sourceProvenanceKind
           ? migrateApprovedPresentationArtDirection({
               presentation,
@@ -541,9 +557,9 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
             })
           : presentation;
       });
-      const projection = projectionFor(
+      const derived = projectionFor(
         context,
-        approvedAssetPlacements,
+        componentPlacements,
         migratedPresentations,
         input.component === "homepageFeaturedProducts"
           ? { component: componentDefinition, variant }
@@ -557,19 +573,16 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
           variant,
           content,
           props,
-          approvedAssetPlacements,
+          componentPlacements,
           context,
+          derived.projection,
+          derived.productById,
         ),
-        projection,
+        projection: derived.projection,
         activeLocale: context.activeLocale,
         primaryLocale: context.primaryLocale,
         resolveAssetUrl: (assetId) =>
-          migratedPresentations.find((presentation) => presentation.assetId === assetId)?.asset
-            .url ??
-          context.catalogue.products
-            .flatMap((product) => product.images)
-            .find((asset) => asset.id === assetId)?.url ??
-          "/seed-assets/placeholder.svg",
+          derived.assetUrlById.get(assetId) ?? "/seed-assets/placeholder.svg",
         onNavigate: (intent) => {
           const path = resolveStorefrontNavigationPath(context, intent);
           if (path && typeof window !== "undefined") window.location.assign(path);

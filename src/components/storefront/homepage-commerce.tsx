@@ -67,6 +67,10 @@ import {
   dynamicCollectionCommerceDefaultProps,
 } from "@/components/registry/dynamic-collection-commerce";
 import styles from "./homepage-commerce.module.css";
+import {
+  resolveResponsiveExecutionAuthority,
+  responsiveExecutionDataAttributes,
+} from "./responsive-execution";
 import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
 
 export const approvedNavigationIntentSchema = z
@@ -153,11 +157,24 @@ function prepare(input: HomepageCommerceRendererInput) {
   };
 }
 
-function ImageAsset({ resolved, locale }: { resolved: ResolvedAsset; locale: LocaleContext }) {
+function ImageAsset({
+  resolved,
+  locale,
+  loadingRole = "content",
+}: {
+  resolved: ResolvedAsset;
+  locale: LocaleContext;
+  loadingRole?: "primary" | "content" | "merchandising";
+}) {
   const alt =
     resolved.asset.decorative || !resolved.asset.alt ? "" : text(resolved.asset.alt, locale);
   return (
-    <ResponsiveStorefrontImage alt={alt} asset={resolved.asset} authority={resolved.artDirection} />
+    <ResponsiveStorefrontImage
+      alt={alt}
+      asset={resolved.asset}
+      authority={resolved.artDirection}
+      loadingRole={loadingRole}
+    />
   );
 }
 
@@ -377,9 +394,10 @@ function anatomyIdentity(instance: ComponentInstanceV2) {
   const variant = anatomy.variants.find((candidate) => candidate.variantId === instance.variant);
   if (!variant)
     throw new Error(`Missing commercial anatomy for ${instance.component}:${instance.variant}.`);
+  const responsive = resolveResponsiveExecutionAuthority(anatomy, instance.variant);
   return {
     presentationMode: variant.structure.presentationMode,
-    responsiveTransformations: variant.structure.responsiveTransformationIds.join(" "),
+    responsiveAttributes: responsiveExecutionDataAttributes(responsive),
   };
 }
 
@@ -449,7 +467,7 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       data-asset-role={media.role}
       data-region="media"
     >
-      <ImageAsset locale={locale} resolved={media} />
+      <ImageAsset loadingRole="primary" locale={locale} resolved={media} />
     </figure>
   ) : null;
   const mediaFirst = [
@@ -473,8 +491,8 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       data-responsive-layout="content-driven"
       data-overlay-contrast={props.overlayContrast}
       data-presentation-mode={anatomy.presentationMode}
-      data-responsive-transformations={anatomy.responsiveTransformations}
       data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
     >
       {isCampaignMerchandising ? (
         <>
@@ -539,7 +557,7 @@ function CollectionCards({
             data-asset-provenance={media.provenance.kind}
             data-asset-role={media.role}
           >
-            <ImageAsset locale={locale} resolved={media} />
+            <ImageAsset loadingRole="merchandising" locale={locale} resolved={media} />
           </figure>
         ) : presentation === "text" ? null : (
           <p className={styles.placeholder}>{text(placeholder, locale)}</p>
@@ -583,15 +601,18 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
   const collections = collectionsFor(instance, projection, "collections");
   const assigned = assignedAssetIds(instance, "collectionMedia");
   const columnCount = Math.min(props.columns, Math.max(collections.length, 1));
+  const anatomy = anatomyIdentity(instance);
   return (
     <section
       aria-labelledby={content.heading ? headingId : undefined}
       className={sectionClass("featuredCollections", instance.variant, style)}
       data-component={instance.component}
+      data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
       data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
     >
       <SectionHeading
         heading={content.heading}
@@ -652,15 +673,18 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
     cardVariant: props.cardVariant,
     conciseAttributeLimit: 0,
   };
+  const anatomy = anatomyIdentity(instance);
   return (
     <section
       aria-labelledby={content.heading ? headingId : undefined}
       className={sectionClass("featuredProducts", instance.variant, style)}
       data-component={instance.component}
+      data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="product-type-independent"
       data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
     >
       <SectionHeading
         heading={content.heading}
@@ -722,6 +746,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
   const headingId = useId();
   const collections = collectionsFor(instance, projection, "collections");
   const columnCount = Math.min(props.columns, Math.max(collections.length, 1));
+  const anatomy = anatomyIdentity(instance);
   return (
     <nav
       aria-labelledby={content.heading ? headingId : undefined}
@@ -730,10 +755,12 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       }
       className={sectionClass("collectionNavigation", instance.variant, style)}
       data-component={instance.component}
+      data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
       data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
@@ -787,6 +814,7 @@ function EditorialSection({
   mediaPosition: "left" | "right" | "background";
   textAlignment: "left" | "center";
 }) {
+  const anatomy = anatomyIdentity(instance);
   return (
     <section
       aria-labelledby={`${instance.id}-heading`}
@@ -795,9 +823,11 @@ function EditorialSection({
       data-variant={instance.variant}
       data-media-position={mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
+      data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
       data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
     >
       <div
         className={`${styles.editorialCopy} ${styles[`align_${textAlignment}`]}`}
@@ -960,9 +990,9 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
       data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-responsive-layout="governed-editorial"
-      data-responsive-transformations={anatomy.responsiveTransformations}
       data-surface={style.surface}
       data-variant={instance.variant}
+      {...anatomy.responsiveAttributes}
     >
       {mediaFirst ? gallery : copy}
       {mediaFirst ? copy : gallery}
@@ -990,9 +1020,9 @@ export function HomepageProofSection(input: HomepageCommerceRendererInput) {
       data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-responsive-layout="governed-proof"
-      data-responsive-transformations={anatomy.responsiveTransformations}
       data-surface={style.surface}
       data-variant={instance.variant}
+      {...anatomy.responsiveAttributes}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
@@ -1042,6 +1072,7 @@ export function HomepageTrustSection(input: HomepageCommerceRendererInput) {
   const props: HomepageTrustProps = homepageTrustPropsSchema.parse(instance.props);
   const style = homepageSurfaceStyleSchema.parse(instance.styleOverrides);
   const headingId = useId();
+  const anatomy = anatomyIdentity(instance);
   return (
     <section
       aria-labelledby={content.heading ? headingId : undefined}
@@ -1050,10 +1081,12 @@ export function HomepageTrustSection(input: HomepageCommerceRendererInput) {
       }
       className={sectionClass("trust", instance.variant, style)}
       data-component={instance.component}
+      data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
       data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div

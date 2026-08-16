@@ -732,6 +732,11 @@ export function projectDesignDna(input: unknown, baseSize = 16): EffectiveDesign
     ]),
     "--brand-surface-contrast-text": dna.colour.contrastText,
     "--brand-surface-contrast-muted-text": dna.colour.contrastText,
+    // The paired ring uses existing validated light/dark semantic roles. One
+    // edge therefore remains visible on page, surface and contrast regions
+    // without inventing another merchant palette authority.
+    "--brand-focus-ring-inner": dna.colour.text,
+    "--brand-focus-ring-outer": dna.colour.contrastText,
     "--brand-action-primary": actions.primary.background,
     "--brand-action-primary-background": actions.primary.background,
     "--brand-action-primary-border": actions.primary.border,

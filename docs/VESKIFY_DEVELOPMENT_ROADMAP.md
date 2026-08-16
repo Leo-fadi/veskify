@@ -2,7 +2,7 @@
 
 **Version:** 1.3.0
 
-**Baseline:** 15 August 2026, P10B-16P-06 canonical search query/results adapter
+**Baseline:** 16 August 2026, P10B-17 responsive, accessibility and performance closure
 
 **Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)
 
@@ -51,8 +51,8 @@ phase; each remaining task stays Planned until implemented and evidenced.
 The binding architecture, coverage targets, concrete Done conditions, synthesis/fingerprint model,
 and parallelization rules live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B is **Partial / active**. P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and
-P10B-16P-06 are Baseline. P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18 remain
+P10B is **Partial / active**. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
+P10B-16P-06 are Baseline. P10B-16P-02 is **Baseline**; P10B-16P-05B and P10B-18 remain
 **Planned**.
 P10B-16P-04
 acceptance evidence is retained in
@@ -60,13 +60,20 @@ acceptance evidence is retained in
 The original locked P10B-01 through P10B-18 sequence remains intact.
 P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 are a mandatory sequential convergence package
 between P10B-16 and P10B-17; P10B-16P-05B is the final historical-cleanup gate after P10B-18. A
-slice does not renumber or independently complete the parent phase. P10B-17 is the next focused
+slice does not renumber or independently complete the parent phase. P10B-18 is the next focused
 product task.
 
 The current P10B-16P-04 Aurum acceptance composition remains production-disabled and retained
 through P10B-18 for deterministic replay and evidence. P10B-16P-05A removes active P10B-16L runtime
 and isolates P9/Lumo live generation as Deprecated historical authority; P10B-16P-05B performs final
 consumer-verified cleanup only after P10B-18.
+
+P10B-17 replays existing registered direction and neutral authority without provider calls and
+closes responsive execution at 375, 768, 1024, and 1440 px in EN/FI. Its bounded evidence covers
+shared-frame and page-family geometry, keyboard/focus/semantic/contrast behavior, protected
+commerce/media parity, deterministic render/search/media/build budgets, browser lifecycle parity,
+and representative human visual review. It does not claim P10B-18 designer-grade commercial
+quality or 100+ scale, Vesko staging, production authentication, or production performance.
 
 ### 3.1 Dependency waves
 
@@ -79,7 +86,7 @@ consumer-verified cleanup only after P10B-18.
 | 5 — Early complete store       | P10B-14 (**Baseline**)                                           | One credible Premium Editorial multi-page storefront passes retained human review.                                                                                                                                                                                   |
 | 6 — Synthesis and diversity    | P10B-15, P10B-16 (**Baseline**)                                  | Bounded synthesis, three coordinated direction packages and deterministic duplicate/near-duplicate control are live.                                                                                                                                                 |
 | 6P — Generation convergence    | P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 (**Baseline**) | Route instances no longer own design; strict intent, canonical compilation, mocked Studio generation, real V2 A/B/C normal-Studio acceptance, one active semantic path/compiler/materializer chain, and transient canonical search query/results authority are live. |
-| 7 — Closure                    | P10B-17, P10B-18                                                 | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.                                                                                                                                                                                     |
+| 7 — Closure                    | P10B-17 (**Baseline**), P10B-18 (**Planned**)                    | Responsive/a11y/performance is closed; the 100+ configuration quality/diversity gate remains.                                                                                                                                                                        |
 | 8 — Historical cleanup         | P10B-16P-05B (**Planned after P10B-18**)                         | Consumer search permits final removal or archival of retained P10B-16L/P9/P04 historical acceptance scaffolding without losing valid migration or evidence authority.                                                                                                |
 
 ### 3.2 Locked tasks
@@ -110,7 +117,7 @@ consumer-verified cleanup only after P10B-18.
 | P10B-16P-04 — Live V2 acceptance and bridge disposition            | Prove the prompt-driven V2 path with separately authorized real-provider evidence and decide the P10B-16L compatibility bridge disposition.                                                                                       | **Baseline** | P10B-16P-03                                                     | Provider acceptance and architecture             | Safe 16-call ledger; final A/B/C Studio proposals; C full lifecycle; zero retry/fallback/publish; protected commerce/media; retained human review; Deprecated P10B-16L                                 | Automatic calls, executable search, production claims, or preset selection as V2 evidence                  |
 | P10B-16P-05A — Active production-path and compiler rationalisation | Make one canonical semantic initial-generation composition and one coordinator/resolver/exact-decision/executor chain explicit; remove active P10B-16L and isolate P9 generation while retaining required compatibility/evidence. | **Baseline** | P10B-16P-04                                                     | Generation route, provider boundary and compiler | Import/runtime architecture; deterministic A/B/C replay; one provider/one materialization; migration/publication/protected-state regressions                                                           | Search execution, visual redesign, final evidence cleanup, P10B-17, or P10B-18                             |
 | P10B-16P-06 — Canonical search query/results adapter               | Execute the one persisted `/search` presentation through validated transient query/filter/sort/page state and exact current canonical product IDs.                                                                                | **Baseline** | P10B-16P-05A and P10B-16P-01/P10B-10/P10B-13 authority          | Search runtime and commerce presentation         | Contract/schema; deterministic ranking/filter/pagination; integration; lifecycle/publication non-persistence; EN/FI browser evidence; protected commerce/media                                         | Vesko search integration, AI/semantic/fuzzy search, recommendations, analytics, or persisted query/results |
-| P10B-17 — Responsive, accessibility and performance closure        | Preserve deliberate hierarchy and usability across 375/768/1024/1440, EN/FI, accessibility, and bounded budgets.                                                                                                                  | **Planned**  | P10B-16P-06 and implemented families/profiles/directions        | Design system and QA                             | Correlated geometry/a11y/performance/browser/human evidence                                                                                                                                            | Desktop-only acceptance                                                                                    |
+| P10B-17 — Responsive, accessibility and performance closure        | Preserve deliberate hierarchy and usability across 375/768/1024/1440, EN/FI, accessibility, and bounded budgets.                                                                                                                  | **Baseline** | P10B-16P-06 and implemented families/profiles/directions        | Design system and QA                             | Registered transformations; four-width EN/FI geometry; keyboard/semantic/contrast; bounded performance/build budgets; browser and retained human visual evidence                                       | P10B-18 designer-grade quality/scale, Vesko staging, or production claims                                  |
 | P10B-18 — Commercial quality and scale gate                        | Prove repeated generation of publishable, premium, materially different complete storefronts.                                                                                                                                     | **Planned**  | P10B-17 and all prior P10B tasks                                | Product owner, generation, QA                    | 100+ deterministic complete configurations plus fingerprint-stratified retained human review                                                                                                           | Closure from one store, tests, screenshots, counts, or placeholders alone                                  |
 | P10B-16P-05B — Final historical acceptance cleanup                 | Remove or archive remaining P10B-16L, P9/Lumo, and P04 acceptance scaffolding only after quality/scale evidence no longer depends on it.                                                                                          | **Planned**  | P10B-18 and P10B-16P-05A                                        | Generation architecture and evidence             | Consumer search; migration/evidence retention; focused architecture and replay regressions                                                                                                             | Early deletion of migration fixtures, historical evidence, or P10B-18 visual fixtures                      |
 
@@ -118,12 +125,12 @@ consumer-verified cleanup only after P10B-18.
 
 Use A/B/C slices only for necessary contract/anatomy, renderer/variant, or
 PageBlueprint/generation/evidence separation. A parent is not complete until all required slices
-and evidence pass. With P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06
+and evidence pass. With P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06
 Baseline, their
 disjoint authority ownership remains defined by the architecture lock. Shared schema exports,
 registry indexes, migrations, manifests, direction/synthesis/dynamic-route authority, and renderer
-boundaries require one integration owner and cannot be edited concurrently. P10B-17 and P10B-18
-remain sequential closure gates, followed by P10B-16P-05B final historical cleanup.
+boundaries require one integration owner and cannot be edited concurrently. P10B-18 is the next
+closure gate, followed by P10B-16P-05B final historical cleanup.
 
 ## 4. P10C — Storefront Studio Editing Experience v1
 

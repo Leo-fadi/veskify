@@ -1,5 +1,6 @@
 .card {
   min-width: 0;
+  width: 100%;
   height: 100%;
   overflow: hidden;
   border: var(--brand-border-width, 1px) solid var(--brand-color-border);
@@ -19,7 +20,10 @@
 }
 
 .card:focus-within {
-  outline: 2px solid var(--brand-color-accent);
+  box-shadow:
+    0 0 0 3px var(--brand-focus-ring-inner),
+    0 0 0 6px var(--brand-focus-ring-outer);
+  outline: 0;
   outline-offset: 3px;
 }
 
@@ -41,6 +45,7 @@
   width: 100%;
   height: 100%;
   min-height: calc(12rem * min(var(--brand-media-prominence, 1), 1.2));
+  max-height: 36rem;
   background: var(--brand-color-surface);
 }
 
@@ -73,7 +78,7 @@
 
 .title button,
 .actions button {
-  min-height: var(--brand-control-height, 2.75rem);
+  min-height: max(2.75rem, var(--brand-control-height, 2.75rem));
   border: 0;
   background: transparent;
   color: inherit;
@@ -104,6 +109,15 @@
 .actions button:hover,
 .actions button:focus-visible {
   filter: contrast(1.08);
+}
+
+.title button:focus-visible,
+.actions button:focus-visible {
+  box-shadow:
+    0 0 0 3px var(--brand-focus-ring-inner),
+    0 0 0 6px var(--brand-focus-ring-outer);
+  outline: 0;
+  outline-offset: 3px;
 }
 
 .priceRow {
@@ -163,6 +177,7 @@
 
 .anatomy_standard {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .anatomy_standard .media img,
@@ -276,16 +291,14 @@
   aspect-ratio: 1;
 }
 
-@media (max-width: 1023px) {
-  .standardFrame {
-    grid-template-columns: 1fr;
-  }
-
-  .horizontalFrame {
+/* Horizontal cards have an exact registered tablet reflow because their three-column anatomy
+   cannot remain legible inside a bounded two-column merchandising grid. */
+@media (min-width: 48rem) and (max-width: 63.999rem) {
+  .card[data-responsive-tablet~="denseReflow"] .horizontalFrame {
     grid-template-columns: minmax(6rem, 0.65fr) minmax(0, 1.35fr);
   }
 
-  .horizontalFrame > .actions {
+  .card[data-responsive-tablet~="denseReflow"] .horizontalFrame > .actions {
     grid-column: 1 / -1;
   }
 }
@@ -307,42 +320,43 @@
     overflow-wrap: break-word;
   }
 
-  .imageFirstStage {
+  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage {
     overflow: visible;
   }
 
-  .imageFirstStage .media,
-  .imageFirstStage .media figure,
-  .imageFirstStage .media > span {
+  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage .media,
+  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage .media figure,
+  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage .media > span {
     height: auto;
   }
 
-  .editorialOverlay,
-  .imageFirstAction {
+  .card[data-responsive-transformations~="editorialStack"] .editorialOverlay,
+  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstAction {
     position: static;
     display: grid;
     padding: 0.75rem 0.75rem 0;
   }
 
-  .editorialOverlay .badge,
-  .editorialOverlay .actions button,
-  .imageFirstAction .actions button {
+  .card[data-responsive-transformations~="editorialStack"] .editorialOverlay .badge,
+  .card[data-responsive-transformations~="editorialStack"] .editorialOverlay .actions button,
+  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstAction .actions button {
     border-color: var(--brand-color-border);
     background: var(--brand-color-surface);
     color: var(--brand-color-text);
   }
 
-  .compactFrame,
-  .horizontalFrame {
+  .card[data-responsive-transformations~="standardCondense"] .standardFrame,
+  .card[data-responsive-transformations~="compactSimplify"] .compactFrame,
+  .card[data-responsive-transformations~="denseReflow"] .horizontalFrame {
     grid-template-columns: 1fr;
   }
 
-  .anatomy_compact .media {
+  .card[data-responsive-transformations~="compactSimplify"] .media {
     grid-row: 2;
   }
 
-  .anatomy_horizontal .media img,
-  .anatomy_horizontal .mediaPlaceholder {
+  .card[data-responsive-transformations~="denseReflow"] .media img,
+  .card[data-responsive-transformations~="denseReflow"] .mediaPlaceholder {
     aspect-ratio: 4 / 3;
   }
 }
@@ -352,5 +366,16 @@
     border-color: color-mix(in srgb, var(--brand-color-accent) 35%, var(--brand-color-border));
     box-shadow: var(--brand-elevation-shadow, none);
     transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .actions button {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
   }
 }

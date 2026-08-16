@@ -34,25 +34,42 @@ export type StandaloneCatalogueSearchDiagnostics = Readonly<{
   eligibleProductCount: number;
   collectionMembershipCount: number;
   searchableValueCount: number;
+  indexBuildCount: number;
+  indexCacheEntryCount: number;
+  indexReused: boolean;
   termComparisonCount: number;
   normalizedTermCount: number;
   resultCount: number;
 }>;
 
 type DiagnosticsCounter = {
-  searchableValueCount: number;
   termComparisonCount: number;
 };
 
-type SearchCandidate = {
+type IndexedSearchCandidate = Readonly<{
   product: ProductDisplayModel;
   productId: string;
   catalogueIndex: number;
   routeIndex: number;
-  relevanceTier: number;
   normalizedTitle: string;
+  normalizedSku?: string;
+  titleTokens: readonly string[];
+  structuredTokens: readonly string[];
+  collectionTitleTokens: readonly string[];
+  supportingTokens: readonly string[];
+  allSearchableTokens: readonly string[];
   filterValues: Readonly<Record<StorefrontSearchFilterField, string | undefined>>;
-};
+  normalizedFilterValues: Readonly<Record<StorefrontSearchFilterField, string | undefined>>;
+}>;
+
+type SearchCandidate = IndexedSearchCandidate & Readonly<{ relevanceTier: number }>;
+
+type LocaleSearchIndex = Readonly<{
+  authorityFingerprint: string;
+  candidates: readonly IndexedSearchCandidate[];
+  collectionMembershipCount: number;
+  searchableValueCount: number;
+}>;
 
 const filterFields = ["brand", "category", "productType", "stockStatus"] as const;
 
@@ -150,38 +167,29 @@ function customerSearchableSupportingValue(value: string | undefined): string | 
   return provisionalSearchMarkers.some((marker) => folded.includes(marker)) ? undefined : folded;
 }
 
-function normalizedValues(
-  values: readonly (string | undefined)[],
-  diagnostics: DiagnosticsCounter,
-) {
+function normalizedValues(values: readonly (string | undefined)[]): string[] {
   return values.flatMap((value) => {
     if (!value) return [];
     const normalized = foldStorefrontSearchText(value);
     if (normalized === "") return [];
-    diagnostics.searchableValueCount += 1;
     return [normalized];
   });
 }
 
-function normalizedSupportingValues(
-  values: readonly (string | undefined)[],
-  diagnostics: DiagnosticsCounter,
-) {
+function normalizedSupportingValues(values: readonly (string | undefined)[]): string[] {
   return values.flatMap((value) => {
     const normalized = customerSearchableSupportingValue(value);
     if (!normalized) return [];
-    diagnostics.searchableValueCount += 1;
     return [normalized];
   });
 }
 
 function everyTermMatches(
   terms: readonly string[],
-  values: readonly string[],
+  tokens: readonly string[],
   diagnostics: DiagnosticsCounter,
   mode: "token" | "prefix",
 ): boolean {
-  const tokens = values.flatMap((value) => value.split(" "));
   return terms.every((term) => {
     for (const token of tokens) {
       diagnostics.termComparisonCount += 1;
@@ -194,36 +202,23 @@ function everyTermMatches(
 function relevanceTier({
   query,
   terms,
-  sku,
-  title,
-  structured,
-  collectionTitles,
-  supporting,
+  candidate,
   diagnostics,
 }: {
   query: string;
   terms: readonly string[];
-  sku: string | undefined;
-  title: string;
-  structured: readonly string[];
-  collectionTitles: readonly string[];
-  supporting: readonly string[];
+  candidate: IndexedSearchCandidate;
   diagnostics: DiagnosticsCounter;
 }): number | undefined {
-  if (sku === query) return 1;
-  if (title === query) return 2;
-  if (everyTermMatches(terms, [title], diagnostics, "token")) return 3;
-  if (everyTermMatches(terms, [title], diagnostics, "prefix")) return 4;
-  if (everyTermMatches(terms, structured, diagnostics, "prefix")) return 5;
-  if (everyTermMatches(terms, collectionTitles, diagnostics, "prefix")) return 6;
-  const allSearchableValues = [
-    title,
-    ...(sku ? [sku] : []),
-    ...structured,
-    ...collectionTitles,
-    ...supporting,
-  ];
-  return everyTermMatches(terms, allSearchableValues, diagnostics, "prefix") ? 7 : undefined;
+  if (candidate.normalizedSku === query) return 1;
+  if (candidate.normalizedTitle === query) return 2;
+  if (everyTermMatches(terms, candidate.titleTokens, diagnostics, "token")) return 3;
+  if (everyTermMatches(terms, candidate.titleTokens, diagnostics, "prefix")) return 4;
+  if (everyTermMatches(terms, candidate.structuredTokens, diagnostics, "prefix")) return 5;
+  if (everyTermMatches(terms, candidate.collectionTitleTokens, diagnostics, "prefix")) return 6;
+  return everyTermMatches(terms, candidate.allSearchableTokens, diagnostics, "prefix")
+    ? 7
+    : undefined;
 }
 
 function filterValue(product: ProductDisplayModel, field: StorefrontSearchFilterField) {
@@ -240,7 +235,7 @@ function matchesFilters(
   return filters.every(({ field, values }) => {
     const candidateValue = candidate.filterValues[field];
     if (!candidateValue) return false;
-    const normalizedCandidate = foldStorefrontSearchText(candidateValue);
+    const normalizedCandidate = candidate.normalizedFilterValues[field];
     return values.some((value) => foldStorefrontSearchText(value) === normalizedCandidate);
   });
 }
@@ -321,6 +316,107 @@ export function createStandaloneCatalogueProductSearchAdapter({
   const catalogueIndexByProductId = new Map(
     catalogue.products.map((product, index) => [product.id, index]),
   );
+  const localeIndexes = new Map<Locale, LocaleSearchIndex>();
+  let indexBuildCount = 0;
+
+  function buildLocaleIndex(
+    request: StorefrontSearchRequestV1,
+    authority: StorefrontSearchAuthorityV1,
+    authorityFingerprint: string,
+  ): LocaleSearchIndex {
+    const routeIndexByProductId = new Map(
+      authority.productRoutes.map(({ productId }, index) => [productId, index]),
+    );
+    const collectionTitlesByProductId = new Map<string, string[]>();
+    let collectionMembershipCount = 0;
+    if (authority.searchableFields.includes("collection-title")) {
+      for (const collection of catalogue.collections) {
+        const title = localized(collection.title, request, authority);
+        for (const productId of collection.productIds) {
+          collectionMembershipCount += 1;
+          if (!routeIndexByProductId.has(productId) || !title) continue;
+          const titles = collectionTitlesByProductId.get(productId) ?? [];
+          titles.push(title);
+          collectionTitlesByProductId.set(productId, titles);
+        }
+      }
+    }
+
+    const fields = new Set(authority.searchableFields);
+    let searchableValueCount = 0;
+    const candidates = authority.productRoutes.map(({ productId }) => {
+      const product = productById.get(productId)!;
+      const normalizedTitle = foldStorefrontSearchText(
+        localized(product.title, request, authority) ?? "",
+      );
+      searchableValueCount += 1;
+      const normalizedSku = fields.has("sku")
+        ? foldStorefrontSearchText(product.sku ?? "") || undefined
+        : undefined;
+      if (normalizedSku) searchableValueCount += 1;
+      const structured = normalizedValues([
+        fields.has("brand") ? product.brand : undefined,
+        fields.has("category") ? product.category : undefined,
+        fields.has("product-type") ? product.productType : undefined,
+      ]);
+      const collectionTitles = normalizedValues(
+        fields.has("collection-title") ? (collectionTitlesByProductId.get(productId) ?? []) : [],
+      );
+      const supporting = normalizedSupportingValues([
+        fields.has("localized-description")
+          ? localized(product.description, request, authority)
+          : undefined,
+        ...(fields.has("allowlisted-attributes")
+          ? authority.searchableAttributeKeys.flatMap((key) => {
+              const value = product.attributes[key];
+              return value === undefined ? [] : attributeValues(value);
+            })
+          : []),
+      ]);
+      searchableValueCount += structured.length + collectionTitles.length + supporting.length;
+      const filterValues = Object.fromEntries(
+        filterFields.map((field) => [field, filterValue(product, field)]),
+      ) as Readonly<Record<StorefrontSearchFilterField, string | undefined>>;
+      const normalizedFilterValues = Object.fromEntries(
+        filterFields.map((field) => {
+          const value = filterValues[field];
+          return [field, value ? foldStorefrontSearchText(value) : undefined];
+        }),
+      ) as Readonly<Record<StorefrontSearchFilterField, string | undefined>>;
+      const titleTokens = normalizedTitle.split(" ").filter(Boolean);
+      const structuredTokens = structured.flatMap((value) => value.split(" "));
+      const collectionTitleTokens = collectionTitles.flatMap((value) => value.split(" "));
+      const supportingTokens = supporting.flatMap((value) => value.split(" "));
+      return Object.freeze({
+        product,
+        productId,
+        catalogueIndex: catalogueIndexByProductId.get(productId)!,
+        routeIndex: routeIndexByProductId.get(productId)!,
+        normalizedTitle,
+        ...(normalizedSku ? { normalizedSku } : {}),
+        titleTokens: Object.freeze(titleTokens),
+        structuredTokens: Object.freeze(structuredTokens),
+        collectionTitleTokens: Object.freeze(collectionTitleTokens),
+        supportingTokens: Object.freeze(supportingTokens),
+        allSearchableTokens: Object.freeze([
+          ...titleTokens,
+          ...(normalizedSku ? normalizedSku.split(" ") : []),
+          ...structuredTokens,
+          ...collectionTitleTokens,
+          ...supportingTokens,
+        ]),
+        filterValues: Object.freeze(filterValues),
+        normalizedFilterValues: Object.freeze(normalizedFilterValues),
+      });
+    });
+    indexBuildCount += 1;
+    return Object.freeze({
+      authorityFingerprint,
+      candidates: Object.freeze(candidates),
+      collectionMembershipCount,
+      searchableValueCount,
+    });
+  }
 
   return {
     search(requestInput, authorityInput) {
@@ -395,6 +491,9 @@ export function createStandaloneCatalogueProductSearchAdapter({
           eligibleProductCount: authority.productRoutes.length,
           collectionMembershipCount: 0,
           searchableValueCount: 0,
+          indexBuildCount,
+          indexCacheEntryCount: localeIndexes.size,
+          indexReused: false,
           termComparisonCount: 0,
           normalizedTermCount: 0,
           resultCount: 0,
@@ -402,81 +501,27 @@ export function createStandaloneCatalogueProductSearchAdapter({
         return result;
       }
 
-      const routeIndexByProductId = new Map(
-        authority.productRoutes.map(({ productId }, index) => [productId, index]),
-      );
-      const collectionTitlesByProductId = new Map<string, string[]>();
-      let collectionMembershipCount = 0;
-      if (authority.searchableFields.includes("collection-title")) {
-        for (const collection of catalogue.collections) {
-          const title = localized(collection.title, request, authority);
-          for (const productId of collection.productIds) {
-            collectionMembershipCount += 1;
-            if (!routeIndexByProductId.has(productId) || !title) continue;
-            const titles = collectionTitlesByProductId.get(productId) ?? [];
-            titles.push(title);
-            collectionTitlesByProductId.set(productId, titles);
-          }
-        }
-      }
-
-      const fields = new Set(authority.searchableFields);
-      const diagnostics: DiagnosticsCounter = { searchableValueCount: 0, termComparisonCount: 0 };
+      const cachedIndex = localeIndexes.get(request.locale);
+      const index =
+        cachedIndex?.authorityFingerprint === authorityFingerprint
+          ? cachedIndex
+          : buildLocaleIndex(request, authority, authorityFingerprint);
+      const indexReused = index === cachedIndex;
+      if (!indexReused) localeIndexes.set(request.locale, index);
+      const diagnostics: DiagnosticsCounter = { termComparisonCount: 0 };
       const foldedQuery = foldStorefrontSearchText(normalized.normalizedQuery);
       const candidates: SearchCandidate[] = [];
-      for (const { productId } of authority.productRoutes) {
-        const product = productById.get(productId)!;
-        const title = foldStorefrontSearchText(localized(product.title, request, authority) ?? "");
-        diagnostics.searchableValueCount += 1;
-        const sku = fields.has("sku") ? foldStorefrontSearchText(product.sku ?? "") : undefined;
-        if (sku) diagnostics.searchableValueCount += 1;
-        const structured = normalizedValues(
-          [
-            fields.has("brand") ? product.brand : undefined,
-            fields.has("category") ? product.category : undefined,
-            fields.has("product-type") ? product.productType : undefined,
-          ],
-          diagnostics,
-        );
-        const collectionTitles = normalizedValues(
-          fields.has("collection-title") ? (collectionTitlesByProductId.get(productId) ?? []) : [],
-          diagnostics,
-        );
-        const supporting = normalizedSupportingValues(
-          [
-            fields.has("localized-description")
-              ? localized(product.description, request, authority)
-              : undefined,
-            ...(fields.has("allowlisted-attributes")
-              ? authority.searchableAttributeKeys.flatMap((key) => {
-                  const value = product.attributes[key];
-                  return value === undefined ? [] : attributeValues(value);
-                })
-              : []),
-          ],
-          diagnostics,
-        );
+      for (const indexedCandidate of index.candidates) {
         const tier = relevanceTier({
           query: foldedQuery,
           terms: normalized.normalizedTerms,
-          sku,
-          title,
-          structured,
-          collectionTitles,
-          supporting,
+          candidate: indexedCandidate,
           diagnostics,
         });
         if (tier === undefined) continue;
         candidates.push({
-          product,
-          productId,
-          catalogueIndex: catalogueIndexByProductId.get(productId)!,
-          routeIndex: routeIndexByProductId.get(productId)!,
+          ...indexedCandidate,
           relevanceTier: tier,
-          normalizedTitle: title,
-          filterValues: Object.fromEntries(
-            filterFields.map((field) => [field, filterValue(product, field)]),
-          ) as Readonly<Record<StorefrontSearchFilterField, string | undefined>>,
         });
       }
 
@@ -505,8 +550,11 @@ export function createStandaloneCatalogueProductSearchAdapter({
       onDiagnostics?.({
         catalogueProductCount: catalogue.products.length,
         eligibleProductCount: authority.productRoutes.length,
-        collectionMembershipCount,
-        searchableValueCount: diagnostics.searchableValueCount,
+        collectionMembershipCount: index.collectionMembershipCount,
+        searchableValueCount: index.searchableValueCount,
+        indexBuildCount,
+        indexCacheEntryCount: localeIndexes.size,
+        indexReused,
         termComparisonCount: diagnostics.termComparisonCount,
         normalizedTermCount: normalized.normalizedTerms.length,
         resultCount: sorted.length,

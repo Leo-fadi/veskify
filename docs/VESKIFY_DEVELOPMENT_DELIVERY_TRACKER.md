@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 15 August 2026, P10B-16P-06 canonical search query/results adapter                                                  |
+| Baseline                    | 16 August 2026, P10B-17 responsive, accessibility and performance closure                                           |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -65,7 +65,7 @@ required evidence are accepted.
 | ☑    | P10B-16P-04  | Live V2 acceptance and bridge disposition            | **Baseline** | Provider acceptance/architecture     | P10B-16P-03                               | Safe 16-call ledger; final A/B/C; C full lifecycle; protected commerce/media; Deprecated P10B-16L                                                                  |
 | ☑    | P10B-16P-05A | Active production-path and compiler rationalisation  | **Baseline** | Generation route/compiler            | P10B-16P-04                               | One semantic initial-generation composition; one coordinator/resolver/decision/executor chain; A/B/C replay; migration/publication/protected-state regressions     |
 | ☑    | P10B-16P-06  | Canonical search query/results adapter               | **Baseline** | Search runtime/commerce presentation | P10B-16P-05A and dynamic-search authority | Transient exact canonical query/results; ranking/filter/pagination; lifecycle non-persistence; EN/FI browser and publication evidence; protected commerce/media    |
-| ☐    | P10B-17      | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA                 | P10B-16P-06 and implemented families      | Four-width EN/FI geometry, a11y, performance and visual evidence                                                                                                   |
+| ☑    | P10B-17      | Responsive, accessibility and performance closure    | **Baseline** | Design system and QA                 | P10B-16P-06 and implemented families      | Registered transformations; four-width EN/FI geometry; keyboard/semantic/contrast; bounded performance/build budgets; browser and retained human visual evidence   |
 | ☐    | P10B-18      | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA        | All prior P10B tasks                      | 100+ configurations and fingerprint-stratified human review                                                                                                        |
 | ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Planned**  | Generation architecture/evidence     | P10B-16P-05A and P10B-18                  | Consumer-proven removal/archival of remaining historical scaffolding with migration and evidence retention                                                         |
 
@@ -173,15 +173,15 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
-P10B-16P-02 is **Baseline**. P10B-16P-05B, P10B-17, and P10B-18 remain **Planned**. P10B-16P-04 acceptance evidence is retained
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
+P10B-16P-02 is **Baseline**. P10B-16P-05B and P10B-18 remain **Planned**. P10B-16P-04 acceptance evidence is retained
 in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-16P-05B follows P10B-18 as the final consumer-verified historical cleanup. P10B-17 is the next
+P10B-16P-05B follows P10B-18 as the final consumer-verified historical cleanup. P10B-18 is the next
 focused product task.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -617,10 +617,12 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   proposal through normal Storefront Studio. Prompt A and Prompt B were rejected without draft or
   history mutation. Prompt C passed Accept, exact Undo/Redo, Save, reload, and normal Preview with
   no publication. The three results were materially distinct, retained human visual acceptance,
-  and preserved protected commerce and canonical product media. Search presentation remains
-  registered while execution fails closed. P10B-16L is **Deprecated compatibility-only**; its
-  active runtime is removed under P10B-16P-05A while historical evidence and required neutral
-  migration/safety fixtures remain.
+  and preserved protected commerce and canonical product media. At the P10B-16P-04 acceptance
+  point, search presentation remained registered while execution failed closed. P10B-16P-06 later
+  supplied the current canonical transient query/results execution; that later capability does not
+  alter the P10B-16P-04 call ledger, provider evidence, or acceptance result. P10B-16L is
+  **Deprecated compatibility-only**; its active runtime is removed under P10B-16P-05A while
+  historical evidence and required neutral migration/safety fixtures remain.
 - **Evidence:** Real-provider, contract/schema, deterministic unit, integration, browser/E2E, and
   retained human visual review correlated through safe provider/model, authority, semantic intent,
   compiled-decision, structural, candidate-snapshot, lifecycle, usage, and latency fingerprints.
@@ -686,24 +688,31 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   evidence dependency; final removal preserves historical records and all valid snapshots/artifacts.
 - **Non-goal:** Deleting P10B-18 visual fixtures or compatibility data before their removal gate.
 
-P10B-17 is the next focused product task. P10B remains Partial; P10B-18 and the P10B-16P-05B final
-historical cleanup remain Planned.
+P10B-17 is Baseline. P10B remains Partial; P10B-18 is the next focused product task and the
+P10B-16P-05B final historical cleanup remains Planned after P10B-18.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
 - **Outcome:** Preserve deliberate commercial hierarchy and usability across target widths,
   locales, accessibility, and bounded performance budgets.
+- **Status:** **Baseline**. Completed 16 August 2026 with zero provider or Vesko calls.
 - **Authority:** Existing responsive/a11y contracts, registered transformations, renderers, and
   evidence protocol.
 - **Depends on:** P10B-16P-06 and implemented commercial families/profiles/directions.
-- **Done when:** All supported page families/directions pass 375/768/1024/1440 and EN/FI geometry,
-  declared transformations, keyboard/focus/semantics/contrast, content/commerce retention, and
-  explicit performance budgets with correlated evidence.
+- **Done:** Retained Premium Editorial, Modern Technical, Minimal Commerce, neutral, and commerce-
+  integrity authority executes through the existing renderers at 375/768/1024/1440 and EN/FI.
+  Registered navigation, disclosure, stack/reflow, media, merchandising, purchase-flow, content,
+  utility, search, and footer transformations preserve content, protected commerce, and canonical
+  product media. Keyboard/focus, landmark/heading/form/control semantics, announcements, contrast,
+  touch targets, reduced motion, and locale expansion pass the bounded acceptance matrix.
 - **Fail closed:** Clipping, overlap, inaccessible controls, lost content/commerce, desktop-only
   approval, or undispositioned budget failure blocks completion.
-- **Evidence:** Automated geometry/a11y/performance/browser matrices plus retained representative
-  human review.
-- **Non-goal:** Visual approval from isolated component screenshots.
+- **Evidence:** Automated geometry, accessibility, performance, build-budget, lifecycle-renderer,
+  and browser matrices plus retained representative four-width human visual review correlated to
+  current authority and protected commerce/media fingerprints.
+- **Non-goal:** P10B-18 designer-grade commercial quality or 100+ scale, Vesko integration/staging,
+  production authentication/performance/readiness, or visual approval from isolated component
+  screenshots.
 
 #### P10B-18 — Commercial quality and scale gate
 

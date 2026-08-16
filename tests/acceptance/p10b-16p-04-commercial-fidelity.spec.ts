@@ -608,7 +608,7 @@ async function capturePreviewSurface(input: {
   });
 }
 
-async function captureDirectSearchFailure(input: {
+async function captureCanonicalProposalSearchResults(input: {
   page: Page;
   width: 375 | 1440;
   selection: SafeSelection;
@@ -618,32 +618,100 @@ async function captureDirectSearchFailure(input: {
   await input.page.setViewportSize({ width: input.width, height: 900 });
   const query = new URLSearchParams({
     "p10b-16p-04-proposal": input.snapshotFingerprint,
+    locale: "en",
+    q: "925",
   });
   await input.page.goto(`/projects/${projectId}/search?${query.toString()}`, {
     waitUntil: "domcontentloaded",
     timeout: 120_000,
   });
-  await expect(
-    input.page.getByRole("heading", { name: /Storefront could not be displayed/i }),
-  ).toBeVisible();
-  const customerCopy = await input.page.locator("main").innerText();
-  expect(customerCopy).not.toMatch(/\bVesko\b/iu);
-  expect(customerCopy).toMatch(/Return to store|Continue shopping/i);
-  return captureP10B16P04EvidenceRegion({
+  await expect(input.page).toHaveURL((url) => {
+    return (
+      url.pathname === `/projects/${projectId}/search` &&
+      url.searchParams.get("locale") === "en" &&
+      url.searchParams.get("q") === "925" &&
+      url.searchParams.get("p10b-16p-04-proposal") === input.snapshotFingerprint
+    );
+  });
+  const root = input.page.locator(".project-preview__storefront");
+  await expect(root).toHaveCount(1);
+  await expect(root).toBeVisible({ timeout: 60_000 });
+  const search = root.locator('[data-component="dynamicCollectionCommerce"]');
+  await expect(search).toHaveCount(1);
+  await expect(search).toHaveAttribute("data-search-context", "transient-canonical-results");
+  await expect(search.locator("[data-card-anatomy]")).toHaveCount(2);
+  return captureStandaloneStorefrontDocument({
     page: input.page,
-    region: input.page.locator("main"),
+    root,
     evidenceDirectory,
     identity: {
-      logicalCaptureId: `search-runtime-fail-closed-${input.width}`,
+      logicalCaptureId: `search-runtime-results-${input.width}`,
       width: input.width,
-      surface: "search-runtime-fail-closed",
+      surface: "search-runtime-results",
       locale: commercialAcceptance.locale,
-      representativeContext: { kind: "search", id: "search", route: "/search" },
+      representativeContext: {
+        kind: "search",
+        id: "search-925",
+        route: "/search?locale=en&q=925",
+      },
       snapshotFingerprint: input.snapshotFingerprint,
       proposalFingerprint: input.proposalFingerprint,
-      rendererMode: "search-runtime-fail-closed",
+      rendererMode: "search-runtime-results",
       selectedFrame: input.selection.sharedFrame.profileId,
       selectedProfileOrArchetype: input.selection.dynamicCommerce.searchArchetypeId,
+    },
+    assertDocument: async (storefront) => {
+      expect(
+        await storefront.evaluate((element) => element.ownerDocument.documentElement.lang),
+      ).toBe("en");
+      const header = storefront.locator('[data-frame-region="header"]');
+      const footer = storefront.locator('[data-frame-region="footer"]');
+      await expect(header).toHaveCount(1);
+      await expect(footer).toHaveCount(1);
+      await expect(header).toBeVisible();
+      await expect(footer).toBeVisible();
+      await expect(header).toHaveAttribute(
+        "data-frame-profile",
+        input.selection.sharedFrame.profileId,
+      );
+      await expect(footer).toHaveAttribute(
+        "data-frame-profile",
+        input.selection.sharedFrame.profileId,
+      );
+      await expect(header.locator(".store-brand").first()).toBeVisible();
+      await expect(header.locator("nav a")).not.toHaveCount(0);
+      await expect(footer.locator("nav a")).not.toHaveCount(0);
+
+      const searchRoot = storefront.locator('[data-component="dynamicCollectionCommerce"]');
+      await expect(searchRoot).toHaveCount(1);
+      await expect(searchRoot).toHaveAttribute(
+        "data-search-context",
+        "transient-canonical-results",
+      );
+      await expect(
+        searchRoot.getByRole("heading", { level: 1, name: "Search results", exact: true }),
+      ).toBeVisible();
+      await expect(searchRoot.locator('[data-search-state="results"]')).toHaveAttribute(
+        "data-search-result-count",
+        "2",
+      );
+      const searchboxes = storefront.getByRole("searchbox", { name: "Search products" });
+      expect(await searchboxes.count()).toBeGreaterThan(0);
+      for (const searchbox of await searchboxes.all()) await expect(searchbox).toHaveValue("925");
+
+      const cards = searchRoot.locator("[data-card-anatomy]");
+      await expect(cards).toHaveCount(2);
+      expect(
+        await cards.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("data-product-id")),
+        ),
+      ).toEqual(["product_aava_necklace_925", "product_meri_bracelet_925"]);
+      for (const card of await cards.all()) {
+        await expect(card.locator('[data-card-region="heading"]')).toBeVisible();
+        await expect(card.locator('[data-card-region="price"]')).toBeVisible();
+        await expect(card.locator('[data-card-region="media"] img')).toBeVisible();
+        await expect(card.locator('[data-card-region="actions"] button')).toBeVisible();
+      }
     },
   });
 }
@@ -774,9 +842,6 @@ test("Aurum proposal retains complete commercial visual evidence", async ({
       retained.protectedCommerceBeforeFingerprint,
     );
     expect(retained.protectedMediaAfterFingerprint).toBe(retained.protectedMediaBeforeFingerprint);
-    expect(retained.selection.dynamicCommerce.searchExecution).toBe(
-      "registered-presentation-fail-closed-runtime",
-    );
     if (acceptanceCase === "prompt-a") {
       assertSelectedPremiumAuthority(retained.selection);
     } else if (acceptanceCase === "prompt-b") {
@@ -977,7 +1042,7 @@ test("Aurum proposal retains complete commercial visual evidence", async ({
       })),
     );
     evidence.push(
-      ...(await captureDirectSearchFailure({
+      ...(await captureCanonicalProposalSearchResults({
         page: isolatedPage,
         width: 1440,
         selection,

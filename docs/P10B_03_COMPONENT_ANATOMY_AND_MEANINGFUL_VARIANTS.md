@@ -199,3 +199,18 @@ P10B-05 remains Planned and owns site-map, page-family, and PageBlueprint profil
 P10B-04 and P10B-06 through P10B-18 remain Planned. Later component/profile tasks must use this
 contract to promote only evidenced structural variants and then supply all-target rendering,
 responsive accessibility, performance, scale, and retained human commercial-quality evidence.
+
+## Current P10B-17 continuation
+
+P10B-17 adds one renderer-facing `responsive-execution-v1` projection derived directly from each
+existing commercial anatomy, selected meaningful variant, and its registered breakpoint list. It
+emits deterministic transformation and breakpoint fingerprints for homepage, collection, PDP,
+content/support, and utility renderers; the singleton card family exposes the equivalent
+breakpoint-scoped IDs directly from its anatomy. An unknown variant or missing anatomy still fails
+closed. CSS executes only the transformation IDs registered for the active breakpoint, so this is
+not a second anatomy, breakpoint vocabulary, component registry, or responsive authority.
+
+The same continuation enforces the existing semantic accessibility contracts through labelled
+regions, bounded controls, paired focus roles, live-state semantics, and reduced-motion behavior.
+It changes no snapshot, commerce, or media authority. P10B-18 remains responsible for repeated
+commercial-quality and scale evidence beyond these registered variants.

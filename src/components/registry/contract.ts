@@ -29,6 +29,10 @@ export type StorefrontRenderContext = {
   brandSystem: BrandSystem;
   pagePaths: Readonly<Record<string, string>>;
   homePath?: string;
+  /** Transient server/adapter-owned identity for the page currently being rendered. */
+  currentPageId?: string;
+  /** Canonical projected path for `currentPageId`; never inferred from browser state. */
+  currentPagePath?: string;
   renderTarget?: "editor" | "preview" | "published";
   /** Current, externally resolved proof authority. Snapshot content never establishes approval. */
   evidenceReferences?: readonly PageFactEvidenceReference[];
@@ -41,6 +45,25 @@ export type StorefrontRenderContext = {
   /** Current, externally resolved support facts. Snapshot sections carry only document IDs. */
   contentSupportFactDocuments?: readonly ContentSupportFactDocument[];
 };
+
+export const storefrontMainContentId = "storefront-main-content";
+
+/**
+ * Binds current-page presentation authority at the renderer boundary. The
+ * snapshot remains canonical; this context is transient and derived only from
+ * the already-authoritative page/path projection.
+ */
+export function withCurrentStorefrontPage(
+  context: StorefrontRenderContext,
+  page: Pick<PageModel, "id">,
+): StorefrontRenderContext {
+  const currentPagePath = context.pagePaths[page.id];
+  return {
+    ...context,
+    currentPageId: page.id,
+    ...(currentPagePath ? { currentPagePath } : {}),
+  };
+}
 
 /** Resolves only canonical snapshot navigation and commerce identities to routes. */
 export function resolveStorefrontNavigationPath(

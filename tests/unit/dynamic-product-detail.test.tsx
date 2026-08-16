@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
+  PDP_PRESENTED_MEDIA_LIMIT,
+  PDP_PRESENTED_RELATED_PRODUCT_LIMIT,
   dynamicProductDetailComponentByTarget,
   renderDynamicProductDetail,
   type DynamicProductDetailRendererInput,
@@ -732,15 +734,62 @@ describe("P6-02 dynamic product-detail component family", () => {
     ]);
 
     const watch = render(renderDynamicProductDetail(rendererInput(watchProduct)));
-    expect(watch.container.querySelector("[data-responsive-layout]")).toHaveAttribute(
-      "data-responsive-layout",
-      "content-driven",
-    );
+    const watchRoot = watch.container.querySelector("[data-responsive-layout]");
+    expect(watchRoot).toHaveAttribute("data-responsive-layout", "content-driven");
+    expect(watchRoot).toHaveAttribute("data-presentation-mode", "standardCommercePdp");
+    expect(watchRoot).toHaveAttribute("data-responsive-tablet", "pdpStandardStack");
     watch.unmount();
-    const ring = render(renderDynamicProductDetail(rendererInput(ringProduct)));
-    expect(ring.container.querySelector("[data-responsive-layout]")).toHaveAttribute(
-      "data-responsive-layout",
-      "content-driven",
+    const editorialInput = rendererInput(ringProduct);
+    editorialInput.instance = instance(ringProduct, {
+      variant: "editorialSplit",
+      content: dynamicProductDetailDefaultContent,
+    });
+    const ring = render(renderDynamicProductDetail(editorialInput));
+    const ringRoot = ring.container.querySelector("[data-responsive-layout]");
+    expect(ringRoot).toHaveAttribute("data-responsive-layout", "content-driven");
+    expect(ringRoot).toHaveAttribute("data-presentation-mode", "highConsiderationPdp");
+    expect(ringRoot).toHaveAttribute("data-responsive-tablet", "pdpHighConsiderationReflow");
+    const css = readFileSync("src/components/storefront/dynamic-product-detail.module.css", "utf8");
+    expect(css).toContain("@media (min-width: 48rem) and (max-width: 63.999rem)");
+    expect(css).toContain('[data-responsive-tablet~="pdpHighConsiderationReflow"]');
+    expect(css).toContain(
+      '.root[data-presentation-mode="highConsiderationPdp"] .highConsiderationLayout',
+    );
+    expect(css).toContain(
+      '.root[data-responsive-tablet~="pdpStandardStack"] .media_contained .primaryImage {\n    height: min(28rem, 58vh);\n    max-height: none;',
+    );
+    expect(css).toContain(
+      '@media (min-width: 75rem) {\n  .root[data-presentation-mode="highConsiderationPdp"]',
+    );
+    expect(css).toContain(
+      '.relatedGrid[data-related-product-count="1"],\n  .relatedGrid[data-related-product-count="2"] {\n    grid-template-columns: repeat(2, minmax(0, 1fr));',
+    );
+    expect(css).toContain(
+      '@media (min-width: 64rem) and (max-width: 79.999rem) {\n  .root[data-presentation-mode="highConsiderationPdp"] .highConsiderationDecision {\n    padding-inline: min(var(--brand-page-gutter, 5rem), clamp(2rem, 5vw, 5rem));\n  }\n}',
+    );
+    const desktopBreakpoint = css.indexOf("@media (min-width: 64rem) {");
+    const relatedTwoColumnRule = css.indexOf(
+      '.relatedGrid[data-related-product-count="1"]',
+      desktopBreakpoint,
+    );
+    const transitionalBreakpoint = css.indexOf(
+      "@media (min-width: 64rem) and (max-width: 79.999rem)",
+    );
+    const wideBreakpoint = css.indexOf("@media (min-width: 75rem)");
+    expect(relatedTwoColumnRule).toBeGreaterThan(desktopBreakpoint);
+    expect(relatedTwoColumnRule).toBeLessThan(transitionalBreakpoint);
+    expect(transitionalBreakpoint).toBeLessThan(wideBreakpoint);
+    expect(css).toContain(
+      '.relatedGrid[data-related-product-count="3"] {\n    grid-template-columns: repeat(3, minmax(0, 1fr));',
+    );
+    expect(css).toContain(
+      '.relatedGrid[data-related-product-count="4"] {\n    grid-template-columns: repeat(4, minmax(0, 1fr));',
+    );
+    expect(css.indexOf('.relatedGrid[data-related-product-count="4"]')).toBeGreaterThan(
+      css.indexOf("@media (min-width: 75rem)"),
+    );
+    expect(css).not.toMatch(
+      /@media \(min-width: 48rem\)\s*\{[\s\S]*?\.productCore\s*\{[^}]*grid-template-columns/,
     );
   });
 
@@ -774,6 +823,93 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(gallery).toHaveAttribute("data-presented-media-count", "1");
     expect(screen.queryByRole("group", { name: "Choose product image" })).not.toBeInTheDocument();
     expect(canonicalValueString(ringProduct.media)).toBe(before);
+  });
+
+  it("bounds the transient gallery to eight, offers only alternate image actions, and preserves media", async () => {
+    const galleryProduct: ProductPresentationContext = {
+      ...structuredClone(ringProduct),
+      media: Array.from({ length: 10 }, (_, index) => ({
+        assetId: `asset_ring_gallery_${index + 1}`,
+        role: index === 0 ? ("main" as const) : ("alternative" as const),
+        alt: localized(`Gallery view ${index + 1}`),
+      })),
+    };
+    const input = rendererInput(galleryProduct);
+    input.projection = {
+      ...(input.projection as Record<string, unknown>),
+      products: [galleryProduct, relatedRing],
+      assets: [
+        ...galleryProduct.media.map((media) =>
+          asset(
+            media.assetId,
+            media.role === "main" ? "productMainImage" : "productAlternativeImage",
+          ),
+        ),
+        ...allAssets.filter(({ assetId }) =>
+          ["asset_stone_diamond", "asset_stone_sapphire", "asset_related_ring"].includes(assetId),
+        ),
+      ],
+    };
+    const before = canonicalValueString(galleryProduct.media);
+    const { container } = render(renderDynamicProductDetail(input));
+    const gallery = container.querySelector('[aria-label="Product gallery"]');
+    const primaryImage = gallery?.querySelector("figure img");
+    const thumbnails = screen.getByRole("group", { name: "Choose product image" });
+
+    expect(PDP_PRESENTED_MEDIA_LIMIT).toBe(8);
+    expect(gallery).toHaveAttribute("data-canonical-media-count", "10");
+    expect(gallery).toHaveAttribute("data-resolved-media-count", "10");
+    expect(gallery).toHaveAttribute("data-presented-media-count", "8");
+    expect(primaryImage).toHaveAttribute("fetchpriority", "high");
+    const thumbnailButtons = within(thumbnails).getAllByRole("button");
+    expect(thumbnailButtons).toHaveLength(7);
+    thumbnailButtons.forEach((button) => expect(button).not.toHaveAttribute("aria-pressed"));
+    expect(
+      within(thumbnails).queryByRole("button", { name: "View product image 1" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(within(thumbnails).getByRole("button", { name: "View product image 2" }));
+    expect(within(thumbnails).getAllByRole("button")).toHaveLength(7);
+    expect(
+      within(thumbnails).getByRole("button", { name: "View product image 1" }),
+    ).not.toHaveAttribute("aria-pressed");
+    expect(
+      within(thumbnails).queryByRole("button", { name: "View product image 2" }),
+    ).not.toBeInTheDocument();
+    within(thumbnails)
+      .getAllByRole("img")
+      .forEach((image) => expect(image).toHaveAttribute("fetchpriority", "low"));
+    expect(canonicalValueString(galleryProduct.media)).toBe(before);
+  });
+
+  it("bounds related merchandising to eight while retaining canonical authority", () => {
+    const relatedProducts = Array.from({ length: 10 }, (_, index) => ({
+      ...structuredClone(relatedRing),
+      productId: `product_related_${index + 1}`,
+      sku: `RELATED-${index + 1}`,
+      title: localized(`Related product ${index + 1}`),
+      media: [],
+      revision: `product-rev-related-${index + 1}`,
+    }));
+    const primaryProduct: ProductPresentationContext = {
+      ...structuredClone(ringProduct),
+      relatedProductIds: relatedProducts.map(({ productId }) => productId),
+    };
+    const input = rendererInput(primaryProduct);
+    input.projection = {
+      ...(input.projection as Record<string, unknown>),
+      products: [primaryProduct, ...relatedProducts],
+    };
+    const before = canonicalValueString({ primaryProduct, relatedProducts });
+    const { container } = render(renderDynamicProductDetail(input));
+    const relatedGrid = container.querySelector("[data-canonical-related-product-count]");
+
+    expect(PDP_PRESENTED_RELATED_PRODUCT_LIMIT).toBe(8);
+    expect(relatedGrid).toHaveAttribute("data-canonical-related-product-count", "10");
+    expect(relatedGrid).toHaveAttribute("data-presented-related-product-count", "8");
+    expect(relatedGrid?.querySelectorAll("article[data-card-anatomy]")).toHaveLength(8);
+    expect(screen.getByRole("heading", { name: "Related product 8" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Related product 9" })).not.toBeInTheDocument();
+    expect(canonicalValueString({ primaryProduct, relatedProducts })).toBe(before);
   });
 
   it("keeps high-consideration identity and actions in one opening purchase region", () => {
@@ -865,6 +1001,62 @@ describe("P6-02 dynamic product-detail component family", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
     expect(onPrimaryAction).not.toHaveBeenCalled();
+  });
+
+  it("marks incomplete required option groups invalid without inventing validation state", () => {
+    const input = rendererInput(watchProduct, {
+      primaryAction: {
+        enabled: false,
+        state: "incomplete",
+        message: localized("Choose the required options."),
+      },
+    });
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      selectedValues: [],
+      incompleteRequiredGroupIds: ["colour"],
+      canAddToCart: false,
+    };
+
+    render(renderDynamicProductDetail(input));
+    expect(screen.getByRole("group", { name: /colour/i })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Required selection")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  });
+
+  it("announces pending and failed resolution states with exact busy semantics", () => {
+    const pending = render(
+      renderDynamicProductDetail(
+        rendererInput(watchProduct, {
+          resolutionLifecycle: {
+            state: "pending",
+            message: localized("Updating product options."),
+            warnings: [],
+          },
+        }),
+      ),
+    );
+    expect(
+      pending.container.querySelector('[data-component="dynamicProductDetail"]'),
+    ).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByRole("button", { name: "silver" })).toBeDisabled();
+    pending.unmount();
+
+    render(
+      renderDynamicProductDetail(
+        rendererInput(watchProduct, {
+          resolutionLifecycle: {
+            state: "failure",
+            message: localized("Product options could not be updated."),
+            warnings: [],
+          },
+        }),
+      ),
+    );
+    expect(screen.getByRole("alert")).toHaveAttribute("aria-live", "assertive");
+    expect(screen.getByRole("alert")).not.toHaveAttribute("aria-busy");
   });
 
   it("honours supplied unavailable-combination state and never resolves combinations in React", () => {

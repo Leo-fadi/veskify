@@ -17,6 +17,7 @@ import {
   type Locale,
   type LocalizedText,
 } from "@/domain/shared";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
   dynamicCollectionCommerceContentSchema,
   dynamicCollectionCommercePropsSchema,
@@ -30,7 +31,14 @@ import {
 import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-collection-commerce.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
-import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
+import {
+  ResponsiveStorefrontImage,
+  type StorefrontImageLoadingRole,
+} from "./responsive-storefront-image";
+import {
+  resolveResponsiveExecutionAuthority,
+  responsiveExecutionDataAttributes,
+} from "./responsive-execution";
 import { CanonicalProductCard } from "./canonical-product-card";
 import type { CanonicalProductCardContext } from "@/domain/product-card";
 import {
@@ -306,6 +314,12 @@ export function validateDynamicCollectionCommerceRoutePresentation(
     throw new Error("The collection renderer requires a dynamicCollectionCommerce instance.");
   }
   const projection = componentProjectionContextSchema.parse(projectionInput);
+  const productsById = new Map(
+    projection.products.map((product) => [product.productId, product] as const),
+  );
+  const collectionsById = new Map(
+    projection.collections.map((collection) => [collection.collectionId, collection] as const),
+  );
   const collectionBinding = instance.bindings.find(
     (binding) => binding.slotId === "primaryCollection" && binding.source === "collection",
   );
@@ -347,7 +361,7 @@ export function validateDynamicCollectionCommerceRoutePresentation(
       throw new Error("Search product projection must contain only the exact current result page.");
     }
     const products = productBinding.productIds.map((productId) => {
-      const product = projection.products.find((candidate) => candidate.productId === productId);
+      const product = productsById.get(productId);
       if (!product) throw new Error(`Unknown search product: ${productId}.`);
       return product;
     });
@@ -381,9 +395,7 @@ export function validateDynamicCollectionCommerceRoutePresentation(
   if (collectionBinding?.source !== "collection") {
     throw new Error("The collection renderer requires one canonical collection binding.");
   }
-  const collection = projection.collections.find(
-    (candidate) => candidate.collectionId === collectionBinding.collectionId,
-  );
+  const collection = collectionsById.get(collectionBinding.collectionId);
   if (!collection) throw new Error(`Unknown collection: ${collectionBinding.collectionId}.`);
   if (!arraysEqual(productBinding.productIds, collection.productIds)) {
     throw new Error(
@@ -391,7 +403,7 @@ export function validateDynamicCollectionCommerceRoutePresentation(
     );
   }
   const products = productBinding.productIds.map((productId) => {
-    const product = projection.products.find((candidate) => candidate.productId === productId);
+    const product = productsById.get(productId);
     if (!product) throw new Error(`Unknown collection product: ${productId}.`);
     return product;
   });
@@ -407,9 +419,7 @@ export function validateDynamicCollectionCommerceRoutePresentation(
   const childCollections =
     childBinding?.source === "collectionList"
       ? childBinding.collectionIds.map((collectionId) => {
-          const child = projection.collections.find(
-            (candidate) => candidate.collectionId === collectionId,
-          );
+          const child = collectionsById.get(collectionId);
           if (!child) throw new Error(`Unknown child collection: ${collectionId}.`);
           return child;
         })
@@ -527,11 +537,36 @@ function prepareDynamicCollectionCommerce(
       };
 }
 
-function CommerceImage({ resolved, locale }: { resolved: ResolvedAsset; locale: LocaleContext }) {
+function collectionAnatomyIdentity(variantId: DynamicCollectionCommerceVariant) {
+  const anatomy = veskifyComponentRegistryV2.get("dynamicCollectionCommerce").commercialAnatomy;
+  if (!anatomy) throw new Error("Dynamic collection commerce requires registered anatomy.");
+  const variant = anatomy.variants.find((candidate) => candidate.variantId === variantId);
+  if (!variant) throw new Error(`Missing collection anatomy variant: ${variantId}.`);
+  const responsive = resolveResponsiveExecutionAuthority(anatomy, variantId);
+  return {
+    presentationMode: variant.structure.presentationMode,
+    responsiveAttributes: responsiveExecutionDataAttributes(responsive),
+  };
+}
+
+function CommerceImage({
+  resolved,
+  locale,
+  loadingRole = "content",
+}: {
+  resolved: ResolvedAsset;
+  locale: LocaleContext;
+  loadingRole?: StorefrontImageLoadingRole;
+}) {
   const alt =
     resolved.asset.decorative || !resolved.asset.alt ? "" : text(resolved.asset.alt, locale);
   return (
-    <ResponsiveStorefrontImage alt={alt} asset={resolved.asset} authority={resolved.artDirection} />
+    <ResponsiveStorefrontImage
+      alt={alt}
+      asset={resolved.asset}
+      authority={resolved.artDirection}
+      loadingRole={loadingRole}
+    />
   );
 }
 
@@ -645,7 +680,11 @@ function CollectionHeader({
             data-asset-provenance={image.provenance.kind}
             data-asset-role={image.role}
           >
-            <CommerceImage locale={locale} resolved={image} />
+            <CommerceImage
+              loadingRole={input.variant === "campaignLedDiscovery" ? "content" : "primary"}
+              locale={locale}
+              resolved={image}
+            />
           </figure>
         ) : null}
       </div>
@@ -707,7 +746,7 @@ function CampaignLead({
       data-asset-role={image.role}
     >
       <figure>
-        <CommerceImage locale={locale} resolved={image} />
+        <CommerceImage loadingRole="primary" locale={locale} resolved={image} />
       </figure>
     </section>
   );
@@ -734,11 +773,13 @@ function SearchResultsContext({
   }
   return (
     <p
+      aria-atomic="true"
       aria-live="polite"
       className={styles.searchContext}
       data-search-query={input.search.normalizedQuery}
       data-search-result-count={count}
       data-search-state="results"
+      role="status"
     >
       {fallback("Search results for", "Hakutulokset haulle", locale)}{" "}
       <strong>“{input.search.normalizedQuery}”</strong>: {count}{" "}
@@ -757,7 +798,7 @@ function SearchZeroResults({
   if (input.search.state === "empty-query") {
     return (
       <div className={styles.emptyState} data-search-empty-query="true">
-        <h3>{fallback("Search products", "Hae tuotteita", locale)}</h3>
+        <h2>{fallback("Search products", "Hae tuotteita", locale)}</h2>
         <p>
           {fallback(
             "Enter a product name or detail to begin.",
@@ -774,7 +815,7 @@ function SearchZeroResults({
       data-search-zero-results="true"
       data-search-query={input.search.normalizedQuery}
     >
-      <h3>{fallback("No results found", "Hakutuloksia ei löytynyt", locale)}</h3>
+      <h2>{fallback("No results found", "Hakutuloksia ei löytynyt", locale)}</h2>
       <p>
         {fallback("No products match", "Tuotteita ei löytynyt haulla", locale)} “
         {input.search.normalizedQuery}”.
@@ -1043,6 +1084,9 @@ function CollectionFilters({
   locale: LocaleContext;
 }) {
   const [showAllFilters, setShowAllFilters] = useState(false);
+  const [disclosureOpen, setDisclosureOpen] = useState(false);
+  const filterPanelId = useId();
+  const filterGroupsId = useId();
   const filters = input.collection.filters.filter(collectionFilterIsEligible);
   if (filters.length === 0) return null;
   const activeFilters = filters.filter(collectionFilterIsSelected);
@@ -1071,19 +1115,30 @@ function CollectionFilters({
       data-layout-region="filters"
       data-primary-filter-count={Math.min(filters.length, PRIMARY_COLLECTION_FILTER_LIMIT)}
     >
-      <details
+      <div
         className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
         data-filter-panel-mode="disclosure"
       >
-        <summary>
+        <button
+          aria-controls={filterPanelId}
+          aria-expanded={disclosureOpen}
+          className={styles.filterTrigger}
+          onClick={() => setDisclosureOpen((current) => !current)}
+          type="button"
+        >
           {text(input.content.filterTriggerLabel, locale)}
           {activeFilters.length ? (
             <span aria-label={fallback("active filters", "aktiivista suodatinta", locale)}>
               {activeFilters.length}
             </span>
           ) : null}
-        </summary>
-        <div className={styles.filterPanel}>
+        </button>
+        <div
+          className={styles.filterPanel}
+          data-disclosure-expanded={disclosureOpen}
+          data-filter-panel-content="true"
+          id={filterPanelId}
+        >
           <div className={styles.filterHeading}>
             <h2>{text(input.content.filtersHeading, locale)}</h2>
             {activeFilters.length ? (
@@ -1101,31 +1156,35 @@ function CollectionFilters({
               </button>
             ) : null}
           </div>
-          {groups.map((group) => (
-            <section
-              aria-label={group.label}
-              className={styles.filterGroup}
-              data-filter-group={group.id}
-              data-filter-group-count={group.filters.length}
-              key={group.id}
-            >
-              <h3>{group.label}</h3>
-              <div className={styles.filterGroupFields}>
-                {group.filters.map((filter) => (
-                  <CollectionFilterFieldset
-                    collection={input.collection}
-                    content={input.content}
-                    emit={emit}
-                    filter={filter}
-                    key={filter.id}
-                    locale={locale}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
+          <div className={styles.filterGroups} id={filterGroupsId}>
+            {groups.map((group) => (
+              <section
+                aria-label={group.label}
+                className={styles.filterGroup}
+                data-filter-group={group.id}
+                data-filter-group-count={group.filters.length}
+                key={group.id}
+              >
+                <h3>{group.label}</h3>
+                <div className={styles.filterGroupFields}>
+                  {group.filters.map((filter) => (
+                    <CollectionFilterFieldset
+                      collection={input.collection}
+                      content={input.content}
+                      emit={emit}
+                      filter={filter}
+                      key={filter.id}
+                      locale={locale}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
           {filters.length > PRIMARY_COLLECTION_FILTER_LIMIT ? (
             <button
+              aria-controls={filterGroupsId}
+              aria-expanded={showAllFilters}
               className={styles.filterDisclosure}
               onClick={() => setShowAllFilters((current) => !current)}
               type="button"
@@ -1136,11 +1195,12 @@ function CollectionFilters({
             </button>
           ) : null}
         </div>
-      </details>
+      </div>
       {activeFilters.length ? (
         <div
           aria-label={fallback("Active filters", "Aktiiviset suodattimet", locale)}
           className={styles.activeFilterChips}
+          role="group"
         >
           {activeFilters.map((filter) => (
             <button
@@ -1210,11 +1270,75 @@ function wideCollectionGridColumns(productCount: number): 1 | 2 | 3 | 4 {
   return 4;
 }
 
+export const COLLECTION_PRESENTATION_WINDOW_SIZE = 24;
+
+function CollectionWindowNavigation({
+  currentWindow,
+  windowCount,
+  locale,
+  onChange,
+}: {
+  currentWindow: number;
+  windowCount: number;
+  locale: LocaleContext;
+  onChange: (windowIndex: number) => void;
+}) {
+  if (windowCount <= 1) return null;
+  return (
+    <nav
+      aria-label={fallback("Product pages", "Tuotesivut", locale)}
+      className={styles.productWindowNavigation}
+    >
+      <button
+        disabled={currentWindow === 0}
+        onClick={() => onChange(currentWindow - 1)}
+        type="button"
+      >
+        {fallback("Previous products", "Edelliset tuotteet", locale)}
+      </button>
+      <p aria-atomic="true" aria-live="polite" role="status">
+        {fallback("Page", "Sivu", locale)} {currentWindow + 1} / {windowCount}
+      </p>
+      <button
+        disabled={currentWindow === windowCount - 1}
+        onClick={() => onChange(currentWindow + 1)}
+        type="button"
+      >
+        {fallback("Next products", "Seuraavat tuotteet", locale)}
+      </button>
+    </nav>
+  );
+}
+
 export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommerce) {
   const productsHeadingId = useId();
   const locale = { activeLocale: input.activeLocale, primaryLocale: input.primaryLocale };
   const collectionInput = input.runtimeContext === "collection" ? input : undefined;
   const searchInput = input.runtimeContext === "search-results" ? input : undefined;
+  const canonicalProductFingerprint = canonicalValueFingerprint(
+    input.products.map(({ productId, revision }) => ({ productId, revision })),
+  );
+  const windowAuthorityKey = collectionInput
+    ? `${collectionInput.collection.collectionId}:${collectionInput.collection.revision}:${canonicalProductFingerprint}`
+    : `search:${searchInput?.search.resultFingerprint ?? canonicalProductFingerprint}`;
+  const [windowSelection, setWindowSelection] = useState({
+    authorityKey: windowAuthorityKey,
+    index: 0,
+  });
+  const windowCount = collectionInput
+    ? Math.max(1, Math.ceil(input.products.length / COLLECTION_PRESENTATION_WINDOW_SIZE))
+    : 1;
+  const currentWindow =
+    windowSelection.authorityKey === windowAuthorityKey
+      ? Math.min(windowSelection.index, windowCount - 1)
+      : 0;
+  const presentedProducts = collectionInput
+    ? input.products.slice(
+        currentWindow * COLLECTION_PRESENTATION_WINDOW_SIZE,
+        (currentWindow + 1) * COLLECTION_PRESENTATION_WINDOW_SIZE,
+      )
+    : input.products;
+  const anatomy = collectionAnatomyIdentity(input.variant);
   const childCollections = collectionInput ? (
     <ChildCollectionNavigation input={collectionInput} locale={locale} />
   ) : null;
@@ -1232,17 +1356,17 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
       >
         <div className={styles.productGridHeading}>
           <div>
-            <h2 id={productsHeadingId}>
-              {searchInput
-                ? fallback("Search results", "Hakutulokset", locale)
-                : text(input.content.productsHeading, locale)}
-            </h2>
+            {searchInput ? (
+              <h1 id={productsHeadingId}>{fallback("Search results", "Hakutulokset", locale)}</h1>
+            ) : (
+              <h2 id={productsHeadingId}>{text(input.content.productsHeading, locale)}</h2>
+            )}
             {searchInput ? <SearchResultsContext input={searchInput} locale={locale} /> : null}
           </div>
           {collectionInput ? <CollectionSort input={collectionInput} locale={locale} /> : null}
         </div>
         {input.loading.status === "loading" ? (
-          <p aria-live="polite" className={styles.loadingState}>
+          <p aria-atomic="true" aria-live="polite" className={styles.loadingState} role="status">
             {text(input.content.loadingLabel, locale)}
           </p>
         ) : input.products.length === 0 ? (
@@ -1252,33 +1376,54 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
             <CollectionEmptyState input={collectionInput} locale={locale} />
           ) : null
         ) : (
-          <div
-            className={`${styles.productGrid} ${styles[`density_${input.props.gridDensity}`]}`}
-            data-product-count={input.products.length}
-            data-wide-grid-columns={wideCollectionGridColumns(input.products.length)}
-          >
-            {input.products.map((product) => (
-              <DynamicCollectionProductCard
-                assetFor={input.assetFor}
-                content={input.content}
-                context={searchInput ? "searchResults" : "collectionResults"}
-                key={product.productId}
-                locale={locale}
-                onNavigateProduct={input.onNavigateProduct}
-                media={input.cardMediaFor(product.productId)}
-                product={product}
-                props={input.props}
-              />
-            ))}
-          </div>
+          <>
+            {searchInput ? (
+              <h2 className={styles.visuallyHidden}>
+                {text(input.content.productsHeading, locale)}
+              </h2>
+            ) : null}
+            <div
+              className={`${styles.productGrid} ${styles[`density_${input.props.gridDensity}`]}`}
+              data-canonical-product-count={input.products.length}
+              data-canonical-product-fingerprint={canonicalProductFingerprint}
+              data-presented-product-count={presentedProducts.length}
+              data-product-count={presentedProducts.length}
+              data-product-window-index={currentWindow}
+              data-product-window-size={COLLECTION_PRESENTATION_WINDOW_SIZE}
+              data-wide-grid-columns={wideCollectionGridColumns(presentedProducts.length)}
+            >
+              {presentedProducts.map((product) => (
+                <DynamicCollectionProductCard
+                  assetFor={input.assetFor}
+                  content={input.content}
+                  context={searchInput ? "searchResults" : "collectionResults"}
+                  key={product.productId}
+                  locale={locale}
+                  onNavigateProduct={input.onNavigateProduct}
+                  media={input.cardMediaFor(product.productId)}
+                  product={product}
+                  props={input.props}
+                />
+              ))}
+            </div>
+          </>
         )}
+        {collectionInput && input.loading.status === "ready" && input.products.length > 0 ? (
+          <CollectionWindowNavigation
+            currentWindow={currentWindow}
+            locale={locale}
+            onChange={(index) => setWindowSelection({ authorityKey: windowAuthorityKey, index })}
+            windowCount={windowCount}
+          />
+        ) : null}
       </section>
     </div>
   );
   return (
-    <main
+    <div
       className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
       data-component="dynamicCollectionCommerce"
+      data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-variant={input.variant}
       data-results-treatment={
@@ -1294,6 +1439,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
       }
       data-search-context={searchInput ? "transient-canonical-results" : "none"}
       data-responsive-layout="content-driven"
+      {...anatomy.responsiveAttributes}
     >
       {collectionInput ? <CampaignLead input={collectionInput} locale={locale} /> : null}
       {collectionInput ? <CollectionHeader input={collectionInput} locale={locale} /> : null}
@@ -1308,7 +1454,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
           {commerce}
         </>
       )}
-    </main>
+    </div>
   );
 }
 
