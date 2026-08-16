@@ -15,7 +15,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test && playwright test -c playwright.p10a-08c-01.config.ts && playwright test -c playwright.p10a-04c.config.ts && playwright test -c playwright.p10a-08d-02.config.ts && playwright test -c playwright.p10b-08.config.ts && playwright test -c playwright.p10b-09.config.ts && playwright test -c playwright.p10b-11.config.ts && playwright test -c playwright.p10b-13.config.ts && playwright test -c playwright.p10b-16p-03.config.ts && playwright test -c playwright.p10b-16p-06.config.ts && playwright test -c playwright.p10b-17.config.ts",
+    "test:e2e": "playwright test && playwright test -c playwright.p10a-08c-01.config.ts && playwright test -c playwright.p10a-04c.config.ts && playwright test -c playwright.p10a-08d-02.config.ts && playwright test -c playwright.p10b-08.config.ts && playwright test -c playwright.p10b-09.config.ts && playwright test -c playwright.p10b-11.config.ts && playwright test -c playwright.p10b-13.config.ts && playwright test -c playwright.p10b-16p-03.config.ts && playwright test -c playwright.p10b-16p-06.config.ts && playwright test -c playwright.p10b-17.config.ts && playwright test -c playwright.p10b-18a.config.ts",
     "smoke:openai": "vitest run --config vitest.openai-smoke.config.ts",
     "demo:p9-05a:load": "vitest run --config vitest.p9-05a-demo.config.ts",
     "docs:export:sdd": "node scripts/export-sdd-docx.mjs",

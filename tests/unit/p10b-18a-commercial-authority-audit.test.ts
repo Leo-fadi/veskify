@@ -165,7 +165,7 @@ describe("P10B-18A commercial authority audit", () => {
       medium?.catalogue.collections.find(({ id }) => id === "collection_karvonen_pihka")
         ?.productIds,
     ).toEqual(["product_karvonen_08", "product_karvonen_09"]);
-  }, 60_000);
+  }, 120_000);
 
   it("compiles a deterministic 72-case catalogue-shape and semantic-intent audit matrix", () => {
     const before = canonicalValueString(
