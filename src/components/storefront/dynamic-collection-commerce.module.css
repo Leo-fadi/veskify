@@ -12,6 +12,16 @@
   line-height: calc(var(--brand-type-body-line-height, 1.5) * var(--brand-density-global, 1));
 }
 
+.visuallyHidden {
+  block-size: 1px;
+  clip-path: inset(50%);
+  inline-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
+
 .surface_soft {
   background: var(--brand-surface-subtle);
 }
@@ -66,7 +76,6 @@
 .collectionHeader button,
 .childCollections button,
 .filters button,
-.filters summary,
 .sortControl select {
   min-height: var(--brand-control-height, 2.75rem);
   border: var(--brand-border-width, 1px) solid var(--brand-color-border);
@@ -133,7 +142,7 @@
   min-width: 0;
 }
 
-.filters summary {
+.filterTrigger {
   display: flex;
   width: fit-content;
   align-items: center;
@@ -143,18 +152,14 @@
   font-weight: 800;
 }
 
-.filters summary::-webkit-details-marker {
-  display: none;
-}
-
-.filters summary::after {
+.filterTrigger::after {
   content: "+";
   font-size: 1.15em;
   font-weight: 400;
   line-height: 1;
 }
 
-.filters[open] summary::after {
+.filterTrigger[aria-expanded="true"]::after {
   content: "−";
 }
 
@@ -169,6 +174,15 @@
   padding: var(--brand-card-inset, 1.25rem);
 }
 
+.filterPanel[data-disclosure-expanded="false"] {
+  display: none;
+}
+
+.filterGroups {
+  display: grid;
+  gap: calc(var(--brand-grid-gap, 1.25rem) * var(--brand-density-commerce, 1));
+}
+
 .filterHeading,
 .productGridHeading {
   display: flex;
@@ -179,7 +193,8 @@
 }
 
 .filterHeading h2,
-.productGridHeading h2 {
+.productGridHeading h2,
+.productGridHeading h1 {
   margin: 0;
   font-family: var(--brand-font-heading);
   font-size: clamp(1.5rem, 4vw, 2.5rem);
@@ -227,8 +242,11 @@
 }
 
 .filters input[type="checkbox"] {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.5rem;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  min-height: 1.5rem;
+  flex: 0 0 1.5rem;
 }
 
 .rangeControls {
@@ -253,6 +271,10 @@
 .sortControl select {
   width: 100%;
   max-width: 100%;
+}
+
+.rangeControls input[type="range"] {
+  min-height: 1.5rem;
 }
 
 .activeFilterChips {
@@ -308,6 +330,36 @@
   height: 100%;
 }
 
+.productWindowNavigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: calc(var(--brand-section-rhythm, 4rem) * 0.28);
+}
+
+.productWindowNavigation p {
+  margin: 0;
+  color: var(--brand-color-muted-text);
+}
+
+.productWindowNavigation button {
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-control-radius, var(--brand-radius));
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  padding: 0.65rem var(--brand-control-padding-inline, 0.85rem);
+  font: inherit;
+  font-weight: var(--brand-control-emphasis, 700);
+}
+
+.productWindowNavigation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .variant_gallery .collectionHeader {
   padding-bottom: clamp(2rem, 6vw, 5rem);
 }
@@ -358,56 +410,75 @@
   padding: clamp(1rem, 4vw, 3rem);
 }
 
-@media (min-width: 48rem) {
-  .collectionHeaderLayout {
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
-  }
-
-  .collectionHeader[data-collection-hero-treatment^="text-only"] .collectionHeaderLayout {
-    grid-template-columns: minmax(0, 52rem);
-  }
-
-  .productGrid {
+@media (min-width: 48rem) and (max-width: 63.999rem) {
+  .root[data-responsive-tablet~="comparisonGridReflow"] .productGrid,
+  .root[data-responsive-tablet~="denseGridReflow"] .productGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 47.99rem) {
-  .variant_catalogueComparison .childCollections,
-  .variant_denseSearch .childCollections {
+@media (max-width: 63.999rem) {
+  .root[data-responsive-tablet~="comparisonFilterDisclosure"] .childCollections,
+  .root[data-responsive-tablet~="denseFilterDisclosure"] .childCollections {
     gap: 0.35rem;
   }
 }
 
 @media (min-width: 64rem) {
-  .layout_sidebar {
+  .root[data-presentation-mode="editorialCollectionSpread"] .collectionHeaderLayout,
+  .root[data-presentation-mode="campaignLeadIn"] .collectionHeaderLayout,
+  .root[data-presentation-mode="legacyCollection"] .collectionHeaderLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
+  }
+
+  .root .collectionHeader[data-collection-hero-treatment^="text-only"] .collectionHeaderLayout {
+    grid-template-columns: minmax(0, 52rem);
+  }
+
+  .root[data-presentation-mode] .layout_sidebar {
     grid-template-columns: minmax(14rem, 0.25fr) minmax(0, 1fr);
   }
 
-  .layout_horizontal {
+  .root[data-presentation-mode] .layout_horizontal {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .layout_horizontal > .filterToolbar,
-  .layout_horizontal > .productResults {
+  .root[data-presentation-mode] .layout_horizontal > .filterToolbar,
+  .root[data-presentation-mode] .layout_horizontal > .productResults {
     grid-column: 1 / -1;
+  }
+
+  .filterTrigger {
+    display: none;
+  }
+
+  .filterPanel[data-disclosure-expanded] {
+    display: grid;
+    margin-top: 0;
+  }
+
+  .root[data-presentation-mode="editorialCollectionSpread"] .productGrid,
+  .root[data-presentation-mode="campaignLeadIn"] .productGrid,
+  .root[data-responsive-desktop~="comparisonGridReflow"] .productGrid,
+  .root[data-responsive-desktop~="denseGridReflow"] .productGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 80rem) {
-  .productGrid[data-wide-grid-columns="1"] {
+  .root[data-presentation-mode] .productGrid[data-wide-grid-columns="1"] {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .productGrid[data-wide-grid-columns="2"] {
+  .root[data-presentation-mode] .productGrid[data-wide-grid-columns="2"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .productGrid[data-wide-grid-columns="3"] {
+  .root[data-presentation-mode] .productGrid[data-wide-grid-columns="3"] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .productGrid[data-wide-grid-columns="4"] {
+  .root[data-presentation-mode] .productGrid[data-wide-grid-columns="4"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
@@ -416,7 +487,7 @@
   }
 }
 
-@media (max-width: 47.99rem) {
+@media (max-width: 63.999rem) {
   .card_horizontal {
     grid-template-columns: 1fr;
   }

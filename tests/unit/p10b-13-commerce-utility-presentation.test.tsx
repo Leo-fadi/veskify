@@ -156,7 +156,7 @@ describe("P10B-13 commerce utility presentation", () => {
       const html = renderToStaticMarkup(renderStorefrontPage(utilityPage, context));
       expect(snapshot.sharedFrame?.profileId).toBe("commerce-utility");
       expect(html).toContain('data-frame-profile="commerce-utility"');
-      expect(html).toContain("<main>");
+      expect(html).toContain('<main id="storefront-main-content" tabindex="-1">');
     }
   });
 
@@ -204,10 +204,9 @@ describe("P10B-13 commerce utility presentation", () => {
     expect(container.querySelector(`[data-product-id="${product.id}"] img`)).toHaveAccessibleName(
       product.images[0].alt?.en ?? product.title.en,
     );
-    expect(screen.getByRole("button", { name: "Increase quantity" })).toHaveAttribute(
-      "data-action-tone",
-      "quiet",
-    );
+    expect(
+      screen.getByRole("button", { name: `Increase quantity: ${product.title.en}` }),
+    ).toHaveAttribute("data-action-tone", "quiet");
     expect(screen.getByRole("button", { name: "Continue to checkout" })).toHaveAttribute(
       "data-action-tone",
       "primary",
@@ -222,7 +221,7 @@ describe("P10B-13 commerce utility presentation", () => {
         }).format(price.amount),
       ).length,
     ).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: `Remove: ${product.title.en}` }));
     expect(action).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "remove-line",
@@ -337,6 +336,7 @@ describe("P10B-13 commerce utility presentation", () => {
     });
     render(<>{renderStorefrontPage(cartPage, context)}</>);
     const unavailable = screen.getByRole("status");
+    expect(unavailable).toHaveAttribute("data-responsive-transformations", "utilityStack");
     expect(within(unavailable).getByText("Cart information is unavailable.")).toBeVisible();
     expect(within(unavailable).queryByRole("button")).not.toBeInTheDocument();
   });
@@ -375,5 +375,70 @@ describe("P10B-13 commerce utility presentation", () => {
     render(<>{renderStorefrontPage(cartPage, loading)}</>);
     expect(screen.getByRole("heading", { name: "Loading" })).toBeVisible();
     expect(screen.getByText("Retrieving your current cart.")).toBeVisible();
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("uses one page heading and localized product-specific cart action names", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    const product = fixture.aggregate.catalogue.products[0];
+    if (!product) throw new Error("Expected one canonical fixture product.");
+    const cartPage = pageFor("commerce-utility-cart");
+    const snapshot = applyCommercialSharedFrame(
+      { ...fixture.planningInput.draft, pages: [...fixture.planningInput.draft.pages, cartPage] },
+      "commerce-utility",
+    );
+    const context = createStorefrontRenderContext({
+      activeLocale: "fi",
+      primaryLocale: "fi",
+      enabledLocales: ["en", "fi"],
+      catalogue: fixture.aggregate.catalogue,
+      snapshot,
+      commerceUtilityRuntime: {
+        kind: "cart",
+        revision: "cart-fi-r1",
+        lines: [
+          {
+            lineId: "line_fi",
+            productId: product.id,
+            quantity: 1,
+            minimumQuantity: 1,
+          },
+        ],
+        actions: ["change-quantity", "remove-line"],
+      },
+      onCommerceUtilityIntent: vi.fn(),
+    });
+
+    render(<>{renderStorefrontPage(cartPage, context)}</>);
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: `Lisää määrää: ${product.title.fi}` })).toBeVisible();
+    expect(screen.getByRole("button", { name: `Poista: ${product.title.fi}` })).toBeVisible();
+  });
+
+  it("announces recoverable errors assertively without marking them busy", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    const errorPage = pageFor("commerce-utility-error");
+    const snapshot = applyCommercialSharedFrame(
+      { ...fixture.planningInput.draft, pages: [...fixture.planningInput.draft.pages, errorPage] },
+      "commerce-utility",
+    );
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: fixture.aggregate.catalogue,
+      snapshot,
+      commerceUtilityRuntime: {
+        kind: "error",
+        revision: "error-r1",
+        message: { en: "The cart could not be refreshed." },
+        recoverable: true,
+        actions: [],
+      },
+    });
+
+    render(<>{renderStorefrontPage(errorPage, context)}</>);
+    expect(screen.getByRole("alert")).toHaveAttribute("aria-live", "assertive");
+    expect(screen.getByRole("alert")).not.toHaveAttribute("aria-busy");
   });
 });

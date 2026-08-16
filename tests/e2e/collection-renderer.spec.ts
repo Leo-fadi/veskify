@@ -37,15 +37,17 @@ test("loads the persisted rings collection and operates bilingual demo controls 
 
   const before = await page.getByRole("article").allTextContents();
   const filterRegion = page.locator('[data-layout-region="filters"]');
-  const filterDisclosure = filterRegion.locator('details[data-filter-panel-mode="disclosure"]');
-  const filterTrigger = filterDisclosure.locator("summary");
+  const filterPanel = filterRegion.locator('[data-filter-panel-content="true"]');
+  const filterTrigger = filterRegion.getByRole("button", { name: /Show filters/ });
   await expect(page.locator('[data-filter-layout="horizontal"]')).toBeVisible();
-  await expect(filterDisclosure).not.toHaveAttribute("open", "");
-  await expect(filterTrigger).toContainText("Show filters");
+  await expect(filterTrigger).toBeVisible();
+  await expect(filterTrigger).toHaveAttribute("aria-expanded", "false");
+  await expect(filterPanel).toBeHidden();
   await filterTrigger.focus();
   await expect(filterTrigger).toBeFocused();
   await filterTrigger.press("Enter");
-  await expect(filterDisclosure).toHaveAttribute("open", "");
+  await expect(filterTrigger).toHaveAttribute("aria-expanded", "true");
+  await expect(filterPanel).toBeVisible();
   await expect(filterRegion.getByRole("heading", { name: "Filters" })).toBeVisible();
   const metalColour = page.getByRole("checkbox", { name: /^Yellow gold \(1\)$/ });
   await expect(metalColour).toBeVisible();
@@ -79,15 +81,19 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.goto(collectionUrl);
     await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
     const filterRegion = page.locator('[data-layout-region="filters"]');
-    const filterDisclosure = filterRegion.locator('details[data-filter-panel-mode="disclosure"]');
-    const filterTrigger = filterDisclosure.locator("summary");
+    const filterPanel = filterRegion.locator('[data-filter-panel-content="true"]');
+    const filterTrigger = filterRegion.getByRole("button", { name: /Show filters/ });
     await expect(page.locator('[data-filter-layout="horizontal"]')).toBeVisible();
-    await expect(filterDisclosure).not.toHaveAttribute("open", "");
-    await expect(filterTrigger).toContainText("Show filters");
-    await filterTrigger.focus();
-    await expect(filterTrigger).toBeFocused();
-    await filterTrigger.press("Enter");
-    await expect(filterDisclosure).toHaveAttribute("open", "");
+    if (width < 1024) {
+      await expect(filterTrigger).toHaveAttribute("aria-expanded", "false");
+      await filterTrigger.focus();
+      await expect(filterTrigger).toBeFocused();
+      await filterTrigger.press("Enter");
+      await expect(filterTrigger).toHaveAttribute("aria-expanded", "true");
+    } else {
+      await expect(filterTrigger).toBeHidden();
+    }
+    await expect(filterPanel).toBeVisible();
     await expect(filterRegion.getByRole("heading", { name: "Filters" })).toBeVisible();
     await expect(filterRegion.getByRole("checkbox", { name: /^Yellow gold \(1\)$/ })).toBeVisible();
     await expectNoStorefrontHorizontalClipping(page);

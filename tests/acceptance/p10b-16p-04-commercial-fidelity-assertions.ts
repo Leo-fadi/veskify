@@ -507,6 +507,80 @@ async function assertProductGridGeometry(input: {
   expect(Math.min(...geometry.map(({ width }) => width))).toBeGreaterThan(0);
 }
 
+const collectionPresentationModes = new Set([
+  "editorialCollectionSpread",
+  "comparisonRail",
+  "campaignLeadIn",
+  "denseSearchToolbar",
+  "legacyCollection",
+]);
+
+function requiredResponsiveTokens(value: string | null, attribute: string): ReadonlySet<string> {
+  if (value === null) throw new Error(`Collection grid authority is missing ${attribute}.`);
+  const tokens = value.trim() === "" ? [] : value.trim().split(/\s+/u);
+  if (
+    tokens.some((token) => !/^[a-z][A-Za-z0-9]*$/u.test(token)) ||
+    new Set(tokens).size !== tokens.length
+  ) {
+    throw new Error(`Collection grid authority has invalid ${attribute}.`);
+  }
+  return new Set(tokens);
+}
+
+async function expectedCollectionGridGeometry(input: {
+  collection: Locator;
+  productGrid: Locator;
+  productCount: number;
+  width: P10B16P04CommercialEvidenceWidth;
+}): Promise<Readonly<{ columns: number; rows: number }>> {
+  const [presentationMode, tabletValue, desktopValue, wideValue, countValue] = await Promise.all([
+    input.collection.getAttribute("data-presentation-mode"),
+    input.collection.getAttribute("data-responsive-tablet"),
+    input.collection.getAttribute("data-responsive-desktop"),
+    input.productGrid.getAttribute("data-wide-grid-columns"),
+    input.productGrid.getAttribute("data-product-count"),
+  ]);
+  if (!presentationMode || !collectionPresentationModes.has(presentationMode)) {
+    throw new Error("Collection grid authority has an invalid presentation mode.");
+  }
+  const tablet = requiredResponsiveTokens(tabletValue, "data-responsive-tablet");
+  const desktop = requiredResponsiveTokens(desktopValue, "data-responsive-desktop");
+  const wideColumns = Number(wideValue);
+  const renderedProductCount = Number(countValue);
+  if (
+    wideValue === null ||
+    !/^[1-4]$/u.test(wideValue) ||
+    !Number.isInteger(wideColumns) ||
+    wideColumns > input.productCount
+  ) {
+    throw new Error("Collection grid authority has invalid declared wide columns.");
+  }
+  if (
+    countValue === null ||
+    !/^[1-9]\d*$/u.test(countValue) ||
+    !Number.isInteger(renderedProductCount) ||
+    renderedProductCount !== input.productCount
+  ) {
+    throw new Error("Collection grid authority has an invalid rendered product count.");
+  }
+
+  const comparisonOrDenseReflow = (tokens: ReadonlySet<string>) =>
+    tokens.has("comparisonGridReflow") || tokens.has("denseGridReflow");
+  let columns = 1;
+  if (input.width >= 1280) {
+    columns = wideColumns;
+  } else if (input.width >= 1024) {
+    const presentationUsesDesktopSpread =
+      presentationMode === "editorialCollectionSpread" || presentationMode === "campaignLeadIn";
+    if (presentationUsesDesktopSpread || comparisonOrDenseReflow(desktop)) {
+      columns = Math.min(3, input.productCount);
+    }
+  } else if (input.width >= 768 && comparisonOrDenseReflow(tablet)) {
+    columns = Math.min(2, input.productCount);
+  }
+  return { columns, rows: Math.ceil(input.productCount / columns) };
+}
+
 async function assertCommercialFrame(root: Locator, width: number): Promise<void> {
   const geometry = await root.locator('[data-frame-region="header"]').evaluate((header) => {
     const visible = (element: Element | null): element is HTMLElement => {
@@ -547,11 +621,11 @@ async function assertCommercialFrame(root: Locator, width: number): Promise<void
   });
   expect(geometry.viewportWidth).toBe(width);
   expect(geometry.navigationUtilityOverlap).toBe(false);
-  expect(geometry.brandWidth).toBeLessThanOrEqual(width * (width < 1200 ? 0.62 : 0.48));
-  expect(geometry.brandFontSize).toBeLessThanOrEqual(width < 1200 ? 28 : 52);
-  expect(geometry.headerHeight).toBeLessThanOrEqual(width < 1200 ? 112 : 240);
-  expect(geometry.desktopVisible).toBe(width >= 1200);
-  expect(geometry.mobileVisible).toBe(width < 1200);
+  expect(geometry.brandWidth).toBeLessThanOrEqual(width * (width < 1024 ? 0.62 : 0.48));
+  expect(geometry.brandFontSize).toBeLessThanOrEqual(width >= 1200 ? 52 : width >= 1024 ? 36 : 28);
+  expect(geometry.headerHeight).toBeLessThanOrEqual(width < 1024 ? 112 : 240);
+  expect(geometry.desktopVisible).toBe(width >= 1024);
+  expect(geometry.mobileVisible).toBe(width < 1024);
 }
 
 async function assertCompleteCards(cards: Locator): Promise<void> {
@@ -684,7 +758,9 @@ export async function assertCommercialSurface(input: {
       "data-product-count",
       String(commercialEvidence.collection.canonicalProductCount),
     );
-    const cards = collection.locator("[data-card-anatomy]");
+    const productGrid = collection.locator("[data-wide-grid-columns][data-product-count]");
+    await expect(productGrid).toHaveCount(1);
+    const cards = productGrid.locator("[data-card-anatomy]");
     await expect(cards).toHaveCount(commercialEvidence.collection.canonicalProductCount);
     await assertCompleteCards(cards);
     expect(
@@ -720,10 +796,16 @@ export async function assertCommercialSurface(input: {
     );
     expect(filterAuthority.valueCounts).toHaveLength(filterAuthority.initiallyExposedCount);
     expect(filterAuthority.valueCounts.every((valueCount) => valueCount >= 2)).toBe(true);
+    const expectedGrid = await expectedCollectionGridGeometry({
+      collection,
+      productGrid,
+      productCount: commercialEvidence.collection.canonicalProductCount,
+      width,
+    });
     await assertProductGridGeometry({
       cards,
-      expectedColumns: width >= 1280 ? 4 : width >= 768 ? 2 : 1,
-      expectedRows: width >= 1280 ? 1 : width >= 768 ? 2 : 4,
+      expectedColumns: expectedGrid.columns,
+      expectedRows: expectedGrid.rows,
       label: `collection products at ${width}px`,
     });
     return;
@@ -749,12 +831,12 @@ export async function assertCommercialSurface(input: {
     const relatedCards = relatedProducts.locator("[data-card-anatomy]");
     await assertCompleteCards(relatedCards);
     if (width < 768) {
+      await expect(product).toHaveAttribute("data-responsive-mobile", /\S/u);
       const relatedCount = await relatedCards.count();
-      const expectedColumns = Math.min(2, relatedCount);
       await assertProductGridGeometry({
         cards: relatedCards,
-        expectedColumns,
-        expectedRows: Math.ceil(relatedCount / expectedColumns),
+        expectedColumns: 1,
+        expectedRows: relatedCount,
         label: `${surface.id} related products at ${width}px`,
       });
     }

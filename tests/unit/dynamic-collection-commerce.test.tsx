@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
+  COLLECTION_PRESENTATION_WINDOW_SIZE,
   collectionRangeFilterIntentSchema,
   createCollectionRangeFilterIntent,
   dynamicCollectionCommerceComponentByTarget,
@@ -402,7 +403,8 @@ describe("P6-04 dynamic collection commerce", () => {
         rendererInput(collection, { loading: { status: "loading" } }),
       ),
     );
-    expect(screen.getByText("Loading products")).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("Loading products");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
     expect(screen.queryByRole("heading", { name: "Nordic watch" })).not.toBeInTheDocument();
   });
 
@@ -846,7 +848,7 @@ describe("P6-04 dynamic collection commerce", () => {
 
   it("localizes merchant-facing labels in EN and FI", () => {
     const english = render(renderDynamicCollectionCommerce(rendererInput()));
-    expect(screen.getByText("Show filters", { exact: false, selector: "summary" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Show filters/ })).toBeVisible();
     expect(screen.getByRole("button", { name: "Nordic watch" })).toBeVisible();
     english.unmount();
 
@@ -855,24 +857,55 @@ describe("P6-04 dynamic collection commerce", () => {
         rendererInput(collection, { activeLocale: "fi", primaryLocale: "fi" }),
       ),
     );
-    expect(
-      screen.getByText("Näytä suodattimet", { exact: false, selector: "summary" }),
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: /Näytä suodattimet/ })).toBeVisible();
     expect(screen.getByRole("button", { name: "Pohjoismainen kello" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Lajittele tuotteet" })).toBeVisible();
   });
 
   it("keeps the bounded filter toolbar collapsed until the merchant opens it", () => {
     const view = render(renderDynamicCollectionCommerce(rendererInput()));
-    const filters = view.container.querySelector<HTMLDetailsElement>(
-      'details[data-filter-panel-mode="disclosure"]',
+    const filters = view.container.querySelector<HTMLElement>(
+      '[data-filter-panel-mode="disclosure"]',
+    );
+    const trigger = screen.getByRole("button", { name: /Show filters/ });
+    const panel = view.container.querySelector<HTMLElement>('[data-filter-panel-content="true"]');
+
+    expect(filters).not.toBeNull();
+    expect(trigger).toHaveAttribute("aria-controls", panel?.id);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(panel).toHaveAttribute("data-disclosure-expanded", "false");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(panel).toHaveAttribute("data-disclosure-expanded", "true");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(panel).toHaveAttribute("data-disclosure-expanded", "false");
+  });
+
+  it("uses one server-stable panel with mobile disclosure and desktop CSS persistence", () => {
+    const view = render(renderDynamicCollectionCommerce(rendererInput()));
+    const trigger = screen.getByRole("button", { name: /Show filters/ });
+    const panels = view.container.querySelectorAll<HTMLElement>(
+      '[data-filter-panel-content="true"]',
+    );
+    const panel = panels[0];
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
     );
 
-    expect(filters?.open).toBe(false);
-    fireEvent.click(screen.getByText("Show filters", { exact: false, selector: "summary" }));
-    expect(filters?.open).toBe(true);
-    fireEvent.click(screen.getByText("Show filters", { exact: false, selector: "summary" }));
-    expect(filters?.open).toBe(false);
+    expect(panels).toHaveLength(1);
+    expect(trigger).toHaveAttribute("aria-controls", panel.id);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(panel).toHaveAttribute("data-disclosure-expanded", "false");
+    expect(css).toMatch(/\.filterPanel\[data-disclosure-expanded="false"\][^}]*display: none/s);
+    expect(css).toMatch(
+      /@media \(min-width: 64rem\)[\s\S]*\.filterTrigger[^}]*display: none[\s\S]*\.filterPanel\[data-disclosure-expanded\][^}]*display: grid/,
+    );
+    expect(css).toMatch(
+      /\.filters input\[type="checkbox"\][^}]*min-width: 1\.5rem[^}]*min-height: 1\.5rem/s,
+    );
+    expect(css).toMatch(/\.rangeControls input\[type="range"\][^}]*min-height: 1\.5rem/s);
   });
 
   it("supports keyboard product/filter navigation with accessible names", async () => {
@@ -920,6 +953,97 @@ describe("P6-04 dynamic collection commerce", () => {
       expect(rendered.container.querySelector('[data-product-type="ring"]')).toBeVisible();
       rendered.unmount();
     }
+  });
+
+  it("executes the registered collection anatomy at exact responsive breakpoints", () => {
+    const input = rendererInput();
+    input.instance = instance(collection, { variant: "catalogueComparison" });
+    const { container } = render(renderDynamicCollectionCommerce(input));
+    const root = container.querySelector('[data-component="dynamicCollectionCommerce"]');
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
+    );
+
+    expect(root).toHaveAttribute("data-presentation-mode", "comparisonRail");
+    expect(root).toHaveAttribute(
+      "data-responsive-transformations",
+      "comparisonFilterDisclosure comparisonGridReflow",
+    );
+    expect(root).toHaveAttribute(
+      "data-responsive-tablet",
+      "comparisonFilterDisclosure comparisonGridReflow",
+    );
+    expect(root).toHaveAttribute("data-responsive-desktop", "comparisonGridReflow");
+    expect(css).toContain("@media (min-width: 48rem) and (max-width: 63.999rem)");
+    expect(css).toContain('[data-responsive-tablet~="comparisonGridReflow"]');
+    expect(css).toContain("@media (min-width: 64rem)");
+    expect(css).not.toMatch(
+      /@media \(min-width: 48rem\)\s*\{\s*\.collectionHeaderLayout[^}]*grid-template-columns/s,
+    );
+  });
+
+  it("windows large canonical collections at 24 without changing membership or order", async () => {
+    const user = userEvent.setup();
+    const manyProducts = Array.from({ length: 26 }, (_, index) => ({
+      ...structuredClone(watch),
+      productId: `product_window_${index + 1}`,
+      sku: `WINDOW-${index + 1}`,
+      title: localized(`Window product ${index + 1}`),
+      media: [
+        {
+          assetId: `asset_window_${index + 1}`,
+          role: "main" as const,
+          alt: localized(`Window product ${index + 1}`),
+        },
+      ],
+      revision: `product-rev-window-${index + 1}`,
+    }));
+    const manyCollection: CollectionPresentationContext = {
+      ...structuredClone(collection),
+      collectionId: "collection_windowed",
+      productIds: manyProducts.map(({ productId }) => productId),
+      childCollectionIds: [],
+      revision: "collection-rev-windowed",
+    };
+    const input = rendererInput(manyCollection);
+    input.projection = {
+      products: manyProducts,
+      collections: [manyCollection],
+      assets: [
+        asset("asset_collection", "collectionImage"),
+        ...manyProducts.map((product) => asset(product.media[0].assetId, "productMainImage")),
+      ],
+      navigation: [],
+      projectBrandContexts: [],
+      localizedContents: [],
+      productListRevision: "product-list-rev-1",
+      collectionListRevision: "collection-list-rev-1",
+    };
+    const before = canonicalValueFingerprint({
+      membership: manyCollection.productIds,
+      products: manyProducts,
+    });
+    const { container } = render(renderDynamicCollectionCommerce(input));
+    const firstWindow = container.querySelector("[data-product-window-index]");
+
+    expect(COLLECTION_PRESENTATION_WINDOW_SIZE).toBe(24);
+    expect(firstWindow).toHaveAttribute("data-canonical-product-count", "26");
+    expect(firstWindow).toHaveAttribute("data-presented-product-count", "24");
+    expect(container.querySelectorAll("article[data-card-anatomy]")).toHaveLength(24);
+    expect(screen.getByRole("heading", { name: "Window product 1" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Window product 25" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Next products" }));
+    const secondWindow = container.querySelector("[data-product-window-index]");
+    expect(secondWindow).toHaveAttribute("data-product-window-index", "1");
+    expect(secondWindow).toHaveAttribute("data-canonical-product-count", "26");
+    expect(secondWindow).toHaveAttribute("data-presented-product-count", "2");
+    expect(screen.getByRole("heading", { name: "Window product 25" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Window product 26" })).toBeVisible();
+    expect(
+      canonicalValueFingerprint({ membership: manyCollection.productIds, products: manyProducts }),
+    ).toBe(before);
   });
 
   it("uses a bounded one-column track for one product", () => {
@@ -1071,7 +1195,17 @@ describe("P6-04 dynamic collection commerce", () => {
     expect(rendered.container.querySelector('[data-filter-id="constant_facet"]')).toBeNull();
     expect(rendered.container.querySelector('[data-filter-id="constant_range"]')).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: /Show more filters/ }));
+    const filterDisclosure = screen.getByRole("button", { name: /Show more filters/ });
+    const controlledFilterGroups = filterDisclosure.getAttribute("aria-controls");
+    expect(filterDisclosure).toHaveAttribute("aria-expanded", "false");
+    expect(controlledFilterGroups).toBeTruthy();
+    expect(document.getElementById(controlledFilterGroups!)).not.toBeNull();
+
+    await user.click(filterDisclosure);
+    expect(screen.getByRole("button", { name: /Show fewer filters/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     expect(rendered.container.querySelectorAll("fieldset[data-filter-id]")).toHaveLength(8);
     expect(
       screen
@@ -1111,6 +1245,33 @@ describe("P6-04 dynamic collection commerce", () => {
     );
     expect(rendered.container.querySelector('[data-asset-id="asset_collection"]')).toBeNull();
     expect(screen.getAllByRole("heading", { name: "All products" })).toHaveLength(1);
+  });
+
+  it("prioritizes only the campaign lead when distinct approved header media is also present", () => {
+    const campaignCollection = {
+      ...structuredClone(collection),
+      assets: [
+        { assetId: "asset_collection", role: "hero" as const },
+        { assetId: "asset_editorial", role: "editorial" as const },
+      ],
+    };
+    const input = rendererInput(campaignCollection);
+    input.instance = instance(campaignCollection, { variant: "campaignLedDiscovery" });
+    input.projection = {
+      ...(input.projection as Record<string, unknown>),
+      assets: [...assets, asset("asset_editorial", "editorialImage")],
+    };
+    const rendered = render(renderDynamicCollectionCommerce(input));
+    const headerImage = rendered.container.querySelector(
+      '[data-collection-hero-treatment="media"] img',
+    );
+    const campaignImage = rendered.container.querySelector(
+      '[data-layout-region="campaign-lead"] img',
+    );
+
+    expect(headerImage).toHaveAttribute("fetchpriority", "auto");
+    expect(campaignImage).toHaveAttribute("fetchpriority", "high");
+    expect(rendered.container.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
   });
 
   it("places horizontal filters and products on explicit full-width desktop rows", () => {

@@ -179,30 +179,54 @@
 }
 
 .faq summary {
+  display: flex;
+  min-height: var(--brand-control-height, 2.75rem);
+  align-items: center;
   cursor: pointer;
   font-weight: 650;
 }
 
-@media (min-width: 48rem) {
-  .factGrid {
+@media (min-width: 64rem) {
+  [data-component="contentSupport"][data-responsive-transformations~="contentStack"] .factGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: clamp(2rem, 5vw, 5rem);
   }
 
-  .factGrid .article {
+  [data-component="contentSupport"][data-responsive-transformations~="contentStack"]
+    .factGrid
+    .article {
     height: 100%;
   }
 
-  .section[data-variant="contactDirectory"] .reading,
-  .section[data-variant="locationDirectory"] .reading {
+  [data-component="contentSupport"][data-variant="locationDirectory"][data-responsive-transformations~="contentStack"]
+    .reading {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: 68rem;
   }
 
-  .section[data-variant="contactDirectory"] .reading > h1,
-  .section[data-variant="contactDirectory"] .reading > .introduction,
-  .section[data-variant="locationDirectory"] .reading > h1,
-  .section[data-variant="locationDirectory"] .reading > .introduction {
+  [data-component="contentSupport"][data-variant="locationDirectory"][data-responsive-transformations~="contentStack"]
+    .reading
+    > h1,
+  [data-component="contentSupport"][data-variant="locationDirectory"][data-responsive-transformations~="contentStack"]
+    .reading
+    > .introduction {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 48rem) {
+  [data-component="contentSupport"][data-variant="contactDirectory"][data-responsive-transformations~="contactCondense"]
+    .reading {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 68rem;
+  }
+
+  [data-component="contentSupport"][data-variant="contactDirectory"][data-responsive-transformations~="contactCondense"]
+    .reading
+    > h1,
+  [data-component="contentSupport"][data-variant="contactDirectory"][data-responsive-transformations~="contactCondense"]
+    .reading
+    > .introduction {
     grid-column: 1 / -1;
   }
 }

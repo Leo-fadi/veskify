@@ -100,10 +100,11 @@ const transformation = (
   fromPresentationMode: string,
   toPresentationMode: string,
   affectedRegions: z.input<typeof componentResponsiveTransformationSchema>["affectedRegions"],
+  breakpoints: z.input<typeof componentResponsiveTransformationSchema>["breakpoints"] = ["mobile"],
 ): z.input<typeof componentResponsiveTransformationSchema> => ({
   id,
   mode,
-  breakpoints: ["mobile"],
+  breakpoints,
   fromPresentationMode,
   toPresentationMode,
   affectedRegions,
@@ -252,11 +253,14 @@ const authorityMaterial = canonicalProductCardAuthorityMaterialSchema.parse({
         presentationMode: "denseHorizontal",
       },
       [
-        transformation("denseReflow", "reflow", "denseHorizontal", "denseStack", [
-          "media",
-          "metadata",
-          "actions",
-        ]),
+        transformation(
+          "denseReflow",
+          "reflow",
+          "denseHorizontal",
+          "denseStack",
+          ["media", "metadata", "actions"],
+          ["mobile", "tablet"],
+        ),
       ],
       ["regionArrangement", "regionPresence", "ctaRelationship"],
     ),

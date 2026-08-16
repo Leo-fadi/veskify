@@ -105,3 +105,19 @@ and uses the governed generic fallback for unknown types; concrete product URLs 
 independent editable PDP section trees. Runtime binding still supplies every exact product, option,
 variant, price, availability, stock, and canonical media value. See
 [`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
+
+## Current P10B-17 continuation
+
+P10B-17 derives standard, high-consideration, gallery-led, and variant-led execution from the
+selected registered PDP anatomy. Tablet stacking/reflow, bounded contained media, desktop purchase
+hierarchy, specification layout, related-card columns, and sticky behavior now follow those exact
+transformation IDs. Gallery presentation is bounded to eight deduplicated assets and related
+merchandising to eight cards while retaining canonical counts and fingerprints; the contained
+standard PDP keeps its complete primary image at 768px, and four-column related layouts wait for a
+commercially sufficient width.
+
+Required option groups expose exact help/dependency relationships and invalid state; pending,
+failure, availability, and primary-action feedback use appropriate busy/live semantics and paired
+focus treatment. No product-type renderer, registry, snapshot, option resolver, commerce state, or
+media authority was added or mutated. P10B-18 remains responsible for final PDP visual quality and
+scale.

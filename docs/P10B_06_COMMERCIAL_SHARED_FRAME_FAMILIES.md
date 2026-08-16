@@ -170,3 +170,17 @@ P10B-06 is **Baseline**. P10B remains **Partial / active**, and P10B-07 through 
 This task does not implement P10B-07 content families, P10B-08 product-card consolidation,
 P10B-09+ profile libraries, P10B-15 synthesis, P10C merchant frame controls, or Vesko integration.
 It does not add provider behavior or call an AI provider.
+
+## Current P10B-17 continuation
+
+P10B-17 strengthens the same four frame systems rather than registering another frame. The shared
+renderer now supplies a visible-on-focus skip link, server-derived current-page indication,
+semantic language controls, bounded navigation targets, and the paired Design DNA focus treatment.
+Focus-trapping mobile modes use the registered drawer/overlay authority, make background content
+inert, expose dialog semantics, close with Escape or navigation, and restore focus; non-trapping
+modes retain their registered behavior. Mobile search and navigation placement remains frame-owned
+and changes at the existing responsive boundaries.
+
+Current-page identity is transient renderer context derived from the canonical page/path
+projection, not browser or snapshot state. No navigation graph, registry, snapshot, commerce, or
+media authority changed. P10B-18 still owns repeated end-to-end commercial frame quality at scale.

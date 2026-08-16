@@ -129,3 +129,15 @@ diversity, retained human commercial review, Vesko staging, or production readin
 - No raw CSS, remote font URL, per-section theme store, duplicate registry, or generated executable
   frontend code.
 - P10B-03 is separately Baseline; P10B-04 through P10B-18 remain Planned.
+
+## Current P10B-17 continuation
+
+P10B-17 keeps this BrandSystem as the only visual-token authority. Its projection now derives a
+paired inner/outer focus ring from existing validated semantic text roles so focus remains visible
+across page, surface, and contrast regions without introducing another palette or component token
+store. Responsive components continue to consume the registered typography, spacing, density,
+surface, border, control, and media variables; P10B-17 does not restyle sections independently or
+mutate the merchant Design DNA.
+
+This closes execution and semantic-accessibility gaps for the current registered surfaces. It does
+not establish P10B-18 multi-store commercial quality or scale acceptance.

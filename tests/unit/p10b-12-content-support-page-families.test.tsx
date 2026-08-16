@@ -686,12 +686,15 @@ describe("P10B-12 content and support page families", () => {
   it("uses existing P10B-07 editorial and promotion renderers while retaining P10B-12 fact binding", () => {
     const about = materialized("about");
     const campaign = materialized("campaign-editorial");
+    const campaignHtml = renderToStaticMarkup(
+      renderStorefrontPage(campaign.result.page, campaign.context),
+    );
     expect(renderToStaticMarkup(renderStorefrontPage(about.result.page, about.context))).toContain(
       'data-component="homepageEditorial"',
     );
-    expect(
-      renderToStaticMarkup(renderStorefrontPage(campaign.result.page, campaign.context)),
-    ).toContain('data-component="homepagePromotion"');
+    expect(campaignHtml).toContain('data-component="homepagePromotion"');
+    expect(campaignHtml.match(/<h1(?:\s|>)/g)).toHaveLength(1);
+    expect(campaignHtml).toContain('data-content-region="campaign-opening"');
     expect(about.result.page.sections[0]?.component).toBe("contentSupport");
     expect(campaign.result.page.sections[0]?.content).toEqual({
       factDocumentId: campaign.document.id,

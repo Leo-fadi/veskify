@@ -39,6 +39,23 @@ const route = (
   );
 
 describe("product preview route states", () => {
+  it("renders server-owned product authority on the first paint without a loading-shell shift", async () => {
+    render(
+      <ProductPreviewClient
+        initialAggregate={aggregate()}
+        productId="project_aurum_nordic"
+        productSlug="aurora-ring-585"
+        repositoryFactory={() => {
+          throw new Error("Server-owned authority must not reopen browser storage.");
+        }}
+      />,
+    );
+
+    expect(screen.queryByRole("heading", { name: "Loading product preview" })).toBeNull();
+    expect(document.querySelector(".project-preview__storefront")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
+  });
+
   it("shows loading then the successful repository-loaded product without editor chrome", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     expect(screen.getByRole("heading", { name: "Loading product preview" })).toBeVisible();

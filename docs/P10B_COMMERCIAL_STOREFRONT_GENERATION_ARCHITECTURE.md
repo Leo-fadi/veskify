@@ -1,12 +1,12 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and
-P10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18
-remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
+P10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B and P10B-18 remain
+**Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 15 August 2026, P10B-16P-06 canonical search query/results adapter
+**Baseline:** 16 August 2026, P10B-17 responsive, accessibility and performance closure
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -58,8 +58,8 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-P10B-16P-05A and P10B-16P-06 are Baseline; P10B-16P-05B, P10B-17, and P10B-18 remain Planned.
-P10B-17 is the next focused product task.
+P10B-16P-05A, P10B-16P-06, and P10B-17 are Baseline; P10B-16P-05B and P10B-18 remain Planned.
+P10B-18 is the next focused product task.
 
 ## 2. Storefront and commerce ownership
 
@@ -369,8 +369,8 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 ## 13. Locked implementation sequence
 
-P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
-P10B-16P-02 is **Baseline**. P10B-16P-05B, P10B-17, and P10B-18 are **Planned**.
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
+P10B-16P-02 is **Baseline**. P10B-16P-05B and P10B-18 are **Planned**.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -789,8 +789,8 @@ keep distinct approved facts where their reading structure is shared.
 - **Status:** **Planned**. This cleanup cannot start before P10B-18 and cannot weaken P10B-16P-04 or
   P10B-18 evidence.
 
-P10B-17 is the next focused product task. P10B remains Partial; P10B-18 and P10B-16P-05B remain
-Planned in their locked order.
+P10B-17 is Baseline. P10B remains Partial; P10B-18 is the next focused product task and
+P10B-16P-05B remains Planned after P10B-18.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -800,6 +800,11 @@ Planned in their locked order.
   exact fingerprints and authority versions.
 - Reject clipping, overlap, inaccessible controls, lost content/commerce, desktop-only approval,
   and budget exceptions without explicit disposition.
+- **Status:** **Baseline**. Existing registered frame/page/component transformations execute across
+  the four widths and EN/FI without another breakpoint or renderer authority. Bounded geometry,
+  keyboard/focus/semantic/contrast, touch-target, reduced-motion, media/search/render/build-budget,
+  lifecycle, protected commerce/media, browser, and retained human visual evidence pass. This does
+  not claim P10B-18 designer-grade quality/scale, Vesko staging, or production readiness.
 
 ### P10B-18 — Commercial quality and scale gate
 
@@ -891,7 +896,7 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline under the
-disjoint ownership constraints in section 15. P10B-16P-02 is Baseline. P10B-17 is the next focused
-product task; P10B-16P-05B, P10B-17, and P10B-18 remain Planned. No later implementation task is
-complete merely because this architecture is approved or the completed foundations passed.
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline under the
+disjoint ownership constraints in section 15. P10B-16P-02 is Baseline. P10B-18 is the next focused
+product task; P10B-16P-05B remains Planned after P10B-18. No later implementation task is complete
+merely because this architecture is approved or the completed foundations passed.

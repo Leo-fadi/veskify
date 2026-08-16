@@ -188,6 +188,42 @@ function fixtureSearch() {
 }
 
 describe("P10B-16P-06 canonical standalone search adapter", () => {
+  it("builds one immutable locale index and invalidates it only for exact authority changes", () => {
+    const catalogue = fixtureCatalogue();
+    const authority = createStandaloneStorefrontSearchAuthority({
+      catalogue,
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      productRoutes: productRoutes(catalogue),
+    });
+    const narrowedAuthority = createStandaloneStorefrontSearchAuthority({
+      catalogue,
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      productRoutes: productRoutes(catalogue).slice(0, 1),
+    });
+    const diagnostics: StandaloneCatalogueSearchDiagnostics[] = [];
+    const adapter = createStandaloneCatalogueProductSearchAdapter({
+      catalogue,
+      onDiagnostics: (value) => diagnostics.push(value),
+    });
+
+    const first = adapter.search(searchRequest("ring"), authority);
+    const repeated = adapter.search(searchRequest("ring"), authority);
+    const narrowed = adapter.search(searchRequest("ring"), narrowedAuthority);
+    const restored = adapter.search(searchRequest("ring"), authority);
+
+    expect(repeated).toEqual(first);
+    expect(narrowed.productIds).toEqual(["product_aurora_gold_ring"]);
+    expect(restored).toEqual(first);
+    expect(diagnostics.map(({ indexBuildCount }) => indexBuildCount)).toEqual([1, 1, 2, 3]);
+    expect(diagnostics.map(({ indexReused }) => indexReused)).toEqual([false, true, false, false]);
+    expect(diagnostics.map(({ indexCacheEntryCount }) => indexCacheEntryCount)).toEqual([
+      1, 1, 1, 1,
+    ]);
+    expect(diagnostics[0]?.searchableValueCount).toBe(diagnostics[1]?.searchableValueCount);
+  });
+
   it("enforces bounded transient contracts and builds one deterministic encoded GET URL", () => {
     expect(searchRequest("   ").rawQuery).toBe("");
     expect(() => searchRequest("x".repeat(121))).toThrow();
@@ -454,10 +490,12 @@ describe("P10B-16P-06 canonical standalone search adapter", () => {
       searchableAttributeKeys: [],
     });
     let diagnostics: StandaloneCatalogueSearchDiagnostics | undefined;
+    const diagnosticHistory: StandaloneCatalogueSearchDiagnostics[] = [];
     const adapter = createStandaloneCatalogueProductSearchAdapter({
       catalogue,
       onDiagnostics: (value) => {
         diagnostics = value;
+        diagnosticHistory.push(value);
       },
     });
     const startedAt = performance.now();
@@ -485,7 +523,12 @@ describe("P10B-16P-06 canonical standalone search adapter", () => {
       collectionMembershipCount: 1_000,
       normalizedTermCount: 1,
       resultCount: 1_000,
+      indexBuildCount: 2,
+      indexCacheEntryCount: 2,
+      indexReused: false,
     });
+    expect(diagnosticHistory.map(({ indexBuildCount }) => indexBuildCount)).toEqual([1, 1, 2]);
+    expect(diagnosticHistory.map(({ indexReused }) => indexReused)).toEqual([false, true, false]);
     expect(diagnostics!.termComparisonCount).toBeLessThanOrEqual(2_000);
     expect(diagnostics!.searchableValueCount).toBeLessThanOrEqual(3_000);
     // Operation counts are authoritative; this loose guard only catches accidental runaway work.

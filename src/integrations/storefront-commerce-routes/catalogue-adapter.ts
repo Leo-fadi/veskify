@@ -478,6 +478,10 @@ function assetUrlResolver(catalogue: CatalogueDisplayModel, extraAssets: readonl
   return (assetId: string) => urls.get(assetId) ?? "/images/storefront-media-unavailable.svg";
 }
 
+function catalogueProductIndex(catalogue: CatalogueDisplayModel) {
+  return new Map(catalogue.products.map((product) => [product.id, product] as const));
+}
+
 function productResolver(
   product: ProductDisplayModel,
   context: ProductPresentationContext,
@@ -567,6 +571,7 @@ function hasCompatibleVisibleLayout(
 function productPresentation(
   input: ProductCommerceRouteInput,
 ): ProductCommerceRoutePresentation | null {
+  const productById = catalogueProductIndex(input.aggregate.catalogue);
   const dynamicSection = input.page.sections.find(
     (section) => section.visible && section.component === "dynamicProductDetail",
   );
@@ -579,9 +584,7 @@ function productPresentation(
     const variantDimensions = canonicalVariantDimensions(input.product);
     if (variantDimensions === null) return null;
     const relatedProducts = relatedProductIds.map((relatedProductId) => {
-      const product = input.aggregate.catalogue.products.find(
-        (candidate) => candidate.id === relatedProductId,
-      );
+      const product = productById.get(relatedProductId);
       if (!product) throw new Error("A related-product binding does not resolve.");
       return product;
     });
@@ -676,9 +679,7 @@ function productPresentation(
     ? relatedProductsContentSchema.parse(relatedSection.content)
     : { heading: dynamicProductDetailDefaultContent.relatedHeading, productIds: [] };
   const relatedProducts = related.productIds.map((productId) => {
-    const product = input.aggregate.catalogue.products.find(
-      (candidate) => candidate.id === productId,
-    );
+    const product = productById.get(productId);
     if (!product) throw new Error("A related-product binding does not resolve.");
     return product;
   });
@@ -967,15 +968,14 @@ function collectionIdentityTokens(collection: CollectionDisplayModel): ReadonlyS
   );
 }
 
-function contextualAttributeFacet(
+function contextualAttributeIdIsEligible(
   attributeId: string,
-  products: readonly ProductDisplayModel[],
   identityTokens: ReadonlySet<string>,
-): ContextualCollectionFacet | null {
+): boolean {
   const normalizedId = attributeId
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .toLocaleLowerCase("en-US");
-  if (INTERNAL_COLLECTION_FACET_TOKEN.test(normalizedId)) return null;
+  if (INTERNAL_COLLECTION_FACET_TOKEN.test(normalizedId)) return false;
   const idTokens = normalizedId.split(/[_-]+/).filter(Boolean);
   const soleIdToken = idTokens.length === 1 ? idTokens[0] : undefined;
   if (
@@ -984,24 +984,9 @@ function contextualAttributeFacet(
       soleIdToken.endsWith("s") && soleIdToken.length > 3 ? soleIdToken.slice(0, -1) : soleIdToken,
     )
   ) {
-    return null;
+    return false;
   }
-  const productValues = products.flatMap((product) => {
-    const value = product.attributes[attributeId];
-    if (value === undefined) return [];
-    const normalized = (Array.isArray(value) ? value : [value])
-      .map(normalizedFacetValue)
-      .filter(Boolean);
-    return normalized.length ? [normalized] : [];
-  });
-  const distinctValues = new Set(productValues.flat()).size;
-  if (productValues.length < 2 || distinctValues < 2 || distinctValues > 12) return null;
-  return {
-    id: attributeId,
-    coverage: productValues.length,
-    distinctValues,
-    priority: CONTEXTUAL_FACET_PRIORITY[attributeId] ?? 20,
-  };
+  return true;
 }
 
 function contextualCollectionFilterIds(
@@ -1009,14 +994,49 @@ function contextualCollectionFilterIds(
   products: readonly ProductDisplayModel[],
 ): readonly string[] {
   const identityTokens = collectionIdentityTokens(collection);
-  const attributeIds = new Set<string>();
-  products.forEach((product) => {
-    Object.keys(product.attributes).forEach((attributeId) => attributeIds.add(attributeId));
-  });
-  const facets = [...attributeIds].flatMap((attributeId) => {
-    const facet = contextualAttributeFacet(attributeId, products, identityTokens);
-    return facet ? [facet] : [];
-  });
+  const attributeEligibility = new Map<string, boolean>();
+  const attributeAggregates = new Map<string, { coverage: number; distinctValues: Set<string> }>();
+  for (const product of products) {
+    for (const [attributeId, value] of Object.entries(product.attributes)) {
+      let eligible = attributeEligibility.get(attributeId);
+      if (eligible === undefined) {
+        eligible = contextualAttributeIdIsEligible(attributeId, identityTokens);
+        attributeEligibility.set(attributeId, eligible);
+      }
+      if (!eligible) continue;
+      const normalizedValues = (Array.isArray(value) ? value : [value])
+        .map(normalizedFacetValue)
+        .filter(Boolean);
+      if (normalizedValues.length === 0) continue;
+      const aggregate = attributeAggregates.get(attributeId) ?? {
+        coverage: 0,
+        distinctValues: new Set<string>(),
+      };
+      aggregate.coverage += 1;
+      if (aggregate.distinctValues.size <= 12) {
+        for (const normalizedValue of normalizedValues) {
+          aggregate.distinctValues.add(normalizedValue);
+          if (aggregate.distinctValues.size > 12) break;
+        }
+      }
+      attributeAggregates.set(attributeId, aggregate);
+    }
+  }
+  const facets: ContextualCollectionFacet[] = [...attributeAggregates].flatMap(
+    ([attributeId, aggregate]) => {
+      const distinctValues = aggregate.distinctValues.size;
+      return aggregate.coverage < 2 || distinctValues < 2 || distinctValues > 12
+        ? []
+        : [
+            {
+              id: attributeId,
+              coverage: aggregate.coverage,
+              distinctValues,
+              priority: CONTEXTUAL_FACET_PRIORITY[attributeId] ?? 20,
+            },
+          ];
+    },
+  );
   const prices = products.flatMap((product) => (product.price ? [product.price.amount] : []));
   if (prices.length >= 2 && new Set(prices).size >= 2) {
     facets.push({
@@ -1052,6 +1072,7 @@ function contextualCollectionFilterIds(
 function collectionPresentation(
   input: CollectionCommerceRouteInput,
 ): CollectionCommerceRoutePresentation | null {
+  const productById = catalogueProductIndex(input.aggregate.catalogue);
   const dynamicSection = input.page.sections.find(
     (section) => section.visible && section.component === "dynamicCollectionCommerce",
   );
@@ -1068,9 +1089,7 @@ function collectionPresentation(
       throw new Error("Collection route membership must preserve canonical order.");
     }
     const products = productIds.map((productId) => {
-      const product = input.aggregate.catalogue.products.find(
-        (candidate) => candidate.id === productId,
-      );
+      const product = productById.get(productId);
       if (!product) throw new Error("A collection product binding does not resolve.");
       return product;
     });
@@ -1165,9 +1184,7 @@ function collectionPresentation(
     throw new Error("Collection route membership must preserve canonical order.");
   }
   const products = input.collection.productIds.map((productId) => {
-    const product = input.aggregate.catalogue.products.find(
-      (candidate) => candidate.id === productId,
-    );
+    const product = productById.get(productId);
     if (!product) throw new Error("A collection product binding does not resolve.");
     return product;
   });
@@ -1236,6 +1253,7 @@ function collectionPresentation(
 function searchPresentation(
   input: StorefrontSearchCommerceRouteInput,
 ): StorefrontSearchCommerceRoutePresentation | null {
+  const productById = catalogueProductIndex(input.aggregate.catalogue);
   if (
     input.page.pageFamily?.familyId !== "search-results" ||
     input.page.pageFamily.commerceContext.kind !== "search"
@@ -1277,9 +1295,7 @@ function searchPresentation(
     ),
   );
   const products = search.productIds.map((productId) => {
-    const product = input.aggregate.catalogue.products.find(
-      (candidate) => candidate.id === productId,
-    );
+    const product = productById.get(productId);
     if (!product) throw new Error(`Search result product ${productId} is no longer available.`);
     if (!currentProductRouteIds.has(productId)) {
       throw new Error(`Search result product ${productId} has no current public product route.`);

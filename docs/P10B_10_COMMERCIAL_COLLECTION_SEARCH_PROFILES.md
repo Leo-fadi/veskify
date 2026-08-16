@@ -151,3 +151,17 @@ sort, page, result IDs, and result count remain runtime-only and are absent from
 `StorefrontSnapshot`, history, compiled design decisions, and publication records as editable
 authority. This standalone Baseline does not claim a Vesko search endpoint, AI/semantic/vector/fuzzy
 search, typo correction, recommendations, personalization, analytics, or any commerce/media write.
+
+## Current P10B-17 continuation
+
+P10B-17 derives collection/search responsive execution from the selected registered anatomy and
+applies its filter disclosure, layout reflow, product-grid, child-collection, and density behavior
+at the declared breakpoints. Search/result headings and loading/no-result counts use semantic live
+state, while collection results use a deterministic 24-product presentation window with bounded
+previous/next controls. Each window retains the full canonical product count and fingerprint;
+search result identity remains the P10B-16P-06 transient query/result authority.
+
+The four profiles, renderer, canonical card family, membership/order, snapshot, commerce, and media
+authorities remain singular and unchanged. The presentation window is not persisted and cannot
+write catalogue truth. P10B-18 retains broad catalogue visual quality, representative density, and
+scale acceptance.

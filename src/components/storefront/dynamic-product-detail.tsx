@@ -22,7 +22,7 @@ import {
   type Locale,
   type LocalizedText,
 } from "@/domain/shared";
-import { canonicalValueString } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   dynamicProductDetailContentSchema,
   dynamicProductDetailPropsSchema,
@@ -36,7 +36,14 @@ import {
 import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-product-detail.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
-import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
+import {
+  ResponsiveStorefrontImage,
+  type StorefrontImageLoadingRole,
+} from "./responsive-storefront-image";
+import {
+  resolveResponsiveExecutionAuthority,
+  responsiveExecutionDataAttributes,
+} from "./responsive-execution";
 import {
   CanonicalProductCard,
   type CanonicalProductCardNavigationIntent,
@@ -217,15 +224,16 @@ export function validateDynamicProductDetailRoutePresentation(
     throw new Error("The dynamic PDP renderer requires a dynamicProductDetail instance.");
   }
   const projection = componentProjectionContextSchema.parse(projectionInput);
+  const productsById = new Map(
+    projection.products.map((candidate) => [candidate.productId, candidate] as const),
+  );
   const productBinding = instance.bindings.find(
     (binding) => binding.slotId === "primaryProduct" && binding.source === "product",
   );
   if (!productBinding || productBinding.source !== "product") {
     throw new Error("The dynamic PDP renderer requires one canonical product binding.");
   }
-  const product = projection.products.find(
-    (candidate) => candidate.productId === productBinding.productId,
-  );
+  const product = productsById.get(productBinding.productId);
   if (!product) throw new Error(`Unknown PDP product: ${productBinding.productId}.`);
 
   const relatedBinding = instance.bindings.find(
@@ -242,7 +250,7 @@ export function validateDynamicProductDetailRoutePresentation(
   const relatedIds =
     relatedBinding?.source === "productList" ? relatedBinding.productIds : ([] as string[]);
   const relatedProducts = relatedIds.map((productId) => {
-    const related = projection.products.find((candidate) => candidate.productId === productId);
+    const related = productsById.get(productId);
     if (!related) throw new Error(`Unknown related product: ${productId}.`);
     return related;
   });
@@ -440,11 +448,13 @@ function ProductAssetImage({
   artDirection,
   locale,
   className,
+  loadingRole = "content",
 }: {
   asset: AssetRef;
   artDirection?: StorefrontAssetMetadata["artDirection"];
   locale: LocaleContext;
   className?: string;
+  loadingRole?: StorefrontImageLoadingRole;
 }) {
   const alt = asset.decorative || !asset.alt ? "" : text(asset.alt, locale);
   return (
@@ -453,6 +463,7 @@ function ProductAssetImage({
       asset={asset}
       authority={artDirection}
       className={className}
+      loadingRole={loadingRole}
     />
   );
 }
@@ -468,13 +479,20 @@ function moneyLabel(
   }).format(value.amount);
 }
 
-function mediaPresentation(product: ProductPresentationContext, assetId: string) {
-  const media = product.media.find((item) => item.assetId === assetId);
+function mediaPresentation(
+  product: ProductPresentationContext,
+  mediaByAssetId: ReadonlyMap<string, ProductPresentationContext["media"][number]>,
+  assetId: string,
+) {
+  const media = mediaByAssetId.get(assetId);
   return {
     alt: media?.decorative ? undefined : (media?.alt ?? product.title),
     decorative: media?.decorative ?? false,
   };
 }
+
+export const PDP_PRESENTED_MEDIA_LIMIT = 8;
+export const PDP_PRESENTED_RELATED_PRODUCT_LIMIT = 8;
 
 export function DynamicProductGallery({
   product,
@@ -491,18 +509,21 @@ export function DynamicProductGallery({
   treatment: DynamicProductDetailProps["mediaTreatment"];
   locale: LocaleContext;
 }) {
-  const galleryMedia = media.filter(
-    (item) =>
-      product.media.find((candidate) => candidate.assetId === item.assetId)?.role !== "editorial",
+  const mediaByAssetId = new Map(
+    product.media.map((candidate) => [candidate.assetId, candidate] as const),
   );
-  const presentationMedia = galleryMedia.reduce<
-    Array<{
-      reference: (typeof galleryMedia)[number];
-      resolved: ResolvedAsset;
-      presentationKey: string;
-    }>
-  >((current, reference) => {
-    const presentation = mediaPresentation(product, reference.assetId);
+  const canonicalGalleryMedia = product.media.filter(({ role }) => role !== "editorial");
+  const galleryMedia = media.filter(
+    (item) => mediaByAssetId.get(item.assetId)?.role !== "editorial",
+  );
+  type PresentationMedia = {
+    reference: (typeof galleryMedia)[number];
+    resolved: ResolvedAsset;
+    presentationKey: string;
+  };
+  const presentationByKey = new Map<string, PresentationMedia>();
+  galleryMedia.forEach((reference) => {
+    const presentation = mediaPresentation(product, mediaByAssetId, reference.assetId);
     const resolved = assetFor(reference.assetId, presentation.alt, presentation.decorative);
     const presentationKey = canonicalValueString({
       url: resolved.asset.url,
@@ -514,11 +535,16 @@ export function DynamicProductGallery({
         transform,
       })),
     });
-    if (current.some((item) => item.presentationKey === presentationKey)) return current;
-    current.push({ reference, resolved, presentationKey });
-    return current;
-  }, []);
-  const mediaFingerprint = canonicalValueString(
+    if (!presentationByKey.has(presentationKey)) {
+      presentationByKey.set(presentationKey, { reference, resolved, presentationKey });
+    }
+  });
+  const allPresentationMedia = [...presentationByKey.values()];
+  const presentationMedia = allPresentationMedia.slice(0, PDP_PRESENTED_MEDIA_LIMIT);
+  const canonicalMediaFingerprint = canonicalValueFingerprint(
+    canonicalGalleryMedia.map(({ assetId, role }) => ({ assetId, role })),
+  );
+  const mediaFingerprint = canonicalValueFingerprint(
     presentationMedia.map(({ reference, resolved }) => [reference.assetId, resolved.asset.url]),
   );
   const [selection, setSelection] = useState(() => ({
@@ -549,9 +575,12 @@ export function DynamicProductGallery({
     <section
       aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
       className={`${styles.gallery} ${styles[`gallery_${layout}`]} ${styles[`media_${treatment}`]}`}
-      data-canonical-media-count={galleryMedia.length}
+      data-canonical-media-count={canonicalGalleryMedia.length}
+      data-canonical-media-fingerprint={canonicalMediaFingerprint}
+      data-deduplicated-media-count={allPresentationMedia.length}
       data-layout={layout}
       data-presented-media-count={presentationMedia.length}
+      data-resolved-media-count={galleryMedia.length}
     >
       <figure
         className={styles.primaryMedia}
@@ -563,6 +592,7 @@ export function DynamicProductGallery({
           asset={selected.resolved.asset}
           className={styles.primaryImage}
           locale={locale}
+          loadingRole="primary"
         />
       </figure>
       {presentationMedia.length > 1 ? (
@@ -571,24 +601,27 @@ export function DynamicProductGallery({
           className={styles.thumbnails}
           role="group"
         >
-          {presentationMedia.map(({ reference, resolved }, index) => {
-            return (
-              <button
-                aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
-                aria-pressed={reference.assetId === selected.reference.assetId}
-                data-asset-provenance={resolved.provenance.kind}
-                key={reference.assetId}
-                onClick={() => setSelection({ mediaFingerprint, assetId: reference.assetId })}
-                type="button"
-              >
-                <ProductAssetImage
-                  artDirection={resolved.artDirection}
-                  asset={resolved.asset}
-                  locale={locale}
-                />
-              </button>
-            );
-          })}
+          {presentationMedia
+            .map((item, index) => ({ ...item, index }))
+            .filter(({ reference }) => reference.assetId !== selected.reference.assetId)
+            .map(({ reference, resolved, index }) => {
+              return (
+                <button
+                  aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
+                  data-asset-provenance={resolved.provenance.kind}
+                  key={reference.assetId}
+                  onClick={() => setSelection({ mediaFingerprint, assetId: reference.assetId })}
+                  type="button"
+                >
+                  <ProductAssetImage
+                    artDirection={resolved.artDirection}
+                    asset={resolved.asset}
+                    locale={locale}
+                    loadingRole="thumbnail"
+                  />
+                </button>
+              );
+            })}
         </div>
       ) : null}
     </section>
@@ -773,7 +806,14 @@ function EnumeratedOptionGroup({
   const selectedValueId = selection?.valueId;
   const complete = !resolvedOptions.incompleteRequiredGroupIds.includes(group.id);
   const groupDependencyReason = dependencyMessage(product, resolvedOptions, group.id, locale);
+  const groupHelpId = `${describedById}-help`;
   const groupDependencyReasonId = `${describedById}-dependency`;
+  const groupDescriptions = [
+    group.helpText ? groupHelpId : undefined,
+    groupDependencyReason ? groupDependencyReasonId : undefined,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ");
 
   if (group.presentation === "dropdown") {
     return (
@@ -782,14 +822,11 @@ function EnumeratedOptionGroup({
           <span>{text(group.label, locale)}</span>
           <OptionGroupStatus complete={complete} locale={locale} required={group.required} />
         </label>
-        {group.helpText ? <p id={describedById}>{text(group.helpText, locale)}</p> : null}
+        {group.helpText ? <p id={groupHelpId}>{text(group.helpText, locale)}</p> : null}
         {groupDependencyReason ? <p id={groupDependencyReasonId}>{groupDependencyReason}</p> : null}
         <select
-          aria-describedby={
-            [group.helpText ? describedById : undefined, groupDependencyReasonId]
-              .filter((id) => id && (id !== groupDependencyReasonId || groupDependencyReason))
-              .join(" ") || undefined
-          }
+          aria-describedby={groupDescriptions || undefined}
+          aria-invalid={group.required && !complete}
           disabled={interactionDisabled || groupDependencyReason !== undefined}
           id={`${describedById}-select`}
           onChange={(event) => {
@@ -833,12 +870,18 @@ function EnumeratedOptionGroup({
 
   if (group.presentation === "radio") {
     return (
-      <fieldset className={styles.radioGroup} data-option-group-id={group.id}>
+      <fieldset
+        aria-describedby={groupDescriptions || undefined}
+        aria-invalid={group.required && !complete}
+        className={styles.radioGroup}
+        data-option-group-id={group.id}
+      >
         <legend>
           {text(group.label, locale)}
           <OptionGroupStatus complete={complete} locale={locale} required={group.required} />
         </legend>
-        {group.helpText ? <p>{text(group.helpText, locale)}</p> : null}
+        {group.helpText ? <p id={groupHelpId}>{text(group.helpText, locale)}</p> : null}
+        {groupDependencyReason ? <p id={groupDependencyReasonId}>{groupDependencyReason}</p> : null}
         {group.values.map((value) => {
           const presentation = resolvedValuePresentation(
             product,
@@ -859,6 +902,7 @@ function EnumeratedOptionGroup({
                   }
                 }}
                 type="radio"
+                required={group.required}
                 value={value.id}
               />
               <span>{text(value.label, locale)}</span>
@@ -871,12 +915,18 @@ function EnumeratedOptionGroup({
   }
 
   return (
-    <fieldset className={styles.buttonGroup} data-option-group-id={group.id}>
+    <fieldset
+      aria-describedby={groupDescriptions || undefined}
+      aria-invalid={group.required && !complete}
+      className={styles.buttonGroup}
+      data-option-group-id={group.id}
+    >
       <legend>
         {text(group.label, locale)}
         <OptionGroupStatus complete={complete} locale={locale} required={group.required} />
       </legend>
-      {group.helpText ? <p>{text(group.helpText, locale)}</p> : null}
+      {group.helpText ? <p id={groupHelpId}>{text(group.helpText, locale)}</p> : null}
+      {groupDependencyReason ? <p id={groupDependencyReasonId}>{groupDependencyReason}</p> : null}
       <div className={styles.optionValues}>
         {group.values.map((value) => {
           const reasonId = `${describedById}-${value.id}`;
@@ -917,6 +967,7 @@ function EnumeratedOptionGroup({
                     artDirection={image.artDirection}
                     asset={image.asset}
                     locale={locale}
+                    loadingRole="thumbnail"
                   />
                 ) : null}
                 <span>{text(value.label, locale)}</span>
@@ -947,11 +998,13 @@ function TextOptionGroup({
 }) {
   const inputId = useId();
   const constraintsId = `${inputId}-constraints`;
+  const helpId = `${inputId}-help`;
   const dependencyId = `${inputId}-dependency`;
   const selection = selectedTextState(resolvedOptions, group.id);
   const enteredText = draftValue ?? selection?.value ?? "";
   const constraints = group.textEntryConstraints!;
   const blockedReason = dependencyMessage(product, resolvedOptions, group.id, locale);
+  const complete = !resolvedOptions.incompleteRequiredGroupIds.includes(group.id);
   const policyGuidance: Record<typeof constraints.characterPolicy, { en: string; fi: string }> = {
     unicodeText: {
       en: "Use letters, numbers, spaces and standard symbols.",
@@ -978,18 +1031,19 @@ function TextOptionGroup({
     <div className={styles.textOption} data-option-group-id={group.id}>
       <label htmlFor={inputId}>
         <span>{text(group.label, locale)}</span>
-        <OptionGroupStatus
-          complete={!resolvedOptions.incompleteRequiredGroupIds.includes(group.id)}
-          locale={locale}
-          required={group.required}
-        />
+        <OptionGroupStatus complete={complete} locale={locale} required={group.required} />
       </label>
-      {group.helpText ? <p>{text(group.helpText, locale)}</p> : null}
+      {group.helpText ? <p id={helpId}>{text(group.helpText, locale)}</p> : null}
       {blockedReason ? <p id={dependencyId}>{blockedReason}</p> : null}
       <input
-        aria-describedby={[constraintsId, blockedReason ? dependencyId : undefined]
+        aria-describedby={[
+          group.helpText ? helpId : undefined,
+          constraintsId,
+          blockedReason ? dependencyId : undefined,
+        ]
           .filter(Boolean)
           .join(" ")}
+        aria-invalid={group.required && !complete}
         disabled={blockedReason !== undefined}
         id={inputId}
         maxLength={constraints.maxLength}
@@ -1087,9 +1141,12 @@ export function DynamicProductResolutionStatus({
   if (!lifecycle.message && lifecycle.warnings.length === 0) return null;
   return (
     <section
-      aria-live="polite"
+      aria-atomic="true"
+      aria-busy={lifecycle.state === "pending" || undefined}
+      aria-live={lifecycle.state === "failure" ? "assertive" : "polite"}
       className={styles.resolutionStatus}
       data-resolution-state={lifecycle.state}
+      role={lifecycle.state === "failure" ? "alert" : "status"}
     >
       {lifecycle.message ? <p>{text(lifecycle.message, locale)}</p> : null}
       {lifecycle.warnings.length > 0 ? (
@@ -1198,6 +1255,7 @@ export function DynamicProductSupportingContent({
             artDirection={image.artDirection}
             asset={image.asset}
             locale={locale}
+            loadingRole="content"
           />
         </figure>
       ) : null}
@@ -1232,11 +1290,21 @@ export function DynamicRelatedProducts({
 }) {
   const headingId = useId();
   if (products.length === 0) return null;
+  const presentedProducts = products.slice(0, PDP_PRESENTED_RELATED_PRODUCT_LIMIT);
+  const canonicalRelatedFingerprint = canonicalValueFingerprint(
+    products.map(({ productId, revision }) => ({ productId, revision })),
+  );
   return (
     <section aria-labelledby={headingId} className={styles.relatedProducts}>
       <h2 id={headingId}>{text(heading, locale)}</h2>
-      <div className={styles.relatedGrid} data-related-product-count={products.length}>
-        {products.map((product) => {
+      <div
+        className={styles.relatedGrid}
+        data-canonical-related-product-count={products.length}
+        data-canonical-related-product-fingerprint={canonicalRelatedFingerprint}
+        data-presented-related-product-count={presentedProducts.length}
+        data-related-product-count={presentedProducts.length}
+      >
+        {presentedProducts.map((product) => {
           const media = product.media.find(({ role }) => role !== "editorial");
           const image = media
             ? assetFor(
@@ -1335,11 +1403,12 @@ export function DynamicProductPrimaryAction({
   return (
     <section
       aria-label={fallbackLabel("Purchase action", "Ostotoiminto", locale)}
+      aria-busy={submitting || undefined}
       className={`${styles.primaryAction} ${sticky ? styles.primaryAction_sticky : ""}`}
       data-action-state={state.state}
     >
       <button
-        aria-describedby={state.message ? messageId : undefined}
+        aria-describedby={state.message || submitting ? messageId : undefined}
         aria-disabled={!state.enabled || submitting}
         disabled={!state.enabled || submitting}
         onClick={emitPrimaryAction}
@@ -1347,13 +1416,27 @@ export function DynamicProductPrimaryAction({
       >
         {text(label, locale)}
       </button>
-      {state.message ? (
-        <p aria-live="polite" id={messageId}>
-          {text(state.message, locale)}
+      {state.message || submitting ? (
+        <p aria-live="polite" id={messageId} role="status">
+          {submitting
+            ? fallbackLabel("Processing product action…", "Käsitellään tuotetoimintoa…", locale)
+            : text(state.message!, locale)}
         </p>
       ) : null}
     </section>
   );
+}
+
+function productDetailAnatomyIdentity(variantId: DynamicProductDetailVariant) {
+  const anatomy = veskifyComponentRegistryV2.get("dynamicProductDetail").commercialAnatomy;
+  if (!anatomy) throw new Error("Dynamic product detail requires registered anatomy.");
+  const variant = anatomy.variants.find((candidate) => candidate.variantId === variantId);
+  if (!variant) throw new Error(`Missing product-detail anatomy variant: ${variantId}.`);
+  const responsive = resolveResponsiveExecutionAuthority(anatomy, variantId);
+  return {
+    presentationMode: variant.structure.presentationMode,
+    responsiveAttributes: responsiveExecutionDataAttributes(responsive),
+  };
 }
 
 export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
@@ -1444,15 +1527,19 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
         : input.variant === "editorial" || input.variant === "editorialSplit"
           ? "high-consideration"
           : "standard-commerce";
+  const anatomy = productDetailAnatomyIdentity(input.variant);
   return (
     <article
+      aria-busy={input.resolutionLifecycle.state === "pending" || undefined}
       aria-labelledby={titleId}
       className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
       data-component="dynamicProductDetail"
       data-pdp-composition={composition}
+      data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-variant={input.variant}
       data-responsive-layout="content-driven"
+      {...anatomy.responsiveAttributes}
     >
       {composition === "standard-commerce" ? (
         <>

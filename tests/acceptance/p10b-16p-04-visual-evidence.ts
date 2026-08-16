@@ -11,8 +11,7 @@ export type P10B16P04RendererMode =
   | "isolated-proposal"
   | "saved-preview"
   | "isolated-registered-frame-regions"
-  | "studio-search-unavailable"
-  | "search-runtime-fail-closed";
+  | "search-runtime-results";
 
 export type P10B16P04SafeSelection = Readonly<{
   directionId: string;
@@ -79,7 +78,6 @@ export type P10B16P04SafeSelection = Readonly<{
       productTypeId: string;
       archetypeId: string;
     }>[];
-    searchExecution: "registered-presentation-fail-closed-runtime";
     selectedArchetypes: Readonly<{
       collection: P10B16P04SafeDynamicArchetype;
       standardSimple: P10B16P04SafeDynamicArchetype;
@@ -217,21 +215,62 @@ function pngDimensions(image: Buffer): Readonly<{ width: number; height: number 
   return { width: image.readUInt32BE(16), height: image.readUInt32BE(20) };
 }
 
+function isReplacedImageContext(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /(?:element|node).*(?:not attached|detached)|execution context was destroyed|cannot find context with specified id|frame was detached/iu.test(
+      error.message,
+    )
+  );
+}
+
 async function waitForImages(root: Locator): Promise<void> {
-  await root.locator("img").evaluateAll(async (images) => {
-    await Promise.all(
-      images.map(async (candidate) => {
-        const image = candidate as HTMLImageElement;
-        if (!image.complete) {
-          await new Promise<void>((resolve) => {
-            image.addEventListener("load", () => resolve(), { once: true });
-            image.addEventListener("error", () => resolve(), { once: true });
-          });
-        }
-        await image.decode().catch(() => undefined);
-      }),
-    );
+  const scrollPosition = await root.evaluate((candidate) => {
+    const view = candidate.ownerDocument.defaultView;
+    return { x: view?.scrollX ?? 0, y: view?.scrollY ?? 0 };
   });
+  const imageCount = await root.locator("img").count();
+  const maximumContextAttempts = 3;
+  try {
+    for (let index = 0; index < imageCount; index += 1) {
+      for (let attempt = 0; attempt < maximumContextAttempts; attempt += 1) {
+        try {
+          const image = root.locator("img").nth(index);
+          await image.scrollIntoViewIfNeeded();
+          await image.evaluate(async (candidate) => {
+            const value = candidate as HTMLImageElement;
+            await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+            if (!value.complete) {
+              await new Promise<void>((resolve) => {
+                const settle = () => {
+                  value.removeEventListener("load", settle);
+                  value.removeEventListener("error", settle);
+                  resolve();
+                };
+                value.addEventListener("load", settle);
+                value.addEventListener("error", settle);
+                if (value.complete) settle();
+              });
+            }
+            if (value.naturalWidth === 0 || value.naturalHeight === 0) {
+              throw new Error("A retained storefront image did not load successfully.");
+            }
+            await value.decode();
+          });
+          break;
+        } catch (error) {
+          if (!isReplacedImageContext(error) || attempt === maximumContextAttempts - 1) {
+            throw error;
+          }
+        }
+      }
+    }
+  } finally {
+    await root.evaluate(async (candidate, position) => {
+      candidate.ownerDocument.defaultView?.scrollTo(position.x, position.y);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }, scrollPosition);
+  }
 }
 
 async function hideFrameworkDevelopmentChrome(root: Locator): Promise<void> {

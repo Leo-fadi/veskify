@@ -8,7 +8,9 @@ import {
   type StorefrontSearchResultMaterialV1,
   type StorefrontSearchResultPageV1,
 } from "@/application/storefront-search";
+import { createStorefrontRenderContext } from "@/components/registry";
 import { renderDynamicCollectionCommerce } from "@/components/storefront/dynamic-collection-commerce";
+import { StorefrontSearchCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
@@ -115,15 +117,37 @@ describe("P10B-16P-06 canonical search renderer context", () => {
   it("reuses exact product cards while suppressing collection-only campaign and controls", () => {
     const aggregate = p10b16p01DynamicCommerceAggregate();
     const productIds = aggregate.catalogue.products.slice(0, 3).map(({ id }) => id);
-    const { presentation } = searchPresentation(resultPage(productIds));
+    const { page, presentation, snapshot } = searchPresentation(resultPage(productIds));
     const markup = renderToStaticMarkup(
       renderDynamicCollectionCommerce(rendererInput(presentation)),
+    );
+    const routeMarkup = renderToStaticMarkup(
+      <StorefrontSearchCommerceRoute
+        activeLocale="en"
+        context={createStorefrontRenderContext({
+          activeLocale: "en",
+          primaryLocale: "en",
+          catalogue: aggregate.catalogue,
+          snapshot,
+        })}
+        onContinueShopping={() => undefined}
+        onNavigateProduct={() => undefined}
+        page={page}
+        presentation={presentation}
+        primaryLocale="en"
+        target="preview"
+      />,
     );
 
     expect(markup).toContain('data-search-context="transient-canonical-results"');
     expect(markup).toContain('data-search-query="ring"');
     expect(markup).toContain('data-search-result-count="3"');
     expect(markup).toContain('data-card-context="searchResults"');
+    expect(routeMarkup).toMatch(/<main[^>]*id="storefront-main-content"[^>]*tabindex="-1"/);
+    expect(routeMarkup.match(/<main(?:\s|>)/g)).toHaveLength(1);
+    expect(markup.match(/<h1(?:\s|>)/g)).toHaveLength(1);
+    expect(markup).toMatch(/<h1[^>]*>Search results<\/h1>[\s\S]*<h2[^>]*>Products<\/h2>[\s\S]*<h3/);
+    expect(markup).toContain('role="status"');
     expect(markup).not.toContain("data-collection-hero-treatment");
     expect(markup).not.toContain('data-layout-region="campaign-lead"');
     expect(markup).not.toContain('data-layout-region="filters"');

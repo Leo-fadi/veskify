@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SearchPreviewClient } from "@/app/projects/[projectId]/search/search-preview-client";
 import {
@@ -213,6 +213,52 @@ describe("P10B-16P-06 storefront search routes", () => {
     expect(exactRoute?.route).toMatch(/^\/products\//u);
     expect(canonicalStorefrontContentFingerprint(draft)).toBe(beforeFingerprint);
     expect(JSON.stringify(draft)).not.toContain(query);
+  });
+
+  it("reuses one search port across query changes until exact catalogue authority changes", async () => {
+    const aggregate = p10b16p01DynamicCommerceAggregate();
+    const searchPortFactory = vi.fn(({ catalogue }: ProjectAggregate) =>
+      createStandaloneCatalogueProductSearchAdapter({ catalogue }),
+    );
+    const firstQuery = localized(aggregate.catalogue.products[0].title, "en");
+    const secondQuery = localized(aggregate.catalogue.products[1].title, "en");
+    const view = render(
+      <SearchPreviewClient
+        initialAggregate={aggregate}
+        projectId={aggregate.project.id}
+        searchParameters={{ q: firstQuery, locale: "en" }}
+        searchPortFactory={searchPortFactory}
+      />,
+    );
+
+    expect(await screen.findByText(firstQuery, { selector: "button" })).toBeVisible();
+    expect(searchPortFactory).toHaveBeenCalledOnce();
+
+    view.rerender(
+      <SearchPreviewClient
+        initialAggregate={aggregate}
+        projectId={aggregate.project.id}
+        searchParameters={{ q: secondQuery, locale: "en" }}
+        searchPortFactory={searchPortFactory}
+      />,
+    );
+    expect(await screen.findByText(secondQuery, { selector: "button" })).toBeVisible();
+    expect(searchPortFactory).toHaveBeenCalledOnce();
+
+    const changedAggregate = structuredClone(aggregate);
+    changedAggregate.catalogue.products[0].description = {
+      ...changedAggregate.catalogue.products[0].description,
+      en: "Updated canonical catalogue authority",
+    };
+    view.rerender(
+      <SearchPreviewClient
+        initialAggregate={changedAggregate}
+        projectId={aggregate.project.id}
+        searchParameters={{ q: firstQuery, locale: "en" }}
+        searchPortFactory={searchPortFactory}
+      />,
+    );
+    await waitFor(() => expect(searchPortFactory).toHaveBeenCalledTimes(2));
   });
 
   it("renders Finnish no-results without collection-only controls or identity", async () => {

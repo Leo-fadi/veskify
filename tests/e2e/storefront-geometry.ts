@@ -54,13 +54,16 @@ export async function storefrontGeometryViolations(
       style.overflowX === "auto" || style.overflowX === "scroll";
     const isMeaningful = (element: Element) =>
       element.matches(
-        "a, button, input, select, textarea, summary, [role], h1, h2, h3, h4, h5, h6, p, li, label, img, video",
+        "a, button, input, select, textarea, summary, [role], [data-art-direction-contract], h1, h2, h3, h4, h5, h6, p, li, label, img, video",
       );
     const isExcluded = (element: Element) =>
       Boolean(
         element.closest(
           "[aria-hidden='true'], [data-storefront-geometry-ignore], [hidden], dialog:not([open]), [role='dialog'][aria-hidden='true']",
-        ) || element.matches("img[alt=''], [role='presentation'], [data-storefront-decorative]"),
+        ) ||
+        element.matches("img[alt=''], [role='presentation'], [data-storefront-decorative]") ||
+        (element.closest("[data-art-direction-contract]") &&
+          !element.matches("[data-art-direction-contract]")),
       );
     const hasIntendedScroller = (element: Element) => {
       let current: Element | null = element.parentElement;

@@ -22,5 +22,7 @@ jobs:
       - run: pnpm test
       - name: Production build (Webpack)
         run: pnpm build:webpack
+      - name: Storefront first-load budgets
+        run: pnpm build:check:storefront-budgets
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e

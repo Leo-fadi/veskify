@@ -233,8 +233,8 @@ try {
     title: "Veskify Software Design Document",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Verified baseline: 15 August 2026",
-      "P10B-16P-06 canonical search query/results adapter",
+      "Verified baseline: 16 August 2026",
+      "P10B-17 responsive, accessibility and performance closure",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -215,6 +215,118 @@ describe("P10B-06 commercial shared-frame families", () => {
     cleanup();
   });
 
+  it("binds skip and current-page semantics from server-owned page authority", () => {
+    const result = compile("editorial-masthead");
+    const navigationItem = result.snapshot.navigation.primary.find(
+      (item) => item.target.type === "page",
+    );
+    if (!navigationItem || navigationItem.target.type !== "page") {
+      throw new Error("The frame fixture requires one canonical page navigation item.");
+    }
+    const currentPageId = navigationItem.target.pageId;
+    const currentPage = result.snapshot.pages.find((page) => page.id === currentPageId);
+    if (!currentPage) {
+      throw new Error("The canonical navigation target must resolve to a snapshot page.");
+    }
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: result.snapshot,
+    });
+    const markup = renderToStaticMarkup(renderStorefrontPage(currentPage, context));
+
+    expect(markup).toContain('href="#storefront-main-content"');
+    expect(markup).toContain('<main id="storefront-main-content" tabindex="-1">');
+    expect(markup).toContain(`aria-current="page" href="${context.pagePaths[currentPage.id]}"`);
+  });
+
+  it("makes the page and non-dialog header regions inert while a modal menu is open", async () => {
+    const result = compile("editorial-masthead");
+    const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: result.snapshot,
+    });
+    const { container } = render(renderStorefrontPage(homepage, context));
+
+    const trigger = screen.getByRole("button", { name: "Open menu" });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog", { name: "Mobile navigation" })).toHaveAttribute(
+      "aria-modal",
+      "true",
+    );
+    expect(container.querySelector("main")?.inert).toBe(true);
+    expect(container.querySelector("footer")?.inert).toBe(true);
+    expect(
+      container.querySelector<HTMLElement>('[data-frame-region="desktop-header-layout"]')?.inert,
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await Promise.resolve();
+    expect(container.querySelector("main")?.inert).not.toBe(true);
+    expect(screen.getByRole("button", { name: "Open menu" })).toHaveFocus();
+    cleanup();
+  });
+
+  it("closes a trapping mobile menu and restores the document at the desktop breakpoint", async () => {
+    const mediaListeners = new Set<(event: MediaQueryListEvent) => void>();
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({
+        matches: false,
+        media: "(min-width: 64rem)",
+        onchange: null,
+        addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) =>
+          mediaListeners.add(listener),
+        removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) =>
+          mediaListeners.delete(listener),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+    try {
+      const result = compile("editorial-masthead");
+      const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
+      const context = createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue: aurumNordicSeed.catalogue,
+        snapshot: result.snapshot,
+      });
+      const { container } = render(renderStorefrontPage(homepage, context));
+
+      fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+      expect(screen.getByRole("dialog", { name: "Mobile navigation" })).toBeVisible();
+      expect(document.body.style.overflow).toBe("hidden");
+      expect(container.querySelector("main")?.inert).toBe(true);
+
+      mediaListeners.forEach((listener) =>
+        listener({ matches: true, media: "(min-width: 64rem)" } as MediaQueryListEvent),
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Mobile navigation" })).toBeNull(),
+      );
+      expect(document.body.style.overflow).toBe("");
+      expect(container.querySelector("main")?.inert).not.toBe(true);
+      expect(container.querySelector("footer")?.inert).not.toBe(true);
+      expect(
+        container.querySelector<HTMLElement>('[data-frame-region="desktop-header-layout"] a'),
+      ).toHaveFocus();
+      cleanup();
+    } finally {
+      Object.defineProperty(window, "matchMedia", {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
+
   it("renders canonical footer contact and policy content without inventing legal facts", () => {
     const result = compile("compact-technical");
     const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
@@ -359,12 +471,16 @@ describe("P10B-06 commercial shared-frame families", () => {
       snapshot,
     });
     const markup = renderToStaticMarkup(renderStorefrontPage(snapshot.pages[0], context));
+    const searchPage = snapshot.pages.find(({ id }) => id === "page_search_frame_proof")!;
+    const searchMarkup = renderToStaticMarkup(renderStorefrontPage(searchPage, context));
     expect(markup).toContain('role="search" action="/search" method="get"');
+    expect(markup).not.toContain("data-current-search-page");
     expect(markup).toContain('aria-label="Hae tuotteita"');
     expect(markup).toContain(">Hae</button>");
     expect(markup).toContain('href="/cart"');
     expect(markup).toContain(">Ostoskori<");
     expect(markup.match(/data-frame-utility="cart"/g)).toHaveLength(2);
+    expect(searchMarkup).toContain('data-current-search-page="true"');
   });
 
   it("projects the executable dynamic search route through the shared-frame search form", () => {

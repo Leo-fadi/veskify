@@ -450,9 +450,11 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
     ).toEqual(["media", "merchandising", "content", "actions"]);
     expect(campaign.children[0]).toHaveAttribute("data-asset-role", "heroDesktop");
     const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
-    expect(css).toMatch(/variant_fullBleedOverlay \.media_background[\s\S]*position:\s*relative/);
     expect(css).toMatch(
-      /variant_lookbookGallery \.storyGallery[\s\S]*scroll-snap-type:\s*x mandatory/,
+      /data-responsive-transformations~="overlayToContained"\] \.media_background[\s\S]*position:\s*relative/,
+    );
+    expect(css).toMatch(
+      /data-responsive-transformations~="lookbookCarousel"\] \.storyGallery[\s\S]*scroll-snap-type:\s*x mandatory/,
     );
   });
 

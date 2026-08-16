@@ -17,6 +17,10 @@ import {
   HomepagePromotionSection,
 } from "@/components/storefront/homepage-commerce";
 import {
+  resolveResponsiveExecutionAuthority,
+  responsiveExecutionDataAttributes,
+} from "@/components/storefront/responsive-execution";
+import {
   defineComponent,
   resolveStorefrontNavigationPath,
   type ComponentDefinition,
@@ -272,6 +276,12 @@ function text(value: Record<string, string>, context: StorefrontRenderContext) {
   return resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
 }
 
+function contentResponsiveAttributes(variant: string) {
+  const anatomy = contentSupportDefinition.commercialAnatomy;
+  if (!anatomy) throw new Error("Content/support requires registered responsive anatomy.");
+  return responsiveExecutionDataAttributes(resolveResponsiveExecutionAuthority(anatomy, variant));
+}
+
 function StorytellingReuse({
   sectionId,
   variant,
@@ -329,6 +339,7 @@ function StorytellingReuse({
     (document.payload.campaign?.actionLabel && continuationPath ? 1 : 0);
   return (
     <div
+      {...contentResponsiveAttributes(variant)}
       data-component="contentSupport"
       data-content-contribution-count={contributionCount}
       data-evidence-id={document.evidence.authorityId}
@@ -454,12 +465,26 @@ function CampaignReuse({
   if (!campaign) throw new Error("The selected campaign layout requires approved campaign facts.");
   return (
     <div
+      {...contentResponsiveAttributes(variant)}
       data-component="contentSupport"
       data-reading-width={props.readingWidth}
       data-surface={surface}
       data-text-alignment={props.textAlignment}
       data-variant={variant}
     >
+      <section
+        aria-labelledby={`${sectionId}-campaign-heading`}
+        className={`${styles.section} ${styles.opening}`}
+        data-content-region="campaign-opening"
+        data-surface={surface}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-campaign-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
       <HomepagePromotionSection
         target={context.renderTarget ?? "preview"}
         instance={{
@@ -548,6 +573,7 @@ function ContentSupportReading({
   const blocks = payload.blocks;
   return (
     <section
+      {...contentResponsiveAttributes(variant)}
       aria-labelledby={`${sectionId}-heading`}
       className={styles.section}
       data-component="contentSupport"

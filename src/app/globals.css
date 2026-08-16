@@ -56,6 +56,8 @@
   --brand-surface-muted-text: #1d1a16;
   --brand-surface-contrast-text: #ffffff;
   --brand-surface-contrast-muted-text: #ffffff;
+  --brand-focus-ring-inner: #1d1a16;
+  --brand-focus-ring-outer: #ffffff;
   --brand-control-primary-background: #8a5a2b;
   --brand-control-primary-border: #8a5a2b;
   --brand-control-primary-text: #ffffff;
@@ -135,8 +137,29 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid var(--brand-color-accent);
+  outline: 3px solid var(--brand-focus-ring-inner, #fff);
   outline-offset: 3px;
+  box-shadow: 0 0 0 6px var(--brand-focus-ring-outer, #111);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-preview *,
+  .project-preview *::before,
+  .project-preview *::after,
+  [data-veskify-canvas-root] *,
+  [data-veskify-canvas-root] *::before,
+  [data-veskify-canvas-root] *::after,
+  [data-frame-region],
+  [data-card-anatomy] {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-card-anatomy]:hover {
+    transform: none !important;
+  }
 }
 
 .project-preview {

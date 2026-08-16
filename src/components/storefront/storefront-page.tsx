@@ -1,32 +1,35 @@
 import { Fragment, type ReactNode } from "react";
 import {
   renderRegisteredSection,
+  storefrontMainContentId,
   validateRegisteredPage,
+  withCurrentStorefrontPage,
   type StorefrontRenderContext,
 } from "@/components/registry";
 import type { PageModel } from "@/domain/storefront";
 
 export function renderStorefrontPage(input: unknown, context: StorefrontRenderContext): ReactNode {
   const page = validateRegisteredPage(input, context);
+  const pageContext = withCurrentStorefrontPage(context, page);
   const visibleSections = page.sections.filter((section) => section.visible);
-  if (context.sharedFrame) {
+  if (pageContext.sharedFrame) {
     const content = visibleSections.filter(
       (section) => !["announcementBar", "header", "footer"].includes(section.component),
     );
     return (
       <Fragment>
-        {context.sharedFrame.announcement
-          ? renderRegisteredSection(context.sharedFrame.announcement, context)
+        {pageContext.sharedFrame.announcement
+          ? renderRegisteredSection(pageContext.sharedFrame.announcement, pageContext)
           : null}
-        {renderRegisteredSection(context.sharedFrame.header, context)}
-        <main>
+        {renderRegisteredSection(pageContext.sharedFrame.header, pageContext)}
+        <main id={storefrontMainContentId} tabIndex={-1}>
           {content.map((section) => (
             <Fragment key={section.id}>
-              {renderRegisteredSection(section, context, page.type)}
+              {renderRegisteredSection(section, pageContext, page.type)}
             </Fragment>
           ))}
         </main>
-        {renderRegisteredSection(context.sharedFrame.footer, context)}
+        {renderRegisteredSection(pageContext.sharedFrame.footer, pageContext)}
       </Fragment>
     );
   }
@@ -48,17 +51,19 @@ export function renderStorefrontPage(input: unknown, context: StorefrontRenderCo
   return (
     <Fragment>
       {beforeHeader.map((section) => (
-        <Fragment key={section.id}>{renderRegisteredSection(section, context, page.type)}</Fragment>
+        <Fragment key={section.id}>
+          {renderRegisteredSection(section, pageContext, page.type)}
+        </Fragment>
       ))}
-      {header ? renderRegisteredSection(header, context, page.type) : null}
-      <main>
+      {header ? renderRegisteredSection(header, pageContext, page.type) : null}
+      <main id={storefrontMainContentId} tabIndex={-1}>
         {content.map((section) => (
           <Fragment key={section.id}>
-            {renderRegisteredSection(section, context, page.type)}
+            {renderRegisteredSection(section, pageContext, page.type)}
           </Fragment>
         ))}
       </main>
-      {footer ? renderRegisteredSection(footer, context, page.type) : null}
+      {footer ? renderRegisteredSection(footer, pageContext, page.type) : null}
     </Fragment>
   );
 }

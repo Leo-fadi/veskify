@@ -297,10 +297,51 @@ describe("P10B-08 canonical product-card family", () => {
       expect(anatomy.semantics.structure.responsiveTransformationIds).toEqual(
         anatomy.responsiveTransformations.map(({ id }) => id),
       );
+      const rendered = render(
+        <CanonicalProductCard
+          locale={{ activeLocale: "en", primaryLocale: "en" }}
+          mediaPlaceholder="Unavailable"
+          request={request(anatomy.id)}
+          resolvedAsset={{ id: source.assetId, url: "/watch.jpg", decorative: false }}
+        />,
+      );
+      expect(rendered.container.querySelector("article")).toHaveAttribute(
+        "data-responsive-transformations",
+        anatomy.responsiveTransformations.map(({ id }) => id).join(" "),
+      );
+      expect(rendered.container.querySelector("article")).toHaveAttribute(
+        "data-responsive-mobile",
+        anatomy.responsiveTransformations.map(({ id }) => id).join(" "),
+      );
+      expect(rendered.container.querySelector("article")).toHaveAttribute(
+        "data-responsive-tablet",
+        anatomy.id === "horizontal" ? "denseReflow" : "",
+      );
+      expect(rendered.container.querySelector("article")).toHaveAttribute(
+        "data-card-presentation-mode",
+        anatomy.semantics.structure.presentationMode,
+      );
+      rendered.unmount();
     }
     const css = readFileSync("src/components/storefront/canonical-product-card.module.css", "utf8");
     expect(css).toContain("max-width: 767px");
-    expect(css).toContain("max-width: 1023px");
+    expect(css).toContain("@media (min-width: 48rem) and (max-width: 63.999rem)");
+    expect(css).toContain('data-responsive-tablet~="denseReflow"');
+    expect(
+      requireCanonicalProductCardAnatomy("horizontal", "homepageMerchandising")
+        .responsiveTransformations[0]?.breakpoints,
+    ).toEqual(["mobile", "tablet"]);
+    for (const transformationId of [
+      "standardCondense",
+      "editorialStack",
+      "compactSimplify",
+      "imageFirstReorder",
+      "denseReflow",
+    ]) {
+      expect(css).toContain(`data-responsive-transformations~="${transformationId}"`);
+    }
+    expect(css).toContain("prefers-reduced-motion: reduce");
+    expect(css).toMatch(/min-height:\s*max\(2\.75rem, var\(--brand-control-height/);
     expect(css.match(/\.media img\s*\{[^}]*\}/)?.[0]).not.toMatch(/object-fit/);
     expect(css).toMatch(/\.media > figure > img\s*\{[^}]*object-fit:\s*contain/);
     expect(artDirection.responsiveTreatments.map(({ breakpoint }) => breakpoint)).toContain(

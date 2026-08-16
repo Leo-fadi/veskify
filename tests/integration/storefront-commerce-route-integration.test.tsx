@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { CollectionPreviewClient } from "@/app/projects/[projectId]/collections/[collectionSlug]/collection-preview-client";
 import { ProductPreviewClient } from "@/app/projects/[projectId]/products/[productSlug]/product-preview-client";
 import {
+  dynamicCollectionCommerceDefaultContent,
+  dynamicCollectionCommerceDefaultProps,
+} from "@/components/registry";
+import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
@@ -14,6 +18,7 @@ import type {
   CollectionSortIntent,
 } from "@/components/storefront/dynamic-collection-commerce";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 
 function aggregate(): ProjectAggregate {
   return {
@@ -397,6 +402,63 @@ describe("P6-06 storefront commerce route integration", () => {
       .filter((text): text is string => text !== null);
     expect(exactPrices.some((text) => text.includes("€1,290"))).toBe(true);
     expect(exactPrices.some((text) => text.includes("€1,890"))).toBe(true);
+  });
+
+  it("aggregates contextual collection facets in one pass over canonical attributes", () => {
+    const value = aggregate();
+    const sourceProduct = value.catalogue.products[0];
+    const products = Array.from({ length: 64 }, (_, index) => ({
+      ...structuredClone(sourceProduct),
+      id: `product_contextual_${index + 1}`,
+      sku: `CONTEXTUAL-${index + 1}`,
+      title: localized(`Contextual product ${index + 1}`),
+      attributes: {
+        material: index % 2 === 0 ? "gold" : "silver",
+        [`sparseFacet${index + 1}`]: index % 2 === 0 ? "first" : "second",
+      },
+      images: sourceProduct.images.map((image) => ({
+        ...structuredClone(image),
+        id: `${image.id}_${index + 1}`,
+      })),
+    }));
+    value.catalogue.products = products;
+    const collection = value.catalogue.collections[0];
+    collection.productIds = products.map(({ id }) => id);
+    collectionPageFor(value).sections = [
+      {
+        id: "section_contextual_collection",
+        component: "dynamicCollectionCommerce",
+        variant: "standard",
+        visible: true,
+        content: {
+          ...dynamicCollectionCommerceDefaultContent,
+          collectionId: collection.id,
+          productIds: [...collection.productIds],
+          canonicalRevision: `canonical-commerce-${canonicalValueFingerprint(value.catalogue)}`,
+        },
+        props: dynamicCollectionCommerceDefaultProps,
+      },
+    ];
+
+    let attributeReads = 0;
+    products.forEach((product) => {
+      product.attributes = new Proxy(product.attributes, {
+        get(target, property, receiver) {
+          if (typeof property === "string" && Object.hasOwn(target, property)) {
+            attributeReads += 1;
+          }
+          return Reflect.get(target, property, receiver) as unknown;
+        },
+      });
+    });
+
+    const presentation = defaultCollectionPresentation(value);
+
+    expect(presentation?.projection.collections[0].productIds).toHaveLength(64);
+    expect(presentation?.projection.collections[0].filters.map(({ id }) => id)).toContain(
+      "material",
+    );
+    expect(attributeReads).toBeLessThan(products.length * 20);
   });
 
   it("keeps availability IDs canonical while exposing localized EN/FI terminology", () => {

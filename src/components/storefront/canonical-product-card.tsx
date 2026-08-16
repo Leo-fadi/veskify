@@ -54,6 +54,11 @@ export function CanonicalProductCard({
 }: CanonicalProductCardProps) {
   const request = canonicalProductCardRequestSchema.parse(requestValue);
   const anatomy = requireCanonicalProductCardAnatomy(request.anatomyId, request.context);
+  const responsiveIds = (breakpoint: "mobile" | "tablet" | "desktop" | "wide") =>
+    anatomy.responsiveTransformations
+      .filter(({ breakpoints }) => breakpoints.includes(breakpoint))
+      .map(({ id }) => id)
+      .join(" ");
   const titleId = useId();
   if (resolvedAsset && (!request.media || resolvedAsset.id !== request.media.assetId)) {
     throw new Error("Resolved product-card asset must match exact canonical media authority.");
@@ -98,6 +103,7 @@ export function CanonicalProductCard({
             }
             asset={resolvedAsset}
             authority={request.asset.artDirection}
+            loadingRole="merchandising"
           />
         </figure>
       ) : (
@@ -248,6 +254,14 @@ export function CanonicalProductCard({
       data-card-context={request.context}
       data-card-semantic-anatomy={anatomy.semanticName}
       data-card-facts-fingerprint={canonicalProductCardFactsFingerprint(request)}
+      data-card-presentation-mode={anatomy.semantics.structure.presentationMode}
+      data-responsive-transformations={anatomy.responsiveTransformations
+        .map(({ id }) => id)
+        .join(" ")}
+      data-responsive-mobile={responsiveIds("mobile")}
+      data-responsive-tablet={responsiveIds("tablet")}
+      data-responsive-desktop={responsiveIds("desktop")}
+      data-responsive-wide={responsiveIds("wide")}
       data-product-id={product.productId}
       data-product-type={product.productTypeId}
     >

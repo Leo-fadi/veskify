@@ -180,6 +180,35 @@ describe("P10A-04C commercial capability gap closure", () => {
     expect(expectedAssetIds).not.toContain("asset_lumi_ring");
   });
 
+  it("derives one linear homepage commerce projection without canonical product rescans", () => {
+    const context = bridgeContext("preview");
+    const products = context.catalogue.products as typeof context.catalogue.products & {
+      find: typeof context.catalogue.products.find;
+    };
+    const canonicalIterator = products[Symbol.iterator].bind(products);
+    let productIterations = 0;
+    Object.defineProperty(products, Symbol.iterator, {
+      configurable: true,
+      value: () => {
+        productIterations += 1;
+        return canonicalIterator();
+      },
+    });
+    Object.defineProperty(products, "find", {
+      configurable: true,
+      value: () => {
+        throw new Error("Homepage projection must use its derived product index.");
+      },
+    });
+
+    const rendered = render(
+      renderRegisteredSection(homepageProductBridgeSection(), context, "home"),
+    );
+
+    expect(rendered.container.querySelectorAll("[data-asset-id]").length).toBeGreaterThan(0);
+    expect(productIterations).toBe(1);
+  });
+
   it("fails closed when an approved source placement targets commerce-owned product media", () => {
     const source = aurumNordicSeed.draftSnapshot.pages
       .find((page) => page.type === "home")!

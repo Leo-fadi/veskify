@@ -86,8 +86,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline includes the P10B-16P-06 canonical search query/results adapter
-on 15 August 2026. Phase 9 is
+The verified v1.3.0 source baseline includes the P10B-17 responsive, accessibility and performance
+closure on 16 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
 BrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction
@@ -99,9 +99,9 @@ presentation, the P10B-14 complete-store convergence proof, P10B-15 bounded stor
 P10B-16 coordinated direction/diversity control, P10B-16P-01 dynamic commerce route archetypes,
 P10B-16P-02A/P10B-16P-02B prompted Design Intent V2 authority and deterministic compilation, and
 P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B-16P-05A
-active-path/compiler rationalisation, and P10B-16P-06 canonical search query/results authority are
-**Baseline**. P10B-16P-02 is **Baseline**;
-P10B-16P-05B, P10B-17, and P10B-18 remain **Planned**.
+active-path/compiler rationalisation, P10B-16P-06 canonical search query/results authority, and
+P10B-17 responsive/accessibility/performance closure are **Baseline**. P10B-16P-02 is **Baseline**;
+P10B-16P-05B and P10B-18 remain **Planned**.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -136,7 +136,15 @@ port and the standalone `CatalogueDisplayModel` adapter. Draft, proposal, saved/
 published routes reuse the existing collection/search renderer, product cards, shared frame, and
 governed orientation/no-results states. It claims no Vesko search integration, OpenAI or other
 provider call, semantic/vector/fuzzy search, recommendation, personalization, or analytics
-authority. P10B-17 is the next focused product task.
+authority.
+
+P10B-17 executes current registered responsive transformations through the existing shared
+renderers at 375, 768, 1024, and 1440 px in EN/FI. Its Baseline evidence covers frame and page-
+family geometry, keyboard/focus/semantic/contrast behavior, touch and reduced-motion behavior,
+bounded rendering/search/media/build budgets, lifecycle parity, protected commerce/media, browser
+evidence, and representative human visual review. It adds no breakpoint registry or renderer and
+does not claim P10B-18 designer-grade quality/100+ scale, Vesko staging, production authentication,
+or production performance. P10B-18 is the next focused product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -276,8 +284,8 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline;
-P10B-16P-02 is Baseline; P10B-16P-05B, P10B-17, and P10B-18 remain Planned. Their ownership
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline;
+P10B-16P-02 is Baseline; P10B-16P-05B and P10B-18 remain Planned. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing

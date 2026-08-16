@@ -8,6 +8,7 @@
     "build": "pnpm build:webpack",
     "build:webpack": "next build --webpack",
     "build:turbopack": "next build --turbopack",
+    "build:check:storefront-budgets": "node scripts/check-storefront-build-budgets.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
