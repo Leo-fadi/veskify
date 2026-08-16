@@ -1,6 +1,8 @@
+import { relative, resolve } from "node:path";
 import { expect, test, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import {
   captureP10B16P06SearchEvidence,
+  p10b16p06EvidenceDirectory,
   writeP10B16P06SearchEvidenceManifest,
   type P10B16P06SearchEvidenceEntry,
 } from "./p10b-16p-06-search-evidence";
@@ -511,6 +513,7 @@ test("canonical search remains transient across draft reload and published rende
   expect(beforeReload).not.toContain(transientQuery);
 
   const manifest = await writeP10B16P06SearchEvidenceManifest(evidence, testInfo);
-  expect(manifest).toContain("/private/tmp/");
+  expect(manifest).toBe(resolve(p10b16p06EvidenceDirectory, "manifest.json"));
+  expect(relative(process.cwd(), manifest)).toMatch(/^\.\.[/\\]/u);
   assertOffline(requests, 1);
 });

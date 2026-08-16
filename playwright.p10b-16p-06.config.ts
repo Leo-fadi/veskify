@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
@@ -9,9 +10,9 @@ const acceptanceToken =
     ? inheritedAcceptanceToken
     : randomBytes(32).toString("hex");
 const baseURL = `http://localhost:${port}`;
-const evidenceDirectory = resolve(
-  process.env.P10B16P06_SEARCH_EVIDENCE_DIR ?? "/private/tmp/veskify-p10b-16p-06-search-evidence",
-);
+const evidenceDirectory = process.env.P10B16P06_SEARCH_EVIDENCE_DIR
+  ? resolve(process.env.P10B16P06_SEARCH_EVIDENCE_DIR)
+  : resolve(tmpdir(), "veskify-p10b-16p-06-search-evidence");
 process.env.P10B16P06_PLAYWRIGHT_ACCEPTANCE_TOKEN = acceptanceToken;
 
 export default defineConfig({

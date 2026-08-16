@@ -1,11 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { expect, type Page, type TestInfo } from "@playwright/test";
 import { expectNoStorefrontHorizontalClipping } from "./storefront-geometry";
 
-export const p10b16p06EvidenceDirectory = resolve(
-  process.env.P10B16P06_SEARCH_EVIDENCE_DIR ?? "/private/tmp/veskify-p10b-16p-06-search-evidence",
-);
+export const p10b16p06EvidenceDirectory = process.env.P10B16P06_SEARCH_EVIDENCE_DIR
+  ? resolve(process.env.P10B16P06_SEARCH_EVIDENCE_DIR)
+  : resolve(tmpdir(), "veskify-p10b-16p-06-search-evidence");
 
 export type P10B16P06SearchEvidenceEntry = Readonly<{
   filename: string;
