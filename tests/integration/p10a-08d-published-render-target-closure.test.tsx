@@ -281,13 +281,14 @@ describe("P10A-08D published route render-target closure", () => {
     await expect(
       PublishedCollectionPage({
         params: Promise.resolve({ projectId: "project_lumo_fresh", collectionSlug: "jewellery" }),
-        searchParams: Promise.resolve({ "p9-05b-session": publishedSessionId }),
+        searchParams: Promise.resolve({ "p9-05b-session": publishedSessionId, locale: "fi" }),
       }),
     ).resolves.toMatchObject({
       props: {
         snapshotKind: "published",
         renderTarget: "published",
         publishedSessionId,
+        initialLocale: "fi",
       },
     });
     await expect(
@@ -296,13 +297,14 @@ describe("P10A-08D published route render-target closure", () => {
           projectId: "project_lumo_fresh",
           productSlug: "custom-halo-ring",
         }),
-        searchParams: Promise.resolve({ "p9-05b-session": publishedSessionId }),
+        searchParams: Promise.resolve({ "p9-05b-session": publishedSessionId, locale: "fi" }),
       }),
     ).resolves.toMatchObject({
       props: {
         snapshotKind: "published",
         renderTarget: "published",
         publishedSessionId,
+        initialLocale: "fi",
       },
     });
   });

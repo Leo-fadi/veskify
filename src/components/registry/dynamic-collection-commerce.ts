@@ -83,8 +83,8 @@ const definitionInput = {
   version: { major: 2, minor: 0, patch: 0 },
   title: { en: "Dynamic collection commerce", fi: "Dynaaminen mallistonäkymä" },
   merchantDescription: {
-    en: "Shows a canonical collection, filters and product cards without copying commerce facts.",
-    fi: "Näyttää kanonisen malliston, suodattimet ja tuotekortit kopioimatta kauppatietoja.",
+    en: "Shows a canonical collection or transient search results with product cards without copying commerce facts.",
+    fi: "Näyttää kanonisen malliston tai tilapäiset hakutulokset tuotekortteina kopioimatta kauppatietoja.",
   },
   family: "commerce",
   supportedPageTypes: ["collection"],
@@ -128,13 +128,16 @@ const definitionInput = {
       id: "primaryCollection",
       title: { en: "Collection", fi: "Mallisto" },
       acceptedSourceTypes: ["collection"],
-      required: true,
+      // Collection runtime requires this slot. Search runtime intentionally omits
+      // it and binds only the transient result product list; the renderer's
+      // discriminated conformance guard enforces the exact one-of contract.
+      required: false,
       revisionRequired: true,
       emptyState: "message",
     },
     {
       id: "collectionProducts",
-      title: { en: "Collection products", fi: "Malliston tuotteet" },
+      title: { en: "Presented products", fi: "Näytettävät tuotteet" },
       acceptedSourceTypes: ["productList"],
       required: true,
       revisionRequired: true,

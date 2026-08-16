@@ -107,6 +107,28 @@ describe("collection route", () => {
     );
   });
 
+  it("initializes collection rendering from the routed locale and retains its suffix", async () => {
+    render(
+      <CollectionPreviewClient
+        collectionSlug="rings"
+        initialLocale="fi"
+        projectId={aurumNordicSeed.project.id}
+        repositoryFactory={() => repository(() => Promise.resolve(aggregate()))}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Sormukset" })).toBeVisible();
+    expect(
+      within(screen.getByRole("navigation", { name: "Päänavigaatio" })).getByRole("link", {
+        name: "Etusivu",
+      }),
+    ).toHaveAttribute("href", "/projects/project_aurum_nordic?locale=fi");
+    expect(screen.getByRole("link", { name: "Aurora-sormus" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/products/aurora-ring-585?locale=fi",
+    );
+  });
+
   it("keeps a stored legacy collection URL authoritative after the canonical slug changes", async () => {
     const value = aggregate();
     const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);

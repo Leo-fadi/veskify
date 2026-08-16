@@ -327,10 +327,13 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   await expect(
     proposalCanvas.locator('[data-component="dynamicCollectionCommerce"]'),
   ).toBeVisible();
-  await expect(page.getByTestId("dynamic-commerce-search-unavailable")).toContainText(
-    "Search presentation belongs to this archetype, but search execution is not yet available",
+  const representativeSearchQuery = page.getByLabel("Representative search query");
+  await expect(representativeSearchQuery).toBeVisible();
+  await representativeSearchQuery.fill("ring");
+  await expect(page.getByTestId("dynamic-commerce-representative-search-link")).toHaveAttribute(
+    "href",
+    `/projects/${projectId}/search?q=ring&locale=en`,
   );
-  await expect(proposalCanvas.getByRole("link", { name: "Search" })).toHaveCount(0);
 
   await selectOption(pageSelector, "archetype_pdp_standard");
   await page.locator("#dynamic-commerce-representative-route").selectOption({

@@ -2,10 +2,12 @@ import {
   benefitIconsContentSchema,
   collectionHeaderContentSchema,
   dynamicCollectionCommerceBridgeContentSchema,
+  dynamicCollectionCommerceContentSchema,
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
   dynamicCollectionCommerceDefaultStyleOverrides,
   dynamicCollectionCommercePropsSchema,
+  dynamicCollectionCommerceStyleOverridesSchema,
   dynamicProductDetailBridgeContentSchema,
   dynamicProductDetailDefaultContent,
   dynamicProductDetailDefaultProps,
@@ -45,12 +47,15 @@ import {
   type PageModel,
   type SectionInstance,
 } from "@/domain/storefront";
+import { storefrontSearchResultPageV1Schema } from "@/application/storefront-search";
 import type {
   CollectionCommerceRouteInput,
   CollectionCommerceRoutePresentation,
   ProductCommerceRouteInput,
   ProductCommerceRoutePresentation,
-  StorefrontCommerceRouteAdapter,
+  StorefrontSearchCommerceRouteAdapter,
+  StorefrontSearchCommerceRouteInput,
+  StorefrontSearchCommerceRoutePresentation,
 } from "./contract";
 
 const PRODUCT_COMPONENTS = new Set([
@@ -87,6 +92,20 @@ const COLLECTION_COMPONENT_ORDER = [
   "productGrid",
   "footer",
 ] as const;
+
+const dynamicSearchCommerceBridgeContentSchema = dynamicCollectionCommerceBridgeContentSchema.omit({
+  collectionId: true,
+});
+
+function collectionCommerceStyleOverrides(
+  section: SectionInstance,
+): typeof dynamicCollectionCommerceDefaultStyleOverrides {
+  const direct = dynamicCollectionCommerceStyleOverridesSchema.safeParse(section.styleOverrides);
+  if (direct.success) return direct.data;
+  return dynamicCollectionCommerceStyleOverridesSchema.parse({
+    surfaceTreatment: section.styleOverrides?.surface === "surface" ? "soft" : "plain",
+  });
+}
 
 const ATTRIBUTE_LABELS: Readonly<Record<string, LocalizedText>> = {
   material: { en: "Material", fi: "Materiaali" },
@@ -228,7 +247,10 @@ function availability(product: ProductDisplayModel): LocalizedText | undefined {
   );
 }
 
-function revisionFor(input: ProductCommerceRouteInput | CollectionCommerceRouteInput): string {
+function revisionFor(
+  input:
+    ProductCommerceRouteInput | CollectionCommerceRouteInput | StorefrontSearchCommerceRouteInput,
+): string {
   return `canonical-commerce-${canonicalValueFingerprint(input.aggregate.catalogue)}`;
 }
 
@@ -1211,6 +1233,107 @@ function collectionPresentation(
   };
 }
 
-export function createCatalogueStorefrontCommerceRouteAdapter(): StorefrontCommerceRouteAdapter {
-  return { product: productPresentation, collection: collectionPresentation };
+function searchPresentation(
+  input: StorefrontSearchCommerceRouteInput,
+): StorefrontSearchCommerceRoutePresentation | null {
+  if (
+    input.page.pageFamily?.familyId !== "search-results" ||
+    input.page.pageFamily.commerceContext.kind !== "search"
+  ) {
+    throw new Error("Search commerce presentation requires the canonical search page family.");
+  }
+  const dynamicSection = input.page.sections.find(
+    (section) => section.visible && section.component === "dynamicCollectionCommerce",
+  );
+  if (!dynamicSection) return null;
+
+  const search = storefrontSearchResultPageV1Schema.parse(input.results);
+  const currentCatalogueFingerprint = canonicalValueFingerprint(input.aggregate.catalogue);
+  if (search.catalogueFingerprint !== currentCatalogueFingerprint) {
+    throw new Error("Search results no longer match the current canonical catalogue.");
+  }
+  if (search.totalCount < search.productIds.length) {
+    throw new Error("Search result totals cannot be smaller than the current result page.");
+  }
+  const {
+    productIds: routeProductIds,
+    canonicalRevision: routeCanonicalRevision,
+    ...content
+  } = dynamicSearchCommerceBridgeContentSchema.parse(dynamicSection.content);
+  const canonicalRevision = revisionFor(input);
+  if (routeCanonicalRevision !== canonicalRevision) {
+    throw new Error("Search route bindings no longer match the current canonical catalogue.");
+  }
+  if (
+    routeProductIds.length !== search.productIds.length ||
+    routeProductIds.some((productId, index) => productId !== search.productIds[index])
+  ) {
+    throw new Error("Search route bindings must exactly match the transient result page.");
+  }
+
+  const currentProductRouteIds = new Set(
+    (input.snapshot.dynamicCommercePresentation?.routeInventory ?? []).flatMap((route) =>
+      route.kind === "product" ? [route.productId] : [],
+    ),
+  );
+  const products = search.productIds.map((productId) => {
+    const product = input.aggregate.catalogue.products.find(
+      (candidate) => candidate.id === productId,
+    );
+    if (!product) throw new Error(`Search result product ${productId} is no longer available.`);
+    if (!currentProductRouteIds.has(productId)) {
+      throw new Error(`Search result product ${productId} has no current public product route.`);
+    }
+    return product;
+  });
+  const productContexts = products.map((product) => productContext(product, canonicalRevision));
+  const projection: ComponentProjectionContext = {
+    evidenceReferences: Array.from(input.evidenceReferences ?? [], (reference) =>
+      structuredClone(reference),
+    ),
+    products: productContexts,
+    collections: [],
+    assets: productAssets(productContexts, new Set(), {
+      component: dynamicCollectionCommerceDefinition,
+      variant: dynamicSection.variant,
+      brandSystem: input.snapshot.brandSystem,
+    }),
+    navigation: [],
+    projectBrandContexts: [],
+    localizedContents: [],
+    productListRevision: search.resultFingerprint,
+  };
+
+  return {
+    instance: {
+      id: dynamicSection.id,
+      component: "dynamicCollectionCommerce",
+      componentVersion: dynamicCollectionCommerceDefinition.version,
+      variant: dynamicSection.variant,
+      content: dynamicCollectionCommerceContentSchema.parse(content),
+      props: dynamicCollectionCommercePropsSchema.parse(dynamicSection.props),
+      styleOverrides: collectionCommerceStyleOverrides(dynamicSection),
+      bindings: [
+        {
+          slotId: "collectionProducts",
+          source: "productList",
+          productIds: [...search.productIds],
+          revision: search.resultFingerprint,
+        },
+      ],
+      assetAssignments: [],
+    },
+    projection,
+    search,
+    resolveAssetUrl: assetUrlResolver(input.aggregate.catalogue),
+  };
+}
+
+export function createCatalogueStorefrontCommerceRouteAdapter(): StorefrontSearchCommerceRouteAdapter {
+  const adapter = {
+    product: productPresentation,
+    collection: collectionPresentation,
+    search: searchPresentation,
+  } satisfies StorefrontSearchCommerceRouteAdapter;
+  return adapter;
 }

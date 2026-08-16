@@ -368,12 +368,19 @@ describe("P6-04 dynamic collection commerce", () => {
   it("rejects missing collection and product-list bindings", () => {
     expect(() =>
       veskifyComponentRegistryV2.validateInstance(instance(collection, { bindings: [] })),
-    ).toThrow(/Missing required commerce binding slot: primaryCollection/i);
+    ).toThrow(/Missing required commerce binding slot: collectionProducts/i);
     expect(() =>
       veskifyComponentRegistryV2.validateInstance(
         instance(collection, { bindings: instance(collection).bindings.slice(0, 1) }),
       ),
     ).toThrow(/Missing required commerce binding slot: collectionProducts/i);
+    expect(() =>
+      renderDynamicCollectionCommerce(
+        rendererInput(collection, {
+          instance: instance(collection, { bindings: instance(collection).bindings.slice(1, 2) }),
+        }),
+      ),
+    ).toThrow(/requires one canonical collection binding/i);
   });
 
   it("renders an empty collection and a supplied loading state safely", () => {

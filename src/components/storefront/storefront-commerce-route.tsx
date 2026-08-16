@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import type {
   CollectionCommerceRoutePresentation,
   ProductCommerceRoutePresentation,
+  StorefrontSearchCommerceRoutePresentation,
 } from "@/integrations/storefront-commerce-routes";
 import {
   renderRegisteredSection,
@@ -120,6 +121,46 @@ export function StorefrontCollectionCommerceRoute(
         onNavigateCollection: props.onNavigateCollection,
         onFilterIntent: props.onFilterIntent,
         onSortIntent: props.onSortIntent,
+      })}
+      {chrome(props.page, props.context, "footer")}
+    </Fragment>
+  );
+}
+
+/**
+ * Reuses the registered collection-commerce renderer with a discriminated
+ * transient search context. Collection-only controls are absent and can never
+ * synthesize collection authority for search results.
+ */
+export function StorefrontSearchCommerceRoute(
+  props: SharedRouteProps &
+    Readonly<{
+      presentation: StorefrontSearchCommerceRoutePresentation;
+      onNavigateProduct: (intent: ProductNavigationIntent) => void;
+      onContinueShopping: () => void;
+    }>,
+) {
+  const rejectCollectionOnlyIntent = () => {
+    throw new Error("Search presentation cannot emit collection-only intents.");
+  };
+  return (
+    <Fragment>
+      {announcement(props.page, props.context)}
+      {chrome(props.page, props.context, "header")}
+      {renderDynamicCollectionCommerce({
+        target: props.target,
+        instance: props.presentation.instance,
+        projection: props.presentation.projection,
+        activeLocale: props.activeLocale,
+        primaryLocale: props.primaryLocale,
+        loading: { status: "ready" },
+        search: props.presentation.search,
+        resolveAssetUrl: props.presentation.resolveAssetUrl,
+        onNavigateProduct: props.onNavigateProduct,
+        onNavigateCollection: rejectCollectionOnlyIntent,
+        onFilterIntent: rejectCollectionOnlyIntent,
+        onSortIntent: rejectCollectionOnlyIntent,
+        onContinueShopping: props.onContinueShopping,
       })}
       {chrome(props.page, props.context, "footer")}
     </Fragment>

@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { ProjectPreviewClient } from "../project-preview-client";
+import {
+  parseP10B16P04UtilityContextParameter,
+  parsePreviewLocaleParameter,
+  type PreviewRouteParameter,
+} from "../preview-mode";
 import { loadP10B16P03CurrentEvidenceReferences } from "@/integrations/ai/prompted-storefront-studio-authority.server";
 import {
   loadP10B16P04CurrentEvidenceReferences,
@@ -14,23 +19,23 @@ export default async function ProjectStorefrontPage({
   params: Promise<{ projectId: string; storefrontPath: string[] }>;
   searchParams: Promise<{
     "p10b-16p-04-proposal"?: string;
-    "p10b-16p-04-utility"?: string;
+    "p10b-16p-04-utility"?: PreviewRouteParameter;
+    locale?: PreviewRouteParameter;
   }>;
 }) {
   const { projectId, storefrontPath } = await params;
   const httpHeaders = await headers();
   const query = await searchParams;
   const proposalFingerprint = query["p10b-16p-04-proposal"];
-  const utilityContext = query["p10b-16p-04-utility"];
+  const utility = parseP10B16P04UtilityContextParameter(query["p10b-16p-04-utility"]);
+  const locale = parsePreviewLocaleParameter(query.locale);
+  if (!utility.valid || !locale.valid) notFound();
+  const utilityContext = utility.value;
   const p10b16p04Evidence = loadP10B16P04CurrentEvidenceReferences({
     projectId,
     httpHeaders,
   });
-  if (
-    utilityContext !== undefined &&
-    (p10b16p04Evidence === undefined || !["empty", "populated"].includes(utilityContext))
-  )
-    notFound();
+  if (utilityContext !== undefined && p10b16p04Evidence === undefined) notFound();
   const proposalAggregate = proposalFingerprint
     ? loadP10B16P04ProposalPreviewAuthority({
         projectId,
@@ -46,6 +51,7 @@ export default async function ProjectStorefrontPage({
       projectId={projectId}
       pageSlug={`/${storefrontPath.join("/")}`}
       initialEvidenceReferences={initialEvidenceReferences}
+      {...(locale.value ? { initialLocale: locale.value } : {})}
       {...(proposalAggregate
         ? {
             initialAggregate: proposalAggregate,

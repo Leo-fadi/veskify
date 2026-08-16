@@ -26,8 +26,10 @@ import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services
 import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
+  previewNavigationSuffix,
   previewPathPrefix,
   selectedSnapshotId,
+  type P10B16P04UtilityContext,
   type SnapshotKind,
 } from "../../preview-mode";
 import { HistoricalPreviewActions } from "../../historical-preview-actions";
@@ -100,6 +102,8 @@ type ProductPreviewClientProps = {
   publishedSessionId?: string;
   initialAggregate?: ProjectAggregate;
   proposalCandidateFingerprint?: string;
+  p10b16p04UtilityContext?: P10B16P04UtilityContext;
+  initialLocale?: Locale;
   initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 };
 
@@ -119,6 +123,8 @@ function ProductPreviewLoader({
   publishedSessionId,
   initialAggregate,
   proposalCandidateFingerprint,
+  p10b16p04UtilityContext,
+  initialLocale,
   initialEvidenceReferences = emptyEvidenceReferences,
 }: ProductPreviewClientProps) {
   const effectiveRenderTarget =
@@ -128,12 +134,6 @@ function ProductPreviewLoader({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [activeLocale, setActiveLocale] = useState<Locale>();
-  const previewQuerySuffix = publishedSessionId
-    ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-    : proposalCandidateFingerprint
-      ? `?p10b-16p-04-proposal=${encodeURIComponent(proposalCandidateFingerprint)}`
-      : "";
-
   useEffect(() => {
     let cancelled = false;
     const aggregateSource = initialAggregate
@@ -159,6 +159,16 @@ function ProductPreviewLoader({
         );
         if (!draft) return setState({ status: "missingDraft" });
         try {
+          const initialActiveLocale =
+            initialLocale && aggregate.project.enabledLocales.includes(initialLocale)
+              ? initialLocale
+              : aggregate.project.primaryLocale;
+          const initialQuerySuffix = previewNavigationSuffix({
+            publishedSessionId,
+            proposalCandidateFingerprint,
+            p10b16p04UtilityContext,
+            ...(initialLocale ? { locale: initialActiveLocale } : {}),
+          });
           const route = `/products/${productSlug}`;
           const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
             (entry) => entry.kind === "product" && entry.route === route,
@@ -186,14 +196,14 @@ function ProductPreviewLoader({
           );
           if (!product) return setState({ status: "productNotFound" });
           const context = createStorefrontRenderContext({
-            activeLocale: aggregate.project.primaryLocale,
+            activeLocale: initialActiveLocale,
             primaryLocale: aggregate.project.primaryLocale,
             enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
             evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-            pagePathSuffix: previewQuerySuffix,
+            pagePathSuffix: initialQuerySuffix,
             renderTarget: effectiveRenderTarget,
           });
           validateRegisteredPage(productPage, context);
@@ -223,7 +233,7 @@ function ProductPreviewLoader({
               throw new Error("The dynamic product route resolved a different canonical product.");
             }
           }
-          setActiveLocale(aggregate.project.primaryLocale);
+          setActiveLocale(initialActiveLocale);
           setState({
             status: "success",
             aggregate,
@@ -250,9 +260,10 @@ function ProductPreviewLoader({
     historicalSnapshotId,
     initialAggregate,
     initialEvidenceReferences,
+    initialLocale,
+    p10b16p04UtilityContext,
     productSlug,
     projectId,
-    previewQuerySuffix,
     proposalCandidateFingerprint,
     effectiveRenderTarget,
     snapshotKind,
@@ -326,6 +337,12 @@ function ProductPreviewLoader({
   if (state.status !== "success") return null;
 
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
+  const previewQuerySuffix = previewNavigationSuffix({
+    publishedSessionId,
+    proposalCandidateFingerprint,
+    p10b16p04UtilityContext,
+    ...(initialLocale || locale !== state.aggregate.project.primaryLocale ? { locale } : {}),
+  });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
   const context = createStorefrontRenderContext({
     activeLocale: locale,

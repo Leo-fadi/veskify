@@ -1,12 +1,12 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-05A
-are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18 remain
-**Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and
+P10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18
+remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 15 August 2026, P10B-16P-05A active production-path and compiler rationalisation
+**Baseline:** 15 August 2026, P10B-16P-06 canonical search query/results adapter
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -58,8 +58,8 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-P10B-16P-05A is Baseline; P10B-16P-05B, P10B-17, and P10B-18 remain Planned. The canonical search
-query/results adapter is the next focused product task.
+P10B-16P-05A and P10B-16P-06 are Baseline; P10B-16P-05B, P10B-17, and P10B-18 remain Planned.
+P10B-17 is the next focused product task.
 
 ## 2. Storefront and commerce ownership
 
@@ -259,10 +259,13 @@ materialize as independent editable design pages: the root snapshot retains thei
 inventory and the P10B-16P-01 dynamic presentation authority, and runtime binds each route to a
 maintained collection/search or PDP archetype.
 
-The registered `/search` inventory entry and search archetype are presentation authority only.
-Runtime search materialization requires exact transient query/results from a first-class canonical
-search adapter; until P11 supplies that seam, missing search context fails closed and must never be
-replaced by an arbitrary collection.
+The registered `/search` inventory entry and selected search archetype are persisted presentation
+authority only. P10B-16P-06 supplies the first-class transient query/results seam through a
+provider-neutral read-only search port and a standalone `CatalogueDisplayModel` adapter. Query,
+filters, sort, page, result IDs, and result count remain runtime state and never become
+`StorefrontSnapshot`, `PageModel`, history, compiler, or publication design authority. Missing,
+invalid, stale, or unresolved runtime authority fails closed and must never be replaced by an
+arbitrary collection. Vesko-backed search remains P11 integration work.
 
 The binding distinction is route instance ≠ design authority. A route inventory entry owns only
 the concrete URL and canonical collection/product identity. An archetype owns the registered
@@ -366,14 +369,15 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 ## 13. Locked implementation sequence
 
-P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-05A are **Baseline**. P10B-16P-02 is
-**Baseline**. P10B-16P-05B, P10B-17, and P10B-18 are **Planned**.
+P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
+P10B-16P-02 is **Baseline**. P10B-16P-05B, P10B-17, and P10B-18 are **Planned**.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
 
 The P10B-16P-01 → P10B-16P-02A → P10B-16P-02B → P10B-16P-03 → P10B-16P-04 →
-P10B-16P-05A package is a mandatory sequential convergence between P10B-16 and P10B-17. It
+P10B-16P-05A → P10B-16P-06 package is a mandatory sequential convergence between P10B-16 and
+P10B-17. It
 supplements the locked P10B-01 through P10B-18 inventory without renumbering or weakening those
 tasks. P10B-16P-05B is a final historical-cleanup slice after P10B-18, not a phase-closure shortcut.
 
@@ -402,7 +406,8 @@ tasks. P10B-16P-05B is a final historical-cleanup slice after P10B-18, not a pha
 | P10B-16P-03 — Storefront Studio generation journey                 | Complete the separately governed Storefront Studio prompt-to-review generation journey without changing canonical authority.                                                                                                  | P10B-16P-02B                                                         |
 | P10B-16P-04 — Live V2 acceptance and bridge disposition            | Prove the prompt-driven V2 path with separately authorized real-provider evidence and classify P10B-16L as Deprecated compatibility-only.                                                                                     | P10B-16P-03                                                          |
 | P10B-16P-05A — Active production-path and compiler rationalisation | Establish one normal semantic initial-generation route/composition and one coordinator/resolver/exact-decision/executor chain; remove superseded active generation paths while retaining required compatibility and evidence. | P10B-16P-04                                                          |
-| P10B-17 — Responsive, accessibility and performance closure        | Preserve deliberate hierarchy and usability across four widths, EN/FI, keyboard/accessibility, and bounded performance budgets.                                                                                               | P10B-16P-05A and implemented commercial families/profiles/directions |
+| P10B-16P-06 — Canonical search query/results adapter               | Execute the persisted `/search` route and selected registered presentation from validated transient query/results derived from current canonical commerce.                                                                    | P10B-16P-05A and current dynamic-search/profile/utility authority    |
+| P10B-17 — Responsive, accessibility and performance closure        | Preserve deliberate hierarchy and usability across four widths, EN/FI, keyboard/accessibility, and bounded performance budgets.                                                                                               | P10B-16P-06 and implemented commercial families/profiles/directions  |
 | P10B-18 — Commercial quality and scale gate                        | Prove repeated generation of publishable, premium, materially different complete storefronts.                                                                                                                                 | P10B-17 and every prior P10B task                                    |
 | P10B-16P-05B — Final historical acceptance cleanup                 | Remove or archive retained P10B-16L/P9/P04 acceptance scaffolding only after all migration, replay, and quality-scale evidence consumers are clear.                                                                           | P10B-16P-05A and P10B-18                                             |
 
@@ -751,8 +756,29 @@ keep distinct approved facts where their reading structure is shared.
   selection.
 - **Status:** **Baseline**. Behavior-preserving architecture, replay, lifecycle, dynamic-route,
   migration, publication-separation, and protected commerce/media evidence pass with zero provider,
-  Vesko, or publication calls. P10B remains Partial, executable search remains fail closed, and
-  P10B-17/P10B-18 remain Planned.
+  Vesko, or publication calls. At P10B-16P-05A completion, executable search still failed closed;
+  P10B-16P-06 subsequently closes that standalone runtime gap. P10B-17/P10B-18 remain Planned.
+
+### P10B-16P-06 — Canonical search query/results adapter
+
+- Add one versioned provider-neutral, read-only search request/result contract and a standalone
+  adapter over the current canonical `CatalogueDisplayModel`; it returns only exact current public
+  product-route IDs and bounded deterministic result metadata.
+- Keep one persisted `/search` route identity and selected P10B-10 presentation archetype.
+  Query/filter/sort/page state, result IDs, and result counts are transient runtime context and do
+  not enter `StorefrontSnapshot`, `PageModel`, history, compiled design authority, or publication
+  records as editable state.
+- Resolve draft, proposal, saved/history, and published search URLs through the same
+  `dynamicCollectionCommerce`, P10B-08 product-card, shared-frame, Design DNA, orientation, and
+  governed no-results renderers. Result links use exact current dynamic PDP routes.
+- Validate EN/FI query normalization, exact SKU/title priority, allowlisted fields,
+  public-route eligibility, supported filters/sort/page, stable ranking/pagination, and bounded
+  work. Missing, stale, invalid, or unresolved authority fails closed without fabricating results or
+  substituting collection membership.
+- **Status:** **Baseline**. Contract, deterministic unit/integration, lifecycle/publication
+  non-persistence, browser, and protected commerce/media evidence pass with zero provider or Vesko
+  calls. This is standalone catalogue search only: no Vesko search integration, AI/semantic/vector/
+  fuzzy search, typo correction, recommendations, personalization, or analytics is claimed.
 
 ### P10B-16P-05B — Final historical acceptance cleanup
 
@@ -763,9 +789,8 @@ keep distinct approved facts where their reading structure is shared.
 - **Status:** **Planned**. This cleanup cannot start before P10B-18 and cannot weaken P10B-16P-04 or
   P10B-18 evidence.
 
-The canonical search query/results adapter is the next focused product task. Registered search
-presentation remains non-executable and fails closed until that first-class transient authority is
-available.
+P10B-17 is the next focused product task. P10B remains Partial; P10B-18 and P10B-16P-05B remain
+Planned in their locked order.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -833,6 +858,7 @@ P10B-02…13 minimum accepted capability
   → P10B-16P-03 Storefront Studio generation journey
   → P10B-16P-04 live V2 acceptance and bridge disposition
   → P10B-16P-05A active path/compiler rationalisation
+  → P10B-16P-06 canonical search query/results adapter
   → P10B-17 responsive/a11y/performance
   → P10B-18 commercial quality and scale
   → P10B-16P-05B final historical acceptance cleanup
@@ -865,8 +891,7 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-05A are Baseline under the disjoint
-ownership constraints in section 15. P10B-16P-02 is Baseline. The canonical search query/results
-adapter is the next focused product task. P10B-16P-05B, P10B-17, and P10B-18 remain Planned. No later
-implementation task is complete merely because this architecture is approved or the completed
-foundations passed.
+P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline under the
+disjoint ownership constraints in section 15. P10B-16P-02 is Baseline. P10B-17 is the next focused
+product task; P10B-16P-05B, P10B-17, and P10B-18 remain Planned. No later implementation task is
+complete merely because this architecture is approved or the completed foundations passed.

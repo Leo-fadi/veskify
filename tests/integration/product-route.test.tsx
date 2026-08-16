@@ -164,6 +164,38 @@ describe("product preview route states", () => {
     );
   });
 
+  it("preserves routed locale and authorized utility context in product navigation", async () => {
+    render(
+      <ProductPreviewClient
+        initialLocale="fi"
+        p10b16p04UtilityContext="populated"
+        productId="project_aurum_nordic"
+        productSlug="aurora-ring-585"
+        proposalCandidateFingerprint="candidate-safe-fingerprint"
+        repositoryFactory={() => repository(() => Promise.resolve(aggregate()))}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Aurora-sormus 585" }),
+    ).toBeVisible();
+    const expectedSuffix =
+      "?p10b-16p-04-proposal=candidate-safe-fingerprint&" +
+      "p10b-16p-04-utility=populated&locale=fi";
+    expect(screen.getByRole("link", { name: "Storefront home" })).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic${expectedSuffix}`,
+    );
+    expect(screen.getAllByRole("link", { name: "Aurum Nordic" })[0]).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic${expectedSuffix}`,
+    );
+    expect(screen.getByRole("link", { name: "Sormukset" })).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic/collections/rings${expectedSuffix}`,
+    );
+  });
+
   it("renders exactly one main landmark", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });

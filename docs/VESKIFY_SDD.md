@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 15 August 2026, P10B-16P-05A active production-path and compiler rationalisation |
+| Verified baseline         | 15 August 2026, P10B-16P-06 canonical search query/results adapter |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-16P-06 | 15 August 2026 | P10B-16P-06 delivery | Add one provider-neutral transient product-search contract and standalone `CatalogueDisplayModel` adapter; execute the persisted `/search` route and selected registered presentation across draft, proposal, saved/history, and published targets; preserve exact product links, EN/FI behavior, protected commerce/media, and lifecycle non-persistence; and keep Vesko/AI/semantic/fuzzy search outside the claim. |
 | 1.3.0 P10B-16P-05A | 15 August 2026 | P10B-16P-05A delivery | Make one canonical semantic initial-generation route and composition explicit, reduce the prompted compiler to one coordinator/resolver/decision/executor chain with one materialization boundary, remove the active P10B-16L runtime and executable-intent path, isolate retained P9/Lumo evidence, and preserve the production-disabled P10B-16P-04 acceptance composition through P10B-18. |
 | 1.3.0 P10B-16P-04 | 15 August 2026 | P10B-16P-04 delivery | Prove the bounded semantic Design Intent path through the normal production-disabled Storefront Studio with separately authorized real OpenAI A/B/C evidence, deterministic exact compilation and one materialization per successful prompt, clean A/B rejection, full C accept/undo/redo/save/reload/preview lifecycle, protected commerce/media parity, retained human review, and explicit P10B-16L compatibility disposition. |
 | 1.3.0 P10B-16P-03 | 12 August 2026 | P10B-16P-03 delivery | Connect normal Storefront Studio whole-storefront generation to standalone/mock server authority and P10B-16P-02B compilation, bind one registered operation to exact source/compiler lineage and retained evidence, fail integrated requests closed pending P10B-16P-04 authenticated authority, and prove the mocked review/lifecycle/preview journey with zero real-provider calls. |
@@ -91,10 +92,10 @@ P10B-13 commerce utility presentation, the P10B-14 Premium Editorial complete-st
 slice, the P10B-15 bounded synthesis engine, P10B-16 direction/diversity authority, and
 P10B-16P-01 dynamic commerce route archetype authority, P10B-16P-02A prompted Design Intent V2
 authority, P10B-16P-02B deterministic intent compilation/canonical proposal materialization, and
-P10B-16P-03 normal Studio prompted generation, P10B-16P-04 real-provider acceptance, and
-P10B-16P-05A active-path/compiler rationalisation are Baseline. P10B-16P-02 is Baseline;
-P10B-16P-05B final historical cleanup, P10B-17, and P10B-18 remain Planned. The canonical search
-query/results adapter is the next focused product task. The current
+P10B-16P-03 normal Studio prompted generation, P10B-16P-04 real-provider acceptance,
+P10B-16P-05A active-path/compiler rationalisation, and P10B-16P-06 canonical search query/results
+authority are Baseline. P10B-16P-02 is Baseline; P10B-16P-05B final historical cleanup, P10B-17,
+and P10B-18 remain Planned. P10B-17 is the next focused product task. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -220,6 +221,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | PageBlueprint profiles and materialization           | **Baseline** | Registered profiles materialize canonical page composition.                    |
 | Site-map and registered page-family authority        | **Baseline** | Nineteen registered families materialize deterministic canonical pages/navigation with route, locale, evidence, context, and lifecycle validation. |
 | Dynamic collection and PDP commerce presentation     | **Baseline** | Canonical bindings, option groups, variants, media, price, and availability render safely. |
+| Canonical storefront query/results search             | **Baseline** | One persisted `/search` presentation executes through transient current-catalogue results across draft, proposal, saved/history, and published targets without persisting query/result state. |
 | Source evidence, asset inventory, and approved brief | **Baseline** | Provenance and protected-commerce reconciliation are contracted and tested.    |
 | Governed initial generation                          | **Partial**  | Internal authority exists; normal merchant editor reach is P10C work.           |
 | Governed follow-up editing                           | **Partial**  | Internal authority exists; normal merchant editor reach is P10C work.           |
@@ -233,7 +235,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds coordinated constraint packages and diversity control; P10B-16P-01 converges dynamic commerce routes; P10B-16P-02 adds strict transient Design Intent plus deterministic exact compilation and one canonical materialization; P10B-16P-03 connects that authority to normal Studio; P10B-16P-04 proves separately authorized real OpenAI A/B/C proposals plus the C accept/undo/redo/save/reload/preview lifecycle; and P10B-16P-05A makes that semantic route and one coordinator/resolver/decision/executor chain the sole active initial-generation authority. The canonical search adapter, phase-wide responsive/performance, and 100+ quality/scale closure remain incomplete. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds coordinated constraint packages and diversity control; P10B-16P-01 converges dynamic commerce routes; P10B-16P-02 adds strict transient Design Intent plus deterministic exact compilation and one canonical materialization; P10B-16P-03 connects that authority to normal Studio; P10B-16P-04 proves separately authorized real OpenAI A/B/C proposals plus the C accept/undo/redo/save/reload/preview lifecycle; P10B-16P-05A makes that semantic route and one coordinator/resolver/decision/executor chain the sole active initial-generation authority; and P10B-16P-06 supplies standalone canonical transient search query/results authority. Phase-wide responsive/performance and 100+ quality/scale closure remain incomplete. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -366,9 +368,15 @@ and fallbacks, while a compact route inventory retains only each URL and canonic
 identity. Runtime resolves the current mapping, validates the exact registered profile/frame/
 component authority, and binds current protected commerce into a transient renderer projection.
 
-The `/search` route and archetype are registered presentation authority, but operational search
-materialization still requires an exact transient query/result projection from a first-class
-canonical adapter. Without it, search fails closed and never substitutes a collection.
+The `/search` route and selected archetype are registered persisted presentation authority.
+P10B-16P-06 supplies the separate first-class transient query/results authority: a provider-neutral
+read-only port and standalone `CatalogueDisplayModel` adapter derive exact current public
+product-route IDs for validated EN/FI query, supported filter/sort, and page state. The same
+`dynamicCollectionCommerce`, product-card, frame, orientation/no-results, and dynamic PDP route
+authorities render the result. Query text, filters, sort, page, result IDs, and result count remain
+runtime-only and never enter `PageModel`, `StorefrontSnapshot`, history, compiled design authority,
+or publication records as editable state. Missing, invalid, stale, or unresolved runtime authority
+still fails closed and never substitutes a collection.
 
 ### 7.5 Registered `dynamicCollectionCommerce` contract
 
@@ -811,9 +819,9 @@ canonical product media remains product-owned. A transient search context valida
 revision and result IDs; zero results retain the query and emit no fabricated cards. This task does
 not create a search route, pagination authority, collection model, filter engine, or commerce write.
 P10B-16P-01 later registers `/search` in compact route inventory and selects its maintained
-archetype, but a first-class canonical search-result adapter is still absent: runtime search
-materialization requires exact transient query/result authority and otherwise fails closed without
-substituting a collection.
+archetype. P10B-16P-06 now supplies the separate transient canonical query/results adapter while
+preserving that presentation authority; unavailable or invalid runtime state still fails closed
+without substituting a collection.
 
 Deterministic coverage proves materialization, planning, proposal/compiler/snapshot preservation,
 all renderer targets, save/reload, publication compilation, canonical fact/media/order guards,
@@ -937,9 +945,9 @@ fingerprints. See
 
 P10B-16P-01 corrects the earlier complete-store representation in which each collection and
 product URL became an independently visible/editable `PageModel`. Collection and PDP public-route
-coverage is unchanged; `/search` retains registered route and presentation authority but fails
-closed pending an exact transient result adapter. Route instance and design authority are now
-separate. Static home, content, campaign, policy, and utility pages remain canonical pages.
+coverage is unchanged; `/search` retains one registered route and presentation authority. Route
+instance and design authority are now separate. Static home, content, campaign, policy, and utility
+pages remain canonical pages.
 Collection/search and PDP design live in one versioned, fingerprinted
 `dynamicCommercePresentation` authority inside the same `StorefrontSnapshot`.
 
@@ -959,9 +967,10 @@ the exact collection or PDP URL resolves its current route entry and mapping, re
 profile/frame/component authority, binds exact current protected product or collection commerce,
 and renders through the existing `dynamicProductDetail` or `dynamicCollectionCommerce`
 implementation. Search materialization additionally requires an exact transient query/result
-projection from a first-class canonical search adapter. That adapter is not yet available, so
-search fails closed rather than fabricating results or binding a collection. Catalogue size
-therefore changes route inventory, not editable design cardinality.
+projection from a first-class canonical adapter. P10B-16P-06 supplies it from the standalone current
+catalogue; unavailable, invalid, stale, or unresolved authority fails closed rather than fabricating
+results or binding a collection. Catalogue size and query count therefore do not change editable
+design cardinality.
 
 Storefront Studio lists static pages and archetypes, not every product and collection URL. A chosen
 representative product or collection is transient view state and is never saved or published.
@@ -1120,8 +1129,9 @@ provider-authored replacement state.
 Proposal review remains read-only and isolated until acceptance. Accept, Reject, Generate another,
 Undo/Redo, Save/reload, and normal Preview continue through existing proposal, history,
 `StorefrontSnapshot`, storage, and renderer authority. Representative collection/PDP context is
-transient and never enters snapshot history or publication. Search presentation may be listed, but
-runtime search remains fail closed without fabricating results or substituting collection data.
+transient and never enters snapshot history or publication. At P10B-16P-03 delivery, search
+presentation could be listed but runtime search remained fail closed; P10B-16P-06 later supplies its
+separate transient query/results authority without changing the Studio generation contract.
 Current approved evidence references accompany proposal review; content/support fact documents
 retain their exact references in the candidate and accepted snapshots as provenance only. After
 save/reload, normal editor and Preview entry independently resolve current approved evidence from
@@ -1169,8 +1179,9 @@ P10B-16L and the legacy whole-storefront selector are Deprecated compatibility-o
 authorities for prompted complete-store generation. P10B-16P-05A removes their active runtime,
 routes, provider selector, and executable-intent product-path consumers after proving equivalent V2
 safety coverage and no normal-path dependency. Historical evidence and required neutral
-migration/regression fixtures remain until the P10B-16P-05B cleanup gate after P10B-18. Search
-presentation remains registered while execution stays fail closed. See
+migration/regression fixtures remain until the P10B-16P-05B cleanup gate after P10B-18. At this
+acceptance boundary, search presentation remained registered while execution failed closed;
+P10B-16P-06 later supplies the standalone runtime adapter. See
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 
 ### 10.23 P10B-16P-05A active production-path and compiler rationalisation
@@ -1211,10 +1222,39 @@ live generation as Deprecated historical, production-disabled evidence. Proven p
 migration fixtures remain where they have current consumers. The P10B-16P-04 Aurum acceptance
 composition remains production-disabled and retained through P10B-18 for deterministic A/B/C replay
 and acceptance evidence. P10B-16P-05B is Planned after P10B-18 for consumer-verified final historical
-cleanup. P10B remains Partial; the canonical search query/results adapter is the next focused product
-task, and P10B-17/P10B-18 remain Planned.
+cleanup. P10B-16P-06 subsequently closes the standalone canonical search query/results adapter.
+P10B remains Partial; P10B-17 is next and P10B-18 remains Planned.
 
-### 10.24 Remaining planned commercial generation authority
+### 10.24 P10B-16P-06 canonical search query/results adapter
+
+P10B-16P-06 establishes one versioned provider-neutral, read-only search request/result contract.
+Its standalone adapter searches only the current canonical `CatalogueDisplayModel`: it validates and
+normalizes bounded EN/FI query input, applies only supported filters/sort/page state, prioritizes
+exact SKU and localized title matches deterministically, bounds work, and returns unique exact IDs
+that have current public product-route authority. It does not copy product records or own catalogue,
+collection, commerce, or media truth.
+
+The persisted authority remains exactly one `/search` route identity and the search-compatible
+P10B-10 archetype selected inside `dynamicCommercePresentation`. The runtime request and result page
+are transient. Query text, filters, sort, page number, result IDs, and result count never enter
+`PageModel`, `StorefrontSnapshot`, history, compiled design decisions, design fingerprints, provider
+evidence, or publication records as editable storefront state. Save, reload, restore, and publish
+preserve presentation authority but never replay a customer's search query.
+
+Draft Preview, isolated proposal preview, saved/history Preview, and published `/search` routes bind
+the transient exact result page to the existing `dynamicCollectionCommerce` implementation,
+P10B-08 product cards, P10B-06 shared frame, current Design DNA, and P10B-13 governed
+orientation/no-results presentation. Supported shared-frame forms submit normal GET query URLs;
+result cards link through exact current dynamic PDP routes. Missing, invalid, stale, or unresolved
+catalogue/route/search authority fails closed without fabricated results, collection substitution,
+or canonical mutation.
+
+This Baseline uses the standalone catalogue adapter only and made zero provider or Vesko calls. It
+does not claim a Vesko search endpoint, AI/semantic/vector/fuzzy search, typo correction,
+recommendations, personalization, analytics, or operational commerce writes. P10B remains Partial;
+P10B-17 is next, P10B-18 remains Planned, and P10B-16P-05B remains Planned after P10B-18.
+
+### 10.25 Remaining planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -1254,7 +1294,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.25 Commercial acceptance
+### 10.26 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -1395,9 +1435,9 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-16 and P10B-16P-01 through P10B-16P-05A are Baseline; P10B-16P-02 is Baseline;
-   P10B-16P-05B, P10B-17, and P10B-18 remain Planned. The canonical search query/results adapter is
-   the next focused product task.
+   through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline; P10B-16P-02 is
+   Baseline; P10B-16P-05B, P10B-17, and P10B-18 remain Planned. P10B-17 is the next focused product
+   task.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -1473,6 +1513,9 @@ Version 1.3.0 does not claim:
 - that P10B-16P-05A supplies the missing search query/results adapter, production authentication,
   P10B-17/P10B-18 closure, or final historical-evidence cleanup; P10B-16P-05B remains Planned after
   P10B-18;
+- that P10B-16P-06 provides a Vesko search endpoint, AI/semantic/vector/fuzzy search, typo
+  correction, recommendations, personalization, analytics, persisted customer search state, or
+  P10B-17/P10B-18 closure;
 - that P10B-16P-02A materializes a storefront, creates a proposal or snapshot, provides executable
   search, or has live Design Intent V2 provider evidence;
 - that P10B-16P-03 provides executable search, live Design Intent V2 provider evidence, retained
@@ -1509,7 +1552,7 @@ binding document depends on the outcome as a current delivery gate. Pre-consolid
 | **FR-109** | Functional requirement | The component platform MUST provide reusable ComponentDefinitionV2 families, variants, slots, bindings, PageBlueprints/profiles, migrations, and shared editor/preview/published renderers. | §§4.2, 7; P10A/P10B/P10C | **Clarified** | Component registry; generated manifest; P10B audit |
 | **FR-110** | Functional requirement | Storefront components MUST bind to a canonical read-only Vesko commerce projection and MUST NOT create a competing product, product-type, option, variant, or catalogue model. | §§3.3, 7.4, 12; all phases and P11 | **Retained unchanged** | ADR-004; protected-commerce regressions |
 | **FR-111** | Functional requirement | Dynamic product-detail routes MUST select one maintained PDP archetype through governed product-type/complexity mapping and render option groups, dependencies, required states, variant resolution, media, price, and availability from canonical product configuration without one design document per product. | §§7.4, 10.18; P10B/P10C | **Clarified** | ADR-004; dynamic-route/PDP materialization and renderer tests |
-| **FR-112** | Functional requirement | Dynamic collection/search routes MUST select one maintained archetype through governed mapping and bind collection headers, filters, product grids, merchandising rows, and no-results states to canonical collection/product data without changing membership or commerce truth; search MUST require exact transient query/result authority and fail closed when its canonical adapter is unavailable. | §§7.4, 10.18; P10B/P10C/P11 | **Clarified** | Dynamic-route/collection materialization, search fail-closed, and renderer tests |
+| **FR-112** | Functional requirement | Dynamic collection/search routes MUST select one maintained archetype through governed mapping and bind collection headers, filters, product grids, merchandising rows, and no-results states to canonical collection/product data without changing membership or commerce truth; search MUST use exact transient query/result authority, keep it out of editable/published design state, and fail closed when its current canonical adapter or route authority is unavailable. | §§7.4, 10.18, 10.24; P10B/P10C/P11 | **Clarified** | Dynamic-route/collection materialization, standalone search contract/adapter, lifecycle non-persistence, fail-closed, renderer, and browser tests |
 | **FR-113** | Functional requirement | Whole-storefront design changes MUST coordinate global tokens, navigation, footer, and representative pages through one validated proposal and atomic application/undo path. | §§6, 8–9; P10A/P10C | **Retained unchanged** | Governed proposal compiler and lifecycle tests |
 | **FR-114** | Functional requirement | Generated and edited storefronts MUST meet responsive and accessibility quality requirements across onboarding, storefront output, Storefront Studio, proposal review, dynamic PDP, collection, and publishing surfaces. | §§7.4, 10–11, 14; P10B/P10C | **Clarified** | Responsive/accessibility gates; P10B human review |
 | **FR-115** | Functional requirement | Draft acceptance, history, Save draft, Publish, and Restore MUST remain separate: accepted changes mutate the active draft only, Save persists draft only, Publish requires explicit confirmation and authoritative compilation, and Restore creates a draft. | §§8–9; P10A/P10C/P11 | **Clarified** | Draft/history tests; publishing gateway/compiler authority |

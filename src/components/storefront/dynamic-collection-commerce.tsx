@@ -33,19 +33,17 @@ import { validateRouteUsedAssetConformance } from "./storefront-asset-conformanc
 import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
 import { CanonicalProductCard } from "./canonical-product-card";
 import type { CanonicalProductCardContext } from "@/domain/product-card";
+import {
+  storefrontSearchResultPageV1Schema,
+  type StorefrontSearchResultPageV1,
+} from "@/application/storefront-search";
 
 export const collectionLoadingPresentationSchema = z
   .object({ status: z.enum(["ready", "loading"]) })
   .strict();
 
-/** A transient canonical search projection; it is never persisted as storefront content. */
-export const collectionSearchPresentationSchema = z
-  .object({
-    query: z.string().trim().min(1).max(200),
-    canonicalRevision: z.string().trim().min(1).max(120),
-    resultProductIds: z.array(idSchema),
-  })
-  .strict();
+/** Transient canonical search authority; retained as an alias for renderer consumers. */
+export const collectionSearchPresentationSchema = storefrontSearchResultPageV1Schema;
 
 export const productNavigationIntentSchema = z
   .object({
@@ -128,12 +126,14 @@ export type DynamicCollectionCommerceRendererInput = {
   activeLocale: Locale;
   primaryLocale: Locale;
   loading: { status: "ready" | "loading" };
-  search?: z.input<typeof collectionSearchPresentationSchema>;
+  search?: StorefrontSearchResultPageV1;
   resolveAssetUrl: (assetId: string) => string;
   onNavigateProduct: (intent: ProductNavigationIntent) => void;
   onNavigateCollection: (intent: CollectionNavigationIntent) => void;
   onFilterIntent: (intent: CollectionFilterIntent) => void;
   onSortIntent: (intent: CollectionSortIntent) => void;
+  /** Executable search routes supply this continuation without creating collection authority. */
+  onContinueShopping?: () => void;
 };
 
 type LocaleContext = { activeLocale: Locale; primaryLocale: Locale };
@@ -152,22 +152,42 @@ type SelectedCardMedia = {
   role: Exclude<CollectionCommerceAssetRole, "collectionImage">;
 };
 
-type PreparedDynamicCollectionCommerce = Omit<
+type PreparedDynamicCollectionCommerceBase = Omit<
   DynamicCollectionCommerceRendererInput,
-  "instance" | "projection" | "loading" | "resolveAssetUrl"
+  "instance" | "projection" | "loading" | "resolveAssetUrl" | "search"
 > & {
-  collection: CollectionPresentationContext;
   products: ProductPresentationContext[];
-  childCollections: CollectionPresentationContext[];
   variant: DynamicCollectionCommerceVariant;
   content: DynamicCollectionCommerceContent;
   props: DynamicCollectionCommerceProps;
   styleOverrides: DynamicCollectionCommerceStyleOverrides;
   loading: z.infer<typeof collectionLoadingPresentationSchema>;
-  search?: z.infer<typeof collectionSearchPresentationSchema>;
   assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
   cardMediaFor: (productId: string) => ProductMediaPresentation | undefined;
 };
+
+type PreparedDynamicCollectionCommerce =
+  | (PreparedDynamicCollectionCommerceBase & {
+      runtimeContext: "collection";
+      collection: CollectionPresentationContext;
+      childCollections: CollectionPresentationContext[];
+      search?: undefined;
+    })
+  | (PreparedDynamicCollectionCommerceBase & {
+      runtimeContext: "search-results";
+      search: StorefrontSearchResultPageV1;
+      collection?: undefined;
+      childCollections: [];
+    });
+
+type PreparedCollectionCommerce = Extract<
+  PreparedDynamicCollectionCommerce,
+  { runtimeContext: "collection" }
+>;
+type PreparedSearchCommerce = Extract<
+  PreparedDynamicCollectionCommerce,
+  { runtimeContext: "search-results" }
+>;
 
 const arraysEqual = (left: readonly string[], right: readonly string[]) =>
   left.length === right.length && left.every((value, index) => value === right[index]);
@@ -190,7 +210,7 @@ function selectCardMedia(product: ProductPresentationContext): SelectedCardMedia
 }
 
 function requiredAssetRoles(
-  collection: CollectionPresentationContext,
+  collection: CollectionPresentationContext | undefined,
   selectedCardMedia: ReadonlyMap<string, SelectedCardMedia>,
   assetMetadata: ReadonlyMap<string, StorefrontAssetMetadata>,
 ) {
@@ -202,7 +222,7 @@ function requiredAssetRoles(
     }
     required.set(assetId, role);
   };
-  const hero = collection.assets.find((asset) => asset.role === "hero");
+  const hero = collection?.assets.find((asset) => asset.role === "hero");
   if (hero) {
     const heroRole = assetMetadata.get(hero.assetId)?.role ?? "collectionImage";
     if (
@@ -217,7 +237,7 @@ function requiredAssetRoles(
     }
     add(hero.assetId, heroRole as CollectionCommerceAssetRole);
   }
-  collection.assets
+  collection?.assets
     .filter((asset) => asset.role !== "hero")
     .forEach((asset) => {
       const expectedRole =
@@ -240,10 +260,44 @@ function requiredAssetRoles(
   return required;
 }
 
+type ValidatedCollectionPresentation = Readonly<{
+  runtimeContext: "collection";
+  instance: ReturnType<typeof veskifyComponentRegistryV2.validateInstanceConformance>;
+  projection: z.infer<typeof componentProjectionContextSchema>;
+  collection: CollectionPresentationContext;
+  products: ProductPresentationContext[];
+  childCollections: CollectionPresentationContext[];
+  selectedCardMedia: Map<string, SelectedCardMedia>;
+  requiredAssets: Map<string, CollectionCommerceAssetRole>;
+  assetMetadata: Map<string, StorefrontAssetMetadata>;
+}>;
+
+type ValidatedSearchPresentation = Readonly<{
+  runtimeContext: "search-results";
+  instance: ReturnType<typeof veskifyComponentRegistryV2.validateInstanceConformance>;
+  projection: z.infer<typeof componentProjectionContextSchema>;
+  search: StorefrontSearchResultPageV1;
+  products: ProductPresentationContext[];
+  childCollections: [];
+  selectedCardMedia: Map<string, SelectedCardMedia>;
+  requiredAssets: Map<string, CollectionCommerceAssetRole>;
+  assetMetadata: Map<string, StorefrontAssetMetadata>;
+}>;
+
 export function validateDynamicCollectionCommerceRoutePresentation(
   instanceInput: unknown,
   projectionInput: unknown,
-) {
+): ValidatedCollectionPresentation;
+export function validateDynamicCollectionCommerceRoutePresentation(
+  instanceInput: unknown,
+  projectionInput: unknown,
+  searchInput: StorefrontSearchResultPageV1,
+): ValidatedSearchPresentation;
+export function validateDynamicCollectionCommerceRoutePresentation(
+  instanceInput: unknown,
+  projectionInput: unknown,
+  searchInput?: StorefrontSearchResultPageV1,
+): ValidatedCollectionPresentation | ValidatedSearchPresentation {
   const instance = veskifyComponentRegistryV2.validateInstanceConformance(
     instanceInput,
     projectionInput,
@@ -258,10 +312,74 @@ export function validateDynamicCollectionCommerceRoutePresentation(
   const productBinding = instance.bindings.find(
     (binding) => binding.slotId === "collectionProducts" && binding.source === "productList",
   );
-  if (collectionBinding?.source !== "collection" || productBinding?.source !== "productList") {
-    throw new Error(
-      "The collection renderer requires canonical collection and product-list bindings.",
+  if (productBinding?.source !== "productList") {
+    throw new Error("The collection/search renderer requires one canonical product-list binding.");
+  }
+  const childBinding = instance.bindings.find(
+    (binding) => binding.slotId === "childCollections" && binding.source === "collectionList",
+  );
+
+  if (searchInput !== undefined) {
+    const search = collectionSearchPresentationSchema.parse(searchInput);
+    if (collectionBinding !== undefined || childBinding !== undefined) {
+      throw new Error(
+        "Search-result presentation cannot claim collection or child-collection authority.",
+      );
+    }
+    if (projection.collections.length > 0) {
+      throw new Error("Search-result presentation cannot project a synthetic collection.");
+    }
+    if (!arraysEqual(productBinding.productIds, search.productIds)) {
+      throw new Error("Search product binding must exactly match transient result membership.");
+    }
+    if (
+      productBinding.revision !== search.resultFingerprint ||
+      projection.productListRevision !== search.resultFingerprint
+    ) {
+      throw new Error("Search product binding must retain the exact result fingerprint.");
+    }
+    if (
+      !arraysEqual(
+        projection.products.map(({ productId }) => productId),
+        search.productIds,
+      )
+    ) {
+      throw new Error("Search product projection must contain only the exact current result page.");
+    }
+    const products = productBinding.productIds.map((productId) => {
+      const product = projection.products.find((candidate) => candidate.productId === productId);
+      if (!product) throw new Error(`Unknown search product: ${productId}.`);
+      return product;
+    });
+    const assetMetadata = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
+    const selectedCardMedia = new Map(
+      products.flatMap((product) => {
+        const selected = selectCardMedia(product);
+        return selected ? [[product.productId, selected] as const] : [];
+      }),
     );
+    const requiredAssets = requiredAssetRoles(undefined, selectedCardMedia, assetMetadata);
+    validateRouteUsedAssetConformance({
+      instance,
+      projection,
+      requiredAssets,
+      boundary: "search result",
+    });
+    return {
+      runtimeContext: "search-results",
+      instance,
+      projection,
+      search,
+      products,
+      childCollections: [],
+      selectedCardMedia,
+      requiredAssets,
+      assetMetadata,
+    };
+  }
+
+  if (collectionBinding?.source !== "collection") {
+    throw new Error("The collection renderer requires one canonical collection binding.");
   }
   const collection = projection.collections.find(
     (candidate) => candidate.collectionId === collectionBinding.collectionId,
@@ -278,9 +396,6 @@ export function validateDynamicCollectionCommerceRoutePresentation(
     return product;
   });
 
-  const childBinding = instance.bindings.find(
-    (binding) => binding.slotId === "childCollections" && binding.source === "collectionList",
-  );
   if (
     childBinding?.source === "collectionList" &&
     !arraysEqual(childBinding.collectionIds, collection.childCollectionIds ?? [])
@@ -315,6 +430,7 @@ export function validateDynamicCollectionCommerceRoutePresentation(
     boundary: "collection",
   });
   return {
+    runtimeContext: "collection",
     instance,
     projection,
     collection,
@@ -329,65 +445,58 @@ export function validateDynamicCollectionCommerceRoutePresentation(
 function prepareDynamicCollectionCommerce(
   input: DynamicCollectionCommerceRendererInput,
 ): PreparedDynamicCollectionCommerce {
-  const {
-    instance,
-    collection,
-    products,
-    childCollections,
-    selectedCardMedia,
-    requiredAssets,
-    assetMetadata,
-  } = validateDynamicCollectionCommerceRoutePresentation(input.instance, input.projection);
   const search =
     input.search === undefined ? undefined : collectionSearchPresentationSchema.parse(input.search);
   if (
-    search &&
-    (search.canonicalRevision !== collection.revision ||
-      !arraysEqual(
-        search.resultProductIds,
-        products.map((product) => product.productId),
-      ))
+    search?.state === "results" &&
+    search.totalCount === 0 &&
+    input.onContinueShopping === undefined
   ) {
-    throw new Error(
-      "Search presentation must retain its canonical result membership and revision.",
-    );
+    throw new Error("Search no-results presentation requires a valid continue-shopping action.");
   }
-  const variant = dynamicCollectionCommerceVariantSchema.parse(instance.variant);
+  if (search && search.totalCount < search.productIds.length) {
+    throw new Error("Search result totals cannot be smaller than the current result page.");
+  }
+  const validated = search
+    ? validateDynamicCollectionCommerceRoutePresentation(input.instance, input.projection, search)
+    : validateDynamicCollectionCommerceRoutePresentation(input.instance, input.projection);
+  const variant = dynamicCollectionCommerceVariantSchema.parse(validated.instance.variant);
   if (
+    validated.runtimeContext === "collection" &&
     variant === "campaignLedDiscovery" &&
-    !collection.assets.some((asset) => asset.role === "editorial")
+    !validated.collection.assets.some((asset) => asset.role === "editorial")
   ) {
     throw new Error("Campaign-led collection discovery requires approved editorial media.");
   }
 
-  return {
+  const common = {
     target: input.target,
-    collection,
-    products,
-    childCollections,
+    products: validated.products,
     variant,
-    content: dynamicCollectionCommerceContentSchema.parse(instance.content),
-    props: dynamicCollectionCommercePropsSchema.parse(instance.props),
-    styleOverrides: dynamicCollectionCommerceStyleOverridesSchema.parse(instance.styleOverrides),
+    content: dynamicCollectionCommerceContentSchema.parse(validated.instance.content),
+    props: dynamicCollectionCommercePropsSchema.parse(validated.instance.props),
+    styleOverrides: dynamicCollectionCommerceStyleOverridesSchema.parse(
+      validated.instance.styleOverrides,
+    ),
     activeLocale: localeSchema.parse(input.activeLocale),
     primaryLocale: localeSchema.parse(input.primaryLocale),
     loading: collectionLoadingPresentationSchema.parse(input.loading),
-    ...(search === undefined ? {} : { search }),
     onNavigateProduct: input.onNavigateProduct,
     onNavigateCollection: input.onNavigateCollection,
     onFilterIntent: input.onFilterIntent,
     onSortIntent: input.onSortIntent,
-    cardMediaFor(productId) {
-      return selectedCardMedia.get(productId)?.media;
+    onContinueShopping: input.onContinueShopping,
+    cardMediaFor(productId: string) {
+      return validated.selectedCardMedia.get(productId)?.media;
     },
-    assetFor(assetId, alt) {
-      const metadata = assetMetadata.get(assetId);
+    assetFor(assetId: string, alt?: LocalizedText) {
+      const metadata = validated.assetMetadata.get(assetId);
       if (!metadata || metadata.approvalStatus !== "approved") {
-        throw new Error(`Collection media requires approved asset metadata: ${assetId}.`);
+        throw new Error(`Commerce media requires approved asset metadata: ${assetId}.`);
       }
-      const expectedRole = requiredAssets.get(assetId);
+      const expectedRole = validated.requiredAssets.get(assetId);
       if (!expectedRole || metadata.role !== expectedRole) {
-        throw new Error(`Collection media requires its canonical approved role: ${assetId}.`);
+        throw new Error(`Commerce media requires its canonical approved role: ${assetId}.`);
       }
       return {
         asset: assetRefSchema.parse({
@@ -403,6 +512,19 @@ function prepareDynamicCollectionCommerce(
       };
     },
   };
+  return validated.runtimeContext === "search-results"
+    ? {
+        ...common,
+        runtimeContext: "search-results",
+        search: validated.search,
+        childCollections: [],
+      }
+    : {
+        ...common,
+        runtimeContext: "collection",
+        collection: validated.collection,
+        childCollections: validated.childCollections,
+      };
 }
 
 function CommerceImage({ resolved, locale }: { resolved: ResolvedAsset; locale: LocaleContext }) {
@@ -455,7 +577,7 @@ function CollectionHeader({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedCollectionCommerce;
   locale: LocaleContext;
 }) {
   const titleId = useId();
@@ -535,7 +657,7 @@ function ChildCollectionNavigation({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedCollectionCommerce;
   locale: LocaleContext;
 }) {
   if (!input.props.showChildCollections || input.childCollections.length === 0) return null;
@@ -567,7 +689,7 @@ function CampaignLead({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedCollectionCommerce;
   locale: LocaleContext;
 }) {
   if (input.variant !== "campaignLedDiscovery") return null;
@@ -595,14 +717,32 @@ function SearchResultsContext({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedSearchCommerce;
   locale: LocaleContext;
 }) {
-  if (!input.search) return null;
+  const count = input.search.totalCount;
+  if (input.search.state === "empty-query") {
+    return (
+      <p className={styles.searchContext} data-search-state="empty-query">
+        {fallback(
+          "Enter a product name or detail to search the storefront.",
+          "Hae verkkokaupasta kirjoittamalla tuotteen nimi tai tuotetieto.",
+          locale,
+        )}
+      </p>
+    );
+  }
   return (
-    <p className={styles.searchContext} data-search-query={input.search.query}>
+    <p
+      aria-live="polite"
+      className={styles.searchContext}
+      data-search-query={input.search.normalizedQuery}
+      data-search-result-count={count}
+      data-search-state="results"
+    >
       {fallback("Search results for", "Hakutulokset haulle", locale)}{" "}
-      <strong>“{input.search.query}”</strong>
+      <strong>“{input.search.normalizedQuery}”</strong>: {count}{" "}
+      {fallback(count === 1 ? "product" : "products", count === 1 ? "tuote" : "tuotetta", locale)}
     </p>
   );
 }
@@ -611,33 +751,56 @@ function SearchZeroResults({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedSearchCommerce;
   locale: LocaleContext;
 }) {
-  if (!input.search) return null;
+  if (input.search.state === "empty-query") {
+    return (
+      <div className={styles.emptyState} data-search-empty-query="true">
+        <h3>{fallback("Search products", "Hae tuotteita", locale)}</h3>
+        <p>
+          {fallback(
+            "Enter a product name or detail to begin.",
+            "Aloita kirjoittamalla tuotteen nimi tai tuotetieto.",
+            locale,
+          )}
+        </p>
+      </div>
+    );
+  }
   return (
     <div
       className={styles.emptyState}
       data-search-zero-results="true"
-      data-search-query={input.search.query}
+      data-search-query={input.search.normalizedQuery}
     >
       <h3>{fallback("No results found", "Hakutuloksia ei löytynyt", locale)}</h3>
       <p>
         {fallback("No products match", "Tuotteita ei löytynyt haulla", locale)} “
-        {input.search.query}”.
+        {input.search.normalizedQuery}”.
       </p>
-      <button
-        onClick={() =>
-          input.onNavigateCollection({
-            type: "navigateToCollection",
-            collectionId: input.collection.collectionId,
-            collectionRevision: input.collection.revision,
-          })
-        }
-        type="button"
-      >
-        {fallback("Browse this collection", "Selaa tätä mallistoa", locale)}
-      </button>
+      {input.onContinueShopping ? (
+        <button onClick={input.onContinueShopping} type="button">
+          {fallback("Continue shopping", "Jatka ostoksia", locale)}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function CollectionEmptyState({
+  input,
+  locale,
+}: {
+  input: PreparedCollectionCommerce;
+  locale: LocaleContext;
+}) {
+  return (
+    <div className={styles.emptyState}>
+      <h3>{text(input.collection.emptyState.title, locale)}</h3>
+      {input.collection.emptyState.description ? (
+        <p>{text(input.collection.emptyState.description, locale)}</p>
+      ) : null}
     </div>
   );
 }
@@ -876,7 +1039,7 @@ function CollectionFilters({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedCollectionCommerce;
   locale: LocaleContext;
 }) {
   const [showAllFilters, setShowAllFilters] = useState(false);
@@ -1005,7 +1168,7 @@ function CollectionSort({
   input,
   locale,
 }: {
-  input: PreparedDynamicCollectionCommerce;
+  input: PreparedCollectionCommerce;
   locale: LocaleContext;
 }) {
   if (input.collection.sorting.length < 2) return null;
@@ -1050,13 +1213,17 @@ function wideCollectionGridColumns(productCount: number): 1 | 2 | 3 | 4 {
 export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommerce) {
   const productsHeadingId = useId();
   const locale = { activeLocale: input.activeLocale, primaryLocale: input.primaryLocale };
-  const childCollections = <ChildCollectionNavigation input={input} locale={locale} />;
+  const collectionInput = input.runtimeContext === "collection" ? input : undefined;
+  const searchInput = input.runtimeContext === "search-results" ? input : undefined;
+  const childCollections = collectionInput ? (
+    <ChildCollectionNavigation input={collectionInput} locale={locale} />
+  ) : null;
   const commerce = (
     <div
       className={`${styles.commerceLayout} ${styles[`layout_${input.props.filterLayout}`]}`}
       data-filter-layout={input.props.filterLayout}
     >
-      <CollectionFilters input={input} locale={locale} />
+      {collectionInput ? <CollectionFilters input={collectionInput} locale={locale} /> : null}
       <section
         aria-busy={input.loading.status === "loading"}
         aria-labelledby={productsHeadingId}
@@ -1065,26 +1232,25 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
       >
         <div className={styles.productGridHeading}>
           <div>
-            <h2 id={productsHeadingId}>{text(input.content.productsHeading, locale)}</h2>
-            <SearchResultsContext input={input} locale={locale} />
+            <h2 id={productsHeadingId}>
+              {searchInput
+                ? fallback("Search results", "Hakutulokset", locale)
+                : text(input.content.productsHeading, locale)}
+            </h2>
+            {searchInput ? <SearchResultsContext input={searchInput} locale={locale} /> : null}
           </div>
-          <CollectionSort input={input} locale={locale} />
+          {collectionInput ? <CollectionSort input={collectionInput} locale={locale} /> : null}
         </div>
         {input.loading.status === "loading" ? (
           <p aria-live="polite" className={styles.loadingState}>
             {text(input.content.loadingLabel, locale)}
           </p>
         ) : input.products.length === 0 ? (
-          input.search ? (
-            <SearchZeroResults input={input} locale={locale} />
-          ) : (
-            <div className={styles.emptyState}>
-              <h3>{text(input.collection.emptyState.title, locale)}</h3>
-              {input.collection.emptyState.description ? (
-                <p>{text(input.collection.emptyState.description, locale)}</p>
-              ) : null}
-            </div>
-          )
+          searchInput ? (
+            <SearchZeroResults input={searchInput} locale={locale} />
+          ) : collectionInput ? (
+            <CollectionEmptyState input={collectionInput} locale={locale} />
+          ) : null
         ) : (
           <div
             className={`${styles.productGrid} ${styles[`density_${input.props.gridDensity}`]}`}
@@ -1095,7 +1261,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
               <DynamicCollectionProductCard
                 assetFor={input.assetFor}
                 content={input.content}
-                context={input.search ? "searchResults" : "collectionResults"}
+                context={searchInput ? "searchResults" : "collectionResults"}
                 key={product.productId}
                 locale={locale}
                 onNavigateProduct={input.onNavigateProduct}
@@ -1126,11 +1292,11 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
                 ? "dense-scan"
                 : "standard"
       }
-      data-search-context={input.search ? "canonical" : "none"}
+      data-search-context={searchInput ? "transient-canonical-results" : "none"}
       data-responsive-layout="content-driven"
     >
-      <CampaignLead input={input} locale={locale} />
-      <CollectionHeader input={input} locale={locale} />
+      {collectionInput ? <CampaignLead input={collectionInput} locale={locale} /> : null}
+      {collectionInput ? <CollectionHeader input={collectionInput} locale={locale} /> : null}
       {input.variant === "catalogueComparison" ? (
         <>
           {commerce}

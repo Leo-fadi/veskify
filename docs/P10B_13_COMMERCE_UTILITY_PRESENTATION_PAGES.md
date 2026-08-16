@@ -57,8 +57,15 @@ non-persistence. Chromium evidence retains cart, no-results, error, and 404 at 3
 and 1440 px plus cart action dispatch. P10B-13 does not claim P10B-17 accessibility/performance
 closure or P10B-18 commercial scale acceptance.
 
-## Remaining gaps
+## P10B-16P-06 search continuation and remaining gaps
+
+P10B-16P-06 now supplies the standalone canonical query/results adapter used by the registered
+search presentation. Its transient result page reaches this existing orientation/no-results
+authority and the existing `dynamicCollectionCommerce` result renderer; it does not create another
+utility profile or persist query, filters, sort, page, result IDs, or result count in storefront
+design state. Missing, invalid, stale, or unresolved search authority continues to fail closed.
 
 Production Vesko cart, checkout, search, authentication, and payment adapters remain P11
-integration work. This delivery defines only the bounded presentation seam and will fail closed
-when a current runtime adapter does not supply a matching state or executable action.
+integration work. This Baseline claims no Vesko endpoint, AI/semantic/vector/fuzzy search,
+recommendations, personalization, analytics, or operational cart/checkout behavior. Runtime
+adapters still fail closed when they do not supply a matching state or executable action.

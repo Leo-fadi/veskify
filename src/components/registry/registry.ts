@@ -191,6 +191,7 @@ export function createStorefrontRenderContext({
   renderTarget = "preview",
   evidenceReferences = [],
   commerceUtilityRuntime,
+  searchQuery,
   onCommerceUtilityIntent,
   contentSupportFactDocuments,
 }: {
@@ -208,6 +209,7 @@ export function createStorefrontRenderContext({
   renderTarget?: StorefrontRenderContext["renderTarget"];
   evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
   commerceUtilityRuntime?: CommerceUtilityRuntimeState;
+  searchQuery?: string;
   onCommerceUtilityIntent?: (intent: CommerceUtilityIntent) => void;
   contentSupportFactDocuments?: StorefrontRenderContext["contentSupportFactDocuments"];
 }): StorefrontRenderContext {
@@ -245,6 +247,7 @@ export function createStorefrontRenderContext({
     ...(commerceUtilityRuntime
       ? { commerceUtilityRuntime: structuredClone(commerceUtilityRuntime) }
       : {}),
+    ...(searchQuery !== undefined ? { searchQuery } : {}),
     ...(onCommerceUtilityIntent ? { onCommerceUtilityIntent } : {}),
     contentSupportFactDocuments:
       contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments ?? [],
