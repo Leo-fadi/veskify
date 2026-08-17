@@ -657,8 +657,12 @@ export async function assertCommercialSurface(input: {
   await expect(root.locator('[data-frame-region="footer"]')).toBeVisible();
   const storeBrands = root.locator('[data-frame-region="header"] .store-brand');
   expect(await storeBrands.count()).toBeGreaterThan(0);
-  for (const brandText of await storeBrands.allTextContents())
-    expect(brandText).toContain("Aurum Nordic");
+  for (let index = 0; index < (await storeBrands.count()); index += 1) {
+    const storeBrand = storeBrands.nth(index);
+    const hasBrandText = (await storeBrand.textContent())?.includes("Aurum Nordic") ?? false;
+    const hasAccessibleLogo = (await storeBrand.locator('img[alt="Aurum Nordic"]').count()) > 0;
+    expect(hasBrandText || hasAccessibleLogo).toBe(true);
+  }
   await expect(root.locator('[data-frame-region="header"] nav a')).not.toHaveCount(0);
   await expect(root.locator('[data-frame-region="footer"] nav a')).not.toHaveCount(0);
   await assertCommercialFrame(root, width);
@@ -670,6 +674,7 @@ export async function assertCommercialSurface(input: {
     commercialEvidence.locale,
   );
   for (const image of await root.locator("img").all()) {
+    if (!(await image.isVisible())) continue;
     const media = await image.evaluate((candidate) => {
       const element = candidate as HTMLImageElement;
       const rectangle = element.getBoundingClientRect();

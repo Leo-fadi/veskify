@@ -572,7 +572,11 @@ describe("P10B-18B-01 Design DNA and shared-frame authority", () => {
         mode: "compound-driver",
         reasonCode: "coupled-axis-provider-driver",
         providerDriverPath: "commercialPosture",
-        coupledExactAxisIds: ["merchandising-posture", "optional-page-set"],
+        coupledExactAxisIds: [
+          "art-direction-posture",
+          "merchandising-posture",
+          "optional-page-set",
+        ],
         semanticValueCount: 8,
         exactValueCount: 3,
       },

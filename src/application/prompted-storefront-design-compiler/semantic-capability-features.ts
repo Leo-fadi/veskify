@@ -247,6 +247,22 @@ export function semanticExactInfluenceAxesFor(
       pdp.relatedProductCardAnatomyId,
     ]),
     "optional-page-set": canonicalValueFingerprint(selection.includedOptionalPageFamilyIds),
-    "art-direction-posture": selection.artDirectionPosture,
+    "art-direction-posture": canonicalValueFingerprint({
+      posture: selection.artDirectionPosture,
+      ratio: designDna.media.ratio,
+      crop:
+        selection.artDirectionPosture === "contained"
+          ? "contain"
+          : selection.artDirectionPosture === "editorial" && designDna.media.crop === "editorial"
+            ? "cover"
+            : designDna.media.crop,
+      overlay:
+        selection.artDirectionPosture === "contained"
+          ? "none"
+          : selection.artDirectionPosture === "editorial" &&
+              (designDna.media.overlay === "gradient" || designDna.media.overlay === "contrast")
+            ? "subtle"
+            : designDna.media.overlay,
+    }),
   });
 }

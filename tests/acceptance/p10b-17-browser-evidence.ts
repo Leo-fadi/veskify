@@ -423,6 +423,7 @@ async function waitForStorefrontImages(root: Locator): Promise<void> {
   try {
     for (let index = 0; index < imageCount; index += 1) {
       const image = images.nth(index);
+      if (!(await image.isVisible())) continue;
       await image.scrollIntoViewIfNeeded();
       await image.evaluate(async (candidate) => {
         const value = candidate as HTMLImageElement;

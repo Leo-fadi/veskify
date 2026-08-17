@@ -225,3 +225,20 @@ breakpoint authority still determine the rendered image.
 These loading and sizing choices neither replace nor reorder canonical product media and introduce
 no second asset registry. Source-image quality and retained cross-store art-direction quality remain
 P10B-18 concerns.
+
+## P10B-18B-06 accepted authority
+
+The accepted bounded implementation retains readable `1.0.0` responsive-image records and defines current
+`1.1.0` authority for exact approved responsive source lineage. One presentation can now bind a
+primary approved asset plus distinct approved breakpoint sources, each with its own ID, revision,
+material fingerprint, provenance-preserving `AssetRef`, and breakpoint coverage. The renderer
+chooses that exact source and reports source change separately from treatment change; it never
+describes repeated same-URL `<source>` markup as source diversity.
+
+The existing crop/treatment vocabulary remains bounded. `contained`, `editorial`, and `immersive`
+postures project through the selected Design DNA media authority, while approved breakpoint focal
+points and safe areas remain authoritative. Canonical product media continues through its protected
+same-product path and cannot be promoted into generated presentation imagery.
+
+Status is **Baseline**, accepted by the product owner on 17 August 2026 for responsive-source/crop
+and art-direction authority only. This is not complete-storefront commercial visual acceptance.

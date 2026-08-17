@@ -234,7 +234,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 17 August 2026",
-      "Accepted P10B-18B-01 Design DNA and shared-frame upgrade",
+      "Accepted P10B-18B-06 bounded asset-composition and art-direction upgrade",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

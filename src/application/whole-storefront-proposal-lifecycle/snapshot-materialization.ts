@@ -227,6 +227,17 @@ function compactRuntimeDynamicApprovedAssets(
               ...(placement.sourceProvenanceKind
                 ? { sourceProvenanceKind: placement.sourceProvenanceKind }
                 : {}),
+              ...(placement.placementContext
+                ? { placementContext: placement.placementContext }
+                : {}),
+              ...(placement.placementPurpose
+                ? { placementPurpose: placement.placementPurpose }
+                : {}),
+              ...(placement.reusePolicy ? { reusePolicy: placement.reusePolicy } : {}),
+              ...(placement.affinity ? { affinity: placement.affinity } : {}),
+              ...(placement.responsiveSourceAssetIds
+                ? { responsiveSourceAssetIds: [...placement.responsiveSourceAssetIds] }
+                : {}),
               required: placement.required,
               presentation: approvedAssetPresentationSchema.parse(structuredClone(presentation)),
             };
@@ -370,10 +381,45 @@ export function materializeWholeStorefrontRuntimeSnapshot(input: {
         ),
       ]),
     );
+    const sharedFramePlacements = runtime.approvedAssetPlacements.filter(
+      ({ placementContext }) => placementContext === "sharedFrame",
+    );
+    const sharedFramePresentations = sharedFramePlacements.flatMap((placement) => {
+      const presentation = presentations.find(
+        (candidate) =>
+          candidate.assetId === placement.assetId &&
+          candidate.role === placement.role &&
+          candidate.revision === placement.assetRevision &&
+          candidate.materialFingerprint === placement.materialFingerprint,
+      );
+      return presentation ? [approvedAssetPresentationSchema.parse(presentation)] : [];
+    });
+    if (
+      sharedFramePlacements.length > 0 &&
+      (!base.sharedFrame ||
+        sharedFramePlacements.some(
+          (placement) => placement.componentId !== base.sharedFrame?.header.id,
+        ) ||
+        sharedFramePresentations.length !== sharedFramePlacements.length)
+    ) {
+      invalid();
+    }
     const materialized = storefrontSnapshotSchema.parse({
       ...baseMaterial,
       brandSystem: structuredClone(runtime.brandSystem),
       navigation,
+      ...(base.sharedFrame
+        ? {
+            sharedFrame: {
+              ...structuredClone(base.sharedFrame),
+              header: {
+                ...structuredClone(base.sharedFrame.header),
+                approvedAssetPlacements: structuredClone(sharedFramePlacements),
+                approvedAssetPresentations: structuredClone(sharedFramePresentations),
+              },
+            },
+          }
+        : {}),
       ...(dynamicCommercePresentation
         ? {
             dynamicCommercePresentation: structuredClone(dynamicCommercePresentation),
@@ -409,6 +455,7 @@ export function materializeWholeStorefrontRuntimeSnapshot(input: {
             }).page.sections.flatMap((section) => section.approvedAssetPlacements ?? []),
       ) ?? [];
     const materializedPlacements = sortPlacements([
+      ...(materialized.sharedFrame?.header.approvedAssetPlacements ?? []),
       ...materialized.pages.flatMap((page) =>
         page.sections.flatMap((section) => section.approvedAssetPlacements ?? []),
       ),

@@ -860,6 +860,26 @@ function withPlacement(
   state: WholeStorefrontRuntimeState,
   placement: WholeStorefrontRuntimeState["approvedAssetPlacements"][number],
 ) {
+  if (placement.placementContext === "sharedFrame") {
+    if (placement.componentType !== "header" || placement.assetSlotId !== "brandLogo") {
+      invalid(
+        "asset-placement-target-mismatch",
+        "A shared-frame approved source asset must target the registered header logo slot.",
+      );
+    }
+    if (
+      state.approvedAssetPlacements.some(
+        (candidate) =>
+          candidate.placementContext === "sharedFrame" &&
+          candidate.componentId === placement.componentId &&
+          candidate.assetSlotId === placement.assetSlotId,
+      )
+    ) {
+      invalid("duplicate-operation-identity", "A shared-frame asset placement is duplicated.");
+    }
+    state.approvedAssetPlacements.push(structuredClone(placement));
+    return;
+  }
   const page = state.pages.find((candidate) => candidate.pageId === placement.pageId);
   const component = page?.components.find((candidate) => candidate.id === placement.componentId);
   if (!component || component.component !== placement.componentType) {

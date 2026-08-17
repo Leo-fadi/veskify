@@ -307,6 +307,9 @@ function projectionFor(
   );
   for (const presentation of presentations) {
     assetUrlById.set(presentation.assetId, presentation.asset.url);
+    presentation.responsiveSources?.forEach((source) =>
+      assetUrlById.set(source.assetId, source.asset.url),
+    );
   }
   placements.forEach((placement) => {
     if (assetIds.has(placement.assetId)) return;
@@ -335,6 +338,11 @@ function projectionFor(
       ...(presentation?.artDirection === undefined
         ? {}
         : { artDirection: presentation.artDirection }),
+      ...(presentation?.responsiveSources?.length
+        ? {
+            responsiveSourceAssetIds: presentation.responsiveSources.map(({ assetId }) => assetId),
+          }
+        : {}),
       revision: placement.assetRevision,
     });
   });

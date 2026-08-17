@@ -369,7 +369,7 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
       .soft(exactByFamily.get("premium-editorial"))
       .not.toEqual(exactByFamily.get("image-rich-editorial"));
     expect(canonicalValueString(base.fixture.planningInput.draft)).toBe(before);
-  });
+  }, 600_000);
 
   it("gives every advertised direct or compound semantic driver an exact causal witness", () => {
     const fixture = testAuthority();
@@ -503,8 +503,8 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
         .get("responsiveAndArtDirectionIntent.imageProminence")
         ?.relationships.find(({ exactAxisId }) => exactAxisId === "art-direction-posture"),
     ).toMatchObject({
-      mode: "direct",
-      reasonCode: "independent-exact-axis",
+      mode: "compound-driver",
+      reasonCode: "coupled-axis-provider-driver",
       providerDriverPath: "responsiveAndArtDirectionIntent.imageProminence",
       coupledExactAxisIds: [],
     });

@@ -256,6 +256,21 @@
   line-height: var(--brand-type-display-line-height, 1.05);
 }
 
+.brandLogo {
+  display: block;
+  inline-size: clamp(5rem, 10vw, 9rem);
+  max-inline-size: 100%;
+  block-size: auto;
+  max-block-size: calc(3rem * var(--brand-density-navigation, 1));
+  object-fit: contain;
+}
+
+.brandLogo img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+
 .utilities {
   display: flex;
   align-items: center;

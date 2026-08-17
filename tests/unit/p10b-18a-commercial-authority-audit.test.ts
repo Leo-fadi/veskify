@@ -104,17 +104,43 @@ function approvedAssetSelectionDiagnostics(
     ),
   ].sort((left, right) => left.localeCompare(right));
   const selectedPlacements = result.synthesisDecision.approvedAssetRoleSelections.map(
-    ({ profileId, slotId, component, assetSlotId, role }) => ({
+    ({
       profileId,
       slotId,
       component,
       assetSlotId,
       role,
+      assetId,
+      placementContext,
+      placementPurpose,
+      reusePolicy,
+      affinity,
+      responsiveSourceAssetIds,
+    }) => ({
+      profileId,
+      slotId,
+      component,
+      assetSlotId,
+      role,
+      assetId,
+      placementContext: placementContext ?? "page",
+      placementPurpose: placementPurpose ?? "legacy",
+      reusePolicy: reusePolicy ?? "legacy",
+      affinity: affinity ?? "legacy",
+      responsiveSourceAssetIds: responsiveSourceAssetIds ?? [],
     }),
   );
-  const selectedApprovedRoles = [...new Set(selectedPlacements.map(({ role }) => role))].sort(
-    (left, right) => left.localeCompare(right),
+  const pairedApprovedRoles = selectedPlacements.flatMap(({ responsiveSourceAssetIds }) =>
+    responsiveSourceAssetIds.flatMap((assetId) => {
+      const paired = authority.compatibilityInput.planningInput.approvedAssetContext?.assets.find(
+        (asset) => asset.assetId === assetId,
+      );
+      return paired ? [paired.role] : [];
+    }),
   );
+  const selectedApprovedRoles = [
+    ...new Set([...selectedPlacements.map(({ role }) => role), ...pairedApprovedRoles]),
+  ].sort((left, right) => left.localeCompare(right));
   const omittedApprovedRoles = availableApprovedRoles
     .filter((role) => !selectedApprovedRoles.includes(role))
     .map((role) => ({ role, reasonCode: "available-approved-role-not-selected" as const }));
@@ -264,12 +290,15 @@ describe("P10B-18A commercial authority audit", () => {
         expect(
           authority.currentRequestInput.draft.pages[0]?.sections.map(({ component }) => component),
         ).toEqual(["header", "footer"]);
-        expect(authority.request.assetAvailability.approvedRoleCount).toBe(3);
+        expect(authority.request.assetAvailability.approvedRoleCount).toBe(5);
         expect(authority.request.assetAvailability.editorialOrBrandImageryAvailable).toBe(true);
         expect(authority.approvedAssetPresentations.map(({ role }) => role).sort()).toEqual([
           "collectionImage",
           "editorialImage",
+          "editorialImage",
           "heroDesktop",
+          "heroMobile",
+          "logo",
         ]);
         expect(authority.approvedEvidenceFingerprint).toBeTruthy();
         expect(authority.approvedAssetContextFingerprint).toBeTruthy();
@@ -476,7 +505,7 @@ describe("P10B-18A commercial authority audit", () => {
           "includedPageKeys",
           "pageProfiles.{pageKey,familyId,profileId,profileVersion}",
           "pageBlueprintSelectionOverrides",
-          "approvedAssetRoleSelections without authorityFingerprint",
+          "approvedAssetRoleSelections with exact placement purpose, reuse, affinity and responsive pairing; without authorityFingerprint",
           "dynamicCommerceSelection without authorityFingerprint",
         ],
         normalizedDesignTopologyFields: [
@@ -485,7 +514,7 @@ describe("P10B-18A commercial authority audit", () => {
           "unique page family/profile/version sequence",
           "unique family/slot/component/variant/anatomy sequence",
           "bounded layout parameters",
-          "approved asset placement roles without asset identity",
+          "approved asset placement purpose/reuse/affinity/pairing modes without asset identity",
           "dynamic archetype roles without product-type identity",
           "responsive consumer marked unavailable (declared posture reported separately)",
         ],
@@ -504,7 +533,8 @@ describe("P10B-18A commercial authority audit", () => {
           orderedHomepageComposition: "available-from-exact-synthesis-decision",
           dynamicArchetypes: "available-from-exact-dynamic-commerce-selection",
           responsivePosture: "declared-only-materializer-consumer-unavailable",
-          artDirectionPosture: "declared-only-materializer-consumer-unavailable",
+          artDirectionPosture:
+            "material when selected approved presentation assets reach responsive art-direction execution; otherwise unavailable",
           approvedAssetOmissionReason:
             "limited-to-available-approved-role-not-selected-without-inferred-causality",
         },

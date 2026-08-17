@@ -33,6 +33,20 @@ function cloneDefinitions() {
   return veskifyComponentDefinitionsV2.map((definition) => structuredClone(definition));
 }
 
+function synchronizeCommercialAssetRequirement(
+  definition: ReturnType<typeof cloneDefinitions>[number],
+  assetSlot: ReturnType<typeof cloneDefinitions>[number]["assetSlots"][number],
+) {
+  const requirement = definition.commercialAnatomy?.compatibility.assetRequirements.find(
+    ({ slotId }) => slotId === assetSlot.id,
+  );
+  if (!requirement) return;
+  Reflect.set(requirement, "acceptedRoles", [...assetSlot.acceptedRoles]);
+  Reflect.set(requirement, "required", assetSlot.required);
+  Reflect.set(requirement, "minItems", assetSlot.minItems);
+  Reflect.set(requirement, "maxItems", assetSlot.maxItems);
+}
+
 function registeredProfiles() {
   return listExecutablePageBlueprintProfiles().map((pagePlan) => {
     if (!pagePlan.profile) throw new Error(`Missing registered profile for ${pagePlan.pageType}.`);
@@ -181,6 +195,16 @@ describe("P10A-04A generated component capability manifest", () => {
     Reflect.set(reorderedBindingSlot, "acceptedSourceTypes", ["navigation", "asset"]);
     Reflect.set(firstAssetSlot, "acceptedRoles", ["editorialImage", "logo"]);
     Reflect.set(reorderedAssetSlot, "acceptedRoles", ["logo", "editorialImage"]);
+    synchronizeCommercialAssetRequirement(
+      firstDefinitions.find((definition) => definition.assetSlots.includes(firstAssetSlot))!,
+      firstAssetSlot,
+    );
+    synchronizeCommercialAssetRequirement(
+      reorderedDefinitions.find((definition) =>
+        definition.assetSlots.includes(reorderedAssetSlot),
+      )!,
+      reorderedAssetSlot,
+    );
 
     const reorderedProfiles = cloneProfiles();
     const profileWithBindings = reorderedProfiles.find(
@@ -314,6 +338,7 @@ describe("P10A-04A generated component capability manifest", () => {
     Reflect.set(assetSlot, "required", true);
     Reflect.set(assetSlot, "minItems", 1);
     Reflect.set(assetSlot, "acceptedRoles", ["editorialImage", "logo"]);
+    synchronizeCommercialAssetRequirement(componentWithAsset, assetSlot);
 
     const authority = createAuthority(changedDefinitions);
     expect(

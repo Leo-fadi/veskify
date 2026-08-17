@@ -390,7 +390,7 @@ describe("P10B-16P-02B capability reachability truth", () => {
     });
   });
 
-  it("fails closed for protected source-media roles and unbound approved art direction", () => {
+  it("fails closed for protected source-media roles while retaining bound approved art direction", () => {
     const input = p10b14ProjectionInput();
     const initial = createPromptedStorefrontCapabilityAuthority(input);
     const evidenceDependentValue = (prefix: string) => {
@@ -499,13 +499,13 @@ describe("P10B-16P-02B capability reachability truth", () => {
     );
 
     expect(entries.get(`responsive.image.ratio.${ratio}`)).toMatchObject({
-      availability: "evidence-dependent",
+      availability: "available",
     });
     expect(entries.get(`responsive.crop.crop.${crop}`)).toMatchObject({
-      availability: "evidence-dependent",
+      availability: "available",
     });
     expect(entries.get(`responsive.overlay.overlay.${overlay}`)).toMatchObject({
-      availability: "evidence-dependent",
+      availability: "available",
     });
     expect(entries.get("responsive.crop.approved-responsive-focal-treatment")).toMatchObject({
       availability: "evidence-dependent",

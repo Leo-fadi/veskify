@@ -209,18 +209,29 @@ export function adaptV1ComponentDefinitionToV2(
       contentSlots: [],
       commerceBindingSlots: [],
       assetSlots:
-        definition.type === "brandStory"
+        definition.type === "header"
           ? [
               {
-                id: "brandStoryMedia",
-                title: { en: "Brand story media", fi: "Bränditarinan media" },
-                acceptedRoles: ["editorialImage", "logo"],
+                id: "brandLogo",
+                title: { en: "Approved brand logo", fi: "Hyväksytty brändilogo" },
+                acceptedRoles: ["logo"],
                 required: false,
                 minItems: 0,
                 maxItems: 1,
               },
             ]
-          : [],
+          : definition.type === "brandStory"
+            ? [
+                {
+                  id: "brandStoryMedia",
+                  title: { en: "Brand story media", fi: "Bränditarinan media" },
+                  acceptedRoles: ["editorialImage", "logo"],
+                  required: false,
+                  minItems: 0,
+                  maxItems: 1,
+                },
+              ]
+            : [],
       editablePresentationFields: Object.entries(definition.editorFields).map(([path, field]) =>
         editableFieldFromV1(path, field),
       ),

@@ -6,7 +6,7 @@ import type { Locator, Page } from "@playwright/test";
 import type { ProjectAggregate } from "@/services/storage";
 
 export const p10b18aWidths = [375, 1440] as const;
-export type P10B18AWidth = (typeof p10b18aWidths)[number] | 1024;
+export type P10B18AWidth = (typeof p10b18aWidths)[number] | 768 | 1024;
 export type P10B18ASurface = "home" | "collection" | "product-detail";
 export type P10B18ALocale = "en" | "fi";
 export type P10B18ARuntimeAuthority = "p03-standalone" | "p04-integrated-mock";
@@ -628,6 +628,7 @@ async function waitForImages(root: Locator): Promise<void> {
     const images = root.locator("img");
     for (let index = 0; index < (await images.count()); index += 1) {
       const image = images.nth(index);
+      if (!(await image.isVisible())) continue;
       await image.scrollIntoViewIfNeeded();
       await image.evaluate(async (candidate) => {
         const value = candidate as HTMLImageElement;

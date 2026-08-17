@@ -26,6 +26,8 @@ import {
   compileWholeStorefrontProposal,
   materializeWholeStorefrontRuntimeSnapshot,
 } from "@/application/whole-storefront-proposal-lifecycle";
+import { migrateApprovedPresentationArtDirection } from "@/application/responsive-image-authority";
+import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
 import {
   dynamicCollectionCommerceBridgeDefinition,
   dynamicProductDetailBridgeDefinition,
@@ -318,6 +320,7 @@ export function materializeCompleteStorefrontSelection(
     pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
     approvedAssetRoleSelections?: readonly WholeStorefrontApprovedAssetRoleSelection[];
     dynamicCommerceSelection?: DynamicCommerceDesignSelection;
+    artDirectionPosture?: "contained" | "editorial" | "immersive";
     materializationIdPrefix?: string;
   }>,
 ): CompleteStorefrontMaterialization {
@@ -336,6 +339,18 @@ export function materializeCompleteStorefrontSelection(
         "stale-approved-asset",
         "An exact approved asset-role selection has no matching renderer presentation authority.",
       );
+    }
+    for (const responsiveSourceAssetId of selection.responsiveSourceAssetIds ?? []) {
+      if (
+        !input.approvedAssetPresentations.some(
+          (candidate) => candidate.assetId === responsiveSourceAssetId,
+        )
+      ) {
+        throw new WholeStorefrontGenerationPlanError(
+          "stale-approved-asset",
+          "An exact responsive source selection has no matching approved presentation authority.",
+        );
+      }
     }
   }
   const sourceDynamicSelection = input.dynamicCommerceSelection
@@ -477,8 +492,92 @@ export function materializeCompleteStorefrontSelection(
     approvedAssetRoleSelections: input.approvedAssetRoleSelections,
     dynamicCommerceSelection: reboundDynamicSelection,
   });
+  const executionBrandSystem = registeredBrandSystemForDirection(
+    planningInput.draft.brandSystem,
+    planningInput.recipeContext.designSystem,
+    input.directionId,
+    {
+      spacingDensity:
+        input.designSystemNarrowing?.spacingDensity ?? plan.designSystemSelection.spacingDensity,
+      surfaceDepth:
+        input.designSystemNarrowing?.surfaceDepth ?? plan.designSystemSelection.surfaceDepth,
+    },
+  );
+  const executionPresentations = input.approvedAssetPresentations.map((presentation) => {
+    const selection = plan.approvedAssetRoleSelections.find(
+      ({ assetId }) => assetId === presentation.assetId,
+    );
+    const placement = plan.approvedAssetPlacements.find(
+      ({ assetId }) => assetId === presentation.assetId,
+    );
+    if (!selection || !placement) return approvedAssetPresentationSchema.parse(presentation);
+    const responsiveSources = (selection.responsiveSourceAssetIds ?? []).flatMap((assetId) => {
+      const sourcePresentation = input.approvedAssetPresentations.find(
+        (candidate) => candidate.assetId === assetId,
+      );
+      const sourceAsset = planningInput.approvedAssetContext?.assets.find(
+        (candidate) => candidate.assetId === assetId,
+      );
+      if (!sourcePresentation || !sourceAsset) return [];
+      const breakpoints = sourceAsset.presentation.placementAuthority?.viewportApplicability.filter(
+        (breakpoint) => breakpoint === "mobile" || breakpoint === "tablet",
+      ) ?? ["mobile" as const];
+      if (breakpoints.length === 0) return [];
+      return [
+        {
+          breakpoints,
+          assetId: sourcePresentation.assetId,
+          role: sourcePresentation.role,
+          revision: sourcePresentation.revision,
+          materialFingerprint: sourcePresentation.materialFingerprint,
+          asset: sourcePresentation.asset,
+        },
+      ];
+    });
+    const enriched = approvedAssetPresentationSchema.parse({
+      ...presentation,
+      ...(responsiveSources.length ? { responsiveSources } : {}),
+    });
+    const component = planningInput.componentDefinitions.find(
+      ({ type }) => type === placement.componentType,
+    );
+    if (!component) return enriched;
+    const plannedVariant = plan.pagePlans
+      .flatMap(({ components }) => components)
+      .find(
+        (candidate) => "instance" in candidate && candidate.instance.id === placement.componentId,
+      );
+    const variant =
+      plannedVariant && "instance" in plannedVariant
+        ? plannedVariant.instance.variant
+        : planningInput.draft.sharedFrame?.header.id === placement.componentId
+          ? planningInput.draft.sharedFrame.header.variant
+          : component.defaultVariant;
+    const approvedAsset = planningInput.approvedAssetContext?.assets.find(
+      ({ assetId }) => assetId === presentation.assetId,
+    );
+    return migrateApprovedPresentationArtDirection({
+      presentation: enriched,
+      placement,
+      component,
+      variant,
+      dna: executionBrandSystem.designDna!,
+      provenanceKind: placement.sourceProvenanceKind ?? "sourceDiscovered",
+      artDirectionPosture: input.artDirectionPosture,
+      approvedResponsiveCrops: [
+        ...(approvedAsset?.presentation.responsiveCrops ?? []),
+        ...(selection.responsiveSourceAssetIds ?? []).flatMap(
+          (assetId) =>
+            planningInput.approvedAssetContext?.assets.find(
+              (candidate) => candidate.assetId === assetId,
+            )?.presentation.responsiveCrops ?? [],
+        ),
+      ],
+      approvedSafeArea: approvedAsset?.presentation.safeArea,
+    });
+  });
   for (const placement of plan.approvedAssetPlacements) {
-    const presentation = input.approvedAssetPresentations.find(
+    const presentation = executionPresentations.find(
       (candidate) =>
         candidate.assetId === placement.assetId &&
         candidate.asset.id === placement.assetId &&
@@ -497,7 +596,7 @@ export function materializeCompleteStorefrontSelection(
   const legacyMaterialized = materializeWholeStorefrontRuntimeSnapshot({
     runtime: proposal.proposedStorefront,
     planningInput,
-    approvedAssetPresentations: input.approvedAssetPresentations,
+    approvedAssetPresentations: executionPresentations,
   });
   const materialized = requireMigratedDynamicCommerceSnapshot(
     legacyMaterialized,

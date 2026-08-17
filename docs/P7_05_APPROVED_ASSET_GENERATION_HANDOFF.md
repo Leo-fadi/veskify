@@ -49,3 +49,20 @@ Public product observations remain reviewed source/design assets. P7-05 forbids 
 - homepage, collection, or product renderer changes;
 - product-media import, catalogue mutation, publishing, or editor changes;
 - live OpenAI calls or provider-specific response contracts.
+
+## P10B-18B-06 accepted continuation
+
+The accepted bounded implementation extends, but does not replace, this handoff. Approved assets may
+carry server-owned placement-purpose, bounded-reuse, responsive-source-group, viewport,
+collection-affinity, and priority metadata. Veskify resolves exact placement only after the page
+profile, component variant, slot, and shared frame are known. Ordering is deterministic:
+exact-role/exact-purpose, exact-role/compatible-purpose, compatible-role/exact-purpose, then
+compatible fallback; equal candidates prefer lower current reuse, higher approved priority, then
+approved asset ID.
+
+The small reuse vocabulary is `unique-high-salience` (1), `bounded-editorial` (2),
+`identity-reusable` (2), and `decorative-reusable` (8). New exact placements record purpose, reuse
+policy, affinity, and paired responsive source IDs. Historical placements without these fields
+remain readable and are not retroactively reclassified. Canonical product media remains outside
+this authority. Status is **Baseline**, accepted by the product owner on 17 August 2026 for this
+bounded authority only; page-family visual quality remains unaccepted.

@@ -121,10 +121,19 @@ export const headerDefinition = defineComponent({
     ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["navigation"] },
-  renderer: ({ variant, content, props, context }) => (
+  renderer: ({
+    variant,
+    content,
+    props,
+    approvedAssetPlacements,
+    approvedAssetPresentations,
+    context,
+  }) => (
     <StoreHeader
       {...content}
       {...props}
+      approvedAssetPlacements={approvedAssetPlacements}
+      approvedAssetPresentations={approvedAssetPresentations}
       className={sectionVocabularyClass(variant, props)}
       context={context}
       variant={variant}

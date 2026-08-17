@@ -236,6 +236,7 @@ async function waitForImages(root: Locator): Promise<void> {
       for (let attempt = 0; attempt < maximumContextAttempts; attempt += 1) {
         try {
           const image = root.locator("img").nth(index);
+          if (!(await image.isVisible())) break;
           await image.scrollIntoViewIfNeeded();
           await image.evaluate(async (candidate) => {
             const value = candidate as HTMLImageElement;
@@ -490,31 +491,34 @@ async function rendererFingerprint(
           ];
         }),
       ),
-      images: [...element.querySelectorAll<HTMLImageElement>("img")].map((image) => {
-        const asset = image.closest<HTMLElement>("[data-asset-id]");
-        const product = image.closest<HTMLElement>("[data-product-id]");
-        const mediaOwner = image.closest<HTMLElement>("[data-product-media-owner]");
-        const style = getComputedStyle(image);
-        let safePath = "";
-        try {
-          safePath = new URL(image.currentSrc || image.src, element.ownerDocument.baseURI).pathname;
-        } catch {
-          safePath = "invalid-image-source";
-        }
-        return {
-          assetId: asset?.dataset.assetId ?? null,
-          productId: product?.dataset.productId ?? null,
-          productMediaOwner: mediaOwner?.dataset.productMediaOwner ?? null,
-          sourcePath: safePath,
-          naturalWidth: image.naturalWidth,
-          naturalHeight: image.naturalHeight,
-          objectFit: style.objectFit,
-          objectPosition: style.objectPosition,
-          aspectRatio: style.aspectRatio,
-          maxWidth: style.maxWidth,
-          maxHeight: style.maxHeight,
-        };
-      }),
+      images: [...element.querySelectorAll<HTMLImageElement>("img")]
+        .filter((image) => image.getClientRects().length > 0)
+        .map((image) => {
+          const asset = image.closest<HTMLElement>("[data-asset-id]");
+          const product = image.closest<HTMLElement>("[data-product-id]");
+          const mediaOwner = image.closest<HTMLElement>("[data-product-media-owner]");
+          const style = getComputedStyle(image);
+          let safePath = "";
+          try {
+            safePath = new URL(image.currentSrc || image.src, element.ownerDocument.baseURI)
+              .pathname;
+          } catch {
+            safePath = "invalid-image-source";
+          }
+          return {
+            assetId: asset?.dataset.assetId ?? null,
+            productId: product?.dataset.productId ?? null,
+            productMediaOwner: mediaOwner?.dataset.productMediaOwner ?? null,
+            sourcePath: safePath,
+            naturalWidth: image.naturalWidth,
+            naturalHeight: image.naturalHeight,
+            objectFit: style.objectFit,
+            objectPosition: style.objectPosition,
+            aspectRatio: style.aspectRatio,
+            maxWidth: style.maxWidth,
+            maxHeight: style.maxHeight,
+          };
+        }),
     };
   });
   return `p10b16p04-renderer-${canonicalValueFingerprint({

@@ -1,5 +1,6 @@
 import {
   createApprovedGenerationAssetContextFingerprint,
+  approvedGenerationAssetSchema,
   approvedGenerationAssetContextSchema,
 } from "@/application/ai-storefront-generation";
 import { executeCoordinatedDirection } from "@/application/bounded-storefront-synthesis";
@@ -142,6 +143,16 @@ const aboutPayload = {
 
 const approvedAssetDefinitions = [
   {
+    assetId: "asset_p10b18b06_aurum_logo",
+    candidateRole: "logo" as const,
+    role: "logo" as const,
+    fileUrl: "/seed-assets/aurum-nordic-logo.svg",
+    sourceUrl: `${SOURCE_URL}seed-assets/aurum-nordic-logo.svg`,
+    materialFingerprint: "p10b18b06-fictional-aurum-logo-v1",
+    purpose: "Approved fictional Aurum shared-frame identity test asset.",
+    alt: localized("Aurum Nordic", "Aurum Nordic"),
+  },
+  {
     assetId: "asset_p10b16p04_aurum_hero",
     candidateRole: "hero" as const,
     role: "heroDesktop" as const,
@@ -150,6 +161,16 @@ const approvedAssetDefinitions = [
     materialFingerprint: "760c534fc97a4686f57c575534c0debed386701100b2dc9b4a4a088f275c5c77",
     purpose: "Approved fictional Aurum product-led hero presentation.",
     alt: localized("Aurora yellow-gold diamond ring", "Aurora-keltakultainen timanttisormus"),
+  },
+  {
+    assetId: "asset_p10b18b06_aurum_hero_mobile",
+    candidateRole: "hero" as const,
+    role: "heroMobile" as const,
+    fileUrl: "/seed-assets/aurum-mobile-hero.svg",
+    sourceUrl: `${SOURCE_URL}seed-assets/aurum-mobile-hero.svg`,
+    materialFingerprint: "p10b18b06-fictional-aurum-mobile-hero-v1",
+    purpose: "Approved fictional Aurum portrait hero art-direction test asset.",
+    alt: localized("Portrait crop of the Aurora ring", "Pystyrajaus Aurora-sormuksesta"),
   },
   {
     assetId: "asset_p10b16p04_aurum_collection",
@@ -170,6 +191,16 @@ const approvedAssetDefinitions = [
     materialFingerprint: "ca09620254bd8821899d215447825818b32295763efc75bd042de1889aad83a9",
     purpose: "Approved fictional Aurum editorial and brand-story presentation.",
     alt: localized("Aava sterling-silver necklace", "Aava-sterlinghopeakaulakoru"),
+  },
+  {
+    assetId: "asset_p10b18b06_aurum_studio_detail",
+    candidateRole: "editorial" as const,
+    role: "editorialImage" as const,
+    fileUrl: "/seed-assets/aurum-studio-detail.svg",
+    sourceUrl: `${SOURCE_URL}seed-assets/aurum-studio-detail.svg`,
+    materialFingerprint: "p10b18b06-fictional-aurum-studio-detail-v1",
+    purpose: "Approved fictional Aurum secondary editorial test asset.",
+    alt: localized("Aurum studio jewellery detail", "Aurum-studion koruyksityiskohta"),
   },
 ] as const;
 
@@ -500,12 +531,8 @@ function createApprovedBrief(catalogue: CatalogueDisplayModel) {
 }
 
 function approvedAssetContext(brief: StorefrontDesignBriefContract) {
-  const input = {
-    briefId: brief.id,
-    briefRevision: brief.revision,
-    approvedEvidenceFingerprint: brief.approvedEvidenceFingerprint!,
-    assetReviewFingerprint: brief.assetReviewFingerprint,
-    assets: approvedAssetDefinitions.map((asset) => ({
+  const assets = approvedGenerationAssetSchema.array().parse(
+    approvedAssetDefinitions.map((asset) => ({
       assetId: asset.assetId,
       role: asset.role,
       sourceReferenceId: SOURCE_ID,
@@ -516,13 +543,74 @@ function approvedAssetContext(brief: StorefrontDesignBriefContract) {
       presentation: {
         decorative: false,
         mediaType: "image/svg+xml",
-        responsiveCrops: [],
+        responsiveCrops:
+          asset.role === "heroDesktop"
+            ? [
+                {
+                  cropId: "crop_p10b18b06_aurum_hero_wide",
+                  breakpoint: "wide" as const,
+                  aspectRatio: "16:9",
+                  focalPoint: { x: 0.58, y: 0.45 },
+                },
+              ]
+            : asset.role === "heroMobile"
+              ? [
+                  {
+                    cropId: "crop_p10b18b06_aurum_hero_mobile",
+                    breakpoint: "mobile" as const,
+                    aspectRatio: "4:5",
+                    focalPoint: { x: 0.5, y: 0.38 },
+                  },
+                ]
+              : [],
+        placementAuthority: {
+          purposes:
+            asset.role === "logo"
+              ? ["brand-identity"]
+              : asset.role === "heroDesktop" || asset.role === "heroMobile"
+                ? ["hero-primary"]
+                : asset.role === "collectionImage"
+                  ? ["collection-card", "collection-campaign"]
+                  : asset.assetId === "asset_p10b16p04_aurum_editorial"
+                    ? ["editorial-story", "content-support", "collection-campaign"]
+                    : ["editorial-story", "campaign-primary"],
+          reusePolicy:
+            asset.role === "logo"
+              ? ("identity-reusable" as const)
+              : asset.role === "editorialImage"
+                ? ("bounded-editorial" as const)
+                : ("unique-high-salience" as const),
+          responsiveSourceGroupId:
+            asset.role === "heroDesktop" || asset.role === "heroMobile"
+              ? "asset_group_p10b18b06_aurum_hero"
+              : null,
+          viewportApplicability:
+            asset.role === "heroMobile"
+              ? ["mobile"]
+              : asset.role === "heroDesktop"
+                ? ["tablet", "desktop", "wide"]
+                : ["mobile", "tablet", "desktop", "wide"],
+          collectionIds: [],
+          priority:
+            asset.assetId === "asset_p10b16p04_aurum_editorial"
+              ? 20
+              : asset.assetId === "asset_p10b18b06_aurum_studio_detail"
+                ? 10
+                : 30,
+        },
       },
       approval: {
         actorId: APPROVAL_ACTOR_ID,
         actorReference: "p10b16p04j-product-owner-approval",
       },
     })),
+  );
+  const input = {
+    briefId: brief.id,
+    briefRevision: brief.revision,
+    approvedEvidenceFingerprint: brief.approvedEvidenceFingerprint!,
+    assetReviewFingerprint: brief.assetReviewFingerprint,
+    assets,
   };
   return approvedGenerationAssetContextSchema.parse({
     ...input,
@@ -825,6 +913,10 @@ function buildFixture() {
       materialFingerprint: editorialAsset.materialFingerprint,
       sourceReferenceId: editorialAsset.sourceReferenceId,
       sourceProvenanceKind: "sourceDiscovered",
+      placementContext: "page",
+      placementPurpose: "content-support",
+      reusePolicy: "bounded-editorial",
+      affinity: "exact-role-exact-purpose",
       required: false,
     }),
   ];

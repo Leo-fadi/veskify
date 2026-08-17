@@ -197,19 +197,28 @@ describe("P10B-16P-04J Aurum commercial acceptance fixture", () => {
       "fictional-production-disabled-visual-acceptance-fixture",
     );
     expect(assetContext?.assets.map(({ role }) => role)).toEqual([
+      "logo",
       "heroDesktop",
+      "heroMobile",
       "collectionImage",
+      "editorialImage",
       "editorialImage",
     ]);
     expect(assetContext?.assets.map(({ materialFingerprint }) => materialFingerprint)).toEqual([
+      "p10b18b06-fictional-aurum-logo-v1",
       "760c534fc97a4686f57c575534c0debed386701100b2dc9b4a4a088f275c5c77",
+      "p10b18b06-fictional-aurum-mobile-hero-v1",
       "0412e6adc72567de1f1bbd0a206b31edff928a3a649387a91413758935503737",
       "ca09620254bd8821899d215447825818b32295763efc75bd042de1889aad83a9",
+      "p10b18b06-fictional-aurum-studio-detail-v1",
     ]);
     expect(fixture.approvedAssetPresentations.map(({ asset }) => asset.url)).toEqual([
+      "/seed-assets/aurum-nordic-logo.svg",
       "/seed-assets/aurora-ring.svg",
+      "/seed-assets/aurum-mobile-hero.svg",
       "/seed-assets/lumi-halo-ring.svg",
       "/seed-assets/aava-necklace.svg",
+      "/seed-assets/aurum-studio-detail.svg",
     ]);
     expect(fixture.brief.approvedBrandDirection?.logoAssetRef).toBeNull();
   });

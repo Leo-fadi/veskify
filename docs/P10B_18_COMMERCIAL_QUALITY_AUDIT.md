@@ -1,13 +1,13 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A and P10B-18B-01 Baseline; parent P10B-18B/P10B-18/P10B Partial
+**Status:** P10B-18A, P10B-18B-01 and P10B-18B-06 Baseline; parent P10B-18B/P10B-18/P10B Partial
 
 **Authority date:** 17 August 2026
 
-**Branch:** `codex/p10b-18b-01-design-dna-shared-frames`
+**Branch:** `codex/p10b-18b-06-asset-composition-art-direction`
 
-**Baseline:** P10B-18A and P10B-18B-01 are Baseline; parent P10B-18B, P10B-18 and P10B are
-Partial; P10B-18B-06 is next and P10B-18C remains Planned
+**Baseline:** P10B-18A, P10B-18B-01 and P10B-18B-06 are Baseline; parent P10B-18B, P10B-18 and
+P10B are Partial; P10B-18B-02 is next and P10B-18C remains Planned
 
 ## 1. Purpose and boundaries
 
@@ -1253,10 +1253,10 @@ claim.
 
 ## 16. P10B-18B-01 accepted implementation and result
 
-**Acceptance state:** **Baseline**. The product owner accepted the Design DNA and shared-frame
-checkpoint on 17 August 2026. Parent P10B-18B is **Partial**; parent P10B-18 and P10B remain
-**Partial**. P10B-18B-06 is next, while P10B-18C and P10B-16P-05B remain Planned in their locked
-order.
+**Acceptance state at this checkpoint:** **Baseline**. The product owner accepted the Design DNA and
+shared-frame checkpoint on 17 August 2026. Parent P10B-18B was **Partial**; parent P10B-18 and P10B
+remained **Partial**. Its historical handoff was P10B-18B-06, while P10B-18C and P10B-16P-05B
+remained Planned in their locked order.
 
 ### 16.1 Frozen-baseline boundary
 
@@ -1377,7 +1377,126 @@ outcomes, not fixed-frame visual causality.
 
 ### 16.4 Status and downstream boundary
 
-The accepted 17-capture checkpoint closes only P10B-18B-01. Parent P10B-18B is Partial; its
-remaining packages, P10B-18C 100+ quality/diversity gate, parent P10B-18, and P10B remain
-incomplete. The frozen P10B-18A denominators above remain the comparison baseline. The exact next
-task is **P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade**.
+At the accepted P10B-18B-01 checkpoint, the 17 captures closed only that package. Parent P10B-18B
+remained Partial, and its historical next-task handoff was
+**P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade**. Section 17 records the later
+P10B-18B-06 decision and current handoff without rewriting that historical checkpoint.
+
+## 17. P10B-18B-06 accepted implementation and checkpoint evidence
+
+**Status:** **Baseline**. The product owner accepted the bounded asset-composition and art-direction
+authority on 17 August 2026. This acceptance is limited to shared asset selection, purpose affinity,
+bounded reuse, responsive source/crop lineage, the shared-frame logo consumer and material
+art-direction causality. It is not commercial visual acceptance of the complete storefront.
+
+### 17.1 Authority correction
+
+P10B-18B-06 extends the existing approved-asset placement and responsive-image authorities. It
+does not add an asset registry, image manifest, renderer, page graph, product-media model, or Puck
+state. Exact semantic selection now occurs only after the registered page profile, component
+variant, slot, and shared frame are known.
+
+Affinity order is fixed: exact role plus exact purpose; exact role plus compatible purpose;
+compatible role plus exact purpose; compatible fallback; otherwise no valid asset. Ties prefer the
+lowest current reuse count, then the highest approved priority, then approved asset ID. The four
+reuse policies are `unique-high-salience` (1), `bounded-editorial` (2), `identity-reusable` (2),
+and `decorative-reusable` (8). New exact placements persist purpose, reuse policy, affinity, and
+paired responsive source IDs. Historical placements without those optional fields remain readable.
+
+`heroDesktop` and `heroMobile` can now form one responsive placement when their approved source
+group matches. Responsive-image authority `1.1.0` binds the alternate asset ID, revision, material
+fingerprint, provenance-preserving reference, breakpoint coverage, focal point, crop, and treatment;
+historical `1.0.0` records remain interpretable. The renderer distinguishes source-and-treatment,
+source-only, treatment-only, and no-change outcomes.
+
+The shared registered header exposes one optional `brandLogo` slot. The same approved responsive
+image renderer is used in editor, preview, and compiled projections; the home link retains its
+accessible merchant name and text identity remains the no-asset fallback.
+
+### 17.2 Generated-presentation role truth
+
+| Role                      | Before P10B-18B-06                                      | Candidate result                                                                                                                          |
+| ------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `logo`                    | Registered/schema-only; no shared-frame consumer        | Provider-advertised only when approved, exact-selected, materialized, and renderer-visible in the shared header                           |
+| `heroDesktop`             | Selectable and visible                                  | Exact purpose-affine primary source and responsive-placement owner                                                                        |
+| `heroMobile`              | Independent alternative                                 | Selected only as an approved paired mobile source; exact source is visible at the mobile breakpoint                                       |
+| `collectionImage`         | Selectable and visible, with multi-collection ambiguity | Purpose-affine; collection identity is honored when exact authority exists; one image is not promoted across a multi-collection archetype |
+| `editorialImage`          | Selectable and visible; accidental first-ID reuse       | Purpose-affine across campaign/story/content with bounded reuse                                                                           |
+| `supportingContentImage`  | Schema-only / no current generated consumer             | Explicitly unavailable for current generated presentation                                                                                 |
+| `iconDecorative`          | Schema-only / no current generated consumer             | Explicitly unavailable for current generated presentation                                                                                 |
+| `productMainImage`        | Registered protected commerce role                      | Unavailable to generated-presentation selection; canonical product-media renderer remains authoritative                                   |
+| `productAlternativeImage` | Registered protected commerce role                      | Unavailable to generated-presentation selection; canonical product-media renderer remains authoritative                                   |
+
+The production-disabled fictional Aurum fixture now contains six approved test assets across five
+generated roles: logo, desktop hero, paired mobile hero, collection image, and two editorial images.
+This proves capability only; it is not merchant evidence or commercial-photography evidence.
+
+### 17.3 Same-strata regression and asset metrics
+
+The unchanged nine shapes and eight semantic inputs produce 72/72 valid compilations. The accepted
+P10B-18B-01 baseline is preserved exactly: six non-colour Design DNA outcomes, frame distribution
+`editorial 27 / utility 9 / centered 18 / compact 18`, and 36 normalized material topologies.
+Presentation authority remains absent in 64/72 cases and present only in the eight Aurum cases.
+
+Across those same eight asset-bearing cases, the compiler records 35 primary exact selections using
+five primary asset IDs plus one paired mobile source. All 35 have exact-role/exact-purpose affinity:
+8 brand identity, 8 hero, 11 editorial story, 6 collection campaign, and 2 campaign primary.
+Policies comprise 11 unique-high-salience, 16 bounded-editorial, and 8 identity-reusable
+selections. Eight hero placements carry a paired desktop/mobile source. No compatible fallback,
+forced high-salience duplication, generated asset, or product-media promotion is counted.
+
+The focused materialized rich store contains distinct hero, campaign, and story assets. Its one
+editorial asset is reused once for approved content support within the bounded-editorial limit; the
+other campaign image remains distinct. The sparse Karvonen-derived store has zero presentation
+selections, placements, or shared-frame assets and renders text/asset-free fallbacks.
+
+### 17.4 Responsive and semantic causality
+
+The fixed rich Premium backbone retains the same direction, frame, homepage, collection, search,
+and PDP authority while `imageProminence` changes the exact art posture from `editorial` to
+`immersive`. The resulting responsive art-direction fingerprints differ. At 375 the hero uses the
+approved mobile asset and focal point `(0.50, 0.38)`, yielding source-and-treatment change. At 1440
+it uses the approved desktop asset and focal point `(0.58, 0.45)`, yielding treatment-only change.
+The renderer never claims a source change when the physical URL is unchanged.
+
+`imageProminence` is therefore a compound material driver: it has an exact visible consequence only
+where a selected approved presentation reaches responsive execution. It is not counted as material
+variety on the 64 asset-free cases.
+
+### 17.5 Focused browser checkpoint
+
+The candidate browser run passed 1/1 with 13 retained full-document captures:
+
+- rich image-led home at 375, 768, 1024, and 1440;
+- rich image-led collection at 375 and 1440;
+- same-backbone rich balanced home at 375 and 1440 plus collection at 1440;
+- sparse no-asset home and collection at 375 and 1440.
+
+The manifest binds exact semantic intent, exact selection, approved asset IDs/revisions/material
+fingerprints, placement purpose/reuse/affinity, paired source, snapshot persistence/reload, rendered
+source/treatment diagnostics, shared-frame logo authority, and unchanged commerce/product-media
+fingerprints. All captures have zero broken images and document overflow. The request ledger records
+zero external, provider, Vesko, browser generation-endpoint, publication, or runtime-error entries.
+No real publication was attempted.
+
+A clean `origin/main` archive and the candidate both pass the production Webpack build and every
+storefront budget. Candidate gzip deltas are: home/content-utility `+4.19 KB`, search `+4.18 KB`,
+collection `+4.19 KB`, product `+4.19 KB`, and editor `+6.80 KB`. Candidate totals remain
+`409.57 / 409.57 / 428.20 / 425.45 / 425.57 / 743.85 KB` respectively, below their
+`450 / 450 / 475 / 475 / 475 / 825 KB` ceilings. Module, shared-chunk, and route chunk counts are
+unchanged.
+
+The accepted checkpoint judges purpose, repetition, hierarchy, responsive reframing, shared
+identity, sparse fallback, and source truth while treating the local SVGs only as deterministic
+fictional capability fixtures. It does not accept the substantial retained page-level visual-quality
+problems, including excessive whitespace, generic homepage composition, weak merchandising rhythm
+and insufficient section hierarchy. Homepage, collection/card, PDP, and content/utility structural
+visual redesign remains owned by P10B-18B-02/03/04/05 respectively.
+
+### 17.6 Acceptance boundary and handoff
+
+The accepted 13-capture checkpoint closes only P10B-18B-06. Parent P10B-18B is Partial; its
+remaining page-family packages, P10B-18C 100+ quality/diversity gate, parent P10B-18, and P10B
+remain incomplete. The frozen P10B-18A denominators and accepted P10B-18B-01 source-authority
+baseline remain the comparison authority. The exact next task is
+**P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade**.
