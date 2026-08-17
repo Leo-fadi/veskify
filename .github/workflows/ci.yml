@@ -19,7 +19,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
-      - run: pnpm test
+      - name: Run Vitest without cross-file contention
+        run: pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
       - name: Production build (Webpack)
         run: pnpm build:webpack
       - name: Storefront first-load budgets
