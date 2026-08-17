@@ -6,7 +6,7 @@ import type { Locator, Page } from "@playwright/test";
 import type { ProjectAggregate } from "@/services/storage";
 
 export const p10b18aWidths = [375, 1440] as const;
-export type P10B18AWidth = (typeof p10b18aWidths)[number];
+export type P10B18AWidth = (typeof p10b18aWidths)[number] | 1024;
 export type P10B18ASurface = "home" | "collection" | "product-detail";
 export type P10B18ALocale = "en" | "fi";
 export type P10B18ARuntimeAuthority = "p03-standalone" | "p04-integrated-mock";

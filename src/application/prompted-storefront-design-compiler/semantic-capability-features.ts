@@ -15,6 +15,7 @@ export const semanticExactInfluenceAxisIds = [
   "typography",
   "spacing-density",
   "shared-frame",
+  "frame-responsive-authority",
   "homepage-profile",
   "narrative-posture",
   "collection-profile",
@@ -23,8 +24,6 @@ export const semanticExactInfluenceAxisIds = [
   "component-variants",
   "product-card-anatomy",
   "optional-page-set",
-  "information-density-posture",
-  "responsive-mode",
   "art-direction-posture",
 ] as const;
 
@@ -74,14 +73,38 @@ function registeredProfileAuthority(selection: BoundedStorefrontSynthesisSelecti
   return { frame, homepagePlan, collectionPlan, pdpPlan, homepage, collection, pdp };
 }
 
-function commercialPostures(directionId: string, campaign: boolean): readonly string[] {
-  if (directionId === "premiumEditorial") {
-    return ["premium-editorial", "high-consideration", ...(campaign ? ["bold-campaign"] : [])];
+function commercialPostures(
+  selection: BoundedStorefrontSynthesisSelectionNarrowing,
+  campaign: boolean,
+): readonly string[] {
+  const frameId = selection.sharedFrameProfileId;
+  const spacing = selection.designSystemSpacingDensity;
+  if (selection.directionId === "premiumEditorial") {
+    return [
+      ...(frameId === "editorial-masthead" ? ["premium-editorial"] : []),
+      ...(frameId === "centered-minimal" && spacing === "standard" ? ["high-consideration"] : []),
+      ...(campaign && frameId === "editorial-masthead" && spacing === "spacious"
+        ? ["bold-campaign"]
+        : []),
+    ];
   }
-  if (directionId === "modernTechnical") {
-    return ["modern-technical", "catalogue-comparison", "fast-conversion"];
+  if (selection.directionId === "modernTechnical") {
+    const compactTechnical = spacing === "compact" && frameId === "compact-technical";
+    const balancedUtility = spacing === "standard" && frameId === "commerce-utility";
+    return [
+      ...(compactTechnical || balancedUtility ? ["modern-technical"] : []),
+      ...(balancedUtility ? ["catalogue-comparison"] : []),
+      ...(compactTechnical ? ["fast-conversion"] : []),
+    ];
   }
-  return ["minimal-commerce", "warm-approachable", "fast-conversion"];
+  const balancedMinimal = spacing === "standard" && frameId === "centered-minimal";
+  const airyEditorial = spacing === "spacious" && frameId === "editorial-masthead";
+  const balancedUtility = spacing === "standard" && frameId === "commerce-utility";
+  return [
+    ...(balancedMinimal || airyEditorial ? ["minimal-commerce"] : []),
+    ...(airyEditorial ? ["warm-approachable"] : []),
+    ...(balancedUtility ? ["fast-conversion"] : []),
+  ];
 }
 
 function navigationPosture(frameId: string): string {
@@ -134,9 +157,17 @@ function configurableProductPosture(
   throw new Error("Registered PDP authority lacks a semantic presentation mapping.");
 }
 
-function mobileHierarchy(responsiveMode: string): string {
-  if (responsiveMode === "content-first") return "story-led";
-  return responsiveMode === "commerce-first" ? "conversion-led" : "balanced";
+function densityPosture(spacingDensity: string): string {
+  if (spacingDensity === "compact") return "high";
+  return spacingDensity === "spacious" ? "low" : "balanced";
+}
+
+function mobileHierarchy(frame: ReturnType<typeof registeredProfileAuthority>["frame"]): string {
+  if (frame.mobileNavigationMode === "stacked-disclosure") return "conversion-led";
+  if (frame.mobileNavigationMode === "compact-overlay") return "balanced";
+  return frame.responsiveTransformationIds.includes("technical-to-drawer")
+    ? "product-led"
+    : "story-led";
 }
 
 function imageProminence(artDirectionPosture: string): string {
@@ -153,17 +184,8 @@ export function semanticFeaturesFor(
     selection.narrativePosture === "campaign-led" ||
     homepage.merchandisingEmphasis === "campaign-conversion";
   return featureMap([
-    ["commercialPosture", commercialPostures(selection.directionId, campaign)],
-    [
-      "globalVisualIntent.density",
-      [
-        selection.informationDensityPosture === "compact"
-          ? "high"
-          : selection.informationDensityPosture === "airy"
-            ? "low"
-            : "balanced",
-      ],
-    ],
+    ["commercialPosture", commercialPostures(selection, campaign)],
+    ["globalVisualIntent.density", [densityPosture(selection.designSystemSpacingDensity)]],
     ["sharedFrameIntent.navigationPosture", [navigationPosture(frame.id)]],
     ["homepageIntent.storyCatalogueBalance", [storyCatalogueBalance(selection.narrativePosture)]],
     [
@@ -171,10 +193,7 @@ export function semanticFeaturesFor(
       [collectionDiscoveryPosture(collection.presentationMode, selection.merchandisingPosture)],
     ],
     ["pdpIntent.configurableProductPosture", [configurableProductPosture(pdp)]],
-    [
-      "responsiveAndArtDirectionIntent.mobileHierarchy",
-      [mobileHierarchy(selection.responsiveMode)],
-    ],
+    ["responsiveAndArtDirectionIntent.mobileHierarchy", [mobileHierarchy(frame)]],
     [
       "responsiveAndArtDirectionIntent.imageProminence",
       [imageProminence(selection.artDirectionPosture)],
@@ -187,7 +206,7 @@ export function semanticExactInfluenceAxesFor(
   selection: BoundedStorefrontSynthesisSelectionNarrowing,
   designDna: DesignDna,
 ): SemanticExactInfluenceAxisMap {
-  const { homepagePlan, collectionPlan, pdpPlan, homepage, collection, pdp } =
+  const { frame, homepagePlan, collectionPlan, pdpPlan, homepage, collection, pdp } =
     registeredProfileAuthority(selection);
   const slots = [homepagePlan, collectionPlan, pdpPlan].flatMap(
     (plan) =>
@@ -202,10 +221,20 @@ export function semanticExactInfluenceAxesFor(
     "design-dna": canonicalValueFingerprint(designDna),
     typography: canonicalValueFingerprint(designDna.typography),
     "spacing-density": canonicalValueFingerprint({
+      designSystemSpacingDensity: selection.designSystemSpacingDensity,
       spacing: designDna.spacing,
-      density: selection.informationDensityPosture,
+      controls: {
+        height: designDna.controls.height,
+        density: designDna.controls.density,
+      },
+      density: designDna.density,
     }),
     "shared-frame": selection.sharedFrameProfileId,
+    "frame-responsive-authority": canonicalValueFingerprint({
+      profileId: frame.id,
+      mobileNavigationMode: frame.mobileNavigationMode,
+      responsiveTransformationIds: frame.responsiveTransformationIds,
+    }),
     "homepage-profile": selection.homepageProfileId,
     "narrative-posture": selection.narrativePosture,
     "collection-profile": selection.collectionProfileId,
@@ -218,8 +247,6 @@ export function semanticExactInfluenceAxesFor(
       pdp.relatedProductCardAnatomyId,
     ]),
     "optional-page-set": canonicalValueFingerprint(selection.includedOptionalPageFamilyIds),
-    "information-density-posture": selection.informationDensityPosture,
-    "responsive-mode": selection.responsiveMode,
     "art-direction-posture": selection.artDirectionPosture,
   });
 }

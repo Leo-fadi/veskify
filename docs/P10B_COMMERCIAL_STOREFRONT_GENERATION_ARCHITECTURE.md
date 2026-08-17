@@ -1,12 +1,13 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
 **Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
-P10B-16P-06 are **Baseline**; P10B-16P-02 and accepted P10B-18A are **Baseline**; parent P10B-18
-remains **Partial**; P10B-18B, P10B-18C, and P10B-16P-05B remain **Planned**.
+P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, and accepted P10B-18B-01 are
+**Baseline**; parent P10B-18B, P10B-18 and P10B remain **Partial**; P10B-18C and P10B-16P-05B
+remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 16 August 2026, accepted P10B-18A commercial-authority audit
+**Baseline:** 17 August 2026, accepted P10B-18B-01 Design DNA/shared-frame upgrade
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -58,9 +59,10 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-P10B-16P-05A, P10B-16P-06, P10B-17, and accepted P10B-18A are Baseline. Parent P10B-18 remains
-Partial; P10B-18B and P10B-18C remain Planned. P10B-18B is the next focused product task, and
-P10B-16P-05B remains Planned after P10B-18C. The accepted audit and frozen ceiling diagnosis are in
+P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, and accepted P10B-18B-01 are Baseline.
+Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18C remains Planned. P10B-18B-06 is the next
+focused product task, and P10B-16P-05B remains Planned after P10B-18C. The accepted audit baseline
+and first source-authority package are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
 ## 2. Storefront and commerce ownership
@@ -372,8 +374,8 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 ## 13. Locked implementation sequence
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
-P10B-16P-02 and accepted P10B-18A are **Baseline**. Parent P10B-18 is **Partial**; P10B-18B,
-P10B-18C, and P10B-16P-05B are **Planned**.
+P10B-16P-02, accepted P10B-18A, and accepted P10B-18B-01 are **Baseline**. Parent P10B-18B,
+P10B-18 and P10B are **Partial**; P10B-18C and P10B-16P-05B are **Planned**.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -415,6 +417,7 @@ shortcut.
 | P10B-18 — Commercial quality and scale gate                         | Prove repeated generation of publishable, premium, materially different complete storefronts through the accepted audit, source-authority improvement and final 100+ gate.                                                    | P10B-17 and every prior P10B task                                    |
 | P10B-18A — Commercial authority audit and quality-ceiling diagnosis | Audit current registered reachability, compatibility, materializer/renderer consumption and commercial output; freeze exact improvement ownership before redesign.                                                            | P10B-17 and current registered authority                             |
 | P10B-18B — Commercial source-authority quality upgrade              | Implement and evidence the accepted coherent source-authority, compatibility, consumer and evaluation packages against the frozen audit baseline.                                                                             | Accepted P10B-18A                                                    |
+| P10B-18B-01 — Design DNA and shared-frames quality upgrade          | Materialize bounded density, truthful semantic causality, complete-store compact reachability and four intentional shared-frame compositions without adding canonical authority.                                              | Accepted P10B-18A                                                    |
 | P10B-18C — 100+ commercial quality and diversity gate               | Run the final deterministic breadth/diversity analysis and fingerprint-stratified retained human acceptance on integrated P10B-18B authority.                                                                                 | Accepted and integrated P10B-18B packages                            |
 | P10B-16P-05B — Final historical acceptance cleanup                  | Remove or archive retained P10B-16L/P9/P04 acceptance scaffolding only after all migration, replay, and quality-scale evidence consumers are clear.                                                                           | P10B-16P-05A and P10B-18C                                            |
 
@@ -797,9 +800,9 @@ keep distinct approved facts where their reading structure is shared.
 - **Status:** **Planned**. This cleanup cannot start before P10B-18C and cannot weaken P10B-16P-04,
   P10B-18A, P10B-18B or P10B-18C evidence.
 
-P10B-17 and accepted P10B-18A are Baseline. Parent P10B-18 and P10B remain Partial; P10B-18B is the
-next focused product task, P10B-18C remains Planned, and P10B-16P-05B remains Planned after
-P10B-18C.
+P10B-17, accepted P10B-18A, and accepted P10B-18B-01 are Baseline. Parent P10B-18B, P10B-18 and
+P10B remain Partial; P10B-18B-06 is next, P10B-18C remains Planned, and P10B-16P-05B remains
+Planned after P10B-18C.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -818,7 +821,8 @@ P10B-18C.
 
 ### P10B-18 — Commercial quality and scale gate
 
-- **Status:** **Partial**. P10B-18A is Baseline; P10B-18B and P10B-18C remain Planned.
+- **Status:** **Partial**. P10B-18A and P10B-18B-01 are Baseline; parent P10B-18B is Partial and
+  P10B-18C remains Planned.
 - Deterministically generate at least 100 complete bounded storefront configurations across
   representative catalogue, evidence, asset, locale, page-set, and direction contexts.
 - Prove valid complete snapshots, protected-commerce parity, no exact duplicates, thresholded
@@ -851,8 +855,22 @@ P10B-18C.
   and retained human comparison against the frozen P10B-18A baseline.
 - Preserve one `StorefrontSnapshot`, existing renderers and protected commerce/media; no package
   may claim quality from contract or registry changes alone.
-- **Status:** **Planned**. No P10B-18B package or resulting quality improvement is claimed by the
-  accepted audit.
+- **Status:** **Partial**. P10B-18B-01 is Baseline; the remaining packages are incomplete.
+
+#### P10B-18B-01 — Design DNA and shared-frames quality upgrade
+
+- Retain Design DNA and shared-frame schemas at `1.0.0` while materializing two bounded exact
+  density outcomes per direction through current registered fields.
+- Report density and mobile hierarchy as compound material authority, navigation as direct frame
+  selection, and commercial posture with its correlated substitution dependencies.
+- Admit `compact-technical` only for the four former complete-store blockers and preserve the same
+  required site-map/render/lifecycle authority.
+- Refine long navigation, editorial wordmark, utility footer, centered composition and compact
+  technical identity through the existing shared renderer and canonical Design DNA variables.
+- **Status:** **Baseline**. Accepted by the product owner on 17 August 2026 with same-72-case
+  consumed-authority evidence, direct former-blocker rendering, 17 retained captures, P10B-17,
+  build-budget, lifecycle/compiler and protected-commerce/media preservation.
+- **Next:** P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade.
 
 ### P10B-18C — 100+ commercial quality and diversity gate
 
@@ -912,7 +930,9 @@ P10B-02…13 minimum accepted capability
   → P10B-16P-06 canonical search query/results adapter
   → P10B-17 responsive/a11y/performance
   → P10B-18A commercial-authority audit (Baseline / accepted)
-  → P10B-18B commercial source-authority quality upgrade
+  → P10B-18B-01 Design DNA/shared frames (Baseline / accepted)
+  → P10B-18B-06 asset composition/art direction (next)
+  → remaining P10B-18B commercial source-authority packages
   → P10B-18C 100+ commercial quality and diversity gate
   → P10B-16P-05B final historical acceptance cleanup
 ```
@@ -944,8 +964,8 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, and accepted P10B-18A are
-Baseline under the disjoint ownership constraints in section 15. P10B-16P-02 is Baseline. Parent
-P10B-18 remains Partial; P10B-18B is the next focused product task, P10B-18C remains Planned, and
-P10B-16P-05B remains Planned after P10B-18C. No later implementation task is complete merely
-because this architecture or the P10B-18A audit is accepted.
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A, and
+accepted P10B-18B-01 are Baseline under the disjoint ownership constraints in section 15.
+P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-06 is next,
+P10B-18C remains Planned, and P10B-16P-05B remains Planned after P10B-18C. No later implementation
+task is complete merely because this architecture, P10B-18A, or P10B-18B-01 is accepted.

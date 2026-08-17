@@ -1,9 +1,12 @@
 import {
   brandSystemSchema,
+  designDnaSchema,
   migrateLegacyFoundationToDesignDna,
+  modernTechnicalDesignDna,
   premiumEditorialDesignDna,
   premiumVisualPresets,
   type BrandSystem,
+  type DesignDna,
 } from "@/domain/design-system";
 import type { StorefrontDesignDirectionId, StorefrontDesignSystemV1 } from "./contract";
 
@@ -36,6 +39,87 @@ const visualImageTreatmentByTreatment = {
   split: "crop",
   softFrame: "contained",
 } as const;
+
+type RegisteredSpacingDensity = "compact" | "standard" | "spacious";
+type RegisteredSurfaceDepth = "flat" | "subtle" | "layered";
+
+const spacingDomainByDensity = {
+  compact: {
+    scale: "compact",
+    sectionRhythm: "compact",
+    pageGutter: "compact",
+    gridGap: "tight",
+    cardInset: "compact",
+  },
+  standard: {
+    scale: "balanced",
+    sectionRhythm: "balanced",
+    pageGutter: "standard",
+    gridGap: "standard",
+    cardInset: "standard",
+  },
+  spacious: {
+    scale: "generous",
+    sectionRhythm: "expansive",
+    pageGutter: "generous",
+    gridGap: "open",
+    cardInset: "generous",
+  },
+} as const;
+
+const designDnaDensityBySpacing = {
+  compact: "compact",
+  standard: "balanced",
+  spacious: "spacious",
+} as const;
+
+const controlHeightBySpacing = {
+  compact: "compact",
+  standard: "standard",
+  spacious: "prominent",
+} as const;
+
+const elevationBySurfaceDepth = {
+  flat: "flat",
+  subtle: "subtle",
+  layered: "raised",
+} as const;
+
+/**
+ * Applies the bounded global-density domain without replacing a direction's
+ * typography, media, shape, action hierarchy, or container identity.
+ */
+function applyRegisteredDensityDomain(
+  input: DesignDna,
+  spacingDensity: RegisteredSpacingDensity,
+  surfaceDepth: RegisteredSurfaceDepth,
+): DesignDna {
+  const density = designDnaDensityBySpacing[spacingDensity];
+  return designDnaSchema.parse({
+    ...structuredClone(input),
+    spacing: {
+      ...structuredClone(input.spacing),
+      ...spacingDomainByDensity[spacingDensity],
+    },
+    surfaces: {
+      ...structuredClone(input.surfaces),
+      elevation: elevationBySurfaceDepth[surfaceDepth],
+    },
+    controls: {
+      ...structuredClone(input.controls),
+      height: controlHeightBySpacing[spacingDensity],
+      density,
+    },
+    density: {
+      posture: density,
+      navigation: density,
+      content: density,
+      // Spacious editorial/minimal composition keeps purchase controls
+      // deliberate rather than inflating the commerce region.
+      commerce: density === "spacious" ? "balanced" : density,
+    },
+  });
+}
 
 /** Materializes only server-registered values for a validated direction ID. */
 export function registeredBrandSystemForDirection(
@@ -73,15 +157,23 @@ export function registeredBrandSystemForDirection(
     },
   });
   const migratedDesignDna = migrateLegacyFoundationToDesignDna(materialized);
-  const designDna =
-    directionId === "premiumEditorial" &&
-    selected.spacingDensity === "spacious" &&
-    selected.surfaceDepth === "layered"
+  const directionalDesignDna =
+    directionId === "premiumEditorial"
       ? {
           ...structuredClone(premiumEditorialDesignDna),
           colour: structuredClone(migratedDesignDna.colour),
         }
-      : migratedDesignDna;
+      : directionId === "modernTechnical"
+        ? {
+            ...structuredClone(modernTechnicalDesignDna),
+            colour: structuredClone(migratedDesignDna.colour),
+          }
+        : migratedDesignDna;
+  const designDna = applyRegisteredDensityDomain(
+    directionalDesignDna,
+    selected.spacingDensity,
+    selected.surfaceDepth,
+  );
   return brandSystemSchema.parse({
     ...materialized,
     designDna,

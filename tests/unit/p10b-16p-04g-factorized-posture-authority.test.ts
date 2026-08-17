@@ -51,41 +51,41 @@ describe("P10B-16P-04G factorized posture authority", () => {
     expect(factorized).toHaveLength(diagnostic.finalCandidateCount);
     expect(diagnostic).toMatchObject({
       contractVersion: "1.1.0",
-      initialCandidateCount: 864,
-      finalCandidateCount: 63,
+      initialCandidateCount: 1728,
+      finalCandidateCount: 135,
       firstEmptyStage: null,
       stages: [
         {
           stage: "registered-direction-tuples",
-          enteringCandidateCount: 864,
-          remainingCandidateCount: 864,
+          enteringCandidateCount: 1728,
+          remainingCandidateCount: 1728,
           eliminationReasons: [],
         },
         {
           stage: "approved-asset-posture",
-          enteringCandidateCount: 864,
-          remainingCandidateCount: 576,
-          eliminationReasons: [{ reasonCode: "unsupported-approved-asset-posture", count: 288 }],
+          enteringCandidateCount: 1728,
+          remainingCandidateCount: 1152,
+          eliminationReasons: [{ reasonCode: "unsupported-approved-asset-posture", count: 576 }],
         },
         {
           stage: "profile-design-dna",
-          enteringCandidateCount: 576,
-          remainingCandidateCount: 306,
-          eliminationReasons: [{ reasonCode: "incompatible-profile-design-dna", count: 270 }],
+          enteringCandidateCount: 1152,
+          remainingCandidateCount: 540,
+          eliminationReasons: [{ reasonCode: "incompatible-profile-design-dna", count: 612 }],
         },
         {
           stage: "dynamic-commerce-profile-context",
-          enteringCandidateCount: 306,
-          remainingCandidateCount: 87,
+          enteringCandidateCount: 540,
+          remainingCandidateCount: 165,
           eliminationReasons: [
-            { reasonCode: "incompatible-dynamic-commerce-profile-context", count: 219 },
+            { reasonCode: "incompatible-dynamic-commerce-profile-context", count: 375 },
           ],
         },
         {
           stage: "page-set-shared-frame",
-          enteringCandidateCount: 87,
-          remainingCandidateCount: 63,
-          eliminationReasons: [{ reasonCode: "incompatible-page-set-shared-frame", count: 24 }],
+          enteringCandidateCount: 165,
+          remainingCandidateCount: 135,
+          eliminationReasons: [{ reasonCode: "incompatible-page-set-shared-frame", count: 30 }],
         },
       ],
     });
@@ -100,7 +100,12 @@ describe("P10B-16P-04G factorized posture authority", () => {
           return counts;
         }, new Map<string, number>()),
       ),
-    ).toEqual({ "editorial-masthead": 27, "centered-minimal": 30, "commerce-utility": 6 });
+    ).toEqual({
+      "editorial-masthead": 54,
+      "centered-minimal": 57,
+      "commerce-utility": 12,
+      "compact-technical": 12,
+    });
     const expandedPostureCardinality = factorized.reduce(
       (total, candidate) =>
         total +
@@ -121,15 +126,22 @@ describe("P10B-16P-04G factorized posture authority", () => {
       expect(candidate.merchandisingPostureOptions).toEqual(
         direction.constraints.merchandisingPostures,
       );
-      expect(candidate.informationDensityPostureOptions).toEqual(
-        direction.constraints.informationDensityPostures,
-      );
+      const expectedDensity = {
+        compact: "compact",
+        standard: "balanced",
+        spacious: "airy",
+      }[candidate.backbone.designSystemSpacingDensity] as "compact" | "balanced" | "airy";
+      expect(candidate.informationDensityPostureOptions).toEqual([expectedDensity]);
       expect(candidate.artDirectionPostureOptions).toEqual(
         direction.constraints.artDirectionPostures,
       );
       expect(candidate.responsiveModeOptions).toEqual(direction.constraints.responsiveModes);
       expect(candidate.backbone).toMatchObject({
-        ...direction.constraints.postureDefaults,
+        narrativePosture: direction.constraints.postureDefaults.narrativePosture,
+        merchandisingPosture: direction.constraints.postureDefaults.merchandisingPosture,
+        informationDensityPosture: expectedDensity,
+        artDirectionPosture: direction.constraints.postureDefaults.artDirectionPosture,
+        responsiveMode: direction.constraints.postureDefaults.responsiveMode,
       });
       expect(candidate.factorAuthorityFingerprint).toMatch(
         /^coordinated-direction-posture-factors-v1_/,
@@ -170,7 +182,7 @@ describe("P10B-16P-04G factorized posture authority", () => {
           pdpProfileId: backbone.pdpProfileId,
         }),
       );
-    expect(minimalStructures).toHaveLength(48);
+    expect(minimalStructures).toHaveLength(96);
     expect(new Set(minimalStructures).size).toBeGreaterThan(1);
     expect(canonicalValueString(fixture.planningInput.draft)).toBe(draftBefore);
   });
@@ -194,10 +206,10 @@ describe("P10B-16P-04G factorized posture authority", () => {
     expect(
       diagnostic.stages.find(({ stage }) => stage === "dynamic-commerce-profile-context"),
     ).toMatchObject({
-      enteringCandidateCount: 306,
+      enteringCandidateCount: 540,
       remainingCandidateCount: 0,
       eliminationReasons: [
-        { reasonCode: "incompatible-dynamic-commerce-profile-context", count: 306 },
+        { reasonCode: "incompatible-dynamic-commerce-profile-context", count: 540 },
       ],
     });
   });

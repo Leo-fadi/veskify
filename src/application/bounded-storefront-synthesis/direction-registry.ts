@@ -17,6 +17,18 @@ import type { BoundedStorefrontSynthesisSelectionNarrowing } from "./contract";
 
 type PackageInput = Omit<CoordinatedStorefrontDirectionPackage, "authorityFingerprint">;
 
+export function informationDensityPostureForDesignSystemSpacingDensity(
+  spacingDensity: BoundedStorefrontSynthesisSelectionNarrowing["designSystemSpacingDensity"],
+): BoundedStorefrontSynthesisSelectionNarrowing["informationDensityPosture"] {
+  return (
+    {
+      compact: "compact",
+      standard: "balanced",
+      spacious: "airy",
+    } as const
+  )[spacingDensity];
+}
+
 function direction(input: PackageInput): CoordinatedStorefrontDirectionPackage {
   return coordinatedStorefrontDirectionPackageSchema.parse({
     ...input,
@@ -34,7 +46,7 @@ const packages = [
       "Expressive image-led hierarchy, spacious editorial pacing, considered merchandising and evidence-backed story continuity.",
     constraints: {
       designSystemDirectionIds: ["premiumEditorial"],
-      designSystemSpacingDensities: ["spacious"],
+      designSystemSpacingDensities: ["standard", "spacious"],
       designSystemSurfaceDepths: ["layered"],
       sharedFrameProfileIds: ["editorial-masthead", "centered-minimal", "commerce-utility"],
       homepageProfileIds: [
@@ -65,11 +77,11 @@ const packages = [
       },
       designDna: {
         typographyPairings: ["serif-led"],
-        // The registered Premium direction owns spacious legacy spacing, which
-        // canonically projects to generous Design DNA and spacious controls.
-        spacingScales: ["generous"],
+        // Premium retains expressive identity while exact registered spacing
+        // selects its bounded balanced or generous density domain.
+        spacingScales: ["balanced", "generous"],
         surfacePostures: ["quiet", "layered", "contrast"],
-        controlDensities: ["spacious"],
+        controlDensities: ["balanced", "spacious"],
         mediaPostures: ["editorial"],
       },
     },
@@ -86,8 +98,8 @@ const packages = [
       "Product-first information architecture, controlled density, polished technical controls and factual comparison clarity.",
     constraints: {
       designSystemDirectionIds: ["modernTechnical"],
-      designSystemSpacingDensities: ["standard"],
-      designSystemSurfaceDepths: ["subtle"],
+      designSystemSpacingDensities: ["compact", "standard"],
+      designSystemSurfaceDepths: ["flat"],
       sharedFrameProfileIds: ["compact-technical", "commerce-utility", "centered-minimal"],
       homepageProfileIds: [
         "homepage-commerce-led-discovery",
@@ -122,9 +134,9 @@ const packages = [
       },
       designDna: {
         typographyPairings: ["sans-led"],
-        spacingScales: ["balanced"],
-        surfacePostures: ["quiet", "layered", "contrast"],
-        controlDensities: ["balanced"],
+        spacingScales: ["compact", "balanced"],
+        surfacePostures: ["quiet"],
+        controlDensities: ["compact", "balanced"],
         mediaPostures: ["product-led"],
       },
     },
@@ -141,7 +153,7 @@ const packages = [
       "Restrained composition, fewer stronger blocks, direct merchandising and controlled conversion continuity without unfinished generic output.",
     constraints: {
       designSystemDirectionIds: ["warmApproachable"],
-      designSystemSpacingDensities: ["standard"],
+      designSystemSpacingDensities: ["standard", "spacious"],
       designSystemSurfaceDepths: ["subtle"],
       sharedFrameProfileIds: ["centered-minimal", "commerce-utility", "editorial-masthead"],
       homepageProfileIds: [
@@ -172,9 +184,9 @@ const packages = [
       },
       designDna: {
         typographyPairings: ["serif-led"],
-        spacingScales: ["balanced"],
+        spacingScales: ["balanced", "generous"],
         surfacePostures: ["quiet", "layered", "contrast"],
-        controlDensities: ["balanced"],
+        controlDensities: ["balanced", "spacious"],
         mediaPostures: ["restrained"],
       },
     },
@@ -328,6 +340,15 @@ export function validateDirectionSelectionNarrowing(
   included(narrowing.narrativePosture, constraints.narrativePostures, "narrative");
   included(narrowing.merchandisingPosture, constraints.merchandisingPostures, "merchandising");
   included(narrowing.informationDensityPosture, constraints.informationDensityPostures, "density");
+  if (
+    narrowing.informationDensityPosture !==
+    informationDensityPostureForDesignSystemSpacingDensity(narrowing.designSystemSpacingDensity)
+  ) {
+    throw new CoordinatedStorefrontDirectionError(
+      "unsupported-characteristic",
+      "Information density must be the canonical semantic projection of exact Design DNA spacing.",
+    );
+  }
   included(narrowing.artDirectionPosture, constraints.artDirectionPostures, "art direction");
   included(narrowing.responsiveMode, constraints.responsiveModes, "responsive");
   return structuredClone(entry);

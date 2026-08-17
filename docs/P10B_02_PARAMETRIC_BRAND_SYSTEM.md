@@ -141,3 +141,47 @@ mutate the merchant Design DNA.
 
 This closes execution and semantic-accessibility gaps for the current registered surfaces. It does
 not establish P10B-18 multi-store commercial quality or scale acceptance.
+
+## Current P10B-18B-01 continuation
+
+**Acceptance state:** **Baseline**. The product owner accepted P10B-18B-01 on 17 August 2026. This
+continuation does not change the accepted P10B-02 Baseline; parent P10B-18B is **Partial**, while
+P10B-18 and P10B remain **Partial**.
+
+The accepted implementation keeps `BrandSystem.designDna` and its canonical schema at `1.0.0`. It adds no token
+store, persisted selection model, schema migration, or publication representation. Existing
+snapshots retain their exact materialized Design DNA. New current-authority compilation applies the
+selected registered spacing density and surface depth before materialization; refreshed transient
+authority fingerprints make stale proposals fail closed through the existing boundary.
+
+The exact supported density chains are:
+
+| Coordinated direction                  | Provider density → exact spacing → synthesis posture → Design DNA density         | Surface depth |
+| -------------------------------------- | --------------------------------------------------------------------------------- | ------------- |
+| Premium Editorial (`premiumEditorial`) | `balanced → standard → balanced → balanced`; `low → spacious → airy → spacious`   | `layered`     |
+| Modern Technical (`modernTechnical`)   | `high → compact → compact → compact`; `balanced → standard → balanced → balanced` | `flat`        |
+| Minimal Commerce (`warmApproachable`)  | `balanced → standard → balanced → balanced`; `low → spacious → airy → spacious`   | `subtle`      |
+
+The registered materializer preserves the merchant's semantic colour roles and the direction's
+typography, media, shape, action hierarchy, and container identity while applying the exact spacing
+scale, section rhythm, gutter, grid gap, card inset, control height/density, regional density, and
+surface elevation. Spacious composition keeps commerce density balanced instead of inflating
+purchase controls. These values continue through the single Design DNA CSS-variable projection.
+
+Deterministic accepted evidence proves both supported density outcomes for each direction on one
+fixed page/profile/frame backbone, with equal merchant colour and different non-colour Design DNA,
+identity fingerprints, projection fingerprints, and emitted geometry. The focused browser record
+contains seven materialized stores and 17 captures: 12 primary direction/home-or-collection/
+375-or-1440 captures, three alternate-DNA home captures at 1440, and two editorial long-navigation
+captures at 1024 and 1440. Every alternate uses the same fixture and direction as its primary while
+changing exact density and rendered Design DNA. Premium and Modern retain the homepage profile and
+homepage component sequence; Minimal's only audited airy semantic witness also changes those home
+authorities. Only the Premium browser pair fixes the exact frame and complete profile tuple. The
+Modern and Minimal browser pairs change frame, so their fixed-frame causality remains deterministic
+evidence rather than a visual claim.
+
+All seven accepted drafts preserve their exact snapshot and Design DNA fingerprints through
+standalone persistence and reload while commerce and media fingerprints remain unchanged. The
+browser checkpoint makes zero external, provider, Vesko, browser generation-endpoint, or
+publication request and does not itself broaden the earlier publication evidence. The 17 captures
+remain focused successor evidence, not P10B-18C designer-grade or 100+ scale acceptance.

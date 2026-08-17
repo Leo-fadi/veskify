@@ -403,10 +403,16 @@ function mediaFingerprint(catalogue: CatalogueDisplayModel) {
   );
 }
 
-export function createP10b18aShapeAuthorities() {
+export function createP10b18aShapeAuthorities(includedShapeIds?: readonly string[]) {
   const karvonenSource = sourceFixture();
   const aurumSource = aurumApprovedSourceFixture();
-  return auditShapes().map(
+  const shapes = auditShapes();
+  const requested = new Set(includedShapeIds ?? shapes.map(({ id }) => id));
+  const selectedShapes = shapes.filter(({ id }) => requested.has(id));
+  if (selectedShapes.length !== requested.size) {
+    throw new Error("P10B-18A shape selection references an unknown retained audit stratum.");
+  }
+  return selectedShapes.map(
     ({ id, catalogue, fixtureAuthority, fixtureKind, merchantPrompt, assertions }) => {
       const source =
         fixtureAuthority === "p10b16p04j-aurum-approved" ? aurumSource : karvonenSource;
@@ -563,7 +569,7 @@ export function createP10b18aShapeAuthorities() {
 export type P10b18aShapeAuthority = ReturnType<typeof createP10b18aShapeAuthorities>[number];
 
 export function selectP10b18aAuditCase(shapeId: string, variationId: string) {
-  const authority = createP10b18aShapeAuthorities().find(({ id }) => id === shapeId);
+  const authority = createP10b18aShapeAuthorities([shapeId]).find(({ id }) => id === shapeId);
   const variation = p10b18aSemanticVariations.find(({ id }) => id === variationId);
   if (!authority || !variation) {
     throw new Error(`Unknown P10B-18A audit case ${shapeId}/${variationId}.`);
@@ -590,11 +596,38 @@ export function compileP10b18aAuditCase(
 
 export type P10b18aCompiledAuditResult = ReturnType<typeof compileP10b18aAuditCase>;
 
-export function p10b18aMaterializerConsumedDesignAuthority(
-  decision: P10b18aCompiledAuditResult["synthesisDecision"],
-) {
+function materializerBoundNonColourDesignDna(result: P10b18aCompiledAuditResult) {
+  const compiled = result.compiledDecision.designDna;
+  const synthesis = result.synthesisDecision.designDna;
+  const exactFingerprint = canonicalValueFingerprint(compiled.value);
+  if (
+    compiled.directionId !== synthesis.directionId ||
+    compiled.authorityFingerprint !== `compiled-design-dna-${exactFingerprint}` ||
+    synthesis.fingerprint !== `design-dna-${exactFingerprint}` ||
+    result.compiledDecision.exactSelection.directionId !== synthesis.directionId ||
+    result.compiledDecision.exactSelection.designSystemSpacingDensity !==
+      synthesis.spacingDensity ||
+    result.compiledDecision.exactSelection.designSystemSurfaceDepth !== synthesis.surfaceDepth
+  ) {
+    throw new Error(
+      "P10B-18A cannot count Design DNA that is not bound to the same exact synthesis/materializer authority.",
+    );
+  }
+  return {
+    typography: structuredClone(compiled.value.typography),
+    spacing: structuredClone(compiled.value.spacing),
+    surfaces: structuredClone(compiled.value.surfaces),
+    controls: structuredClone(compiled.value.controls),
+    density: structuredClone(compiled.value.density),
+    media: structuredClone(compiled.value.media),
+  };
+}
+
+export function p10b18aMaterializerConsumedDesignAuthority(result: P10b18aCompiledAuditResult) {
+  const decision = result.synthesisDecision;
   return {
     directionId: decision.designDna.directionId,
+    designDnaCategories: materializerBoundNonColourDesignDna(result),
     designSystemNarrowing: {
       spacingDensity: decision.designDna.spacingDensity,
       surfaceDepth: decision.designDna.surfaceDepth,
@@ -642,7 +675,7 @@ function uniqueSorted(values: readonly string[]) {
 
 export function p10b18aNormalizedDesignTopology(result: P10b18aCompiledAuditResult) {
   const decision = result.synthesisDecision;
-  const dna = result.compiledDecision.designDna.value;
+  const dna = materializerBoundNonColourDesignDna(result);
   const familyByPageKey = new Map(
     decision.pageProfileSelections.map(({ pageKey, familyId }) => [pageKey, familyId]),
   );
@@ -711,7 +744,7 @@ export function p10b18aDirectionLabelFreeNormalizedDesignTopology(
 
 export function p10b18aMaterializerDesignAuthorityFingerprint(result: P10b18aCompiledAuditResult) {
   return `p10b18a-materializer-design-authority-${canonicalValueFingerprint(
-    p10b18aMaterializerConsumedDesignAuthority(result.synthesisDecision),
+    p10b18aMaterializerConsumedDesignAuthority(result),
   )}`;
 }
 

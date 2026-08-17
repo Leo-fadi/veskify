@@ -134,9 +134,7 @@ export function assertSelectedPremiumAuthority(selection: SafeSelection): void {
 
 export function assertSelectedModernTechnicalAuthority(selection: SafeSelection): void {
   expect(selection.directionId).toBe("modernTechnical");
-  expect(["compact-technical", "commerce-utility", "centered-minimal"]).toContain(
-    selection.sharedFrame.profileId,
-  );
+  expect(selection.sharedFrame.profileId).toBe("compact-technical");
   expect([
     "homepage-commerce-led-discovery",
     "homepage-collection-gateway",
@@ -153,8 +151,8 @@ export function assertSelectedModernTechnicalAuthority(selection: SafeSelection)
   );
   expect(selection.designDnaNonColour).toMatchObject({
     typography: { pairing: "sans-led" },
-    spacing: { scale: "balanced" },
-    controls: { density: "balanced" },
+    spacing: { scale: "compact" },
+    controls: { density: "compact" },
     media: { posture: "product-led" },
   });
   expect(["discovery-led", "catalogue-dense", "considered-purchase"]).toContain(
@@ -170,14 +168,20 @@ export function assertSelectedModernTechnicalAuthority(selection: SafeSelection)
     expect.arrayContaining([
       "commercialPosture",
       "globalVisualIntent.density",
-      "sharedFrameIntent.navigationPosture",
       "homepageIntent.storyCatalogueBalance",
+      "responsiveAndArtDirectionIntent.mobileHierarchy",
+      "responsiveAndArtDirectionIntent.imageProminence",
     ]),
   );
+  expect(selection.semanticResolution.substitutedSemanticPaths).toContain(
+    "sharedFrameIntent.navigationPosture",
+  );
   for (const substitutedPath of selection.semanticResolution.substitutedSemanticPaths) {
-    expect(["collectionIntent.discoveryPosture", "pdpIntent.configurableProductPosture"]).toContain(
-      substitutedPath,
-    );
+    expect([
+      "sharedFrameIntent.navigationPosture",
+      "collectionIntent.discoveryPosture",
+      "pdpIntent.configurableProductPosture",
+    ]).toContain(substitutedPath);
   }
   expect(selection.responsiveArtDirection.responsiveMode).toBe(selection.postures.responsive);
   expect(selection.componentChoices.length).toBeGreaterThan(0);
@@ -200,9 +204,7 @@ export function assertSelectedModernTechnicalAuthority(selection: SafeSelection)
 
 export function assertSelectedMinimalCommerceAuthority(selection: SafeSelection): void {
   expect(selection.directionId).toBe("warmApproachable");
-  expect(["centered-minimal", "commerce-utility", "editorial-masthead"]).toContain(
-    selection.sharedFrame.profileId,
-  );
+  expect(selection.sharedFrame.profileId).toBe("centered-minimal");
   expect([
     "homepage-minimal-brand-commerce",
     "homepage-high-consideration",
@@ -235,12 +237,18 @@ export function assertSelectedMinimalCommerceAuthority(selection: SafeSelection)
       "globalVisualIntent.density",
       "sharedFrameIntent.navigationPosture",
       "homepageIntent.storyCatalogueBalance",
+      "responsiveAndArtDirectionIntent.imageProminence",
     ]),
   );
+  expect(selection.semanticResolution.substitutedSemanticPaths).toContain(
+    "responsiveAndArtDirectionIntent.mobileHierarchy",
+  );
   for (const substitutedPath of selection.semanticResolution.substitutedSemanticPaths) {
-    expect(["collectionIntent.discoveryPosture", "pdpIntent.configurableProductPosture"]).toContain(
-      substitutedPath,
-    );
+    expect([
+      "collectionIntent.discoveryPosture",
+      "pdpIntent.configurableProductPosture",
+      "responsiveAndArtDirectionIntent.mobileHierarchy",
+    ]).toContain(substitutedPath);
   }
   expect(selection.responsiveArtDirection.responsiveMode).toBe(selection.postures.responsive);
   expect(selection.componentChoices.length).toBeGreaterThan(0);

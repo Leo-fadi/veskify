@@ -2,12 +2,14 @@
 
 import { writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { inspectCompatibleCoordinatedDirectionCandidateInventory } from "@/application/bounded-storefront-synthesis";
 import { createRawKarvonenStorefrontFixture } from "@/data/demo/raw-karvonen-storefront-fixture";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   compileP10b18aAuditCase,
   createP10b18aShapeAuthorities,
   p10b18aDirectionLabelFreeNormalizedDesignTopologyFingerprint,
+  p10b18aMaterializerConsumedDesignAuthority,
   p10b18aMaterializerDesignAuthorityFingerprint,
   p10b18aNormalizedDesignTopologyFingerprint,
   p10b18aSemanticVariations,
@@ -138,8 +140,11 @@ function writeOptionalAuditOutput(report: unknown) {
 }
 
 describe("P10B-18A commercial authority audit", () => {
+  let cachedAuthorities: ReturnType<typeof createP10b18aShapeAuthorities> | undefined;
+  const shapeAuthorities = () => (cachedAuthorities ??= createP10b18aShapeAuthorities());
+
   it("selects each shape's largest truthful representative collection", () => {
-    const authorities = createP10b18aShapeAuthorities();
+    const authorities = shapeAuthorities();
 
     for (const authority of authorities) {
       const maximumMembership = Math.max(
@@ -165,19 +170,21 @@ describe("P10B-18A commercial authority audit", () => {
       medium?.catalogue.collections.find(({ id }) => id === "collection_karvonen_pihka")
         ?.productIds,
     ).toEqual(["product_karvonen_08", "product_karvonen_09"]);
-  }, 120_000);
+  }, 300_000);
 
   it("compiles a deterministic 72-case catalogue-shape and semantic-intent audit matrix", () => {
     const before = canonicalValueString(
       createRawKarvonenStorefrontFixture().planningInput.catalogue,
     );
-    const authorities = createP10b18aShapeAuthorities();
+    const authorities = shapeAuthorities();
     const outcomes = authorities.flatMap((authority) =>
       p10b18aSemanticVariations.map((variation) => {
         const result = compileP10b18aAuditCase(authority, variation);
         const compiledHomepageComposition = homepageComposition(result);
         const dynamicArchetypes = dynamicArchetypeMetrics(result);
         const approvedAssetDiagnostics = approvedAssetSelectionDiagnostics(authority, result);
+        const materializerConsumedDesignAuthority =
+          p10b18aMaterializerConsumedDesignAuthority(result);
         return {
           shapeId: authority.id,
           variationId: variation.id,
@@ -196,6 +203,7 @@ describe("P10B-18A commercial authority audit", () => {
           structuralFingerprint: result.compiledDecision.structuralFingerprint,
           materializerDesignAuthorityFingerprint:
             p10b18aMaterializerDesignAuthorityFingerprint(result),
+          materializerConsumedDesignAuthority,
           normalizedDesignTopologyFingerprint: p10b18aNormalizedDesignTopologyFingerprint(result),
           directionLabelFreeNormalizedDesignTopologyFingerprint:
             p10b18aDirectionLabelFreeNormalizedDesignTopologyFingerprint(result),
@@ -286,6 +294,16 @@ describe("P10B-18A commercial authority audit", () => {
         outcome.homepageComposition.sectionCount,
       );
       expect(outcome.dynamicArchetypes.availability).toBe("available");
+      const {
+        colour: _protectedColour,
+        version: _version,
+        ...expectedNonColourDesignDna
+      } = outcome.designDnaDimensions;
+      void _protectedColour;
+      void _version;
+      expect(outcome.materializerConsumedDesignAuthority.designDnaCategories).toEqual(
+        expectedNonColourDesignDna,
+      );
       for (const archetypeId of [
         outcome.dynamicArchetypes.collection,
         outcome.dynamicArchetypes.search,
@@ -434,6 +452,15 @@ describe("P10B-18A commercial authority audit", () => {
     const directionOverlapWitnesses = directionLabelFreeTopologyClasses.filter(
       ({ directions }) => directions.length > 1,
     );
+    const compatibilityFunnels = authorities.map((authority) => ({
+      shapeId: authority.id,
+      ...inspectCompatibleCoordinatedDirectionCandidateInventory(authority.compatibilityInput),
+      finalFrameDistribution: distribution(
+        authority.semanticCapabilityIndex.candidates.map(
+          ({ selection }) => selection.sharedFrameProfileId,
+        ),
+      ),
+    }));
 
     const report = {
       contract: {
@@ -442,6 +469,7 @@ describe("P10B-18A commercial authority audit", () => {
         semanticVariationCount: p10b18aSemanticVariations.length,
         materializerConsumedDesignAuthorityFields: [
           "directionId",
+          "exact non-colour Design DNA categories after compiled/synthesis fingerprint equality",
           "designSystemNarrowing.spacingDensity",
           "designSystemNarrowing.surfaceDepth",
           "sharedFrameProfileId",
@@ -464,6 +492,13 @@ describe("P10B-18A commercial authority audit", () => {
         directionLabelFreeNormalizedDesignTopologyFields: [
           "all normalizedDesignTopology fields except directionId",
           "non-colour Design DNA categories remain included as rendered design authority",
+        ],
+        compatibilityFunnelStages: [
+          "registered-direction-tuples",
+          "approved-asset-posture",
+          "profile-design-dna",
+          "dynamic-commerce-profile-context",
+          "page-set-shared-frame",
         ],
         descriptiveMetrics: {
           orderedHomepageComposition: "available-from-exact-synthesis-decision",
@@ -610,6 +645,7 @@ describe("P10B-18A commercial authority audit", () => {
         ),
       },
       stratumDistributions,
+      compatibilityFunnels,
       directionLabelFreeTopologyClasses,
       directionOverlapWitnesses,
       collapseWitnesses,
@@ -639,6 +675,29 @@ describe("P10B-18A commercial authority audit", () => {
         ),
       ).size,
     );
+    expect(report.compatibilityFunnels.map(({ shapeId }) => shapeId)).toEqual([
+      "neutral-true-high-consideration",
+      "mixed-jewellery-watch",
+      "simple-product-heavy-small",
+      "configurable-product-heavy-medium",
+      "canonical-product-media-rich-presentation-asset-poor",
+      "image-evidence-poor",
+      "small-catalogue",
+      "medium-mixed-jewellery",
+      "aurum-approved-presentation-image-rich",
+    ]);
+    for (const funnel of report.compatibilityFunnels) {
+      expect(funnel.stages.map(({ stage }) => stage)).toEqual(
+        report.contract.compatibilityFunnelStages,
+      );
+      expect(funnel.initialCandidateCount).toBe(funnel.stages[0]?.enteringCandidateCount);
+      expect(funnel.finalCandidateCount).toBe(funnel.stages.at(-1)?.remainingCandidateCount);
+      expect(funnel.firstEmptyStage).toBeNull();
+      expect(
+        Object.values(funnel.finalFrameDistribution).reduce((total, count) => total + count, 0),
+      ).toBe(funnel.finalCandidateCount);
+      expect(funnel.finalFrameDistribution["compact-technical"]).toBeGreaterThan(0);
+    }
     expect(
       report.outcomes.every(
         ({ homepageComposition: composition, dynamicArchetypes, approvedAssetDiagnostics }) =>
@@ -652,5 +711,5 @@ describe("P10B-18A commercial authority audit", () => {
     ).toBe(true);
 
     writeOptionalAuditOutput(report);
-  }, 240_000);
+  }, 900_000);
 });

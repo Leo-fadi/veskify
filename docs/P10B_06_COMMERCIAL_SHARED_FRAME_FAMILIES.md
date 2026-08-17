@@ -184,3 +184,50 @@ and changes at the existing responsive boundaries.
 Current-page identity is transient renderer context derived from the canonical page/path
 projection, not browser or snapshot state. No navigation graph, registry, snapshot, commerce, or
 media authority changed. P10B-18 still owns repeated end-to-end commercial frame quality at scale.
+
+## Current P10B-18B-01 continuation
+
+**Acceptance state:** **Baseline**. The product owner accepted P10B-18B-01 on 17 August 2026. This
+continuation does not change the accepted P10B-06 Baseline; parent P10B-18B is **Partial**, while
+P10B-18 and P10B remain **Partial**.
+
+The accepted implementation retains shared-frame authority `1.0.0` and the same four exact identities:
+`editorial-masthead`, `commerce-utility`, `centered-minimal`, and `compact-technical`. It adds no
+fifth frame, navigation model, breakpoint registry, persisted responsive state, frame-local token
+store, header/footer variant, or migration.
+
+The frozen P10B-18A complete-store exclusion for `compact-technical` came from four exact profile
+admissions. Accepted compatibility adds that frame only to:
+
+- `content-about-story`;
+- `commerce-utility-checkout`;
+- `commerce-utility-empty`; and
+- `commerce-utility-not-found`.
+
+The full required audit site map then admits bounded `compact-technical` candidates for Modern
+Technical. Direct deterministic evidence materializes the complete store and server-renders each of
+the four former blockers inside the compact root frame with non-empty main content. The focused browser
+matrix visually exercises the compact frame on home and collection at 375 and 1440 only; it does
+not claim focused browser or human review of those four content/utility surfaces. Existing
+PageBlueprint, renderer, navigation, commerce-utility runtime, and root-frame contracts remain the
+consumer authority rather than broadened metadata alone.
+
+The same frame renderer receives bounded CSS refinements rather than new anatomy. Accepted evidence
+checks:
+
+- the editorial wide-navigation stress store retains at least ten canonical links, at least 70
+  label characters, and a label of at least 18 characters; its inspected links stay on one measured
+  line at both 1024 and 1440 with zero detected destructive link labels across the full capture set;
+- the utility-led wide footer retains every canonical store-page and information link while its
+  measured height remains at most 420 pixels;
+- the centered-minimal wide composition has a renderer-visible content transition; and
+- the Premium editorial mobile footer wordmark remains one line without measured overflow.
+
+The focused accepted record contains seven materialized stores and 17 captures: 12 primary
+direction/home-or-collection/375-or-1440 captures, three alternate-DNA 1440 home captures, and the
+two long-navigation captures. It includes all four exact frame identities and confirms registered
+mobile-mode/footer composition on the captured surfaces, but it does not replace the original
+P10B-06 four-width structural evidence or the frozen P10B-18A denominators. All seven drafts retain
+their exact root frame, snapshot, Design DNA, commerce, and media authority through persistence and
+reload. The checkpoint records zero external, provider, Vesko, browser generation-endpoint, or
+publication requests and zero browser runtime errors.
