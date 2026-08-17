@@ -698,8 +698,8 @@
     display: inline-flex;
     max-width: 100%;
     font-size: clamp(1.55rem, 7.5vw, var(--brand-type-display-size, 3rem));
-    overflow-wrap: normal;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
     word-break: normal;
   }
 

@@ -814,7 +814,7 @@ describe("P10B-18B-01 Design DNA and shared-frame authority", () => {
       /\.footer\[data-footer-composition="service-navigation"\]\s*\{[^}]*grid-template-columns: minmax\(12rem, 0\.7fr\) minmax\(12rem, 0\.8fr\) minmax\(0, 2fr\);[^}]*padding-block: calc\(var\(--brand-section-rhythm, 4rem\) \* 0\.36\);/s,
     );
     expect(sourceCss).toMatch(
-      /\.footer\[data-footer-composition="brand-editorial"\][^{]*\.footerBrand\s*:global\(\.store-brand\)\s*\{[^}]*max-width: 100%;[^}]*white-space: nowrap;[^}]*word-break: normal;/s,
+      /\.footer\[data-footer-composition="brand-editorial"\][^{]*\.footerBrand\s*:global\(\.store-brand\)\s*\{[^}]*max-width: 100%;[^}]*overflow-wrap: anywhere;[^}]*white-space: normal;[^}]*word-break: normal;/s,
     );
     expect(sourceCss).toMatch(
       /\.footer\[data-footer-composition="compact-commerce-legal"\] a,[^{]*\.footer\[data-footer-composition="compact-commerce-legal"\] \.footerBrand p,[^{]*\.footer\[data-footer-composition="compact-commerce-legal"\] \.footerPolicy\s*\{[^}]*color: var\(--brand-surface-muted-text, var\(--brand-color-text\)\);/s,
