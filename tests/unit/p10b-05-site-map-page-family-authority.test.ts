@@ -377,12 +377,12 @@ describe("P10B-05 site-map and page-family authority", () => {
     }
   });
 
-  it("rejects a commerce-utility profile whose current shared frame is incompatible", () => {
+  it("rejects a commercial collection profile whose current shared frame is incompatible", () => {
     const input = decision();
-    const checkout = input.pages.find((page) => page.familyId === "checkout");
-    if (!checkout) throw new Error("Expected the required checkout page.");
-    Reflect.set(checkout, "profile", {
-      id: "commerce-utility-checkout",
+    const collection = input.pages.find((page) => page.familyId === "collection");
+    if (!collection) throw new Error("Expected the required collection page.");
+    Reflect.set(collection, "profile", {
+      id: "collection-editorial-discovery",
       version: "1.0.0",
     });
     const incompatibleBase = applyCommercialSharedFrame(

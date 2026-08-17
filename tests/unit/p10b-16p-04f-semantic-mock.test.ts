@@ -44,7 +44,7 @@ const scenarioExpectations = {
     storyCatalogueBalance: "catalogue-first",
     discoveryPosture: "campaign",
     configurableProductPosture: "guided",
-    mobileHierarchy: "balanced",
+    mobileHierarchy: "product-led",
     imageProminence: "balanced",
   },
   "minimal-commerce": {

@@ -22,6 +22,7 @@ import {
   type CoordinatedStorefrontDirectionPackage,
 } from "./direction-contract";
 import {
+  informationDensityPostureForDesignSystemSpacingDensity as densityPostureForSpacing,
   listCoordinatedStorefrontDirections as listDirections,
   validateDirectionSelectionNarrowing as validateNarrowing,
 } from "./direction-registry";
@@ -81,7 +82,7 @@ type CandidateListOptions = Readonly<
 
 export const MAX_COMPATIBLE_COORDINATED_DIRECTION_CANDIDATES = 8_192 as const;
 const COMPATIBLE_COORDINATED_DIRECTION_INVENTORY_DIAGNOSTIC_VERSION = "1.1.0" as const;
-export const COMPATIBLE_COORDINATED_DIRECTION_POSTURE_FACTOR_AUTHORITY_VERSION = "1.0.0" as const;
+export const COMPATIBLE_COORDINATED_DIRECTION_POSTURE_FACTOR_AUTHORITY_VERSION = "1.1.0" as const;
 
 type InventoryStageId = "registered-direction-tuples" | (typeof inventoryFilters)[number][0];
 type InventoryReasonCode = (typeof inventoryFilters)[number][1];
@@ -150,12 +151,26 @@ function assertCandidateBudget(
   }
 }
 
-function postureFactorOptions(direction: Direction): FactorOptions {
+function postureFactorOptions(
+  direction: Direction,
+  candidate: Pick<Candidate, "designSystemSpacingDensity">,
+): FactorOptions {
+  const pairedDensity = densityPostureForSpacing(candidate.designSystemSpacingDensity);
+  if (!direction.constraints.informationDensityPostures.includes(pairedDensity)) {
+    throw new DirectionError(
+      "invalid-direction-reference",
+      `${direction.id} does not register the density paired with ${candidate.designSystemSpacingDensity} spacing.`,
+    );
+  }
   return Object.freeze(
     Object.fromEntries(
       postureFactorKeys.map((factor) => [
         `${factor}Options`,
-        Object.freeze([...direction.constraints[`${factor}s`]]),
+        Object.freeze(
+          factor === "informationDensityPosture"
+            ? [pairedDensity]
+            : [...direction.constraints[`${factor}s`]],
+        ),
       ]),
     ),
   ) as FactorOptions;
@@ -184,10 +199,15 @@ function candidateMaterial(direction: Direction): Candidate[] {
       })),
     );
   }
-  return candidates.map((candidate) => ({
-    ...candidate,
-    ...immutableCopy(direction.constraints.postureDefaults),
-  })) as Candidate[];
+  return candidates.map((candidate) => {
+    const designSystemSpacingDensity =
+      candidate.designSystemSpacingDensity as Candidate["designSystemSpacingDensity"];
+    return {
+      ...candidate,
+      ...immutableCopy(direction.constraints.postureDefaults),
+      informationDensityPosture: densityPostureForSpacing(designSystemSpacingDensity),
+    };
+  }) as Candidate[];
 }
 
 export function coordinatedDirectionNarrowingForCandidate(
@@ -205,7 +225,7 @@ export function coordinatedDirectionNarrowingForCandidate(
 }
 
 function factorizedCandidate(direction: Direction, candidate: Candidate): FactorizedCandidate {
-  const options = postureFactorOptions(direction);
+  const options = postureFactorOptions(direction, candidate);
   return Object.freeze({
     backbone: immutableCopy(coordinatedDirectionNarrowingForCandidate(direction, candidate)),
     ...options,
@@ -478,7 +498,7 @@ export function resolveCompatibleCoordinatedDirectionPostureFactors(input: {
   validateNarrowing(candidate.backbone);
 
   const suppliedOptions = candidateFactorOptions(candidate);
-  const currentOptions = postureFactorOptions(direction);
+  const currentOptions = postureFactorOptions(direction, candidate.backbone);
   const factorFingerprint = (options: FactorOptions) =>
     factorAuthorityFingerprint(direction, options);
   const expectedFactorFingerprint = candidate.factorAuthorityFingerprint;
@@ -493,6 +513,7 @@ export function resolveCompatibleCoordinatedDirectionPostureFactors(input: {
   const canonicalBackbone = coordinatedDirectionNarrowingForCandidate(direction, {
     ...backboneExact,
     ...immutableCopy(direction.constraints.postureDefaults),
+    informationDensityPosture: densityPostureForSpacing(backboneExact.designSystemSpacingDensity),
   });
   if (fingerprint(canonicalBackbone) !== fingerprint(candidate.backbone))
     staleFactorAuthority("The coordinated-direction factorized backbone is not current.");

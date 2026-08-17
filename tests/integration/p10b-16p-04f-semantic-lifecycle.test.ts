@@ -46,7 +46,7 @@ const scenarios = [
   },
   {
     id: "modern-technical",
-    expectedFrame: "commerce-utility",
+    expectedFrame: "compact-technical",
     prompt:
       "Create a modern technical jewellery storefront with catalogue comparison, dense product information and clear configurable-product guidance.",
   },

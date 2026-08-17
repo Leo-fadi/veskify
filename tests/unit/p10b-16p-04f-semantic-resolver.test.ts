@@ -89,11 +89,11 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
       semanticCapabilityIndex: fixture.semanticIndex,
     });
 
-    expect(fixture.semanticIndex.candidates).toHaveLength(63);
+    expect(fixture.semanticIndex.candidates).toHaveLength(135);
     for (const candidate of fixture.semanticIndex.candidates) {
       expect(() => prepared.resolveExecutionAuthority(candidate.selection)).not.toThrow();
     }
-  });
+  }, 180_000);
 
   it("rejects a syntactically valid selection outside the prepared current tuple inventory", () => {
     const fixture = authority();
@@ -150,8 +150,19 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
     });
 
     expect(fixture.semanticIndex.candidateCount).toBeGreaterThan(0);
-    expect(premium.selection.authorityId).toBe("coordinated-direction:premium-editorial");
-    expect(technical.selection.authorityId).toBe("coordinated-direction:modern-technical");
+    expect(premium.selection).toMatchObject({
+      authorityId: "coordinated-direction:premium-editorial",
+      designSystemSpacingDensity: "standard",
+      informationDensityPosture: "balanced",
+      sharedFrameProfileId: "editorial-masthead",
+      merchandisingPosture: "curated",
+    });
+    expect(technical.selection).toMatchObject({
+      authorityId: "coordinated-direction:modern-technical",
+      designSystemSpacingDensity: "compact",
+      informationDensityPosture: "compact",
+      sharedFrameProfileId: "compact-technical",
+    });
     expect(technical.selectedStructuralFingerprint).not.toBe(premium.selectedStructuralFingerprint);
     expect(premium.semanticResolutionFingerprint).toBe(premium.diagnostic.diagnosticFingerprint);
     expect(premium.diagnostic.stages.at(-1)).toMatchObject({
@@ -245,7 +256,10 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
       {
         code: "invalid-trusted-hint",
         request: fixture.createRequest({
-          trustedExactHints: { directionPackageId: null, frameFamilyId: "compact-technical" },
+          trustedExactHints: {
+            directionPackageId: "premium-editorial",
+            frameFamilyId: "compact-technical",
+          },
         }),
       },
       {

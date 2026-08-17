@@ -134,3 +134,54 @@ configuration quality/scale gate, aesthetic AI scoring, generated code, P10C edi
 operations, save as an implicit generation action, or publication without explicit authority.
 P10B-16P-01, P10B-16P-02, and P10B-16P-03 are now Baseline through their own subsequent tasks.
 P10B remains Partial; P10B-16P-04 is Baseline, while P10B-17 and P10B-18 remain Planned.
+
+## Current P10B-18B-01 continuation
+
+**Acceptance state:** **Baseline**. The product owner accepted P10B-18B-01 on 17 August 2026. This
+continuation does not revise the original P10B-16 evidence counts; parent P10B-18B is **Partial**,
+while P10B-18 and P10B remain **Partial**.
+
+The accepted implementation consumes coordinated-direction authority `1.1.0`, factorized-posture authority
+`1.1.0`, and semantic capability-mapping authority `1.3.0`. Design DNA and shared-frame authority
+remain `1.0.0`. The earlier P10B-16 delivery prose records its point-in-time registry version and
+direction postures; the exact current constraints are now:
+
+| Direction         | Exact spacing/density options          | Surface depth | Compatible frame intent                                    |
+| ----------------- | -------------------------------------- | ------------- | ---------------------------------------------------------- |
+| Premium Editorial | `standard/balanced`, `spacious/airy`   | `layered`     | editorial, centered, or utility where the page set permits |
+| Modern Technical  | `compact/compact`, `standard/balanced` | `flat`        | technical, utility, or centered where the page set permits |
+| Minimal Commerce  | `standard/balanced`, `spacious/airy`   | `subtle`      | centered, utility, or editorial where the page set permits |
+
+The first value in each pair is exact Design-System spacing density; the second is its canonical
+synthesis information-density posture. Current validation rejects any mismatched pair.
+Factorized candidates therefore expose one density posture for each exact-spacing backbone instead
+of multiplying a second density label across it. The bounded candidate ceiling remains unchanged,
+and candidate enumeration still validates every exact direction/profile/frame/page-set tuple before
+semantic scoring.
+
+Semantic influence now reports material dependencies instead of counting labels independently:
+
+- `globalVisualIntent.density` is a compound driver of exact spacing/Design DNA density;
+- `sharedFrameIntent.navigationPosture` directly selects one exact shared-frame identity;
+- `responsiveAndArtDirectionIntent.mobileHierarchy` is compound over the registered frame's mobile
+  mode and responsive transformations, coupled with the selected shared frame, while raw
+  `responsiveMode` is no longer an independent exact axis; and
+- `commercialPosture` remains a compound direction-package driver and exposes correlated Design
+  DNA, typography, spacing-density, and shared-frame changes as substitution dependencies rather
+  than four independent wins.
+
+Deterministic accepted evidence proves two exact non-colour Design DNA outcomes for each direction
+on a fixed page/profile/frame backbone, all four exact navigation-posture/frame selections, bounded
+substitution of unsupported Minimal high density, refreshed factor fingerprints, and protected
+commerce/media preservation. The focused browser record contains seven materialized stores and 17
+captures: 12 primary direction/home-or-collection/375-or-1440 captures, three alternate-DNA wide
+home captures, and two editorial long-navigation captures at 1024 and 1440. The alternate captures
+hold fixture and direction constant. Premium and Modern also retain the homepage profile and
+homepage component sequence; Minimal's audited airy witness changes those home authorities. Only
+Premium holds the exact frame and full profile tuple constant. The candidate therefore does not
+promote Modern or Minimal browser deltas into fixed-frame causality.
+
+This successor evidence addresses only the P10B-18B-01 density, frame, mobile-hierarchy, and
+commercial-posture integration boundary. Narrative, collection merchandising, PDP, content/utility,
+and asset/art-direction consumers remain owned by later P10B-18B packages. The 17 captures are
+focused review evidence and do not satisfy the P10B-18C 100+ quality/diversity gate.

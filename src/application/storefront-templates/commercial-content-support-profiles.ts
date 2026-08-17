@@ -171,7 +171,12 @@ const inputs: readonly ContentProfileInput[] = [
     variant: "aboutStory",
     narrativeRole: "education",
     visualWeight: "medium",
-    compatibleSharedFrameProfileIds: ["editorial-masthead", "centered-minimal", "commerce-utility"],
+    compatibleSharedFrameProfileIds: [
+      "editorial-masthead",
+      "centered-minimal",
+      "commerce-utility",
+      "compact-technical",
+    ],
     defaultSharedFrameProfileId: "editorial-masthead",
   },
   {

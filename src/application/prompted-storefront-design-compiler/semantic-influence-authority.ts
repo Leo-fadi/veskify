@@ -31,6 +31,8 @@ type DriverSpecification = Readonly<{
   path: SemanticProviderDriverPath;
   primaryAxis: SemanticExactInfluenceAxisId;
   derivedAxes: readonly SemanticExactInfluenceAxisId[];
+  /** Exact sub-material already nested inside the primary exact authority. */
+  nestedAxes: readonly SemanticExactInfluenceAxisId[];
   compound: boolean;
 }>;
 function driver(
@@ -38,13 +40,21 @@ function driver(
   primaryAxis: SemanticExactInfluenceAxisId,
   derivedAxes: readonly SemanticExactInfluenceAxisId[] = [],
   compound = false,
+  nestedAxes: readonly SemanticExactInfluenceAxisId[] = [],
 ): DriverSpecification {
-  return { path, primaryAxis, derivedAxes, compound };
+  return { path, primaryAxis, derivedAxes, nestedAxes, compound };
 }
 const driverSpecifications = [
-  driver("commercialPosture", "direction-package", ["design-dna", "typography"], true),
-  driver("globalVisualIntent.density", "information-density-posture", ["spacing-density"]),
-  driver("sharedFrameIntent.navigationPosture", "shared-frame"),
+  driver(
+    "commercialPosture",
+    "direction-package",
+    ["design-dna", "typography", "spacing-density", "shared-frame"],
+    true,
+  ),
+  driver("globalVisualIntent.density", "spacing-density", [], true),
+  driver("sharedFrameIntent.navigationPosture", "shared-frame", [], false, [
+    "frame-responsive-authority",
+  ]),
   driver("homepageIntent.storyCatalogueBalance", "narrative-posture", ["homepage-profile"], true),
   driver(
     "collectionIntent.discoveryPosture",
@@ -53,7 +63,7 @@ const driverSpecifications = [
     true,
   ),
   driver("pdpIntent.configurableProductPosture", "pdp-profile", [], true),
-  driver("responsiveAndArtDirectionIntent.mobileHierarchy", "responsive-mode"),
+  driver("responsiveAndArtDirectionIntent.mobileHierarchy", "frame-responsive-authority", [], true),
   driver("responsiveAndArtDirectionIntent.imageProminence", "art-direction-posture"),
 ] as const;
 function signature(values: readonly string[]): string {
@@ -88,7 +98,10 @@ function observedIndependence(
   coupledExactAxisIds: readonly SemanticExactInfluenceAxisId[];
 }> {
   const collateralAxes = semanticExactInfluenceAxisIds.filter(
-    (axis) => axis !== specification.primaryAxis && !specification.derivedAxes.includes(axis),
+    (axis) =>
+      axis !== specification.primaryAxis &&
+      !specification.derivedAxes.includes(axis) &&
+      !specification.nestedAxes.includes(axis),
   );
   const observed: SemanticExactInfluenceAxisId[][] = [];
   for (let leftIndex = 0; leftIndex < samples.length; leftIndex += 1) {

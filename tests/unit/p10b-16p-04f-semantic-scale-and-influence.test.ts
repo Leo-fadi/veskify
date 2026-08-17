@@ -224,14 +224,15 @@ function compile(
 function materialVector(decision: Decision): readonly string[] {
   return [
     decision.designDna.authorityFingerprint,
+    decision.exactSelection.designSystemSpacingDensity,
     decision.sharedFrame.profileId,
+    decision.sharedFrame.authorityFingerprint,
     decision.profiles.homepage.profileId,
     decision.profiles.collection.profileId,
     decision.profiles.productDetail.profileId,
     decision.productCardAnatomyIds.join("|"),
     decision.exactSelection.narrativePosture,
     decision.exactSelection.merchandisingPosture,
-    decision.responsiveArtDirection.responsiveMode,
     decision.exactSelection.artDirectionPosture,
   ];
 }
@@ -389,10 +390,15 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
       },
       "globalVisualIntent.density": {
         driver: "density",
+        baseline: {
+          ...technicalDrivers,
+          navigationPosture: "editorial",
+          mobileHierarchy: "story-led",
+        },
         path: "globalVisualIntent.density",
         values: deterministicDriverValues.density,
         selected: (decision: Decision) =>
-          `${decision.exactSelection.designSystemSpacingDensity}:${decision.exactSelection.informationDensityPosture}`,
+          `${decision.exactSelection.designSystemSpacingDensity}:${decision.designDna.authorityFingerprint}`,
       },
       "sharedFrameIntent.navigationPosture": {
         driver: "navigationPosture",
@@ -426,9 +432,10 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
       },
       "responsiveAndArtDirectionIntent.mobileHierarchy": {
         driver: "mobileHierarchy",
+        baseline: { ...technicalDrivers, navigationPosture: "catalogue" },
         path: "responsiveAndArtDirectionIntent.mobileHierarchy",
         values: deterministicDriverValues.mobileHierarchy,
-        selected: (decision: Decision) => decision.responsiveArtDirection.responsiveMode,
+        selected: (decision: Decision) => decision.sharedFrame.authorityFingerprint,
       },
       "responsiveAndArtDirectionIntent.imageProminence": {
         driver: "imageProminence",
@@ -464,21 +471,43 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
       reasonCode: "independent-exact-axis",
       providerDriverPath: "sharedFrameIntent.navigationPosture",
       coupledExactAxisIds: [],
+      semanticValueCount: 4,
+      exactValueCount: 4,
     });
-    for (const [path, axis] of [
-      ["globalVisualIntent.density", "information-density-posture"],
-      ["responsiveAndArtDirectionIntent.mobileHierarchy", "responsive-mode"],
-      ["responsiveAndArtDirectionIntent.imageProminence", "art-direction-posture"],
-    ] as const) {
-      expect(
-        influenceByPath.get(path)?.relationships.find(({ exactAxisId }) => exactAxisId === axis),
-      ).toMatchObject({
-        mode: "direct",
-        reasonCode: "independent-exact-axis",
-        providerDriverPath: path,
-        coupledExactAxisIds: [],
-      });
-    }
+    expect(
+      influenceByPath
+        .get("globalVisualIntent.density")
+        ?.relationships.find(({ exactAxisId }) => exactAxisId === "spacing-density"),
+    ).toMatchObject({
+      mode: "compound-driver",
+      reasonCode: "coupled-axis-provider-driver",
+      providerDriverPath: "globalVisualIntent.density",
+      coupledExactAxisIds: ["design-dna"],
+      semanticValueCount: 3,
+      exactValueCount: 4,
+    });
+    expect(
+      influenceByPath
+        .get("responsiveAndArtDirectionIntent.mobileHierarchy")
+        ?.relationships.find(({ exactAxisId }) => exactAxisId === "frame-responsive-authority"),
+    ).toMatchObject({
+      mode: "compound-driver",
+      reasonCode: "coupled-axis-provider-driver",
+      providerDriverPath: "responsiveAndArtDirectionIntent.mobileHierarchy",
+      coupledExactAxisIds: ["shared-frame"],
+      semanticValueCount: 4,
+      exactValueCount: 4,
+    });
+    expect(
+      influenceByPath
+        .get("responsiveAndArtDirectionIntent.imageProminence")
+        ?.relationships.find(({ exactAxisId }) => exactAxisId === "art-direction-posture"),
+    ).toMatchObject({
+      mode: "direct",
+      reasonCode: "independent-exact-axis",
+      providerDriverPath: "responsiveAndArtDirectionIntent.imageProminence",
+      coupledExactAxisIds: [],
+    });
     const driversByAxis = new Map<string, Set<string>>();
     for (const field of fixture.semanticCapabilityIndex.semanticInfluenceAuthority.fields) {
       expect(field.supportedValues.length).toBeGreaterThan(1);
@@ -520,7 +549,7 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
         )
         .toBeGreaterThan(1);
     }
-  });
+  }, 120_000);
 
   it("does not use free-form concept-summary prose as a compatibility tie-break", () => {
     const fixture = testAuthority();

@@ -544,6 +544,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       (route) => route.kind === "collection",
     );
     expect(collectionRoutes).toHaveLength(2);
+    expect(caseEvidence.selection.profiles.collection).toBe("collection-editorial-discovery");
     const commerceAdapter = createCatalogueStorefrontCommerceRouteAdapter();
     const resolvedCollectionSections = collectionRoutes.map((route) => {
       const mapping = dynamicAuthority!.collectionRouteMappings.find(
@@ -560,24 +561,8 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       const section = resolved.page.sections[0];
       expect(section).toBeDefined();
       expect(section.id).toBe(dynamicCommerceRouteSectionId(route.id, mapping.archetypeId));
-      expect(section.approvedAssetPlacements).toHaveLength(1);
-      expect(section.approvedAssetPresentations).toHaveLength(1);
-      const placementsByRole = new Map(
-        section.approvedAssetPlacements?.map((placement) => [placement.role, placement]),
-      );
-      expect([...placementsByRole.keys()]).toEqual(["editorialImage"]);
-      for (const role of ["editorialImage"] as const) {
-        expect(placementsByRole.get(role)).toMatchObject({
-          pageId: route.id,
-          componentId: section.id,
-          componentType: "dynamicCollectionCommerce",
-          assetSlotId: "collectionCommerceMedia",
-          role,
-        });
-        expect(section.approvedAssetPresentations).toContainEqual(
-          expect.objectContaining({ assetId: placementsByRole.get(role)?.assetId, role }),
-        );
-      }
+      expect(section.approvedAssetPlacements).toEqual([]);
+      expect(section.approvedAssetPresentations).toEqual([]);
       const collection = fixture.aggregate.catalogue.collections.find(
         ({ id }) => id === route.collectionId,
       );
@@ -604,12 +589,10 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       expect(
         presentation?.projection.collections[0]?.assets.find(({ role }) => role === "editorial")
           ?.assetId,
-      ).toBe(placementsByRole.get("editorialImage")?.assetId);
-      return { section, placementsByRole };
+      ).toBeUndefined();
+      return section;
     });
-    expect(resolvedCollectionSections[0]?.placementsByRole.get("editorialImage")?.assetId).toBe(
-      resolvedCollectionSections[1]?.placementsByRole.get("editorialImage")?.assetId,
-    );
+    expect(resolvedCollectionSections).toHaveLength(collectionRoutes.length);
     expect(proposalAggregate?.catalogue).toEqual(fixture.aggregate.catalogue);
     expect(
       proposalAggregate?.snapshots.find(

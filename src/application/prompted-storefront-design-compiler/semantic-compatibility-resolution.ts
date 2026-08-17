@@ -71,7 +71,7 @@ function semanticStorefrontScoringPreferences(
 }
 
 export const SEMANTIC_COMPATIBILITY_DIAGNOSTIC_VERSION = "1.1.0" as const;
-export const SEMANTIC_CAPABILITY_MAPPING_AUTHORITY_VERSION = "1.2.0" as const;
+export const SEMANTIC_CAPABILITY_MAPPING_AUTHORITY_VERSION = "1.3.0" as const;
 export const MAX_SEMANTIC_INFLUENCE_FACTOR_EVALUATIONS = 4_096 as const;
 
 export type DerivedSemanticCapabilityCandidate = Readonly<{
@@ -210,11 +210,11 @@ function structuralFingerprint(selection: BoundedStorefrontSynthesisSelectionNar
     searchProfileId: selection.searchProfileId,
     pdpProfileId: selection.pdpProfileId,
     includedOptionalPageFamilyIds: selection.includedOptionalPageFamilyIds,
+    designSystemSpacingDensity: selection.designSystemSpacingDensity,
+    designSystemSurfaceDepth: selection.designSystemSurfaceDepth,
     narrativePosture: selection.narrativePosture,
     merchandisingPosture: selection.merchandisingPosture,
-    informationDensityPosture: selection.informationDensityPosture,
     artDirectionPosture: selection.artDirectionPosture,
-    responsiveMode: selection.responsiveMode,
   })}`;
 }
 
@@ -254,13 +254,11 @@ function postureFactors(
 const factorDrivers = [
   ["narrativePosture", "narrativePostureOptions", "homepageIntent.storyCatalogueBalance"],
   ["merchandisingPosture", "merchandisingPostureOptions", "collectionIntent.discoveryPosture"],
-  ["informationDensityPosture", "informationDensityPostureOptions", "globalVisualIntent.density"],
   [
     "artDirectionPosture",
     "artDirectionPostureOptions",
     "responsiveAndArtDirectionIntent.imageProminence",
   ],
-  ["responsiveMode", "responsiveModeOptions", "responsiveAndArtDirectionIntent.mobileHierarchy"],
 ] as const;
 
 function uniqueByFingerprint<Value>(
@@ -502,9 +500,11 @@ function selectPostureFactors(input: {
         const values = semanticFeaturesFor(selection)[path] ?? [];
         return { option, matched: values.includes(requested.value) };
       })
-      .filter(({ matched }) => matched)
-      .sort((left, right) => left.option.localeCompare(right.option));
-    const selected = matchedOptions[0];
+      .filter(({ matched }) => matched);
+    const currentOption = selectedFactors[factor];
+    const selected =
+      matchedOptions.find(({ option }) => option === currentOption) ??
+      matchedOptions.sort((left, right) => left.option.localeCompare(right.option))[0];
     if (selected) selectedFactors = { ...selectedFactors, [factor]: selected.option };
   }
   return selectedFactors;

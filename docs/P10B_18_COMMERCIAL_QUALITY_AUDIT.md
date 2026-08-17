@@ -1,13 +1,13 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A Baseline — accepted by the product owner on 16 August 2026
+**Status:** P10B-18A and P10B-18B-01 Baseline; parent P10B-18B/P10B-18/P10B Partial
 
-**Authority date:** 16 August 2026
+**Authority date:** 17 August 2026
 
-**Branch:** `codex/p10b-18a-commercial-authority-audit`
+**Branch:** `codex/p10b-18b-01-design-dna-shared-frames`
 
-**Baseline:** P10B-18A is Baseline; parent P10B-18 and P10B remain Partial; P10B-18B and
-P10B-18C are Planned
+**Baseline:** P10B-18A and P10B-18B-01 are Baseline; parent P10B-18B, P10B-18 and P10B are
+Partial; P10B-18B-06 is next and P10B-18C remains Planned
 
 ## 1. Purpose and boundaries
 
@@ -1250,3 +1250,134 @@ changed. The checkpoint repository artifacts were this living audit and determin
 helper/config/test files. The subsequent acceptance synchronization changes active documentation
 and its exact validation guards only; it adds no P10B-18B/P10B-18C implementation or quality
 claim.
+
+## 16. P10B-18B-01 accepted implementation and result
+
+**Acceptance state:** **Baseline**. The product owner accepted the Design DNA and shared-frame
+checkpoint on 17 August 2026. Parent P10B-18B is **Partial**; parent P10B-18 and P10B remain
+**Partial**. P10B-18B-06 is next, while P10B-18C and P10B-16P-05B remain Planned in their locked
+order.
+
+### 16.1 Frozen-baseline boundary
+
+Sections 1 through 15 remain the accepted P10B-18A diagnosis as observed on its frozen authority.
+Its 72-case matrix, 25 normalized topologies, 65/72 repeated-cluster membership, 18-store/108-capture
+review, frame/profile concentrations, defect frequencies, ownership, and Stage 1 commands are not
+rewritten or recomputed as if they described this successor. The evidence below uses separate
+P10B-18B-01 denominators and reports changes against that Baseline.
+
+The accepted implementation preserves one `StorefrontSnapshot`, canonical `BrandSystem`, PageBlueprint and
+component registries, the four existing shared frames, current renderers, dynamic-commerce and
+product-card authority, semantic compiler path, and protected commerce/media. It adds no generated
+imagery, provider behavior, Vesko behavior, publication command, second page graph, second token
+store, or schema migration.
+
+### 16.2 Accepted source-authority changes
+
+| Frozen finding                                                        | P10B-18B-01 accepted consequence                                                                                                                                                                                                                                                                                                                                                   | Remaining boundary                                                                                                                                                                              |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0.1 — five posture axes were not independently materialized          | Exact spacing density now materializes different non-colour Design DNA and CSS geometry; information density is its canonical paired posture. Navigation posture selects the frame, and mobile hierarchy derives from registered frame-responsive authority instead of raw `responsiveMode`. Commercial posture reports its correlated DNA/typography/spacing/frame substitutions. | Narrative, collection merchandising, and image-prominence consumers remain with later surface/asset packages; the package does not claim that all five frozen axes are closed.                  |
+| P0.4 — `compact-technical` was excluded from every complete candidate | The exact four blocking profiles—About story, checkout, empty, and not-found—now admit the existing compact frame, allowing truthful Modern Technical candidates over the full required audit site map.                                                                                                                                                                            | Focused browser evidence covers compact home/collection at 375/1440; the four newly admitted content/utility profiles have deterministic direct-render evidence, not focused visual acceptance. |
+| P1.4 — one rendered DNA per direction and correlated authority        | Premium and Minimal now admit standard/spacious authority; Modern admits compact/standard. Each direction has two exact density outcomes with preserved merchant colour.                                                                                                                                                                                                           | This is bounded within-direction Design DNA authority, not a claim of broad independent typography, frame, profile, narrative, merchandising, or art variety.                                   |
+| P2.5 — frame proportion and long-label resilience                     | The shared renderer bounds utility-footer proportion, keeps the Premium mobile wordmark on one measured line, gives centered-minimal a visible content transition, strengthens compact-technical identity, and retains inspected long-navigation links on one line at 1024/1440.                                                                                                   | These are focused frame corrections, not P10B-18C designer-grade acceptance or a new frame anatomy.                                                                                             |
+
+The accepted version boundary is exact:
+
+| Authority                   | Accepted version/disposition                                               |
+| --------------------------- | -------------------------------------------------------------------------- |
+| Canonical Design DNA        | `1.0.0`; unchanged schema and migration contract                           |
+| Commercial shared frame     | `1.0.0`; the same four exact frame IDs                                     |
+| Coordinated direction       | `1.1.0`; refreshed package fingerprints over current constraints           |
+| Factorized posture          | `1.1.0`; density is singleton-paired per exact-spacing backbone            |
+| Semantic capability mapping | `1.3.0`; exact density/frame-responsive causality and dependency reporting |
+
+New compilation refreshes transient exact-authority fingerprints and rejects stale references
+through the existing proposal/compiler boundary. Already materialized Design DNA and shared frames
+remain canonical snapshot values; no persisted migration is introduced.
+
+### 16.3 Focused accepted evidence
+
+The deterministic evidence proves:
+
+- two supported exact density outcomes per direction on one fixed page/profile/frame backbone, with
+  identical merchant colour and different non-colour DNA, identity/projection fingerprints, spacing,
+  rhythm, gutter, grid gap, card inset, controls, regional density, and elevation;
+- all four exact navigation-posture/shared-frame selections and fail-closed substitution of
+  unsupported Minimal high density;
+- one density posture per exact-spacing factorized backbone, current factor fingerprints, bounded
+  candidate enumeration, and no raw responsive/density label double count;
+- complete required-page compatibility for `compact-technical`, including direct rendering of the
+  four former About/checkout/empty/not-found blockers; and
+- unchanged canonical commerce and media through compilation, materialization, persistence, and
+  reload.
+
+The frozen and accepted 72-case strata remain exactly the same nine shapes by eight semantic
+intents. The accepted result comes from consumed snapshot/renderer authority rather than semantic
+labels or generated identifiers:
+
+| Same-strata measure             | Frozen P10B-18A | Accepted P10B-18B-01 |
+| ------------------------------- | --------------: | -------------------: |
+| Premium Editorial winners       |              27 |                   27 |
+| Modern Technical winners        |              27 |                   27 |
+| Minimal Commerce winners        |              18 |                   18 |
+| `editorial-masthead` frame      |              27 |                   27 |
+| `commerce-utility` frame        |              26 |                    9 |
+| `centered-minimal` frame        |              19 |                   18 |
+| `compact-technical` frame       |               0 |                   18 |
+| Exact non-colour DNA bundles    |               3 |                    6 |
+| Normalized material topologies  |              25 |                   36 |
+| Repeated-cluster membership     |           65/72 |                57/72 |
+| Largest normalized cluster      |               9 |                    7 |
+| Singleton normalized topologies |               7 |                   15 |
+
+The six accepted DNA bundles are bounded to two per direction: Premium `standard` 18 and
+`spacious` nine; Modern `compact` 18 and `standard` nine; Minimal `standard` nine and `spacious`
+nine. Merchant colour is excluded from that count.
+
+The exact accepted compatibility funnels are:
+
+| Audit shape stratum                                                                                                                        | Count | Registered → asset → DNA/profile → dynamic commerce → complete page/frame | Final eligible frames (editorial / centered / utility / compact) |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ----: | ------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| neutral true high-consideration                                                                                                            |     1 | `1728 → 828 → 396 → 207 → 165`                                            | `60 / 57 / 24 / 24`                                              |
+| mixed jewellery/watch, simple-heavy, configurable-heavy, media-rich, image-poor, small-catalogue, and medium-mixed Karvonen-derived shapes |     7 | `1728 → 1152 → 540 → 261 → 213`                                           | `60 / 57 / 48 / 48`                                              |
+| Aurum approved-presentation/image-rich                                                                                                     |     1 | `1728 → 1728 → 792 → 279 → 231`                                           | `108 / 99 / 12 / 12`                                             |
+
+These are eligible complete-store backbones, not extra winners or human-approved stores. Their
+stage counts reconcile to each final candidate count; all nine strata retain a non-zero exact
+`compact-technical` survivor set.
+
+The focused Chromium evidence contains seven materialized stores and 17 full-document captures:
+
+| Capture role                          | Count | Exact coverage                                                                                                                   |
+| ------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------- |
+| Primary direction/surface/width       |    12 | Premium, Modern, and Minimal × home and collection × 375 and 1440                                                                |
+| Within-direction alternate Design DNA |     3 | One additional 1440 home per direction; fixture and direction stay fixed, while the exact page/frame controls are recorded below |
+| Editorial long-navigation stress      |     2 | The same 10-plus-link editorial home at 1024 and 1440, with at least 70 label characters and one label of at least 18 characters |
+
+All 17 captures have distinct filenames and zero detected destructive link labels. Compact captures
+retain the registered drawer and compact-commerce/legal footer at 375 and 1440. The utility footer
+retains every canonical navigation/information item and measures at most 420 pixels; the centered
+frame has a visible content transition; the Premium mobile footer wordmark stays on one line without
+measured overflow, as do both retained Premium wide surfaces; and the long-navigation stress links
+stay on one measured line at both widths.
+
+All seven stores preserve exact candidate snapshot and Design DNA fingerprints through local
+persistence/reload. Their commerce and media fingerprints remain unchanged. The run ledger records
+zero external, provider, Vesko, browser generation-endpoint, or publication requests and zero
+browser runtime errors. The browser checkpoint therefore adds no real-provider, Vesko, publication,
+staging, or production evidence; the seven stores are still materialized deterministically in
+process.
+
+The deterministic fixed-backbone proof covers all three directions. In the browser evidence,
+Premium and Modern retain the homepage profile and component sequence; Minimal's only audited airy
+semantic witness also changes those home authorities. Only the Premium primary/alternate pair holds
+the exact shared frame and full profile tuple constant. The Modern and Minimal alternates change
+frame. Those two browser comparisons prove focused rendered Design DNA difference for their selected
+outcomes, not fixed-frame visual causality.
+
+### 16.4 Status and downstream boundary
+
+The accepted 17-capture checkpoint closes only P10B-18B-01. Parent P10B-18B is Partial; its
+remaining packages, P10B-18C 100+ quality/diversity gate, parent P10B-18, and P10B remain
+incomplete. The frozen P10B-18A denominators above remain the comparison baseline. The exact next
+task is **P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade**.
