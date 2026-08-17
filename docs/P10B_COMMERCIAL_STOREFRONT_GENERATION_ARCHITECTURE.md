@@ -1,12 +1,12 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
 **Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
-P10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B and P10B-18 remain
-**Planned**.
+P10B-16P-06 are **Baseline**; P10B-16P-02 and accepted P10B-18A are **Baseline**; parent P10B-18
+remains **Partial**; P10B-18B, P10B-18C, and P10B-16P-05B remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 16 August 2026, P10B-17 responsive, accessibility and performance closure
+**Baseline:** 16 August 2026, accepted P10B-18A commercial-authority audit
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -58,8 +58,10 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-P10B-16P-05A, P10B-16P-06, and P10B-17 are Baseline; P10B-16P-05B and P10B-18 remain Planned.
-P10B-18 is the next focused product task.
+P10B-16P-05A, P10B-16P-06, P10B-17, and accepted P10B-18A are Baseline. Parent P10B-18 remains
+Partial; P10B-18B and P10B-18C remain Planned. P10B-18B is the next focused product task, and
+P10B-16P-05B remains Planned after P10B-18C. The accepted audit and frozen ceiling diagnosis are in
+[`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
 ## 2. Storefront and commerce ownership
 
@@ -370,7 +372,8 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 ## 13. Locked implementation sequence
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
-P10B-16P-02 is **Baseline**. P10B-16P-05B and P10B-18 are **Planned**.
+P10B-16P-02 and accepted P10B-18A are **Baseline**. Parent P10B-18 is **Partial**; P10B-18B,
+P10B-18C, and P10B-16P-05B are **Planned**.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -379,37 +382,41 @@ The P10B-16P-01 → P10B-16P-02A → P10B-16P-02B → P10B-16P-03 → P10B-16P-0
 P10B-16P-05A → P10B-16P-06 package is a mandatory sequential convergence between P10B-16 and
 P10B-17. It
 supplements the locked P10B-01 through P10B-18 inventory without renumbering or weakening those
-tasks. P10B-16P-05B is a final historical-cleanup slice after P10B-18, not a phase-closure shortcut.
+tasks. P10B-16P-05B is a final historical-cleanup slice after P10B-18C, not a phase-closure
+shortcut.
 
-| Task                                                               | Locked outcome                                                                                                                                                                                                                | Dependency                                                           |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| P10B-01 — Commercial design grammar and compatibility vocabulary   | Make structural, visual, responsive, narrative, and compatibility vocabulary executable through existing canonical authorities.                                                                                               | P10A closure; this architecture lock; historical audit/specification |
-| P10B-02 — Parametric BrandSystem / Design DNA                      | Make merchant-wide typography, palette, spacing, layout, surfaces, controls, radius, elevation, density, and media posture bounded, coherent, and AI-selectable.                                                              | P10B-01                                                              |
-| P10B-03 — Component anatomy and meaningful variant contract        | Give every commercial family explicit anatomy, structural variants, bounded parameters, responsive transformations, and compatibility metadata.                                                                               | P10B-01                                                              |
-| P10B-04 — Responsive image and art-direction authority             | Add approved focal point, safe area, crop, ratio, overlay, derivative, and responsive treatment authority without modifying canonical product media.                                                                          | P10B-02 and P10B-03                                                  |
-| P10B-05 — Veskify site-map and page-family authority               | Create and validate complete page sets, navigation, routes, and registered page families through `PageBlueprint` and `StorefrontSnapshot`.                                                                                    | P10B-01                                                              |
-| P10B-06 — Commercial shared-frame families                         | Deliver materially distinct coordinated header/navigation/announcement/mobile/footer systems.                                                                                                                                 | P10B-02, P10B-03, P10B-05; consume P10B-04 where media applies       |
-| P10B-07 — Hero, editorial, campaign and proof families             | Deliver meaningful first-impression, storytelling, campaign, service, and approved-proof compositions.                                                                                                                        | P10B-02 through P10B-05                                              |
-| P10B-08 — Canonical product-card and merchandising family          | Consolidate duplicated card authority into one protected reusable commercial product-card system.                                                                                                                             | P10B-02 through P10B-04                                              |
-| P10B-09 — Commercial homepage profile library                      | Deliver at least six materially different homepage profiles/narrative flows.                                                                                                                                                  | P10B-05 through P10B-08                                              |
-| P10B-10 — Commercial collection and search profiles                | Deliver at least four discovery, comparison, campaign, and dense/search profiles.                                                                                                                                             | P10B-04 through P10B-06 and P10B-08                                  |
-| P10B-11 — Commercial PDP profile library                           | Deliver at least four standard, high-consideration, gallery-led, and variant-led experiences.                                                                                                                                 | P10B-03 through P10B-06 and P10B-08                                  |
-| P10B-12 — Content and support page families                        | Generate approved-fact About, Contact/locations, FAQ, shipping/returns, policy, campaign/editorial, and generic content pages.                                                                                                | P10B-03 through P10B-07                                              |
-| P10B-13 — Commerce utility presentation pages                      | Deliver search/no-results, cart, checkout, empty, error, and 404 presentation while Vesko retains operations.                                                                                                                 | P10B-03, P10B-05, P10B-06, P10B-08                                   |
-| P10B-14 — Premium Editorial complete-storefront vertical slice     | Prove one commercially credible complete multi-page storefront before broad synthesis/direction expansion.                                                                                                                    | Minimum accepted capability from P10B-02 through P10B-13             |
-| P10B-15 — Bounded storefront synthesis and narrative engine        | Generate coherent stores by selecting compatible Design DNA, page set, profiles, variants, parameters, assets, and narrative roles.                                                                                           | P10B-14 and sufficient implemented family/profile authority          |
-| P10B-16 — Coordinated directions and diversity control             | Make all three directions coordinated constraint packages and add deterministic duplicate/near-duplicate prevention.                                                                                                          | P10B-15                                                              |
-| P10B-16P-01 — Dynamic commerce route archetype authority           | Separate static pages, maintained collection/search and PDP archetypes, and concrete route inventory inside one `StorefrontSnapshot`.                                                                                         | P10B-16 and current P10B-05/P10B-10/P10B-11 authority                |
-| P10B-16P-02 — Prompted design-plan contract                        | Establish strict transient prompted intent, then compile it deterministically against refreshed current authority.                                                                                                            | P10B-16P-01                                                          |
-| P10B-16P-02A — Prompted Storefront Design Intent V2                | Project provider-safe capability and accept strict non-executable preference-rich intent without pre-provider materialization.                                                                                                | P10B-16P-01                                                          |
-| P10B-16P-02B — Deterministic design-intent compiler                | Resolve V2 preferences into exact registered compatible authority and invoke the existing canonical synthesis/proposal path.                                                                                                  | P10B-16P-02A                                                         |
-| P10B-16P-03 — Storefront Studio generation journey                 | Complete the separately governed Storefront Studio prompt-to-review generation journey without changing canonical authority.                                                                                                  | P10B-16P-02B                                                         |
-| P10B-16P-04 — Live V2 acceptance and bridge disposition            | Prove the prompt-driven V2 path with separately authorized real-provider evidence and classify P10B-16L as Deprecated compatibility-only.                                                                                     | P10B-16P-03                                                          |
-| P10B-16P-05A — Active production-path and compiler rationalisation | Establish one normal semantic initial-generation route/composition and one coordinator/resolver/exact-decision/executor chain; remove superseded active generation paths while retaining required compatibility and evidence. | P10B-16P-04                                                          |
-| P10B-16P-06 — Canonical search query/results adapter               | Execute the persisted `/search` route and selected registered presentation from validated transient query/results derived from current canonical commerce.                                                                    | P10B-16P-05A and current dynamic-search/profile/utility authority    |
-| P10B-17 — Responsive, accessibility and performance closure        | Preserve deliberate hierarchy and usability across four widths, EN/FI, keyboard/accessibility, and bounded performance budgets.                                                                                               | P10B-16P-06 and implemented commercial families/profiles/directions  |
-| P10B-18 — Commercial quality and scale gate                        | Prove repeated generation of publishable, premium, materially different complete storefronts.                                                                                                                                 | P10B-17 and every prior P10B task                                    |
-| P10B-16P-05B — Final historical acceptance cleanup                 | Remove or archive retained P10B-16L/P9/P04 acceptance scaffolding only after all migration, replay, and quality-scale evidence consumers are clear.                                                                           | P10B-16P-05A and P10B-18                                             |
+| Task                                                                | Locked outcome                                                                                                                                                                                                                | Dependency                                                           |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| P10B-01 — Commercial design grammar and compatibility vocabulary    | Make structural, visual, responsive, narrative, and compatibility vocabulary executable through existing canonical authorities.                                                                                               | P10A closure; this architecture lock; historical audit/specification |
+| P10B-02 — Parametric BrandSystem / Design DNA                       | Make merchant-wide typography, palette, spacing, layout, surfaces, controls, radius, elevation, density, and media posture bounded, coherent, and AI-selectable.                                                              | P10B-01                                                              |
+| P10B-03 — Component anatomy and meaningful variant contract         | Give every commercial family explicit anatomy, structural variants, bounded parameters, responsive transformations, and compatibility metadata.                                                                               | P10B-01                                                              |
+| P10B-04 — Responsive image and art-direction authority              | Add approved focal point, safe area, crop, ratio, overlay, derivative, and responsive treatment authority without modifying canonical product media.                                                                          | P10B-02 and P10B-03                                                  |
+| P10B-05 — Veskify site-map and page-family authority                | Create and validate complete page sets, navigation, routes, and registered page families through `PageBlueprint` and `StorefrontSnapshot`.                                                                                    | P10B-01                                                              |
+| P10B-06 — Commercial shared-frame families                          | Deliver materially distinct coordinated header/navigation/announcement/mobile/footer systems.                                                                                                                                 | P10B-02, P10B-03, P10B-05; consume P10B-04 where media applies       |
+| P10B-07 — Hero, editorial, campaign and proof families              | Deliver meaningful first-impression, storytelling, campaign, service, and approved-proof compositions.                                                                                                                        | P10B-02 through P10B-05                                              |
+| P10B-08 — Canonical product-card and merchandising family           | Consolidate duplicated card authority into one protected reusable commercial product-card system.                                                                                                                             | P10B-02 through P10B-04                                              |
+| P10B-09 — Commercial homepage profile library                       | Deliver at least six materially different homepage profiles/narrative flows.                                                                                                                                                  | P10B-05 through P10B-08                                              |
+| P10B-10 — Commercial collection and search profiles                 | Deliver at least four discovery, comparison, campaign, and dense/search profiles.                                                                                                                                             | P10B-04 through P10B-06 and P10B-08                                  |
+| P10B-11 — Commercial PDP profile library                            | Deliver at least four standard, high-consideration, gallery-led, and variant-led experiences.                                                                                                                                 | P10B-03 through P10B-06 and P10B-08                                  |
+| P10B-12 — Content and support page families                         | Generate approved-fact About, Contact/locations, FAQ, shipping/returns, policy, campaign/editorial, and generic content pages.                                                                                                | P10B-03 through P10B-07                                              |
+| P10B-13 — Commerce utility presentation pages                       | Deliver search/no-results, cart, checkout, empty, error, and 404 presentation while Vesko retains operations.                                                                                                                 | P10B-03, P10B-05, P10B-06, P10B-08                                   |
+| P10B-14 — Premium Editorial complete-storefront vertical slice      | Prove one commercially credible complete multi-page storefront before broad synthesis/direction expansion.                                                                                                                    | Minimum accepted capability from P10B-02 through P10B-13             |
+| P10B-15 — Bounded storefront synthesis and narrative engine         | Generate coherent stores by selecting compatible Design DNA, page set, profiles, variants, parameters, assets, and narrative roles.                                                                                           | P10B-14 and sufficient implemented family/profile authority          |
+| P10B-16 — Coordinated directions and diversity control              | Make all three directions coordinated constraint packages and add deterministic duplicate/near-duplicate prevention.                                                                                                          | P10B-15                                                              |
+| P10B-16P-01 — Dynamic commerce route archetype authority            | Separate static pages, maintained collection/search and PDP archetypes, and concrete route inventory inside one `StorefrontSnapshot`.                                                                                         | P10B-16 and current P10B-05/P10B-10/P10B-11 authority                |
+| P10B-16P-02 — Prompted design-plan contract                         | Establish strict transient prompted intent, then compile it deterministically against refreshed current authority.                                                                                                            | P10B-16P-01                                                          |
+| P10B-16P-02A — Prompted Storefront Design Intent V2                 | Project provider-safe capability and accept strict non-executable preference-rich intent without pre-provider materialization.                                                                                                | P10B-16P-01                                                          |
+| P10B-16P-02B — Deterministic design-intent compiler                 | Resolve V2 preferences into exact registered compatible authority and invoke the existing canonical synthesis/proposal path.                                                                                                  | P10B-16P-02A                                                         |
+| P10B-16P-03 — Storefront Studio generation journey                  | Complete the separately governed Storefront Studio prompt-to-review generation journey without changing canonical authority.                                                                                                  | P10B-16P-02B                                                         |
+| P10B-16P-04 — Live V2 acceptance and bridge disposition             | Prove the prompt-driven V2 path with separately authorized real-provider evidence and classify P10B-16L as Deprecated compatibility-only.                                                                                     | P10B-16P-03                                                          |
+| P10B-16P-05A — Active production-path and compiler rationalisation  | Establish one normal semantic initial-generation route/composition and one coordinator/resolver/exact-decision/executor chain; remove superseded active generation paths while retaining required compatibility and evidence. | P10B-16P-04                                                          |
+| P10B-16P-06 — Canonical search query/results adapter                | Execute the persisted `/search` route and selected registered presentation from validated transient query/results derived from current canonical commerce.                                                                    | P10B-16P-05A and current dynamic-search/profile/utility authority    |
+| P10B-17 — Responsive, accessibility and performance closure         | Preserve deliberate hierarchy and usability across four widths, EN/FI, keyboard/accessibility, and bounded performance budgets.                                                                                               | P10B-16P-06 and implemented commercial families/profiles/directions  |
+| P10B-18 — Commercial quality and scale gate                         | Prove repeated generation of publishable, premium, materially different complete storefronts through the accepted audit, source-authority improvement and final 100+ gate.                                                    | P10B-17 and every prior P10B task                                    |
+| P10B-18A — Commercial authority audit and quality-ceiling diagnosis | Audit current registered reachability, compatibility, materializer/renderer consumption and commercial output; freeze exact improvement ownership before redesign.                                                            | P10B-17 and current registered authority                             |
+| P10B-18B — Commercial source-authority quality upgrade              | Implement and evidence the accepted coherent source-authority, compatibility, consumer and evaluation packages against the frozen audit baseline.                                                                             | Accepted P10B-18A                                                    |
+| P10B-18C — 100+ commercial quality and diversity gate               | Run the final deterministic breadth/diversity analysis and fingerprint-stratified retained human acceptance on integrated P10B-18B authority.                                                                                 | Accepted and integrated P10B-18B packages                            |
+| P10B-16P-05B — Final historical acceptance cleanup                  | Remove or archive retained P10B-16L/P9/P04 acceptance scaffolding only after all migration, replay, and quality-scale evidence consumers are clear.                                                                           | P10B-16P-05A and P10B-18C                                            |
 
 ## 14. Concrete completion contract by task
 
@@ -731,9 +738,9 @@ keep distinct approved facts where their reading structure is shared.
 - Depend on P10B-16P-03.
 - **Status:** **Baseline**. Completed 15 August 2026; see
   [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-  P10B remains **Partial**; P10B-17 and P10B-18 remain **Planned**. This acceptance does not claim
-  production authentication, Vesko staging, production readiness, executable search, or
-  publication.
+  At that completion boundary P10B remained **Partial**, and P10B-17/P10B-18 were **Planned**. This
+  acceptance does not claim production authentication, Vesko staging, production readiness,
+  executable search, or publication.
 
 ### P10B-16P-05A — Active production-path and compiler rationalisation
 
@@ -752,12 +759,13 @@ keep distinct approved facts where their reading structure is shared.
   historical production-disabled evidence. Retain only proven publication/migration/regression
   fixtures and historical records with current consumers.
 - Retain the production-disabled P10B-16P-04 Aurum composition and A/B/C deterministic replay
-  through P10B-18. It injects into the canonical handler and never becomes normal provider
+  through P10B-18C. It injects into the canonical handler and never becomes normal provider
   selection.
 - **Status:** **Baseline**. Behavior-preserving architecture, replay, lifecycle, dynamic-route,
   migration, publication-separation, and protected commerce/media evidence pass with zero provider,
   Vesko, or publication calls. At P10B-16P-05A completion, executable search still failed closed;
-  P10B-16P-06 subsequently closes that standalone runtime gap. P10B-17/P10B-18 remain Planned.
+  P10B-16P-06 subsequently closes that standalone runtime gap. At P10B-16P-05A completion,
+  P10B-17/P10B-18 were Planned.
 
 ### P10B-16P-06 — Canonical search query/results adapter
 
@@ -782,15 +790,16 @@ keep distinct approved facts where their reading structure is shared.
 
 ### P10B-16P-05B — Final historical acceptance cleanup
 
-- After P10B-18, search every retained P10B-16L, P9/Lumo, and P04 acceptance artifact for active,
+- After P10B-18C, search every retained P10B-16L, P9/Lumo, and P04 acceptance artifact for active,
   migration, publication, replay, and evidence consumers.
 - Remove or archive only unconsumed scaffolding while retaining historical documentation and every
   fixture/decoder required by valid snapshots, compiled publications, or accepted evidence.
-- **Status:** **Planned**. This cleanup cannot start before P10B-18 and cannot weaken P10B-16P-04 or
-  P10B-18 evidence.
+- **Status:** **Planned**. This cleanup cannot start before P10B-18C and cannot weaken P10B-16P-04,
+  P10B-18A, P10B-18B or P10B-18C evidence.
 
-P10B-17 is Baseline. P10B remains Partial; P10B-18 is the next focused product task and
-P10B-16P-05B remains Planned after P10B-18.
+P10B-17 and accepted P10B-18A are Baseline. Parent P10B-18 and P10B remain Partial; P10B-18B is the
+next focused product task, P10B-18C remains Planned, and P10B-16P-05B remains Planned after
+P10B-18C.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -804,10 +813,12 @@ P10B-16P-05B remains Planned after P10B-18.
   the four widths and EN/FI without another breakpoint or renderer authority. Bounded geometry,
   keyboard/focus/semantic/contrast, touch-target, reduced-motion, media/search/render/build-budget,
   lifecycle, protected commerce/media, browser, and retained human visual evidence pass. This does
-  not claim P10B-18 designer-grade quality/scale, Vesko staging, or production readiness.
+  not claim P10B-18B source-authority improvement, P10B-18C designer-grade quality/scale, Vesko
+  staging, or production readiness.
 
 ### P10B-18 — Commercial quality and scale gate
 
+- **Status:** **Partial**. P10B-18A is Baseline; P10B-18B and P10B-18C remain Planned.
 - Deterministically generate at least 100 complete bounded storefront configurations across
   representative catalogue, evidence, asset, locale, page-set, and direction contexts.
 - Prove valid complete snapshots, protected-commerce parity, no exact duplicates, thresholded
@@ -816,6 +827,41 @@ P10B-16P-05B remains Planned after P10B-18.
   widths; automated checks or review of only one polished store cannot close the phase.
 - Close only when both commercial quality and meaningful diversity pass. P10B-18 does not claim
   P10C merchant editing, Vesko staging, or production readiness.
+
+### P10B-18A — Commercial authority audit and quality-ceiling diagnosis
+
+- Inventory and distinguish registry identity, compatibility, exact selection, consumed
+  materializer authority, renderer-visible topology and commercial visual quality.
+- Reproduce 72 deterministic cases across representative catalogue/evidence/asset/direction
+  contexts, then retain exact full-resolution home/collection/PDP evidence for 18 selected stores at
+  375 and 1440 px.
+- Attribute each ceiling to fixture/source weakness, compatibility, materializer/renderer
+  consumption or evaluation authority while preserving canonical commerce/media and making zero
+  provider, Vesko or publication call.
+- **Status:** **Baseline**. Accepted by the product owner on 16 August 2026 under
+  [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md). The 72-case matrix,
+  18-store/108-capture review, exact collapse witnesses and six conditional packages are frozen as
+  the current diagnosis. This does not implement or accept P10B-18B/P10B-18C.
+
+### P10B-18B — Commercial source-authority quality upgrade
+
+- Implement the accepted coherent packages in dependency order through existing BrandSystem,
+  PageBlueprint, component, compatibility, asset and renderer authorities.
+- Give every changed package focused positive/fail-closed evidence and exact multi-surface browser
+  and retained human comparison against the frozen P10B-18A baseline.
+- Preserve one `StorefrontSnapshot`, existing renderers and protected commerce/media; no package
+  may claim quality from contract or registry changes alone.
+- **Status:** **Planned**. No P10B-18B package or resulting quality improvement is claimed by the
+  accepted audit.
+
+### P10B-18C — 100+ commercial quality and diversity gate
+
+- Run at least 100 complete bounded configurations only after accepted P10B-18B packages integrate.
+- Apply deterministic validity, protected-state, exact/near-duplicate and structural-distribution
+  gates, then retain fingerprint-stratified four-width human commercial review.
+- Close parent P10B-18 and P10B only after explicit acceptance of both meaningful diversity and
+  designer-grade output; registry/configuration counts or P10B-18A evidence alone cannot close it.
+- **Status:** **Planned**.
 
 ## 15. Dependency and parallelization graph
 
@@ -865,7 +911,9 @@ P10B-02…13 minimum accepted capability
   → P10B-16P-05A active path/compiler rationalisation
   → P10B-16P-06 canonical search query/results adapter
   → P10B-17 responsive/a11y/performance
-  → P10B-18 commercial quality and scale
+  → P10B-18A commercial-authority audit (Baseline / accepted)
+  → P10B-18B commercial source-authority quality upgrade
+  → P10B-18C 100+ commercial quality and diversity gate
   → P10B-16P-05B final historical acceptance cleanup
 ```
 
@@ -896,7 +944,8 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline under the
-disjoint ownership constraints in section 15. P10B-16P-02 is Baseline. P10B-18 is the next focused
-product task; P10B-16P-05B remains Planned after P10B-18. No later implementation task is complete
-merely because this architecture is approved or the completed foundations passed.
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, and accepted P10B-18A are
+Baseline under the disjoint ownership constraints in section 15. P10B-16P-02 is Baseline. Parent
+P10B-18 remains Partial; P10B-18B is the next focused product task, P10B-18C remains Planned, and
+P10B-16P-05B remains Planned after P10B-18C. No later implementation task is complete merely
+because this architecture or the P10B-18A audit is accepted.

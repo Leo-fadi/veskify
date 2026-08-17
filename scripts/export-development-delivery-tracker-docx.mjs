@@ -140,7 +140,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 16 August 2026, P10B-17 responsive, accessibility and performance closure",
+      "Delivery status baseline: 16 August 2026, accepted P10B-18A commercial-authority audit",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

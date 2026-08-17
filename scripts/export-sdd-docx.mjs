@@ -234,7 +234,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 16 August 2026",
-      "P10B-17 responsive, accessibility and performance closure",
+      "Accepted P10B-18A commercial-authority audit",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

@@ -86,8 +86,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline includes the P10B-17 responsive, accessibility and performance
-closure on 16 August 2026. Phase 9 is
+The verified v1.3.0 source baseline includes the accepted P10B-18A commercial-authority audit on
+16 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
 BrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction
@@ -100,8 +100,9 @@ P10B-16 coordinated direction/diversity control, P10B-16P-01 dynamic commerce ro
 P10B-16P-02A/P10B-16P-02B prompted Design Intent V2 authority and deterministic compilation, and
 P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B-16P-05A
 active-path/compiler rationalisation, P10B-16P-06 canonical search query/results authority, and
-P10B-17 responsive/accessibility/performance closure are **Baseline**. P10B-16P-02 is **Baseline**;
-P10B-16P-05B and P10B-18 remain **Planned**.
+P10B-17 responsive/accessibility/performance closure and P10B-18A commercial-authority audit are
+**Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18 remains **Partial**; P10B-18B and
+P10B-18C remain **Planned**. P10B-16P-05B remains **Planned** after P10B-18C.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -127,8 +128,8 @@ materialization boundary. The active P10B-16L executable-intent routes/providers
 removed; its historical evidence and required neutral migration/safety fixtures remain Deprecated
 compatibility-only. P9/Lumo live generation is isolated historical/deprecated authority, while its
 proven publication/migration fixtures remain. The P10B-16P-04 acceptance composition remains
-production-disabled through P10B-18. P10B-16P-05B owns final consumer-verified cleanup after
-P10B-18.
+production-disabled through P10B-18C. P10B-16P-05B owns final consumer-verified cleanup after
+P10B-18C.
 
 P10B-16P-06 keeps the selected `/search` presentation in `StorefrontSnapshot` while deriving query,
 filters, sort, page, result IDs, and result count transiently through one provider-neutral search
@@ -143,8 +144,10 @@ renderers at 375, 768, 1024, and 1440 px in EN/FI. Its Baseline evidence covers 
 family geometry, keyboard/focus/semantic/contrast behavior, touch and reduced-motion behavior,
 bounded rendering/search/media/build budgets, lifecycle parity, protected commerce/media, browser
 evidence, and representative human visual review. It adds no breakpoint registry or renderer and
-does not claim P10B-18 designer-grade quality/100+ scale, Vesko staging, production authentication,
-or production performance. P10B-18 is the next focused product task.
+does not claim P10B-18B source-authority improvement, P10B-18C designer-grade quality/100+ scale,
+Vesko staging, production authentication, or production performance. The accepted P10B-18A audit
+freezes the current commercial ceiling and six conditional improvement packages; P10B-18B is the
+next focused product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -284,8 +287,9 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline;
-P10B-16P-02 is Baseline; P10B-16P-05B and P10B-18 remain Planned. Their ownership
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, and P10B-18A are
+Baseline; P10B-16P-02 is Baseline. Parent P10B-18 remains Partial; P10B-18B and P10B-18C remain
+Planned; P10B-16P-05B remains Planned after P10B-18C. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
