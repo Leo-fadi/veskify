@@ -446,7 +446,12 @@ describe("P10B-04 responsive image and art-direction authority", () => {
       role: "heroDesktop",
       revision: "asset-r1",
       materialFingerprint: "asset-fp-1",
-      asset: { id: "asset_hero", url: "/hero.jpg", decorative: false, alt: { en: "Hero" } },
+      asset: {
+        id: "asset_hero",
+        url: "/assets/hero.jpg",
+        decorative: false,
+        alt: { en: "Hero" },
+      },
     };
     const first = migrateApprovedPresentationArtDirection({
       presentation,
@@ -564,6 +569,190 @@ describe("P10B-04 responsive image and art-direction authority", () => {
     ).toMatchObject({
       provenanceKind: "sourceDiscovered",
       sourceOwnerId: "source_hero",
+    });
+  });
+  it("37 resolves responsive source and treatment fallbacks independently", () => {
+    const input = material();
+    const tabletTreatment = input.responsiveTreatments.find(
+      ({ breakpoint }) => breakpoint === "tablet",
+    );
+    if (!tabletTreatment) throw new Error("Missing tablet treatment fixture.");
+    const value = createResponsiveImageAuthority({
+      ...input,
+      contractVersion: "1.1.0",
+      responsiveTreatments: [tabletTreatment],
+      responsiveSources: [
+        {
+          breakpoint: "mobile",
+          source: {
+            assetId: "asset_hero_mobile",
+            role: "heroMobile",
+            revision: "asset-mobile-r1",
+            materialFingerprint: "asset-mobile-fp-1",
+            provenanceKind: "sourceDiscovered",
+            sourceOwnerId: "source_mobile",
+          },
+        },
+      ],
+    });
+    expect(resolveResponsiveImage(value, "mobile")).toMatchObject({
+      selectedBreakpoint: "tablet",
+      source: { assetId: "asset_hero_mobile", sourceOwnerId: "source_mobile" },
+    });
+    expect(resolveResponsiveImage(value, "wide").source.assetId).toBe("asset_hero");
+  });
+  it("38 upgrades existing authority with an exact responsive source lineage", () => {
+    const placement: ApprovedAssetPlacementOperation = {
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: "page_home",
+      componentId: "section_hero",
+      componentType: "homepageHero",
+      assetSlotId: "heroMedia",
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      assetRevision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      sourceReferenceId: "source_hero",
+      required: false,
+    };
+    const presentation = approvedAssetPresentationSchema.parse({
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      revision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      asset: {
+        id: "asset_hero",
+        url: "/assets/hero.jpg",
+        decorative: false,
+        alt: { en: "Hero" },
+      },
+      artDirection: authority(),
+      responsiveSources: [
+        {
+          breakpoints: ["mobile"],
+          assetId: "asset_hero_mobile",
+          role: "heroMobile",
+          revision: "asset-mobile-r1",
+          materialFingerprint: "asset-mobile-fp-1",
+          asset: {
+            id: "asset_hero_mobile",
+            url: "/assets/hero-mobile.jpg",
+            decorative: false,
+            alt: { en: "Mobile hero" },
+          },
+        },
+      ],
+    });
+    const migrated = migrateApprovedPresentationArtDirection({
+      presentation,
+      placement,
+      component: homepageHeroDefinition,
+      dna,
+      provenanceKind: "sourceDiscovered",
+      approvedResponsiveSourceLineages: [
+        {
+          assetId: "asset_hero_mobile",
+          provenanceKind: "merchantProvided",
+          sourceOwnerId: "source_mobile",
+        },
+      ],
+    });
+    expect(migrated.artDirection).toMatchObject({
+      contractVersion: "1.1.0",
+      responsiveSources: [
+        {
+          breakpoint: "mobile",
+          source: {
+            assetId: "asset_hero_mobile",
+            provenanceKind: "merchantProvided",
+            sourceOwnerId: "source_mobile",
+          },
+        },
+      ],
+    });
+  });
+  it("39 generates safe-area-compatible treatments", () => {
+    const placement: ApprovedAssetPlacementOperation = {
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: "page_home",
+      componentId: "section_hero",
+      componentType: "homepageHero",
+      assetSlotId: "heroMedia",
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      assetRevision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      sourceReferenceId: "source_hero",
+      required: false,
+    };
+    const presentation: ApprovedAssetPresentation = {
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      revision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      asset: { id: "asset_hero", url: "/hero.jpg", decorative: false, alt: { en: "Hero" } },
+    };
+    const migrated = migrateApprovedPresentationArtDirection({
+      presentation,
+      placement,
+      component: homepageHeroDefinition,
+      dna,
+      provenanceKind: "sourceDiscovered",
+      artDirectionPosture: "immersive",
+      approvedSafeArea: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 },
+    });
+    expect(migrated.artDirection?.sourceTreatment.crop.mode).toBe("contain");
+    expect(() =>
+      validateResponsiveImageAuthority({
+        authority: migrated.artDirection,
+        component: homepageHeroDefinition,
+        dna,
+      }),
+    ).not.toThrow();
+  });
+  it("40 retains approved crop identity and exact aspect-ratio lineage", () => {
+    const placement: ApprovedAssetPlacementOperation = {
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: "page_home",
+      componentId: "section_hero",
+      componentType: "homepageHero",
+      assetSlotId: "heroMedia",
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      assetRevision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      sourceReferenceId: "source_hero",
+      required: false,
+    };
+    const migrated = migrateApprovedPresentationArtDirection({
+      presentation: {
+        assetId: "asset_hero",
+        role: "heroDesktop",
+        revision: "asset-r1",
+        materialFingerprint: "asset-fp-1",
+        asset: { id: "asset_hero", url: "/hero.jpg", decorative: false, alt: { en: "Hero" } },
+      },
+      placement,
+      component: homepageHeroDefinition,
+      dna,
+      provenanceKind: "sourceDiscovered",
+      approvedResponsiveCrops: [
+        {
+          cropId: "crop_mobile",
+          breakpoint: "mobile",
+          aspectRatio: "4:5",
+          focalPoint: { x: 0.4, y: 0.3 },
+        },
+      ],
+    });
+    expect(
+      migrated.artDirection?.responsiveTreatments.find(({ breakpoint }) => breakpoint === "mobile")
+        ?.treatment,
+    ).toMatchObject({
+      ratio: "portrait",
+      approvedCropId: "crop_mobile",
+      approvedAspectRatio: "4:5",
+      focalPoint: { x: 0.4, y: 0.3 },
     });
   });
 });

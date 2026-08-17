@@ -1,14 +1,9 @@
 import type { ComponentInstanceV2 } from "@/domain/component-platform";
-import { assetRefSchema, type AssetRef } from "@/domain/shared";
+import { assetRefSchema } from "@/domain/shared";
+import type { ApprovedAssetPresentation as StorefrontApprovedAssetPresentation } from "@/domain/storefront";
 import type { ApprovedGenerationAssetContext } from "@/application/ai-storefront-generation";
 
-export type ApprovedAssetPresentation = Readonly<{
-  assetId: string;
-  role: string;
-  revision: string;
-  materialFingerprint: string;
-  asset: AssetRef;
-}>;
+export type ApprovedAssetPresentation = StorefrontApprovedAssetPresentation;
 
 export class ApprovedBrandStoryMediaError extends Error {
   constructor(message: string) {

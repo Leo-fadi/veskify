@@ -804,6 +804,11 @@ P10B-16P-05B remains Planned after P10B-18C.
 - **Done:** Exact purpose-affine asset selection, explicit reuse limits, paired responsive hero
   sources and crops, one registered shared-header logo consumer, same-72-case regression and 13
   retained captures preserve snapshot, compiler, renderer and protected product-media truth.
+- **Review closure:** The one automatic review was resolved in one focused pass: follow-up reuse
+  ignores replaced homepage/header placements; paired sources enforce independent reuse and exact
+  current provenance; primaries require complete viewport coverage; art direction is keyed by exact
+  placement, upgrades existing authority, preserves approved crop identity/ratio and safe areas;
+  source/treatment fallback stays independent; collection campaign affinity honors collection IDs.
 - **Boundary:** This is not complete-storefront commercial visual acceptance. Excessive whitespace,
   generic homepage composition, weak merchandising rhythm and insufficient section hierarchy remain
   owned by P10B-18B-02/03/04/05.

@@ -59,8 +59,26 @@ export const responsiveImageTreatmentSchema = z
     crop: responsiveImageCropSchema,
     focalPoint: normalizedPointSchema,
     overlay: responsiveImageOverlaySchema,
+    approvedCropId: idSchema.optional(),
+    approvedAspectRatio: z
+      .string()
+      .trim()
+      .regex(/^\d+:\d+$/)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((treatment, context) => {
+    if (
+      (treatment.approvedCropId === undefined) !==
+      (treatment.approvedAspectRatio === undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedCropId"],
+        message: "Approved crop identity and aspect ratio must be retained together.",
+      });
+    }
+  });
 
 export const responsiveImageSourceLineageSchema = z
   .object({

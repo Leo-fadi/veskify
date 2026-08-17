@@ -208,7 +208,20 @@ export const wholeStorefrontApprovedAssetRoleSelectionSchema = z
     affinity: approvedAssetAffinitySchema.optional(),
     responsiveSourceAssetIds: z.array(idSchema).max(4).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((selection, context) => {
+    const responsiveSourceIds = selection.responsiveSourceAssetIds ?? [];
+    if (
+      new Set(responsiveSourceIds).size !== responsiveSourceIds.length ||
+      responsiveSourceIds.includes(selection.assetId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["responsiveSourceAssetIds"],
+        message: "Responsive source selections must be distinct from the primary asset and unique.",
+      });
+    }
+  });
 
 export const wholeStorefrontApprovedAssetRoleSelectionsSchema = z
   .array(wholeStorefrontApprovedAssetRoleSelectionSchema)

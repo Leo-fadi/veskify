@@ -1409,6 +1409,18 @@ fingerprint, provenance-preserving reference, breakpoint coverage, focal point, 
 historical `1.0.0` records remain interpretable. The renderer distinguishes source-and-treatment,
 source-only, treatment-only, and no-change outcomes.
 
+The single automatic review closed eleven bounded authority gaps before merge. Follow-up planning
+does not count homepage/header placements that the new plan replaces. Viewport-limited assets
+cannot become universal primaries unless an approved responsive pair completes coverage. Paired
+sources enforce their own reuse limits and are counted again by final-plan validation; every source
+is checked against the current approved role, revision, material fingerprint, source group,
+viewport and renderer presentation. Materialization selects presentations by exact placement and
+preserves each source's own provenance. Source fallback is independent from treatment fallback;
+approved crop ID and exact aspect ratio survive as optional `1.1.0` treatment lineage; safe areas
+produce containing geometry; and existing art direction is upgraded when newly selected responsive
+sources are absent. Known collection affinity now applies to editorial campaign assets as well as
+collection images.
+
 The shared registered header exposes one optional `brandLogo` slot. The same approved responsive
 image renderer is used in editor, preview, and compiled projections; the home link retains its
 accessible merchant name and text identity remains the no-asset fallback.

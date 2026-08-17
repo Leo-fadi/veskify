@@ -38,6 +38,7 @@ import {
   type WholeStorefrontPageBlueprintSelectionOverride,
 } from "@/application/whole-storefront-generation-plan";
 import { veskifyComponentCapabilityManifest } from "@/components/registry";
+import { homepageCommerceBridgeComponentNames } from "@/components/registry/homepage-commerce-bridge";
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
 import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import {
@@ -806,10 +807,18 @@ function resolveSemanticApprovedAssetSelections(input: {
   );
   const reuseLedger = new Map<string, number>();
   const currentSections = [
-    ...input.currentRequestInput.draft.pages.flatMap((page) => page.sections),
+    ...input.currentRequestInput.draft.pages.flatMap((page) =>
+      page.type === "home"
+        ? page.sections.filter(
+            ({ component }) =>
+              !homepageCommerceBridgeComponentNames.some(
+                (managedComponent) => managedComponent === component,
+              ),
+          )
+        : page.sections,
+    ),
     ...(input.currentRequestInput.draft.sharedFrame
       ? [
-          input.currentRequestInput.draft.sharedFrame.header,
           input.currentRequestInput.draft.sharedFrame.footer,
           ...(input.currentRequestInput.draft.sharedFrame.announcement
             ? [input.currentRequestInput.draft.sharedFrame.announcement]

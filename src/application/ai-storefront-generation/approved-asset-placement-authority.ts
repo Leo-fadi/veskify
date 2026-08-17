@@ -123,9 +123,8 @@ function affinityFor(
   const compatibleRole = request.compatibleRoles?.includes(asset.role) ?? false;
   if (!exactRole && !compatibleRole) return null;
   if (
-    request.collectionId &&
     authority.collectionIds.length > 0 &&
-    !authority.collectionIds.includes(request.collectionId)
+    (!request.collectionId || !authority.collectionIds.includes(request.collectionId))
   ) {
     return null;
   }
@@ -148,6 +147,63 @@ const affinityOrder: readonly ApprovedAssetAffinity[] = [
   "compatible-fallback",
 ];
 
+const allResponsiveViewports = ["mobile", "tablet", "desktop", "wide"] as const;
+
+function responsivePairFor(
+  assets: readonly ApprovedGenerationAsset[],
+  asset: ApprovedGenerationAsset,
+  request: ApprovedAssetPlacementRequest,
+  reuseLedger: ApprovedAssetReuseLedger,
+): ApprovedGenerationAsset | undefined {
+  const authority = approvedAssetPlacementAuthority(asset);
+  const groupId = authority.responsiveSourceGroupId;
+  if (asset.role !== "heroDesktop" || !groupId) return undefined;
+  return assets
+    .filter((candidate) => {
+      const candidateAuthority = approvedAssetPlacementAuthority(candidate);
+      const reuseCount = reuseLedger.get(candidate.assetId) ?? 0;
+      return (
+        candidate.role === "heroMobile" &&
+        candidateAuthority.responsiveSourceGroupId === groupId &&
+        candidateAuthority.viewportApplicability.includes("mobile") &&
+        affinityFor(candidate, {
+          ...request,
+          acceptedRoles: ["heroMobile"],
+          compatibleRoles: [],
+          viewport: "mobile",
+        }) !== null &&
+        reuseCount < reuseLimit[candidateAuthority.reusePolicy]
+      );
+    })
+    .sort(
+      (left, right) =>
+        approvedAssetPlacementAuthority(right).priority -
+          approvedAssetPlacementAuthority(left).priority ||
+        left.assetId.localeCompare(right.assetId),
+    )[0];
+}
+
+function hasCompletePrimaryCoverage(
+  assets: readonly ApprovedGenerationAsset[],
+  asset: ApprovedGenerationAsset,
+  request: ApprovedAssetPlacementRequest,
+  reuseLedger: ApprovedAssetReuseLedger,
+): boolean {
+  const authority = approvedAssetPlacementAuthority(asset);
+  if (
+    allResponsiveViewports.every((viewport) => authority.viewportApplicability.includes(viewport))
+  ) {
+    return true;
+  }
+  return (
+    asset.role === "heroDesktop" &&
+    ["tablet", "desktop", "wide"].every((viewport) =>
+      authority.viewportApplicability.includes(viewport as (typeof allResponsiveViewports)[number]),
+    ) &&
+    responsivePairFor(assets, asset, request, reuseLedger) !== undefined
+  );
+}
+
 export function resolveApprovedAssetPlacement(
   input: Readonly<{
     assets: readonly ApprovedGenerationAsset[];
@@ -162,6 +218,12 @@ export function resolveApprovedAssetPlacement(
       const authority = approvedAssetPlacementAuthority(asset);
       const reuseCount = input.reuseLedger.get(asset.assetId) ?? 0;
       if (reuseCount >= reuseLimit[authority.reusePolicy]) return [];
+      if (
+        input.request.viewport === undefined &&
+        !hasCompletePrimaryCoverage(input.assets, asset, input.request, input.reuseLedger)
+      ) {
+        return [];
+      }
       return [{ asset, affinity, authority, reuseCount }];
     })
     .sort(
@@ -174,25 +236,12 @@ export function resolveApprovedAssetPlacement(
   const selected = candidates[0];
   if (!selected) return null;
   input.reuseLedger.set(selected.asset.assetId, selected.reuseCount + 1);
-  const groupId = selected.authority.responsiveSourceGroupId;
-  const responsivePair =
-    selected.asset.role === "heroDesktop" && groupId
-      ? input.assets
-          .filter((asset) => {
-            const authority = approvedAssetPlacementAuthority(asset);
-            return (
-              asset.role === "heroMobile" &&
-              authority.responsiveSourceGroupId === groupId &&
-              authority.viewportApplicability.includes("mobile")
-            );
-          })
-          .sort(
-            (left, right) =>
-              approvedAssetPlacementAuthority(right).priority -
-                approvedAssetPlacementAuthority(left).priority ||
-              left.assetId.localeCompare(right.assetId),
-          )[0]
-      : undefined;
+  const responsivePair = responsivePairFor(
+    input.assets,
+    selected.asset,
+    input.request,
+    input.reuseLedger,
+  );
   if (responsivePair) {
     input.reuseLedger.set(
       responsivePair.assetId,

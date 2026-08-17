@@ -1715,6 +1715,16 @@ approved responsive-source lineage. Responsive-image authority remains backward-
 current `1.1.0` form can resolve a distinct approved physical source per breakpoint and can report
 source change independently from crop/treatment change.
 
+The automatic review closure keeps this authority fail-closed across follow-up editing and
+materialization. Placements replaced by a new homepage or header plan do not consume the next
+plan's reuse budget; paired sources enforce their own reuse limits and must still match the current
+approved revision, role, material fingerprint, source group, viewport and provenance. Universal
+primary coverage is required unless an approved desktop/mobile pair closes it. Exact presentation
+selection is placement-specific, source overrides resolve independently from treatment fallback,
+and optional approved crop ID plus exact aspect-ratio lineage remain in the current `1.1.0`
+treatment while safe-area geometry stays containing. Collection-scoped affinity applies equally to
+collection and editorial campaign media.
+
 The existing shared frame may consume an approved logo through one registered optional header slot;
 merchant text identity remains the fallback. Provider intent never selects raw asset IDs or URLs.
 Puck remains a transient projection, and StorefrontSnapshot plus approved-asset authority remain the

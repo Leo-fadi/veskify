@@ -168,7 +168,11 @@ function assertTreatment(
       "Image overlay broadens the Design DNA overlay authority.",
     );
   }
-  if (treatment.ratio !== "natural" && dna.media.ratio !== treatment.ratio) {
+  if (
+    treatment.ratio !== "natural" &&
+    dna.media.ratio !== treatment.ratio &&
+    treatment.approvedCropId === undefined
+  ) {
     throw new ResponsiveImageAuthorityError(
       "invalid-ratio",
       "Image ratio is outside the Design DNA default.",
@@ -385,6 +389,12 @@ export function resolveResponsiveImage(
     );
   }
   const breakpoint = parsedBreakpoint.data;
+  const responsiveSource =
+    authority.contractVersion === "1.1.0"
+      ? authority.responsiveSources.find(
+          ({ breakpoint: sourceBreakpoint }) => sourceBreakpoint === breakpoint,
+        )?.source
+      : undefined;
   for (const candidate of fallbackOrder[breakpoint]) {
     const treatment = authority.responsiveTreatments.find(
       (item) => item.breakpoint === candidate,
@@ -398,11 +408,7 @@ export function resolveResponsiveImage(
       selectedBreakpoint: candidate,
       treatment,
       ...(derivative ? { derivativeId: derivative.derivativeId } : {}),
-      source:
-        authority.contractVersion === "1.1.0"
-          ? (authority.responsiveSources.find(({ breakpoint }) => breakpoint === candidate)
-              ?.source ?? authority.source)
-          : authority.source,
+      source: responsiveSource ?? authority.source,
       fingerprint: authority.fingerprint,
     };
   }
@@ -410,7 +416,7 @@ export function resolveResponsiveImage(
     requestedBreakpoint: breakpoint,
     selectedBreakpoint: "source",
     treatment: authority.sourceTreatment,
-    source: authority.source,
+    source: responsiveSource ?? authority.source,
     fingerprint: authority.fingerprint,
   };
 }
@@ -437,6 +443,7 @@ export function migrateApprovedPresentationArtDirection({
   variant = component.defaultVariant,
   artDirectionPosture = "editorial",
   approvedResponsiveCrops = [],
+  approvedResponsiveSourceLineages = [],
   approvedSafeArea,
 }: {
   presentation: ApprovedAssetPresentation;
@@ -447,53 +454,95 @@ export function migrateApprovedPresentationArtDirection({
   provenanceKind: ResponsiveImageAuthority["source"]["provenanceKind"];
   artDirectionPosture?: "contained" | "editorial" | "immersive";
   approvedResponsiveCrops?: readonly Readonly<{
+    cropId: string;
     breakpoint: ResponsiveImageBreakpoint;
+    aspectRatio: string;
     focalPoint: Readonly<{ x: number; y: number }>;
+  }>[];
+  approvedResponsiveSourceLineages?: readonly Readonly<{
+    assetId: string;
+    provenanceKind: ResponsiveImageAuthority["source"]["provenanceKind"];
+    sourceOwnerId: string;
   }>[];
   approvedSafeArea?: Readonly<{ x: number; y: number; width: number; height: number }>;
 }): ApprovedAssetPresentation {
-  if (presentation.artDirection) return presentation;
   const anatomy = component.commercialAnatomy;
   const anatomyVariant = anatomy?.variants.find(({ variantId }) => variantId === variant);
   const anatomyPlacement = anatomyVariant?.structure?.assetPlacements.find(
     ({ slotId }) => slotId === placement.assetSlotId,
   );
   if (!anatomy || !anatomyPlacement) return presentation;
-  const treatmentFor = (breakpoint?: ResponsiveImageBreakpoint): ResponsiveImageTreatment => ({
-    ratio: dna.media.ratio,
-    crop: {
-      mode:
+  const treatmentFor = (breakpoint?: ResponsiveImageBreakpoint): ResponsiveImageTreatment => {
+    const approvedCrop = approvedResponsiveCrops.find((crop) => crop.breakpoint === breakpoint);
+    const approvedRatio = approvedCrop
+      ? (() => {
+          const [width, height] = approvedCrop.aspectRatio.split(":").map(Number);
+          if (!width || !height) return dna.media.ratio;
+          const ratio = width / height;
+          if (ratio === 1) return "square" as const;
+          if (ratio < 1) return "portrait" as const;
+          if (ratio >= 1.6) return "wide" as const;
+          return "landscape" as const;
+        })()
+      : dna.media.ratio;
+    return {
+      ratio: approvedRatio,
+      crop: {
+        mode:
+          approvedSafeArea || artDirectionPosture === "contained"
+            ? "contain"
+            : artDirectionPosture === "editorial" && dna.media.crop === "editorial"
+              ? "cover"
+              : dna.media.crop,
+      },
+      focalPoint: approvedCrop?.focalPoint ?? ({ x: 0.5, y: 0.5 } as const),
+      overlay:
         artDirectionPosture === "contained"
-          ? "contain"
-          : artDirectionPosture === "editorial" && dna.media.crop === "editorial"
-            ? "cover"
-            : dna.media.crop,
-    },
-    focalPoint:
-      approvedResponsiveCrops.find((crop) => crop.breakpoint === breakpoint)?.focalPoint ??
-      ({ x: 0.5, y: 0.5 } as const),
-    overlay:
-      artDirectionPosture === "contained"
-        ? "none"
-        : artDirectionPosture === "editorial" &&
-            (dna.media.overlay === "gradient" || dna.media.overlay === "contrast")
-          ? "subtle"
-          : dna.media.overlay,
-  });
+          ? "none"
+          : artDirectionPosture === "editorial" &&
+              (dna.media.overlay === "gradient" || dna.media.overlay === "contrast")
+            ? "subtle"
+            : dna.media.overlay,
+      ...(approvedCrop
+        ? {
+            approvedCropId: approvedCrop.cropId,
+            approvedAspectRatio: approvedCrop.aspectRatio,
+          }
+        : {}),
+    };
+  };
   const sourceTreatment = treatmentFor();
   const responsiveSources =
     presentation.responsiveSources?.flatMap((responsiveSource) =>
-      responsiveSource.breakpoints.map((breakpoint) => ({
-        breakpoint,
-        source: {
-          assetId: responsiveSource.assetId,
-          role: responsiveSource.role,
-          revision: responsiveSource.revision,
-          materialFingerprint: responsiveSource.materialFingerprint,
-          provenanceKind,
-          sourceOwnerId: placement.sourceReferenceId,
-        },
-      })),
+      responsiveSource.breakpoints.map((breakpoint) => {
+        const suppliedLineage = approvedResponsiveSourceLineages.find(
+          ({ assetId }) => assetId === responsiveSource.assetId,
+        );
+        const retainedLineage =
+          presentation.artDirection?.contractVersion === "1.1.0"
+            ? presentation.artDirection.responsiveSources.find(
+                ({ source }) => source.assetId === responsiveSource.assetId,
+              )?.source
+            : undefined;
+        const lineage = suppliedLineage ?? retainedLineage;
+        if (!lineage) {
+          throw new ResponsiveImageAuthorityError(
+            "wrong-source",
+            "Responsive source lineage must resolve to its own approved evidence authority.",
+          );
+        }
+        return {
+          breakpoint,
+          source: {
+            assetId: responsiveSource.assetId,
+            role: responsiveSource.role,
+            revision: responsiveSource.revision,
+            materialFingerprint: responsiveSource.materialFingerprint,
+            provenanceKind: lineage.provenanceKind,
+            sourceOwnerId: lineage.sourceOwnerId,
+          },
+        };
+      }),
     ) ?? [];
   return {
     ...presentation,
@@ -525,7 +574,7 @@ export function migrateApprovedPresentationArtDirection({
         treatment: treatmentFor(breakpoint),
       })),
       responsiveSources,
-      derivatives: [],
+      derivatives: presentation.artDirection?.derivatives ?? [],
     }),
   };
 }

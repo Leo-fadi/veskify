@@ -70,6 +70,7 @@ import {
 } from "@/components/registry/homepage-commerce-bridge";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import {
+  approvedAssetPlacementAuthority,
   approvedAssetReuseLimit,
   resolveApprovedAssetPlacement,
   type ApprovedAssetReuseLedger,
@@ -749,9 +750,7 @@ export function resolveRegisteredCollectionApprovedAssetSelections(
           request: {
             purpose: placementPurpose,
             acceptedRoles: [role],
-            ...(role === "collectionImage" && input.collectionId
-              ? { collectionId: input.collectionId }
-              : {}),
+            ...(input.collectionId ? { collectionId: input.collectionId } : {}),
           },
           reuseLedger: input.reuseLedger ?? new Map<string, number>(),
         })
@@ -3008,41 +3007,55 @@ export function createWholeStorefrontGenerationPlan(
       : placement;
   });
   const placementReuseCounts = new Map<string, number>();
+  const placementReusePolicies = new Map<
+    string,
+    ReturnType<typeof approvedAssetPlacementAuthority>["reusePolicy"]
+  >();
   const countedPlacementReuseIdentities = new Set<string>();
   approvedAssetPlacements
     .filter((placement) => placement.reusePolicy !== undefined)
     .forEach((placement) => {
-      const reuseIdentity =
+      const placementIdentity =
         placement.componentType === "dynamicCollectionCommerce"
-          ? `${placement.assetId}:${placement.componentType}:${placement.assetSlotId}:${placement.placementPurpose}`
-          : `${placement.assetId}:${placement.pageId}:${placement.componentId}:${placement.assetSlotId}`;
-      if (countedPlacementReuseIdentities.has(reuseIdentity)) return;
-      countedPlacementReuseIdentities.add(reuseIdentity);
-      placementReuseCounts.set(
-        placement.assetId,
-        (placementReuseCounts.get(placement.assetId) ?? 0) + 1,
-      );
-    });
-  approvedAssetPlacements
-    .filter((placement) => placement.reusePolicy !== undefined)
-    .forEach((placement) => {
-      const reusePolicy = placement.reusePolicy;
-      if (
-        reusePolicy &&
-        (placementReuseCounts.get(placement.assetId) ?? 0) > approvedAssetReuseLimit(reusePolicy)
-      ) {
-        invalid(
-          "asset-role-slot-incompatible",
-          `Approved asset ${placement.assetId} exceeds its ${reusePolicy} reuse bound across ${approvedAssetPlacements
-            .filter(({ assetId }) => assetId === placement.assetId)
-            .map(
-              ({ pageId, componentType, placementPurpose }) =>
-                `${pageId}:${componentType}:${placementPurpose ?? "legacy"}`,
-            )
-            .join(", ")}.`,
+          ? `${placement.componentType}:${placement.assetSlotId}:${placement.placementPurpose}`
+          : `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}`;
+      const sources = [placement.assetId, ...(placement.responsiveSourceAssetIds ?? [])];
+      sources.forEach((assetId) => {
+        const reuseIdentity = `${assetId}:${placementIdentity}`;
+        if (countedPlacementReuseIdentities.has(reuseIdentity)) return;
+        countedPlacementReuseIdentities.add(reuseIdentity);
+        const approvedAsset = input.approvedAssetContext?.assets.find(
+          (candidate) => candidate.assetId === assetId,
         );
-      }
+        const policy = approvedAsset
+          ? approvedAssetPlacementAuthority(approvedAsset).reusePolicy
+          : assetId === placement.assetId
+            ? placement.reusePolicy
+            : undefined;
+        if (!policy) return;
+        placementReusePolicies.set(assetId, policy);
+        placementReuseCounts.set(assetId, (placementReuseCounts.get(assetId) ?? 0) + 1);
+      });
     });
+  placementReuseCounts.forEach((count, assetId) => {
+    const reusePolicy = placementReusePolicies.get(assetId);
+    if (reusePolicy && count > approvedAssetReuseLimit(reusePolicy)) {
+      invalid(
+        "asset-role-slot-incompatible",
+        `Approved asset ${assetId} exceeds its ${reusePolicy} reuse bound across ${approvedAssetPlacements
+          .filter(
+            (placement) =>
+              placement.assetId === assetId ||
+              placement.responsiveSourceAssetIds?.includes(assetId),
+          )
+          .map(
+            ({ pageId, componentType, placementPurpose }) =>
+              `${pageId}:${componentType}:${placementPurpose ?? "legacy"}`,
+          )
+          .join(", ")}.`,
+      );
+    }
+  });
   const sharedDesignDirection = {
     brandSystemFingerprint: target.brandSystemFingerprint,
     preferredBrandColours: [...brandDirection.preferredBrandColours].sort(),

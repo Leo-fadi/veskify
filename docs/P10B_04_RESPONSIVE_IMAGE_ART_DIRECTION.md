@@ -231,14 +231,25 @@ P10B-18 concerns.
 The accepted bounded implementation retains readable `1.0.0` responsive-image records and defines current
 `1.1.0` authority for exact approved responsive source lineage. One presentation can now bind a
 primary approved asset plus distinct approved breakpoint sources, each with its own ID, revision,
-material fingerprint, provenance-preserving `AssetRef`, and breakpoint coverage. The renderer
+material fingerprint, source-owner provenance, provenance-preserving `AssetRef`, and breakpoint
+coverage. Source overrides resolve independently from treatment fallback, so a mobile-only source
+is neither ignored when treatment falls back nor promoted at wider breakpoints. The renderer
 chooses that exact source and reports source change separately from treatment change; it never
 describes repeated same-URL `<source>` markup as source diversity.
 
 The existing crop/treatment vocabulary remains bounded. `contained`, `editorial`, and `immersive`
 postures project through the selected Design DNA media authority, while approved breakpoint focal
-points and safe areas remain authoritative. Canonical product media continues through its protected
+points and safe areas remain authoritative. Current treatment records may retain the approved crop
+ID and exact source aspect ratio alongside the bounded canonical ratio category; safe-area assets
+materialize with containing geometry. Existing art direction is rebuilt when a newly selected
+responsive source is absent from it. Canonical product media continues through its protected
 same-product path and cannot be promoted into generated presentation imagery.
+
+The post-acceptance automatic review also closes the generate-then-improve path: replaced homepage
+and header placements do not pre-consume reuse limits, paired responsive sources enforce their own
+reuse policy, every paired source is revalidated against the current approved context, and
+presentation materialization is keyed by exact component variant and asset slot rather than asset
+ID alone.
 
 Status is **Baseline**, accepted by the product owner on 17 August 2026 for responsive-source/crop
 and art-direction authority only. This is not complete-storefront commercial visual acceptance.

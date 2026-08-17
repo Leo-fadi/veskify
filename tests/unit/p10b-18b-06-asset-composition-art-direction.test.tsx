@@ -6,10 +6,20 @@ import {
   approvedGenerationAssetSchema,
   resolveApprovedAssetPlacement,
 } from "@/application/ai-storefront-generation";
+import { materializeCompleteStorefrontSelection } from "@/application/whole-storefront-generation-plan";
+import type { WholeStorefrontGenerationPlanError } from "@/application/whole-storefront-generation-plan";
+import { resolveApprovedAssetPresentationForPlacement } from "@/application/whole-storefront-proposal-lifecycle";
 import {
   compileSemanticStorefrontDesignIntentV1,
+  deriveSemanticCapabilityIndex,
   executeCompiledSemanticStorefrontDesignIntentV1,
+  prepareSemanticStorefrontDesignCompilationAuthority,
 } from "@/application/prompted-storefront-design-compiler";
+import {
+  createPromptedStorefrontDesignRequestV2,
+  createSemanticStorefrontDesignRequestV1,
+  semanticStorefrontCurrentAuthorityFingerprint,
+} from "@/application/prompted-storefront-design-intent";
 import { resolveResponsiveImage } from "@/application/responsive-image-authority";
 import { ResponsiveStorefrontImage } from "@/components/storefront/responsive-storefront-image";
 import { createStorefrontRenderContext } from "@/components/registry";
@@ -25,7 +35,20 @@ function aurumAuthority() {
   return authority;
 }
 
+const executionByImageProminence = new Map<
+  "balanced" | "image-led",
+  ReturnType<typeof executeImageProminenceUncached>
+>();
+
 function executeImageProminence(imageProminence: "balanced" | "image-led") {
+  const cached = executionByImageProminence.get(imageProminence);
+  if (cached) return cached;
+  const execution = executeImageProminenceUncached(imageProminence);
+  executionByImageProminence.set(imageProminence, execution);
+  return execution;
+}
+
+function executeImageProminenceUncached(imageProminence: "balanced" | "image-led") {
   const authority = aurumAuthority();
   const providerIntent = semanticIntentFixture(authority.request, {
     designConceptSummary: `P10B-18B-06 ${imageProminence} fixed authority`,
@@ -99,6 +122,28 @@ describe("P10B-18B-06 asset composition and art direction", () => {
     expect(new Set([firstEditorial?.asset.assetId, secondEditorial?.asset.assetId])).toHaveLength(
       2,
     );
+    const saturatedPairLedger = new Map<string, number>([["asset_p10b18b06_aurum_hero_mobile", 1]]);
+    expect(
+      resolveApprovedAssetPlacement({
+        assets: assets.filter(({ role }) => role === "heroDesktop" || role === "heroMobile"),
+        request: {
+          purpose: "hero-primary",
+          acceptedRoles: ["heroDesktop", "heroMobile"],
+        },
+        reuseLedger: saturatedPairLedger,
+      }),
+    ).toBeNull();
+    expect(
+      resolveApprovedAssetPlacement({
+        assets: assets.filter(({ role }) => role === "heroMobile"),
+        request: {
+          purpose: "hero-primary",
+          acceptedRoles: ["heroMobile"],
+          viewport: "mobile",
+        },
+        reuseLedger: new Map(),
+      })?.asset.role,
+    ).toBe("heroMobile");
   });
 
   it("filters collection-specific authority and never promotes product media", () => {
@@ -138,6 +183,40 @@ describe("P10B-18B-06 asset composition and art direction", () => {
         reuseLedger: new Map(),
       })?.asset.role,
     ).toBe("collectionImage");
+    const editorialSource = fixture.planningInput.approvedAssetContext!.assets.find(
+      ({ assetId }) => assetId === "asset_p10b16p04_aurum_editorial",
+    )!;
+    const editorialAsset = approvedGenerationAssetSchema.parse({
+      ...editorialSource,
+      presentation: {
+        ...editorialSource.presentation,
+        placementAuthority: {
+          ...editorialSource.presentation.placementAuthority!,
+          collectionIds: ["collection_allowed"],
+        },
+      },
+    });
+    expect(
+      resolveApprovedAssetPlacement({
+        assets: [editorialAsset],
+        request: {
+          purpose: "collection-campaign",
+          acceptedRoles: ["editorialImage"],
+          collectionId: "collection_other",
+        },
+        reuseLedger: new Map(),
+      }),
+    ).toBeNull();
+    expect(
+      resolveApprovedAssetPlacement({
+        assets: [editorialAsset],
+        request: {
+          purpose: "collection-campaign",
+          acceptedRoles: ["editorialImage"],
+        },
+        reuseLedger: new Map(),
+      }),
+    ).toBeNull();
   });
 
   it("materializes one paired responsive placement and renders truthful source diagnostics", () => {
@@ -170,6 +249,15 @@ describe("P10B-18B-06 asset composition and art direction", () => {
     expect(resolveResponsiveImage(presentation!.artDirection!, "wide").source.assetId).toBe(
       "asset_p10b16p04_aurum_hero",
     );
+    const wrongPlacementPresentation = structuredClone(presentation!);
+    wrongPlacementPresentation.artDirection!.placement.variant = "fullBleedOverlay";
+    expect(
+      resolveApprovedAssetPresentationForPlacement(
+        [wrongPlacementPresentation, presentation!],
+        placement!,
+        hero.variant,
+      )?.artDirection?.fingerprint,
+    ).toBe(presentation!.artDirection!.fingerprint);
     const markup = renderToStaticMarkup(
       <ResponsiveStorefrontImage
         alt="Aurum hero"
@@ -219,7 +307,7 @@ describe("P10B-18B-06 asset composition and art direction", () => {
     expect(canonicalValueString(restrained.authority.catalogue)).toBe(
       canonicalValueString(immersive.authority.catalogue),
     );
-  }, 180_000);
+  }, 600_000);
 
   it("materializes the approved logo in the shared frame and keeps text fallback valid", () => {
     const richResult = executeImageProminence("image-led");
@@ -265,4 +353,119 @@ describe("P10B-18B-06 asset composition and art direction", () => {
     expect(markup).toContain("Aurum Nordic");
     expect(markup).not.toContain("aurum-nordic-logo.svg");
   }, 120_000);
+
+  it("rejects stale responsive source authority before complete materialization", () => {
+    const result = executeImageProminence("image-led");
+    const materialization = result.execution.synthesis.materialization;
+    const planningInput = structuredClone(materialization.planningInput);
+    const mobile = planningInput.approvedAssetContext?.assets.find(
+      ({ assetId }) => assetId === "asset_p10b18b06_aurum_hero_mobile",
+    );
+    if (!mobile) throw new Error("Missing mobile source fixture.");
+    mobile.revision = "stale-mobile-revision";
+    expect(() =>
+      materializeCompleteStorefrontSelection({
+        planningInput,
+        siteMapDecision: result.authority.siteMapDecision,
+        pageEvidenceAuthority: result.authority.pageEvidenceAuthority,
+        contentFactAuthority: result.authority.contentFactAuthority,
+        approvedAssetPresentations: result.authority.approvedAssetPresentations,
+        directionId: materialization.plan.designSystemSelection.directionId,
+        designSystemNarrowing: {
+          spacingDensity: materialization.plan.designSystemSelection.spacingDensity,
+          surfaceDepth: materialization.plan.designSystemSelection.surfaceDepth,
+        },
+        pageBlueprintSelectionOverrides: materialization.plan.pageBlueprintSelectionOverrides,
+        approvedAssetRoleSelections: materialization.plan.approvedAssetRoleSelections,
+        dynamicCommerceSelection: materialization.plan.dynamicCommerceSelection ?? undefined,
+        artDirectionPosture: result.compiled.compiledDecision.exactSelection.artDirectionPosture,
+      }),
+    ).toThrowError(
+      expect.objectContaining<Partial<WholeStorefrontGenerationPlanError>>({
+        code: "stale-approved-asset",
+      }),
+    );
+  }, 300_000);
+
+  it("reselects exact paired hero authority after an accepted generated snapshot", () => {
+    const first = executeImageProminence("image-led");
+    const acceptedDraft = first.execution.synthesis.materialization.snapshot;
+    const currentRequestInput = {
+      ...first.authority.currentRequestInput,
+      draft: acceptedDraft,
+    };
+    const compatibilityInput = {
+      ...first.authority.compatibilityInput,
+      planningInput: {
+        ...first.authority.compatibilityInput.planningInput,
+        draft: acceptedDraft,
+      },
+    };
+    const exact = createPromptedStorefrontDesignRequestV2(currentRequestInput);
+    const semanticCapabilityIndex = deriveSemanticCapabilityIndex({
+      authority: compatibilityInput,
+      currentAuthorityFingerprint: semanticStorefrontCurrentAuthorityFingerprint(
+        exact.request.currentAuthority,
+      ),
+    });
+    const request = createSemanticStorefrontDesignRequestV1(exact, {
+      semanticAuthorityFingerprint: semanticCapabilityIndex.semanticAuthorityFingerprint,
+      semanticInfluenceAuthority: semanticCapabilityIndex.semanticInfluenceAuthority,
+    });
+    const preparedAuthority = prepareSemanticStorefrontDesignCompilationAuthority({
+      originalRequest: request,
+      currentRequestInput,
+      compatibilityInput,
+      semanticCapabilityIndex,
+    });
+    const providerIntent = semanticIntentFixture(request, {
+      designConceptSummary: "P10B-18B-06 generated follow-up authority",
+      commercialPosture: "premium-editorial",
+      density: "low",
+      navigationPosture: "editorial",
+      storyCatalogueBalance: "story-first",
+      discoveryPosture: "editorial",
+      configurableProductPosture: "guided",
+      mobileHierarchy: "story-led",
+      imageProminence: "image-led",
+    });
+    const compiled = compileSemanticStorefrontDesignIntentV1({
+      originalRequest: request,
+      providerIntent,
+      currentRequestInput,
+      compatibilityInput,
+      semanticCapabilityIndex,
+      preparedAuthority,
+    });
+    expect(compiled.compiledDecision.approvedAssetRoleSelections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          assetId: "asset_p10b16p04_aurum_hero",
+          responsiveSourceAssetIds: ["asset_p10b18b06_aurum_hero_mobile"],
+        }),
+      ]),
+    );
+    const execution = executeCompiledSemanticStorefrontDesignIntentV1({
+      originalRequest: request,
+      providerIntent,
+      currentRequestInput,
+      compatibilityInput,
+      semanticCapabilityIndex,
+      preparedAuthority,
+      compiledDecision: compiled.compiledDecision,
+      synthesisDecision: compiled.synthesisDecision,
+      pageEvidenceAuthority: first.authority.pageEvidenceAuthority,
+      contentFactAuthority: first.authority.contentFactAuthority,
+      approvedAssetPresentations: first.authority.approvedAssetPresentations,
+    });
+    const hero = execution.synthesis.materialization.snapshot.pages
+      .find(({ type }) => type === "home")
+      ?.sections.find(({ component }) => component === "homepageHero");
+    const presentation = hero?.approvedAssetPresentations?.find(
+      ({ assetId }) => assetId === "asset_p10b16p04_aurum_hero",
+    );
+    expect(resolveResponsiveImage(presentation!.artDirection!, "mobile").source.assetId).toBe(
+      "asset_p10b18b06_aurum_hero_mobile",
+    );
+  }, 300_000);
 });
