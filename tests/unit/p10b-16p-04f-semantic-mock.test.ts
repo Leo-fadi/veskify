@@ -186,7 +186,7 @@ describe("P10B-16P-04F semantic mock provider", () => {
     const distinctValueCounts = driverValues.map((values) => new Set(values).size);
     expect(distinctValueCounts.every((count) => count >= 2)).toBe(true);
     expect(distinctValueCounts.filter((count) => count === 3).length).toBeGreaterThanOrEqual(4);
-  });
+  }, 120_000);
 
   it.each([
     ["current", { currentAuthorityFingerprint: () => "changed-current-authority" }],

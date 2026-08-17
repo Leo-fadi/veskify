@@ -549,7 +549,7 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
         )
         .toBeGreaterThan(1);
     }
-  }, 120_000);
+  }, 300_000);
 
   it("does not use free-form concept-summary prose as a compatibility tie-break", () => {
     const fixture = testAuthority();

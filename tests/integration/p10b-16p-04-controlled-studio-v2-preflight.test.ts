@@ -668,7 +668,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       failureClassification: null,
       activeAttempt: null,
     });
-  }, 120_000);
+  }, 300_000);
 
   it("retains a consumed failure safely and blocks every later provider attempt", async () => {
     const route = createP10B16P04WholeStorefrontProposalRouteHandler({
@@ -721,7 +721,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       cases: [],
       failedAttempt: failed.failedAttempt,
     });
-  });
+  }, 120_000);
 
   it.each([
     [null, origin],

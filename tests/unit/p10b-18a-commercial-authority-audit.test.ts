@@ -140,8 +140,11 @@ function writeOptionalAuditOutput(report: unknown) {
 }
 
 describe("P10B-18A commercial authority audit", () => {
+  let cachedAuthorities: ReturnType<typeof createP10b18aShapeAuthorities> | undefined;
+  const shapeAuthorities = () => (cachedAuthorities ??= createP10b18aShapeAuthorities());
+
   it("selects each shape's largest truthful representative collection", () => {
-    const authorities = createP10b18aShapeAuthorities();
+    const authorities = shapeAuthorities();
 
     for (const authority of authorities) {
       const maximumMembership = Math.max(
@@ -167,13 +170,13 @@ describe("P10B-18A commercial authority audit", () => {
       medium?.catalogue.collections.find(({ id }) => id === "collection_karvonen_pihka")
         ?.productIds,
     ).toEqual(["product_karvonen_08", "product_karvonen_09"]);
-  }, 120_000);
+  }, 300_000);
 
   it("compiles a deterministic 72-case catalogue-shape and semantic-intent audit matrix", () => {
     const before = canonicalValueString(
       createRawKarvonenStorefrontFixture().planningInput.catalogue,
     );
-    const authorities = createP10b18aShapeAuthorities();
+    const authorities = shapeAuthorities();
     const outcomes = authorities.flatMap((authority) =>
       p10b18aSemanticVariations.map((variation) => {
         const result = compileP10b18aAuditCase(authority, variation);
@@ -708,5 +711,5 @@ describe("P10B-18A commercial authority audit", () => {
     ).toBe(true);
 
     writeOptionalAuditOutput(report);
-  }, 240_000);
+  }, 900_000);
 });

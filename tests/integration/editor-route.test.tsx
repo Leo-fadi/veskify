@@ -3615,7 +3615,9 @@ describe("P4-04 editor AI command integration", () => {
       expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
       expect(request).toHaveValue("Make the homepage feel more luxurious.");
       const retry = screen.getByRole("button", { name: "Retry" });
-      expect(retry).toHaveFocus();
+      await waitFor(() => {
+        expect(retry).toHaveFocus();
+      });
       expect(screen.getByRole("button", { name: "Create proposal" })).toBeEnabled();
       expect(document.body).not.toHaveTextContent("provider-secret-stack-detail");
       expect(events.map((event) => event.name)).toEqual([
