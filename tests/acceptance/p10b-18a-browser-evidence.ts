@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import type { ProjectAggregate } from "@/services/storage";
 
@@ -159,12 +160,27 @@ export function p10b18aOrigin(authority: P10B18ARuntimeAuthority = "p03-standalo
 }
 
 export function p10b18aEvidenceDirectory(): string {
+  const systemTempRoot = resolve(tmpdir());
+  const repositoryRoot = resolve(".");
   const directory = resolve(
-    process.env.P10B18A_EVIDENCE_DIR ?? "/private/tmp/veskify-p10b-18a-commercial-authority-audit",
+    process.env.P10B18A_EVIDENCE_DIR ??
+      resolve(systemTempRoot, "veskify-p10b-18a-commercial-authority-audit"),
   );
-  if (directory !== "/private/tmp" && !directory.startsWith("/private/tmp/")) {
+  const relativeToTemp = relative(systemTempRoot, directory);
+  const relativeToRepository = relative(repositoryRoot, directory);
+  const withinTemp =
+    relativeToTemp === "" ||
+    (relativeToTemp !== ".." &&
+      !relativeToTemp.startsWith(`..${sep}`) &&
+      !isAbsolute(relativeToTemp));
+  const withinRepository =
+    relativeToRepository === "" ||
+    (relativeToRepository !== ".." &&
+      !relativeToRepository.startsWith(`..${sep}`) &&
+      !isAbsolute(relativeToRepository));
+  if (!withinTemp || withinRepository) {
     throw new Error(
-      "P10B-18A browser evidence must remain outside the repository in /private/tmp.",
+      "P10B-18A browser evidence must remain outside the repository within the system temporary directory.",
     );
   }
   return directory;

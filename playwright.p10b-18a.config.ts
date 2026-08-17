@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { copyFileSync, cpSync, mkdirSync, symlinkSync } from "node:fs";
 import { registerHooks } from "node:module";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 // The audit executor consumes registry validation in Playwright's Node process. Next's package
@@ -27,12 +28,32 @@ if (standalonePort === p04Port) {
 const baseURL = `http://localhost:${standalonePort}`;
 const p04BaseURL = `http://localhost:${p04Port}`;
 const runId = `run-${Date.now().toString(36)}-${randomBytes(8).toString("hex")}`;
+const repositoryRoot = resolve(".");
+const systemTempRoot = resolve(tmpdir());
+
+function isWithinDirectory(parent: string, candidate: string): boolean {
+  const relativePath = relative(parent, candidate);
+  return (
+    relativePath === "" ||
+    (relativePath !== ".." && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath))
+  );
+}
+
+function assertTemporaryDirectory(candidate: string, purpose: string): void {
+  if (
+    !isWithinDirectory(systemTempRoot, candidate) ||
+    isWithinDirectory(repositoryRoot, candidate)
+  ) {
+    throw new Error(
+      `P10B-18A ${purpose} must remain outside the repository within the system temporary directory.`,
+    );
+  }
+}
+
 const evidenceRoot = process.env.P10B18A_EVIDENCE_DIR
   ? resolve(process.env.P10B18A_EVIDENCE_DIR)
-  : "/private/tmp/veskify-p10b-18a-commercial-authority-audit";
-if (evidenceRoot !== "/private/tmp" && !evidenceRoot.startsWith("/private/tmp/")) {
-  throw new Error("P10B-18A browser evidence must remain outside the repository in /private/tmp.");
-}
+  : resolve(systemTempRoot, "veskify-p10b-18a-commercial-authority-audit");
+assertTemporaryDirectory(evidenceRoot, "browser evidence");
 const evidenceDirectory = resolve(evidenceRoot, runId);
 const inheritedAcceptanceToken = process.env.P10B18A_P04_ACCEPTANCE_TOKEN;
 const acceptanceToken =
@@ -44,11 +65,12 @@ const acceptanceToken =
 // server an isolated application root while retaining the exact repository source, packages and
 // configuration. The deliberately enumerated inputs exclude every `.env*` file and all repository
 // state; copied configuration files also prevent Next from rewriting the originals.
-const repositoryRoot = resolve(".");
 const p04ServerRoot = resolve(
-  "/private/tmp/veskify-p10b-18a-commercial-authority-server-roots",
+  systemTempRoot,
+  "veskify-p10b-18a-commercial-authority-server-roots",
   runId,
 );
+assertTemporaryDirectory(p04ServerRoot, "isolated server root");
 mkdirSync(p04ServerRoot, { recursive: true });
 symlinkSync(resolve(repositoryRoot, "node_modules"), resolve(p04ServerRoot, "node_modules"), "dir");
 for (const entry of ["public", "src"] as const) {
