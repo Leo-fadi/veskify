@@ -353,7 +353,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       selection: {
         directionId: "premiumEditorial",
         dynamicCommerce: {
-          searchExecution: "registered-presentation-fail-closed-runtime",
+          searchExecution: "canonical-transient-query-results",
           selectedArchetypes: {
             collection: {
               component: "dynamicCollectionCommerce",

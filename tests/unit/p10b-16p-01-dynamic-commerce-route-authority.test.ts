@@ -54,6 +54,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     const collectionProjections = projections.filter(
       ({ archetype }) => archetype.family === "collection-search",
     );
+    const frameProfileId = result.snapshot.sharedFrame?.profileId;
 
     expect(catalogue.products).toHaveLength(10);
     expect(catalogue.collections).toHaveLength(9);
@@ -61,16 +62,35 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     expect(authority.routeInventory.filter(({ kind }) => kind === "collection")).toHaveLength(9);
     expect(authority.routeInventory.filter(({ kind }) => kind === "search")).toHaveLength(1);
     expect(productProjections).toHaveLength(authority.productDetailArchetypes.length);
-    expect(collectionProjections).toHaveLength(authority.collectionSearchArchetypes.length);
+    expect(collectionProjections).toHaveLength(
+      authority.collectionSearchArchetypes.filter(({ compatibleSharedFrameProfileIds }) =>
+        frameProfileId ? compatibleSharedFrameProfileIds.includes(frameProfileId) : true,
+      ).length,
+    );
     expect(productProjections.length).toBeLessThan(10);
     expect(collectionProjections.length).toBeLessThan(9);
-    const frameProfileId = result.snapshot.sharedFrame?.profileId;
     expect(frameProfileId).toBeTruthy();
     expect(
-      [...authority.collectionSearchArchetypes, ...authority.productDetailArchetypes].every(
-        ({ compatibleSharedFrameProfileIds }) =>
+      authority.collectionSearchArchetypes.map(({ profile }) => profile.profileId).sort(),
+    ).toEqual([
+      "collection-campaign-led-discovery",
+      "collection-catalogue-comparison",
+      "collection-dense-search",
+      "collection-editorial-discovery",
+    ]);
+    const selectedCollectionIds = new Set([
+      ...authority.collectionRouteMappings.map(({ archetypeId }) => archetypeId),
+      ...authority.collectionContextRules.map(({ archetypeId }) => archetypeId),
+      authority.searchArchetypeId,
+      authority.fallbacks.collectionArchetypeId,
+      authority.fallbacks.searchArchetypeId,
+    ]);
+    expect(
+      authority.collectionSearchArchetypes
+        .filter(({ id }) => selectedCollectionIds.has(id))
+        .every(({ compatibleSharedFrameProfileIds }) =>
           frameProfileId ? compatibleSharedFrameProfileIds.includes(frameProfileId) : true,
-      ),
+        ),
     ).toBe(true);
     for (const archetype of authority.collectionSearchArchetypes) {
       const presentation = archetype.componentPresentations[0];
@@ -93,6 +113,15 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
       authority.collectionSearchArchetypes.find(({ id }) => id === authority.searchArchetypeId)
         ?.supportedContexts,
     ).toContain("search");
+    expect(
+      authority.collectionSearchArchetypes
+        .filter(({ profile }) =>
+          ["collection-catalogue-comparison", "collection-dense-search"].includes(
+            profile.profileId,
+          ),
+        )
+        .every(({ supportedContexts }) => supportedContexts.includes("search")),
+    ).toBe(true);
     expect(
       authority.collectionSearchArchetypes.some(
         ({ id }) => id === authority.fallbacks.collectionArchetypeId,
@@ -669,6 +698,112 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
         ]),
       );
     }
+  });
+
+  it("migrates the two exact pre-P10B-18B-03 collection authorities without rewriting commerce", () => {
+    const { catalogue, result } = migratedScenario();
+    const legacyProfiles = {
+      "collection-catalogue-comparison": {
+        fingerprint:
+          "page-blueprint-v1_1822_47ab13e9edd6bdd344b0511153f7a96d81c99a9d74e4ce06872102f30c77b3f9",
+        currentTransformation: "standardCondense",
+      },
+      "collection-dense-search": {
+        fingerprint:
+          "page-blueprint-v1_1876_ba5bddba871565c4c64444103318ba535c16149ff9fb38300e91687abc565a0e",
+        currentTransformation: "denseReflow",
+      },
+    } as const;
+    const { authorityFingerprint: _authorityFingerprint, ...material } = result.authority;
+    void _authorityFingerprint;
+    const legacyAuthority = createDynamicCommercePresentationAuthority({
+      ...structuredClone(material),
+      collectionSearchArchetypes: material.collectionSearchArchetypes.map((archetype) => {
+        const legacy = legacyProfiles[archetype.profile.profileId as keyof typeof legacyProfiles];
+        if (!legacy) return structuredClone(archetype);
+        return {
+          ...structuredClone(archetype),
+          profile: { ...structuredClone(archetype.profile), fingerprint: legacy.fingerprint },
+          responsivePosture: archetype.responsivePosture.map((entry) => ({
+            ...structuredClone(entry),
+            transformationIds: entry.transformationIds.map((id) =>
+              id === legacy.currentTransformation ? "compactSimplify" : id,
+            ),
+          })),
+          componentPresentations: archetype.componentPresentations.map((presentation) => {
+            const props = structuredClone(presentation.props);
+            delete props.conciseAttributeLimit;
+            return {
+              ...structuredClone(presentation),
+              anatomyId: "compact",
+              props: { ...props, cardVariant: "compact" },
+            };
+          }),
+        };
+      }) as unknown as typeof material.collectionSearchArchetypes,
+    });
+    const legacySnapshot = storefrontSnapshotSchema.parse({
+      ...structuredClone(result.snapshot),
+      dynamicCommercePresentation: legacyAuthority,
+    });
+
+    const migration = migrateLegacyDynamicCommerceRoutes(legacySnapshot, catalogue);
+    expect(migration.status).toBe("migrated");
+    if (migration.status !== "migrated") throw new Error("Expected registered migration.");
+    expect(migration.migratedRouteCount).toBe(0);
+    expect(migration.authority.authorityRevision).toBe(legacyAuthority.authorityRevision + 1);
+    expect(migration.authority.routeInventory).toEqual(legacyAuthority.routeInventory);
+    expect(migration.authority.collectionRouteMappings).toEqual(
+      legacyAuthority.collectionRouteMappings,
+    );
+    expect(
+      migration.authority.collectionSearchArchetypes.map((archetype) => [
+        archetype.profile.profileId,
+        archetype.componentPresentations[0]?.anatomyId,
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        ["collection-catalogue-comparison", "standard"],
+        ["collection-dense-search", "horizontal"],
+      ]),
+    );
+
+    const collectionRoute = legacyAuthority.routeInventory.find(
+      ({ kind }) => kind === "collection",
+    )!;
+    expect(
+      resolveDynamicCommerceRoutePage({
+        snapshot: legacySnapshot,
+        catalogue,
+        routeId: collectionRoute.id,
+        projection: "editor",
+        archetypeId: "archetype_collection_search_dense",
+      }).archetype.componentPresentations[0]?.anatomyId,
+    ).toBe("horizontal");
+
+    const unknownMaterial = structuredClone(material);
+    unknownMaterial.collectionSearchArchetypes = legacyAuthority.collectionSearchArchetypes.map(
+      (archetype) =>
+        archetype.profile.profileId === "collection-dense-search"
+          ? {
+              ...structuredClone(archetype),
+              profile: { ...structuredClone(archetype.profile), fingerprint: "unknown-stale" },
+            }
+          : structuredClone(archetype),
+    );
+    const unknownSnapshot = storefrontSnapshotSchema.parse({
+      ...structuredClone(result.snapshot),
+      dynamicCommercePresentation: createDynamicCommercePresentationAuthority(unknownMaterial),
+    });
+    expect(() =>
+      resolveDynamicCommerceRoutePage({
+        snapshot: unknownSnapshot,
+        catalogue,
+        routeId: collectionRoute.id,
+        projection: "editor",
+        archetypeId: "archetype_collection_search_dense",
+      }),
+    ).toThrow(/stale PageBlueprint profile|no longer matches registered authority/i);
   });
 
   it("returns typed decisions for incomplete, mismatched, unknown, or invalid legacy inputs", () => {

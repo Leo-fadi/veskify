@@ -175,7 +175,7 @@ export function createSemanticStorefrontDesignRequestV1(
     fixedRuntimeTruth: {
       commerce: "read-only" as const,
       canonicalMedia: "protected" as const,
-      searchExecution: "registered-presentation-runtime-unavailable" as const,
+      searchExecution: "canonical-transient-query-results" as const,
     },
     semanticInfluenceAuthority: options.semanticInfluenceAuthority,
   } satisfies Omit<SemanticStorefrontDesignRequestV1, "requestFingerprint">;

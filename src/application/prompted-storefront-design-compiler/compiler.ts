@@ -747,7 +747,7 @@ function buildDynamicSelection(
       authorityFingerprint: current.authorityFingerprint,
       collectionArchetypeId: collection.id,
       searchArchetypeId: search.id,
-      searchExecution: "registered-presentation-fail-closed-runtime" as const,
+      searchExecution: "canonical-transient-query-results" as const,
       standardSimpleArchetypeId: standard.id,
       configurableArchetypeId: configurable.id,
       galleryLedArchetypeId: gallery.id,

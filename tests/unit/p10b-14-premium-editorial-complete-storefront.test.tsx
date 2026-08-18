@@ -223,7 +223,7 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
       search.componentPresentations.some(
         (presentation) =>
           presentation.component === "dynamicCollectionCommerce" &&
-          presentation.props.cardVariant === "compact",
+          presentation.props.cardVariant === "horizontal",
       ),
     ).toBe(true);
     expect(

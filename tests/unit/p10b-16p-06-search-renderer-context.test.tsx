@@ -168,6 +168,20 @@ describe("P10B-16P-06 canonical search renderer context", () => {
     expect(finnishMarkup).toContain("Hakutulokset haulle");
     expect(finnishMarkup).toContain("1 tuote");
 
+    const filtered = resultPage([productId], {
+      appliedFilters: [{ field: "stockStatus", values: ["inStock"] }],
+    });
+    const filteredPresentation = searchPresentation(filtered).presentation;
+    const filteredFinnishMarkup = renderToStaticMarkup(
+      renderDynamicCollectionCommerce(
+        rendererInput(filteredPresentation, { activeLocale: "fi", primaryLocale: "fi" }),
+      ),
+    );
+    expect(filteredFinnishMarkup).toContain("Saatavuus");
+    expect(filteredFinnishMarkup).toContain("Varastossa");
+    expect(filteredFinnishMarkup).not.toContain(">stockStatus<");
+    expect(filteredFinnishMarkup).not.toContain(">inStock<");
+
     const emptyQuery = resultPage([], {
       state: "empty-query",
       normalizedQuery: "",

@@ -83,9 +83,15 @@ for (const width of [375, 768, 1024, 1440]) {
     const filterRegion = page.locator('[data-layout-region="filters"]');
     const filterPanel = filterRegion.locator('[data-filter-panel-content="true"]');
     const filterTrigger = filterRegion.getByRole("button", { name: /Show filters/ });
+    const panelMode = await filterRegion
+      .locator("[data-filter-panel-mode]")
+      .getAttribute("data-filter-panel-mode");
     await expect(page.locator('[data-filter-layout="horizontal"]')).toBeVisible();
-    if (width < 1024) {
+    expect(["disclosure", "persistent"]).toContain(panelMode);
+    if (width < 1024 || panelMode === "disclosure") {
+      await expect(filterTrigger).toBeVisible();
       await expect(filterTrigger).toHaveAttribute("aria-expanded", "false");
+      await expect(filterPanel).toBeHidden();
       await filterTrigger.focus();
       await expect(filterTrigger).toBeFocused();
       await filterTrigger.press("Enter");

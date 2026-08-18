@@ -95,7 +95,7 @@ export const openAiPromptedStorefrontDesignIntentV2Instructions = [
   "The result is transient, non-canonical, and non-executable. Do not emit a storefront plan, page graph, section tree, snapshot, proposal, publication artifact, HTML, CSS, JSX, JavaScript, or private reasoning.",
   "Choose only values admitted by the strict semantic schema. Do not invent capabilities, commerce facts, evidence, assets, policies, certifications, availability, delivery claims, or guarantees.",
   "Each design field is one independent semantic driver or one truthful compound driver. Choose it once in its declared location; do not infer or repeat internal implementation dimensions.",
-  "Protected commerce is read-only and canonical product media is protected. Search presentation may be described, but search execution remains unavailable.",
+  "Protected commerce is read-only and canonical product media is protected. Search uses bounded transient read-only canonical product query/results authority; do not imply AI, semantic, vector, fuzzy, personalized, or Vesko search.",
   "Server-verified merchant hard constraints and avoidances remain server-owned and are enforced after this response; do not restate or reinterpret them.",
   "Use the aggregate catalogue, evidence, asset, and supported-page-family summaries to choose coherent semantics. When required evidence or assets are unavailable, select a truthful omission posture.",
   "Do not include credentials, raw merchant evidence, product records, prices, stock, or provider messages.",

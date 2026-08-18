@@ -209,12 +209,15 @@ describe("P10B-16P-02B capability reachability truth", () => {
       authority.projection.capabilities.find(
         ({ dimension }) => dimension === "collection-search.search-relationship",
       ),
-    ).toMatchObject({ availability: "available" });
+    ).toMatchObject({
+      availability: "available",
+      requirements: [expect.stringMatching(/no AI, semantic, vector, fuzzy.*Vesko search/i)],
+    });
     expect(authority.projection.search).toEqual({
       registration: "registered-presentation-authority",
-      execution: "unavailable",
-      behavior: "fail-closed",
-      reason: "missing-canonical-search-results-adapter",
+      execution: "canonical-transient-query-results",
+      behavior: "read-only-bounded",
+      reason: "p10b-16p-06-canonical-search-adapter",
     });
 
     expect(entries.get("component.family.homepageHero")).toMatchObject({

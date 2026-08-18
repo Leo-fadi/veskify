@@ -30,13 +30,18 @@ function exactInput() {
   };
   const authority = draft.dynamicCommercePresentation;
   if (!authority) throw new Error("Missing current dynamic-commerce test authority.");
-  const collection = authority.collectionSearchArchetypes.find(({ supportedContexts }) =>
-    supportedContexts.includes("collection"),
+  const collection = authority.collectionSearchArchetypes.find(
+    ({ id }) => id === authority.fallbacks.collectionArchetypeId,
   );
-  const search = authority.collectionSearchArchetypes.find(({ supportedContexts }) =>
-    supportedContexts.includes("search"),
+  const search = authority.collectionSearchArchetypes.find(
+    ({ id }) => id === authority.searchArchetypeId,
   );
-  if (!collection || !search) throw new Error("Missing current collection/search archetypes.");
+  if (
+    !collection?.supportedContexts.includes("collection") ||
+    !search?.supportedContexts.includes("search")
+  ) {
+    throw new Error("Missing current selected collection/search archetypes.");
+  }
   const product = authority.productDetailArchetypes.find(
     ({ id }) => id !== authority.fallbacks.productDetailArchetypeId,
   );

@@ -60,16 +60,28 @@ function registeredProfileAuthority(selection: BoundedStorefrontSynthesisSelecti
   const frame = getCommercialSharedFrameProfile(selection.sharedFrameProfileId);
   const homepagePlan = getCommercialHomepageProfile(selection.homepageProfileId);
   const collectionPlan = getCommercialCollectionSearchProfile(selection.collectionProfileId);
+  const searchPlan = getCommercialCollectionSearchProfile(selection.searchProfileId);
   const pdpPlan = getCommercialPdpProfile(selection.pdpProfileId);
   const homepage = homepagePlan?.profile?.commercialHomepage;
   const collection = collectionPlan?.profile?.commercialCollectionSearch;
+  const search = searchPlan?.profile?.commercialCollectionSearch;
   const pdp = pdpPlan?.profile?.commercialProductDetail;
-  if (!homepage || !collection || !pdp) {
+  if (!homepage || !collection || !search || !pdp) {
     throw new Error(
       "A current compatible selection references unavailable registered profile metadata.",
     );
   }
-  return { frame, homepagePlan, collectionPlan, pdpPlan, homepage, collection, pdp };
+  return {
+    frame,
+    homepagePlan,
+    collectionPlan,
+    searchPlan,
+    pdpPlan,
+    homepage,
+    collection,
+    search,
+    pdp,
+  };
 }
 
 function commercialPostures(
@@ -131,20 +143,14 @@ function storyCatalogueBalance(homepageProfileId: string): string {
   return "balanced";
 }
 
-function collectionDiscoveryPosture(
-  presentationMode: string,
-  merchandisingPosture: string,
-): string {
-  if (merchandisingPosture === "campaign") return "campaign";
-  if (merchandisingPosture === "dense") return "dense-search";
-  if (merchandisingPosture === "curated") return "editorial";
+function collectionDiscoveryPosture(collectionPresentationMode: string): string {
   const mapped: Readonly<Record<string, string>> = {
     "editorial-discovery": "editorial",
     "catalogue-comparison": "catalogue-comparison",
     "campaign-led-discovery": "campaign",
     "dense-search": "dense-search",
   };
-  const result = mapped[presentationMode];
+  const result = mapped[collectionPresentationMode];
   if (!result) throw new Error("Registered collection authority lacks a semantic mapping.");
   return result;
 }
@@ -193,7 +199,7 @@ export function semanticFeaturesFor(
     ["homepageIntent.storyCatalogueBalance", [storyCatalogueBalance(selection.homepageProfileId)]],
     [
       "collectionIntent.discoveryPosture",
-      [collectionDiscoveryPosture(collection.presentationMode, selection.merchandisingPosture)],
+      [collectionDiscoveryPosture(collection.presentationMode)],
     ],
     ["pdpIntent.configurableProductPosture", [configurableProductPosture(pdp)]],
     ["responsiveAndArtDirectionIntent.mobileHierarchy", [mobileHierarchy(frame)]],
@@ -209,9 +215,18 @@ export function semanticExactInfluenceAxesFor(
   selection: BoundedStorefrontSynthesisSelectionNarrowing,
   designDna: DesignDna,
 ): SemanticExactInfluenceAxisMap {
-  const { frame, homepagePlan, collectionPlan, pdpPlan, homepage, collection, pdp } =
-    registeredProfileAuthority(selection);
-  const slots = [homepagePlan, collectionPlan, pdpPlan].flatMap(
+  const {
+    frame,
+    homepagePlan,
+    collectionPlan,
+    searchPlan,
+    pdpPlan,
+    homepage,
+    collection,
+    search,
+    pdp,
+  } = registeredProfileAuthority(selection);
+  const slots = [homepagePlan, collectionPlan, searchPlan, pdpPlan].flatMap(
     (plan) =>
       plan?.slots.map(({ id, sectionType, defaultVariant }) => ({
         id,
@@ -239,7 +254,16 @@ export function semanticExactInfluenceAxesFor(
       responsiveTransformationIds: frame.responsiveTransformationIds,
     }),
     "homepage-profile": selection.homepageProfileId,
-    "collection-profile": selection.collectionProfileId,
+    "collection-profile": canonicalValueFingerprint({
+      collectionProfileId: selection.collectionProfileId,
+      searchProfileId: selection.searchProfileId,
+      collectionPresentationMode: collection.presentationMode,
+      searchPresentationMode: search.presentationMode,
+      collectionFilterLayout: collection.filterLayout,
+      searchFilterLayout: search.filterLayout,
+      collectionCardAnatomyId: collection.productCardAnatomyId,
+      searchCardAnatomyId: search.productCardAnatomyId,
+    }),
     "merchandising-posture": selection.merchandisingPosture,
     "pdp-profile": selection.pdpProfileId,
     "component-variants": canonicalValueFingerprint(slots),

@@ -372,6 +372,14 @@ function collectionPresentation(
       gridDensity: authority.gridDensity,
       cardVariant: authority.productCardAnatomyId,
       filterLayout: authority.filterLayout,
+      conciseAttributeLimit:
+        authority.productCardAnatomyId === "standard"
+          ? 3
+          : authority.productCardAnatomyId === "horizontal"
+            ? 2
+            : authority.productCardAnatomyId === "imageFirst"
+              ? 1
+              : 0,
       showChildCollections: authority.childCollectionTreatment !== "omit",
     },
   );
@@ -458,7 +466,9 @@ function productPresentation(
 function createCollectionArchetype(
   profileId: string,
   legacyEntries: readonly LegacyDynamicPresentationEntry[] = [],
-  supportsSearch = profileId === "collection-dense-search",
+  supportsSearch = ["collection-catalogue-comparison", "collection-dense-search"].includes(
+    profileId,
+  ),
 ): DynamicCommerceCollectionSearchArchetype {
   const plan = getCommercialCollectionSearchProfile(profileId);
   const profile = plan?.profile;
@@ -504,6 +514,186 @@ function createCollectionArchetype(
     },
     fallbackBehavior: "use-family-fallback",
     commerceBindingPolicy: "runtime-collection-membership",
+  };
+}
+
+const P10B18B03_LEGACY_COLLECTION_PROFILES = {
+  "collection-catalogue-comparison": {
+    profileFingerprint:
+      "page-blueprint-v1_1822_47ab13e9edd6bdd344b0511153f7a96d81c99a9d74e4ce06872102f30c77b3f9",
+    responsivePosture: [
+      {
+        breakpoint: "mobile",
+        viewport: 375,
+        transformationIds: [
+          "comparisonFilterDisclosure",
+          "comparisonGridReflow",
+          "compactSimplify",
+        ],
+      },
+      {
+        breakpoint: "tablet",
+        viewport: 768,
+        transformationIds: ["comparisonFilterDisclosure", "comparisonGridReflow"],
+      },
+      {
+        breakpoint: "desktop",
+        viewport: 1024,
+        transformationIds: ["comparisonGridReflow"],
+      },
+      {
+        breakpoint: "wide",
+        viewport: 1440,
+        transformationIds: ["comparisonGridReflow"],
+      },
+    ],
+  },
+  "collection-dense-search": {
+    profileFingerprint:
+      "page-blueprint-v1_1876_ba5bddba871565c4c64444103318ba535c16149ff9fb38300e91687abc565a0e",
+    responsivePosture: [
+      {
+        breakpoint: "mobile",
+        viewport: 375,
+        transformationIds: ["denseFilterDisclosure", "denseGridReflow", "compactSimplify"],
+      },
+      {
+        breakpoint: "tablet",
+        viewport: 768,
+        transformationIds: ["denseFilterDisclosure", "denseGridReflow", "compactSimplify"],
+      },
+      {
+        breakpoint: "desktop",
+        viewport: 1024,
+        transformationIds: ["denseGridReflow"],
+      },
+      {
+        breakpoint: "wide",
+        viewport: 1440,
+        transformationIds: ["denseGridReflow"],
+      },
+    ],
+  },
+} as const;
+
+const p10b18b03LegacyCollectionPropsSchema = dynamicCollectionCommercePropsSchema.omit({
+  conciseAttributeLimit: true,
+});
+
+function migrateP10B18B03CollectionArchetype(
+  archetype: DynamicCommerceCollectionSearchArchetype,
+): DynamicCommerceCollectionSearchArchetype {
+  const sorted = (values: readonly string[]) => [...values].sort();
+  const normalizedDesignDnaNarrowing = (value: {
+    spacingDensity: readonly string[];
+    surfaceDepth: readonly string[];
+    imagePosture: readonly string[];
+  }) => ({
+    spacingDensity: sorted(value.spacingDensity),
+    surfaceDepth: sorted(value.surfaceDepth),
+    imagePosture: sorted(value.imagePosture),
+  });
+  const profileId = archetype.profile.profileId;
+  const legacy =
+    P10B18B03_LEGACY_COLLECTION_PROFILES[
+      profileId as keyof typeof P10B18B03_LEGACY_COLLECTION_PROFILES
+    ];
+  if (!legacy || archetype.profile.fingerprint !== legacy.profileFingerprint) return archetype;
+
+  const current = createCollectionArchetype(profileId);
+  const presentation = archetype.componentPresentations[0];
+  const currentPresentation = current.componentPresentations[0];
+  if (
+    archetype.id !== current.id ||
+    archetype.archetypeVersion !== current.archetypeVersion ||
+    archetype.family !== "collection-search" ||
+    archetype.profile.profileVersion !== current.profile.profileVersion ||
+    canonicalValueString(sorted(archetype.supportedContexts)) !==
+      canonicalValueString(sorted(current.supportedContexts)) ||
+    canonicalValueString(sorted(archetype.compatibleSharedFrameProfileIds)) !==
+      canonicalValueString(sorted(current.compatibleSharedFrameProfileIds)) ||
+    archetype.defaultSharedFrameProfileId !== current.defaultSharedFrameProfileId ||
+    canonicalValueString(normalizedDesignDnaNarrowing(archetype.designDnaNarrowing)) !==
+      canonicalValueString(normalizedDesignDnaNarrowing(current.designDnaNarrowing)) ||
+    canonicalValueString(archetype.responsivePosture) !==
+      canonicalValueString(legacy.responsivePosture) ||
+    canonicalValueString(archetype.artDirectionPosture) !==
+      canonicalValueString(current.artDirectionPosture) ||
+    archetype.fallbackBehavior !== current.fallbackBehavior ||
+    archetype.componentPresentations.length !== 1 ||
+    !presentation ||
+    !currentPresentation ||
+    presentation.slotId !== currentPresentation.slotId ||
+    presentation.component !== "dynamicCollectionCommerce" ||
+    presentation.variant !== currentPresentation.variant ||
+    presentation.anatomyId !== "compact" ||
+    canonicalValueString(presentation.boundedParameters) !==
+      canonicalValueString(currentPresentation.boundedParameters)
+  ) {
+    return archetype;
+  }
+
+  const content = dynamicCollectionCommerceContentSchema.safeParse(presentation.content);
+  const props = p10b18b03LegacyCollectionPropsSchema.safeParse(presentation.props);
+  const styleOverrides = dynamicCollectionCommerceStyleOverridesSchema.safeParse(
+    presentation.styleOverrides,
+  );
+  const currentProps = dynamicCollectionCommercePropsSchema.parse(currentPresentation.props);
+  const conciseAttributeLimit = currentProps.conciseAttributeLimit;
+  const currentAnatomyId = currentPresentation.anatomyId;
+  if (
+    !content.success ||
+    !props.success ||
+    !styleOverrides.success ||
+    props.data.cardVariant !== "compact" ||
+    conciseAttributeLimit === undefined ||
+    currentAnatomyId === undefined
+  ) {
+    return archetype;
+  }
+
+  return {
+    ...structuredClone(current),
+    componentPresentations: [
+      {
+        ...structuredClone(currentPresentation),
+        visible: presentation.visible,
+        content: structuredClone(content.data),
+        props: {
+          ...structuredClone(props.data),
+          cardVariant: currentAnatomyId,
+          conciseAttributeLimit,
+        },
+        styleOverrides: structuredClone(styleOverrides.data),
+        approvedAssetSelections: (presentation.approvedAssetSelections ?? []).map((selection) =>
+          structuredClone(selection),
+        ),
+      },
+    ],
+  };
+}
+
+function migrateP10B18B03PresentationAuthority(
+  authority: DynamicCommercePresentationAuthority,
+): Readonly<{ authority: DynamicCommercePresentationAuthority; migrated: boolean }> {
+  const collectionSearchArchetypes = authority.collectionSearchArchetypes.map((archetype) =>
+    migrateP10B18B03CollectionArchetype(archetype),
+  );
+  const migrated = collectionSearchArchetypes.some(
+    (archetype, index) =>
+      canonicalValueString(archetype) !==
+      canonicalValueString(authority.collectionSearchArchetypes[index]),
+  );
+  if (!migrated) return { authority, migrated: false };
+  const { authorityFingerprint: _authorityFingerprint, ...material } = authority;
+  void _authorityFingerprint;
+  return {
+    authority: createDynamicCommercePresentationAuthority({
+      ...structuredClone(material),
+      authorityRevision: authority.authorityRevision + 1,
+      collectionSearchArchetypes,
+    }),
+    migrated: true,
   };
 }
 
@@ -1188,7 +1378,10 @@ function buildAuthority(input: {
   if (decisions.length) return decisions;
 
   const frameProfileId = input.snapshot.sharedFrame?.profileId;
-  const compatibleCollectionPlans = listCommercialCollectionSearchProfiles().filter(
+  const registeredCollectionPlans = listCommercialCollectionSearchProfiles().filter(
+    ({ profile }) => profile?.commercialCollectionSearch,
+  );
+  const compatibleCollectionPlans = registeredCollectionPlans.filter(
     ({ profile }) =>
       profile?.commercialCollectionSearch &&
       (!frameProfileId ||
@@ -1220,7 +1413,11 @@ function buildAuthority(input: {
       },
     ];
   }
-  if (!compatibleCollectionPlans.length || !compatibleProductPlans.length) {
+  if (
+    !registeredCollectionPlans.length ||
+    !compatibleCollectionPlans.length ||
+    !compatibleProductPlans.length
+  ) {
     return [
       {
         code: "conflicting-legacy-presentation",
@@ -1237,12 +1434,12 @@ function buildAuthority(input: {
     compatibleCollectionPlans.find(({ profile }) => profile?.id === "collection-dense-search") ??
     compatibleCollectionPlans[0];
   const searchProfileId = searchPlan.profile!.id;
-  const collectionSearchArchetypes = compatibleCollectionPlans.map((plan) => {
+  const collectionSearchArchetypes = registeredCollectionPlans.map((plan) => {
     const profileId = plan.profile!.id;
     return createCollectionArchetype(
       profileId,
       byProfile.get(profileId),
-      profileId === searchProfileId,
+      ["collection-catalogue-comparison", "collection-dense-search"].includes(profileId),
     );
   });
   const genericProductPlan =
@@ -1294,13 +1491,16 @@ function buildAuthority(input: {
   }
 
   const collectionArchetypeIds = new Set(collectionSearchArchetypes.map(({ id }) => id));
+  const compatibleCollectionArchetypeIds = new Set(
+    compatibleCollectionPlans.map(({ profile }) => collectionArchetypeId(profile!.id)),
+  );
   const collectionFallbackId =
     collectionArchetypeId(
       compatibleCollectionPlans.find(({ profile }) => byProfile.has(profile!.id))?.profile?.id ??
         compatibleCollectionPlans[0].profile!.id,
     ) || collectionSearchArchetypes[0].id;
   const collectionContextRules = createCollectionContextRules(
-    collectionArchetypeIds,
+    compatibleCollectionArchetypeIds,
     collectionFallbackId,
   );
   const collectionRouteMappings = routeInventory.flatMap((route) => {
@@ -1424,10 +1624,21 @@ export function migrateLegacyDynamicCommerceRoutes(
     };
   }
   if (snapshot.dynamicCommercePresentation) {
-    const authority = dynamicCommercePresentationAuthoritySchema.parse(
+    const storedAuthority = dynamicCommercePresentationAuthoritySchema.parse(
       snapshot.dynamicCommercePresentation,
     );
-    return { status: "current", snapshot, authority };
+    const migration = migrateP10B18B03PresentationAuthority(storedAuthority);
+    if (!migration.migrated) return { status: "current", snapshot, authority: storedAuthority };
+    const migrated = storefrontSnapshotSchema.parse({
+      ...structuredClone(snapshot),
+      dynamicCommercePresentation: migration.authority,
+    });
+    return {
+      status: "migrated",
+      snapshot: migrated,
+      authority: migration.authority,
+      migratedRouteCount: 0,
+    };
   }
   const dynamicPages = snapshot.pages.filter(isLegacyDynamicPage);
   if (dynamicPages.length === 0) {
@@ -1559,9 +1770,10 @@ export function materializeCurrentDynamicCommercePresentationAuthority(
     ]);
   }
   if (snapshot.dynamicCommercePresentation) {
-    return dynamicCommercePresentationAuthoritySchema.parse(
+    const authority = dynamicCommercePresentationAuthoritySchema.parse(
       structuredClone(snapshot.dynamicCommercePresentation),
     );
+    return migrateP10B18B03PresentationAuthority(authority).authority;
   }
   const dynamicPages = snapshot.pages.filter(isLegacyDynamicPage);
   const authority = buildAuthority({ snapshot, catalogue, dynamicPages });
@@ -1967,6 +2179,7 @@ export function applyDynamicCommerceDesignSelection(
 function assertCurrentArchetype(
   snapshot: StorefrontSnapshot,
   archetype: DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype,
+  enforceSelectedFrame = true,
 ) {
   const plan =
     archetype.family === "collection-search"
@@ -2111,6 +2324,7 @@ function assertCurrentArchetype(
     );
   }
   if (
+    enforceSelectedFrame &&
     snapshot.sharedFrame &&
     !isDynamicCommerceArchetypeCompatibleWithSharedFrame(archetype, snapshot.sharedFrame.profileId)
   ) {
@@ -2132,9 +2346,29 @@ export function validateCurrentDynamicCommercePresentationAuthority(
   if (!snapshot.dynamicCommercePresentation) return;
   const authority = exactAuthority(snapshot);
   for (const archetype of authority.collectionSearchArchetypes) {
-    assertCurrentArchetype(snapshot, archetype);
+    assertCurrentArchetype(snapshot, archetype, false);
   }
   for (const archetype of authority.productDetailArchetypes) {
+    assertCurrentArchetype(snapshot, archetype, false);
+  }
+  const selectedArchetypeIds = new Set([
+    ...authority.collectionRouteMappings.map(({ archetypeId }) => archetypeId),
+    ...authority.collectionContextRules.map(({ archetypeId }) => archetypeId),
+    authority.searchArchetypeId,
+    authority.fallbacks.collectionArchetypeId,
+    authority.fallbacks.searchArchetypeId,
+    authority.fallbacks.productDetailArchetypeId,
+    ...authority.productTypeMappings.map(({ archetypeId }) => archetypeId),
+    ...authority.productComplexityRules.map(({ archetypeId }) => archetypeId),
+  ]);
+  for (const archetypeId of selectedArchetypeIds) {
+    const archetype = [
+      ...authority.collectionSearchArchetypes,
+      ...authority.productDetailArchetypes,
+    ].find(({ id }) => id === archetypeId);
+    if (!archetype) {
+      fail("unknown-archetype", "The dynamic route selection references an unavailable archetype.");
+    }
     assertCurrentArchetype(snapshot, archetype);
   }
 }
@@ -2151,7 +2385,7 @@ function exactAuthority(snapshot: StorefrontSnapshot): DynamicCommercePresentati
   );
   if (!parsed.success)
     return fail("stale-authority", "Dynamic-commerce authority is invalid.", parsed.error);
-  return parsed.data;
+  return migrateP10B18B03PresentationAuthority(parsed.data).authority;
 }
 
 function pageAuthority(
@@ -2498,6 +2732,15 @@ export function projectDynamicCommerceArchetypePages(
   const authority = exactAuthority(snapshot);
   const projections: DynamicCommerceEditorProjection[] = [];
   for (const archetype of authority.collectionSearchArchetypes) {
+    if (
+      snapshot.sharedFrame &&
+      !isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+        archetype,
+        snapshot.sharedFrame.profileId,
+      )
+    ) {
+      continue;
+    }
     const mapped = authority.collectionRouteMappings.find(
       ({ archetypeId }) => archetypeId === archetype.id,
     );

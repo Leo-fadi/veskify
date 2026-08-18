@@ -89,7 +89,7 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
       semanticCapabilityIndex: fixture.semanticIndex,
     });
 
-    expect(fixture.semanticIndex.candidates).toHaveLength(135);
+    expect(fixture.semanticIndex.candidates).toHaveLength(159);
     for (const candidate of fixture.semanticIndex.candidates) {
       expect(() => prepared.resolveExecutionAuthority(candidate.selection)).not.toThrow();
     }
@@ -148,7 +148,6 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
       configurableProductPosture: "technical",
       mobileHierarchy: "conversion-led",
     });
-
     expect(fixture.semanticIndex.candidateCount).toBeGreaterThan(0);
     expect(premium.selection).toMatchObject({
       authorityId: "coordinated-direction:premium-editorial",
@@ -162,6 +161,8 @@ describe("P10B-16P-04F semantic compatibility resolver", () => {
       designSystemSpacingDensity: "compact",
       informationDensityPosture: "compact",
       sharedFrameProfileId: "compact-technical",
+      collectionProfileId: "collection-catalogue-comparison",
+      searchProfileId: "collection-catalogue-comparison",
     });
     expect(technical.selectedStructuralFingerprint).not.toBe(premium.selectedStructuralFingerprint);
     expect(premium.semanticResolutionFingerprint).toBe(premium.diagnostic.diagnosticFingerprint);

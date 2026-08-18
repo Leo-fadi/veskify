@@ -42,7 +42,7 @@ const scenarioExpectations = {
     density: "high",
     navigationPosture: "catalogue",
     storyCatalogueBalance: "catalogue-first",
-    discoveryPosture: "campaign",
+    discoveryPosture: "catalogue-comparison",
     configurableProductPosture: "guided",
     mobileHierarchy: "product-led",
     imageProminence: "balanced",

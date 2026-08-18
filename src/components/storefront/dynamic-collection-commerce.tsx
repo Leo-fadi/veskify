@@ -760,6 +760,31 @@ function SearchResultsContext({
   locale: LocaleContext;
 }) {
   const count = input.search.totalCount;
+  const sortLabel: Readonly<Record<StorefrontSearchResultPageV1["sort"], string>> = {
+    relevance: fallback("Relevance", "Osuvuus", locale),
+    "price-ascending": fallback("Price, low to high", "Hinta, halvin ensin", locale),
+    "price-descending": fallback("Price, high to low", "Hinta, kallein ensin", locale),
+    "title-ascending": fallback("Product name", "Tuotteen nimi", locale),
+  };
+  const filterLabel = {
+    brand: fallback("Brand", "Brändi", locale),
+    category: fallback("Category", "Kategoria", locale),
+    productType: fallback("Product type", "Tuotetyyppi", locale),
+    stockStatus: fallback("Availability", "Saatavuus", locale),
+  } as const satisfies Readonly<
+    Record<StorefrontSearchResultPageV1["appliedFilters"][number]["field"], string>
+  >;
+  const filterValue = (
+    field: StorefrontSearchResultPageV1["appliedFilters"][number]["field"],
+    value: string,
+  ) => {
+    if (field !== "stockStatus") return value;
+    return {
+      inStock: fallback("In stock", "Varastossa", locale),
+      lowStock: fallback("Limited availability", "Rajoitetusti saatavilla", locale),
+      outOfStock: fallback("Currently unavailable", "Ei juuri nyt saatavilla", locale),
+    }[value];
+  };
   if (input.search.state === "empty-query") {
     return (
       <p className={styles.searchContext} data-search-state="empty-query">
@@ -772,19 +797,33 @@ function SearchResultsContext({
     );
   }
   return (
-    <p
-      aria-atomic="true"
-      aria-live="polite"
-      className={styles.searchContext}
-      data-search-query={input.search.normalizedQuery}
-      data-search-result-count={count}
-      data-search-state="results"
-      role="status"
-    >
-      {fallback("Search results for", "Hakutulokset haulle", locale)}{" "}
-      <strong>“{input.search.normalizedQuery}”</strong>: {count}{" "}
-      {fallback(count === 1 ? "product" : "products", count === 1 ? "tuote" : "tuotetta", locale)}
-    </p>
+    <div className={styles.searchIdentity}>
+      <p
+        aria-atomic="true"
+        aria-live="polite"
+        className={styles.searchContext}
+        data-search-query={input.search.normalizedQuery}
+        data-search-result-count={count}
+        data-search-state="results"
+        role="status"
+      >
+        {fallback("Search results for", "Hakutulokset haulle", locale)}{" "}
+        <strong>“{input.search.normalizedQuery}”</strong>: {count}{" "}
+        {fallback(count === 1 ? "product" : "products", count === 1 ? "tuote" : "tuotetta", locale)}
+      </p>
+      <dl className={styles.searchState} data-search-state-summary="true">
+        <div>
+          <dt>{fallback("Sort", "Lajittelu", locale)}</dt>
+          <dd>{sortLabel[input.search.sort]}</dd>
+        </div>
+        {input.search.appliedFilters.map((filter) => (
+          <div data-search-filter={filter.field} key={filter.field}>
+            <dt>{filterLabel[filter.field]}</dt>
+            <dd>{filter.values.map((value) => filterValue(filter.field, value)).join(", ")}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -978,6 +1017,21 @@ type CollectionFilterPresentation = CollectionPresentationContext["filters"][num
 
 const PRIMARY_COLLECTION_FILTER_LIMIT = 4;
 
+export const collectionCardinalityClasses = ["zero", "micro", "small", "medium", "dense"] as const;
+export type CollectionCardinalityClass = (typeof collectionCardinalityClasses)[number];
+
+/** Presentation-only catalogue sizing. It never changes membership, ordering, or persisted truth. */
+export function collectionCardinalityClass(productCount: number): CollectionCardinalityClass {
+  if (!Number.isInteger(productCount) || productCount < 0) {
+    throw new TypeError("Collection cardinality requires a non-negative integer product count.");
+  }
+  if (productCount === 0) return "zero";
+  if (productCount === 1) return "micro";
+  if (productCount <= 4) return "small";
+  if (productCount <= 12) return "medium";
+  return "dense";
+}
+
 function collectionFilterIsSelected(filter: CollectionFilterPresentation): boolean {
   return (
     filter.values.some((value) => value.selected) ||
@@ -987,8 +1041,12 @@ function collectionFilterIsSelected(filter: CollectionFilterPresentation): boole
   );
 }
 
-function collectionFilterIsEligible(filter: CollectionFilterPresentation): boolean {
+function collectionFilterIsEligible(
+  filter: CollectionFilterPresentation,
+  productCount: number,
+): boolean {
   if (collectionFilterIsSelected(filter)) return true;
+  if (productCount <= 1) return false;
   if (filter.presentation === "range") {
     return filter.range !== undefined && filter.range.min < filter.range.max;
   }
@@ -1087,9 +1145,17 @@ function CollectionFilters({
   const [disclosureOpen, setDisclosureOpen] = useState(false);
   const filterPanelId = useId();
   const filterGroupsId = useId();
-  const filters = input.collection.filters.filter(collectionFilterIsEligible);
+  const cardinality = collectionCardinalityClass(input.collection.productIds.length);
+  const filters = input.collection.filters.filter((filter) =>
+    collectionFilterIsEligible(filter, input.collection.productIds.length),
+  );
   if (filters.length === 0) return null;
   const activeFilters = filters.filter(collectionFilterIsSelected);
+  const panelMode =
+    (input.variant === "catalogueComparison" || input.variant === "denseSearch") &&
+    (cardinality === "medium" || cardinality === "dense")
+      ? "persistent"
+      : "disclosure";
   const visibleFilters = showAllFilters
     ? filters
     : filters.slice(0, PRIMARY_COLLECTION_FILTER_LIMIT);
@@ -1114,10 +1180,11 @@ function CollectionFilters({
       data-eligible-filter-count={filters.length}
       data-layout-region="filters"
       data-primary-filter-count={Math.min(filters.length, PRIMARY_COLLECTION_FILTER_LIMIT)}
+      data-cardinality={cardinality}
     >
       <div
         className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
-        data-filter-panel-mode="disclosure"
+        data-filter-panel-mode={panelMode}
       >
         <button
           aria-controls={filterPanelId}
@@ -1231,7 +1298,7 @@ function CollectionSort({
   input: PreparedCollectionCommerce;
   locale: LocaleContext;
 }) {
-  if (input.collection.sorting.length < 2) return null;
+  if (input.collection.sorting.length < 2 || input.collection.productIds.length <= 1) return null;
   const defaultSort =
     input.collection.sorting.find((sort) => sort.default) ?? input.collection.sorting[0];
   return (
@@ -1338,6 +1405,8 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
         (currentWindow + 1) * COLLECTION_PRESENTATION_WINDOW_SIZE,
       )
     : input.products;
+  const resultCount = searchInput?.search.totalCount ?? input.products.length;
+  const cardinality = collectionCardinalityClass(resultCount);
   const anatomy = collectionAnatomyIdentity(input.variant);
   const childCollections = collectionInput ? (
     <ChildCollectionNavigation input={collectionInput} locale={locale} />
@@ -1391,6 +1460,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
               data-product-window-index={currentWindow}
               data-product-window-size={COLLECTION_PRESENTATION_WINDOW_SIZE}
               data-wide-grid-columns={wideCollectionGridColumns(presentedProducts.length)}
+              data-cardinality={cardinality}
             >
               {presentedProducts.map((product) => (
                 <DynamicCollectionProductCard
@@ -1438,6 +1508,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
                 : "standard"
       }
       data-search-context={searchInput ? "transient-canonical-results" : "none"}
+      data-catalogue-cardinality={cardinality}
       data-responsive-layout="content-driven"
       {...anatomy.responsiveAttributes}
     >

@@ -224,7 +224,7 @@ const profileInputs: readonly ProfileInput[] = [
     compatibleSharedFrameProfileIds: ["commerce-utility", "compact-technical"],
     defaultSharedFrameProfileId: "commerce-utility",
     presentationMode: "catalogue-comparison",
-    productCardAnatomyId: "compact",
+    productCardAnatomyId: "standard",
     gridDensity: "standard",
     filterLayout: "sidebar",
     childCollectionTreatment: "navigation",
@@ -233,7 +233,7 @@ const profileInputs: readonly ProfileInput[] = [
     responsiveTransformationIds: [
       "comparisonFilterDisclosure",
       "comparisonGridReflow",
-      "compactSimplify",
+      "standardCondense",
     ],
     designDnaNarrowing: {
       spacingDensity: ["compact", "standard"],
@@ -277,13 +277,13 @@ const profileInputs: readonly ProfileInput[] = [
     ],
     defaultSharedFrameProfileId: "compact-technical",
     presentationMode: "dense-search",
-    productCardAnatomyId: "compact",
+    productCardAnatomyId: "horizontal",
     gridDensity: "compact",
     filterLayout: "horizontal",
     childCollectionTreatment: "compact",
     resultsTreatment: "dense-scan",
     campaignEvidencePolicy: "not-required",
-    responsiveTransformationIds: ["denseFilterDisclosure", "denseGridReflow", "compactSimplify"],
+    responsiveTransformationIds: ["denseFilterDisclosure", "denseGridReflow", "denseReflow"],
     designDnaNarrowing: {
       // Search keeps its own compact grid and disclosure posture while inheriting
       // the storefront-wide Design DNA and frame. Those local controls do not

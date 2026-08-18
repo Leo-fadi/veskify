@@ -22,11 +22,11 @@ function lifecycleFixture() {
   };
   const authority = draft.dynamicCommercePresentation;
   if (!authority) throw new Error("Missing current dynamic-commerce authority.");
-  const collection = authority.collectionSearchArchetypes.find(({ supportedContexts }) =>
-    supportedContexts.includes("collection"),
+  const collection = authority.collectionSearchArchetypes.find(
+    ({ id }) => id === authority.fallbacks.collectionArchetypeId,
   );
-  const search = authority.collectionSearchArchetypes.find(({ supportedContexts }) =>
-    supportedContexts.includes("search"),
+  const search = authority.collectionSearchArchetypes.find(
+    ({ id }) => id === authority.searchArchetypeId,
   );
   if (!collection || !search) throw new Error("Missing collection/search archetypes.");
   const products = authority.productDetailArchetypes.filter(

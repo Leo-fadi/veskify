@@ -135,11 +135,12 @@ export function CanonicalProductCard({
       {product.compareAtPrice ? <del>{moneyLabel(product.compareAtPrice, locale)}</del> : null}
     </div>
   );
+  const availability = product.availability ? (
+    <p className={styles.availability}>{text(product.availability, locale)}</p>
+  ) : null;
   const metadata = (
     <div className={styles.metadata} data-card-region="metadata">
-      {product.availability ? (
-        <p className={styles.availability}>{text(product.availability, locale)}</p>
-      ) : null}
+      {availability}
       {attributes.length ? (
         <dl className={styles.attributes}>
           {attributes.map((attribute) => (
@@ -178,15 +179,13 @@ export function CanonicalProductCard({
         <>
           <div className={styles.editorialStage}>
             {media}
-            <div className={styles.editorialOverlay}>
-              {badge}
-              {action}
-            </div>
+            <div className={styles.editorialOverlay}>{badge}</div>
           </div>
           <div className={styles.editorialCopy}>
             {title}
             {price}
             {metadata}
+            {action}
           </div>
         </>
       );
@@ -197,6 +196,7 @@ export function CanonicalProductCard({
           <div className={styles.compactLead}>
             {title}
             {price}
+            {availability}
           </div>
           {media}
           {badge}
@@ -252,9 +252,17 @@ export function CanonicalProductCard({
       data-card-anatomy={request.anatomyId}
       data-card-anatomy-version={canonicalProductCardAuthorityVersion}
       data-card-context={request.context}
+      data-card-fact-density={
+        request.anatomyId === "editorial" || request.anatomyId === "compact"
+          ? "essential"
+          : request.anatomyId === "imageFirst"
+            ? "concise"
+            : "comparison"
+      }
       data-card-semantic-anatomy={anatomy.semanticName}
       data-card-facts-fingerprint={canonicalProductCardFactsFingerprint(request)}
       data-card-presentation-mode={anatomy.semantics.structure.presentationMode}
+      data-card-source-scale-policy="bounded-card-stage"
       data-responsive-transformations={anatomy.responsiveTransformations
         .map(({ id }) => id)
         .join(" ")}

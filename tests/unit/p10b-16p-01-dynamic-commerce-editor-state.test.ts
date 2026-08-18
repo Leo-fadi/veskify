@@ -95,8 +95,13 @@ describe("P10B-16P-01 dynamic commerce editor projection", () => {
   it("lists bounded archetypes rather than every concrete collection and product route", () => {
     const { authority, catalogue, snapshot } = currentScenario();
     const editorPages = projectCanonicalEditorPages({ draft: snapshot, catalogue });
+    const executableCollectionArchetypes = authority.collectionSearchArchetypes.filter(
+      (archetype) =>
+        !snapshot.sharedFrame ||
+        archetype.compatibleSharedFrameProfileIds.includes(snapshot.sharedFrame.profileId),
+    );
     const archetypeIds = new Set([
-      ...authority.collectionSearchArchetypes.map(({ id }) => id),
+      ...executableCollectionArchetypes.map(({ id }) => id),
       ...authority.productDetailArchetypes.map(({ id }) => id),
     ]);
     const dynamicPages = editorPages.filter(({ id }) => archetypeIds.has(id));
@@ -104,7 +109,7 @@ describe("P10B-16P-01 dynamic commerce editor projection", () => {
 
     expect(dynamicPages.map(({ id }) => id).sort()).toEqual([...archetypeIds].sort());
     expect(dynamicPages).toHaveLength(
-      authority.collectionSearchArchetypes.length + authority.productDetailArchetypes.length,
+      executableCollectionArchetypes.length + authority.productDetailArchetypes.length,
     );
     expect(dynamicPages.some(({ id }) => routeIds.has(id))).toBe(false);
     expect(dynamicPages.filter(({ type }) => type === "product").length).toBeLessThan(
@@ -121,8 +126,8 @@ describe("P10B-16P-01 dynamic commerce editor projection", () => {
     const productRoutes = authority.routeInventory.filter(({ kind }) => kind === "product");
     const productRepresentative = productRoutes[productRoutes.length - 1];
     if (productRepresentative.kind !== "product") throw new Error("Expected a product route.");
-    const searchArchetype = authority.collectionSearchArchetypes.find(({ supportedContexts }) =>
-      supportedContexts.includes("search"),
+    const searchArchetype = authority.collectionSearchArchetypes.find(
+      ({ id }) => id === authority.searchArchetypeId,
     )!;
     const searchRoute = authority.routeInventory.find(({ kind }) => kind === "search")!;
     const collectionArchetype = authority.collectionSearchArchetypes.find(

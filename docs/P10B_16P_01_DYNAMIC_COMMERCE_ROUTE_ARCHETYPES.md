@@ -227,6 +227,15 @@ one profile, or incompatible profile choices for one product type return a typed
 `requires-decision` result. Historical pre-authority snapshots remain parseable; compilation or
 current execution must resolve migration explicitly rather than discarding differences.
 
+P10B-18B-03 additionally recognizes only the two exact previously registered collection-profile
+fingerprints whose card anatomy changed: catalogue comparison `compact` to `standard`, and dense
+search `compact` to `horizontal`. That deterministic compatibility step replaces their registered
+profile/responsive/anatomy projection, increments the root authority revision and fingerprint, and
+preserves route inventory, mappings, protected commerce, bounded content/style choices, and
+approved assets. Unknown fingerprints or any other presentation drift still fail closed. Direct
+runtime resolution can project this exact migration so saved, historical, and compiled snapshots
+remain renderable before the migrated authority is next persisted.
+
 Compatibility projections may temporarily expand the root authority into concrete transient pages
 for an existing planner/proposal consumer. That projection is derived, write-free, and removed
 again before the canonical result is retained. It is not a second page graph or new design
@@ -279,3 +288,16 @@ P10B remains **Partial**. P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 are 
 P10B-17 and P10B-18 remain **Planned**, and P10B-16P-05B remains Planned after P10B-18.
 P10B-16P-06 claims standalone canonical catalogue search only, not Vesko integration, provider
 calls, AI/semantic/vector/fuzzy search, recommendations, personalization, or analytics.
+
+## Accepted P10B-18B-03 search-presentation continuation
+
+P10B-18B-03 keeps this persisted archetype/runtime separation. Catalogue comparison and dense
+search are both registered executable transient search presentations; editorial and campaign remain
+collection-only. The current frame may narrow an editor projection, but it does not erase a valid
+archetype from registry or provider-capability truth. Missing or incompatible selected mappings
+still fail closed.
+
+The provider-facing compact capability now synchronizes with P10B-16P-06:
+`registered-presentation-authority` plus `canonical-transient-query-results`, `read-only-bounded`
+behavior and `p10b-16p-06-canonical-search-adapter`. This is not a persisted query/result model and
+does not claim AI, semantic, vector, fuzzy, personalized or Vesko search.

@@ -1,13 +1,13 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A, P10B-18B-01, P10B-18B-06 and P10B-18B-02 Baseline; parent P10B-18B/P10B-18/P10B Partial
+**Status:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 Baseline; parent P10B-18B/P10B-18/P10B Partial
 
 **Authority date:** 17 August 2026
 
-**Branch:** `codex/p10b-18b-06-asset-composition-art-direction`
+**Branch:** `codex/p10b-18b-03-collection-search-product-card-quality`
 
-**Baseline:** P10B-18A, P10B-18B-01, P10B-18B-06 and P10B-18B-02 are Baseline; parent P10B-18B, P10B-18 and
-P10B are Partial; P10B-18B-03 is next and P10B-18C remains Planned
+**Baseline:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 are Baseline; parent P10B-18B, P10B-18 and
+P10B are Partial; P10B-18B-04 is next and P10B-18C remains Planned
 
 ## 1. Purpose and boundaries
 
@@ -1616,3 +1616,141 @@ quality/diversity analysis and fingerprint-stratified designer review remain own
 
 The exact next task is
 **P10B-18B-03 — Collection / Search / Product-card Quality Upgrade**.
+
+## 19. P10B-18B-03 accepted collection/search/product-card implementation
+
+**Status:** **Baseline**. The product owner accepted P10B-18B-03 on 18 August 2026 for the bounded
+collection, search-results, filter hierarchy and canonical product-card quality authority. Parent
+P10B-18B, P10B-18 and P10B remain **Partial**. P10B-18B-04 is next; P10B-18B-05, P10B-18C and
+P10B-16P-05B remain **Planned**.
+
+Sections 1 through 15 remain the frozen P10B-18A diagnosis. Sections 16 through 18 remain the
+accepted P10B-18B-01, P10B-18B-06 and P10B-18B-02 baselines. This section records only the accepted
+P10B-18B-03 delta and does not rewrite earlier denominators, visual verdicts or historical handoffs.
+
+### 19.1 Retained authority and exact profile purposes
+
+P10B-18B-03 retains the four versioned collection/search profile IDs, one `PageBlueprint`, one
+dynamic collection/search renderer, one canonical product-card authority and renderer, one
+canonical catalogue and one transient read-only search query/results adapter. It adds no product,
+collection, search, filter, page-graph, card-family or publication authority and no persisted
+commerce classification.
+
+| Existing profile                    | Accepted purpose and context                                                                            | Card and filter result                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `collection-editorial-discovery`    | Collection-only identity, curated product discovery and related-collection continuation.                | Editorial card, proportional disclosed filters and low-cardinality rhythm without an oversized hero.         |
+| `collection-catalogue-comparison`   | Collection or search comparison, compact identity and fact-forward product evaluation.                  | Standard card, `standardCondense`, useful comparison facts and stronger filters only when complexity merits. |
+| `collection-campaign-led-discovery` | Collection-only approved campaign focal asset, proposition, relevant discovery and continuation.        | Image-first card and supportive filters; it fails closed without approved purpose-affine campaign evidence.  |
+| `collection-dense-search`           | Compact collection identity or explicit query/result identity with efficient high-scanability commerce. | Horizontal card, `denseReflow`, bounded filters/sort and context-distinct collection/search composition.     |
+
+All four purposes remain materially distinct. Editorial and campaign remain collection-only;
+catalogue comparison and dense search are truthfully executable for both collection and transient
+search-results contexts. Search uses the same renderer and catalogue but exposes query, result
+count, sort/filter state and no-result continuation without synthetic collection membership,
+campaign copy or collection hero identity.
+
+The two profile anatomy upgrades retain compatibility with exact pre-P10B-18B-03 stored authority:
+the previously fingerprinted comparison/compact and dense-search/compact archetypes migrate
+deterministically to the current standard and horizontal anatomies. Migration increments the root
+authority revision/fingerprint while preserving route inventory, mappings, protected commerce,
+bounded presentation choices and approved assets; unknown stale fingerprints continue to fail
+closed.
+
+### 19.2 Cardinality, facets, geometry and card authority
+
+The renderer derives one deterministic presentation-only cardinality class from the exact visible
+canonical result pool: `micro` for one product, `small` for two through four, `medium` for five
+through twelve and `dense` for thirteen or more. The class may alter grid, orientation, filter and
+card geometry; it never persists, duplicates products or changes membership/order.
+
+Facets with zero or one effective value are suppressed unless selected. Sort is omitted for zero or
+one result. Persistent comparison/dense filter chrome appears only for medium/dense result sets,
+while low-cardinality editorial/campaign presentation remains disclosed and subordinate. The same
+panel remains collapsible below the desktop breakpoint and becomes CSS-persistent only on desktop,
+so trigger state and panel visibility stay synchronized. Active filters use localized EN/FI field
+and canonical stock-status labels and remain visible and operable. Child collection IDs and ordering
+remain canonical and their compact continuation is visually distinct from product cards.
+
+| Anatomy      | Accepted hierarchy and purpose                                                                       | Media, fact and responsive posture                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `standard`   | Media → title → price → availability → concise comparison facts → action.                            | Bounded balanced media; aligned comparison facts; `standardCondense` preserves facts/action on narrow screens.         |
+| `editorial`  | Editorial media → title/price → minimal facts → action.                                              | Expressive but capped media; mobile action moves after facts to remove the prior over-tall overlay composition.        |
+| `compact`    | Compact media → title → price → availability → action.                                               | Essential facts only; bounded image and targets; no unnecessary attribute stack.                                       |
+| `imageFirst` | Purpose-affine visual media → discoverable title/price → concise fact/action.                        | Dominant but source-bounded media; low-resolution canonical product media is not enlarged into an irresponsible stage. |
+| `horizontal` | Horizontal media → scanable title/price/status/facts → action for dense results and recommendations. | Full-width result row on wide search; coherent `denseReflow` stack at narrow widths without a tiny floating image.     |
+
+Canonical product IDs, membership/order, variants/options, price, availability and product-media
+fingerprints remain unchanged. Cards expose product navigation only; no quick-add, generated fact,
+fake derivative, fabricated facet or alternate media owner was introduced.
+
+### 19.3 Search truth and semantic causality
+
+The compact provider-facing capability projection now matches the accepted P10B-16P-06 runtime:
+
+```text
+registration = registered-presentation-authority
+execution = canonical-transient-query-results
+behavior = read-only-bounded
+reason = p10b-16p-06-canonical-search-adapter
+```
+
+Provider instructions state that this is exact transient canonical product search and explicitly
+exclude AI, semantic, vector, fuzzy, personalized and Vesko-search claims. No provider schema or
+field changed and no provider or Vesko call was made.
+
+`collectionIntent.discoveryPosture` now has one compound material consequence through the selected
+collection profile, search profile where applicable, filter posture, card anatomy and collection
+hierarchy. Duplicate merchandising influence is derived rather than counted as another independent
+axis. Fixed compatible witnesses prove Premium editorial versus campaign, Modern comparison versus
+dense and Minimal editorial versus dense topologies after direction labels, copy and colour are
+removed.
+
+### 19.4 Same-strata regression and retained browser evidence
+
+The accepted result reuses the exact nine shapes and eight semantic/catalogue variations from the
+frozen P10B-18A audit. No semantic input, fixture, protected-commerce denominator or exclusion rule
+was changed.
+
+| Same-strata measure                 | Before P10B-18B-03                                                       | Accepted P10B-18B-03                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Deterministic outcomes              | 72                                                                       | 72                                                                       |
+| Collection profiles                 | editorial 36 / dense 28 / comparison 8 / campaign 0                      | editorial 35 / dense 27 / comparison 9 / campaign 1                      |
+| Search profiles                     | dense 72                                                                 | dense 63 / comparison 9                                                  |
+| Card anatomy occurrences            | compact 72 / editorial 36 / standard 28 / image-first 18 / horizontal 10 | compact 27 / editorial 36 / standard 36 / image-first 18 / horizontal 71 |
+| Normalized material topologies      | 38                                                                       | 39                                                                       |
+| Repeated material memberships       | 55 / 72                                                                  | 53 / 72                                                                  |
+| Largest material cluster            | 7                                                                        | 7                                                                        |
+| Singleton material topologies       | 17                                                                       | 19                                                                       |
+| Frame distribution                  | editorial 27 / utility 9 / centered 18 / compact 18                      | unchanged                                                                |
+| Non-colour Design DNA outcomes      | 6                                                                        | unchanged                                                                |
+| Approved-asset-bearing / asset-free | 8 / 64                                                                   | unchanged                                                                |
+| Collection cardinality              | implicit                                                                 | micro 40 / small 32; medium/dense separately unit-proved                 |
+
+The accepted browser checkpoint retains 21 captures across six stores. It covers all four profile
+purposes and all five card anatomies; Premium, Modern and Minimal/Warm; collection and executable
+search contexts; 375, 768, 1024 and 1440 px; low/richer editorial, comparison, approved-asset
+campaign and dense collections; and zero, one and multiple search results.
+
+Measured accepted examples place collection orientation between 272 and 531 px, first collection
+cards between 603 and 1249 px from the document top, and useful filter regions between 0 and 57 px
+in the retained scenarios. Comparison search uses three bounded standard cards at 1440, while dense
+search uses full-width horizontal rows; one-result search uses one bounded row and zero-result search
+emits no grid/card. All captures have zero horizontal document overflow and zero measured largest
+empty vertical gap. These are evidence-specific diagnostics, not universal pixel design tokens.
+
+Every capture binds exact intent, profile, cardinality, effective facets, card anatomy, Design DNA,
+frame, catalogue/search authority, product/media fingerprints, materialized snapshot, save/reload
+and rendered authority. The ledger records zero external/provider/Vesko/browser generation-endpoint/
+publication/runtime-error calls. No real publication was attempted.
+
+### 19.5 Acceptance boundary and handoff
+
+Acceptance is strictly for the bounded collection/search profile, cardinality, facet/filter,
+canonical card, search-capability and semantic-discovery authority described above. It is not
+commercial visual acceptance of the complete storefront. PDP opening/gallery/options/purchase and
+related merchandising remain owned by P10B-18B-04; content/support/utilities remain owned by
+P10B-18B-05. The 100+ deterministic quality/diversity and fingerprint-stratified designer review
+remain owned by P10B-18C.
+
+The exact next task is
+**P10B-18B-04 — PDP Quality Upgrade**.

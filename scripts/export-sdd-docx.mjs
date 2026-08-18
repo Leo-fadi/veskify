@@ -234,7 +234,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 18 August 2026",
-      "Accepted P10B-18B-02 homepage/editorial/campaign quality upgrade",
+      "Accepted P10B-18B-03 collection/search/product-card quality upgrade",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

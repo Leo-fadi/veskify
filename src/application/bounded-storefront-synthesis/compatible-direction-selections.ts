@@ -328,6 +328,13 @@ function designDnaCompatible(candidate: Candidate, input: SynthesisInput): boole
 
 // Validate dynamic profile/context metadata without resolving or materializing an archetype.
 function dynamicCommerceCompatible(candidate: Candidate, input: SynthesisInput): boolean {
+  const comparisonProfileId = "collection-catalogue-comparison";
+  if (
+    (candidate.collectionProfileId === comparisonProfileId) !==
+    (candidate.searchProfileId === comparisonProfileId)
+  ) {
+    return false;
+  }
   const dynamic = input.planningInput.draft.dynamicCommercePresentation;
   // Initial generation has no dynamic authority; existing drafts must match their current one.
   if (!dynamic) return true;
