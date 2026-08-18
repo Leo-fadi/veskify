@@ -26,6 +26,9 @@ import {
   compileWholeStorefrontProposal,
   materializeWholeStorefrontRuntimeSnapshot,
 } from "@/application/whole-storefront-proposal-lifecycle";
+import { migrateApprovedPresentationArtDirection } from "@/application/responsive-image-authority";
+import { approvedAssetPlacementAuthority } from "@/application/ai-storefront-generation/approved-asset-placement-authority";
+import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
 import {
   dynamicCollectionCommerceBridgeDefinition,
   dynamicProductDetailBridgeDefinition,
@@ -318,11 +321,19 @@ export function materializeCompleteStorefrontSelection(
     pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
     approvedAssetRoleSelections?: readonly WholeStorefrontApprovedAssetRoleSelection[];
     dynamicCommerceSelection?: DynamicCommerceDesignSelection;
+    artDirectionPosture?: "contained" | "editorial" | "immersive";
     materializationIdPrefix?: string;
   }>,
 ): CompleteStorefrontMaterialization {
   const materializationIdPrefix = input.materializationIdPrefix ?? "complete";
   for (const selection of input.approvedAssetRoleSelections ?? []) {
+    const approvedAsset = input.planningInput.approvedAssetContext?.assets.find(
+      (candidate) =>
+        candidate.assetId === selection.assetId &&
+        candidate.role === selection.role &&
+        candidate.revision === selection.assetRevision &&
+        candidate.materialFingerprint === selection.materialFingerprint,
+    );
     const presentation = input.approvedAssetPresentations.find(
       (candidate) =>
         candidate.assetId === selection.assetId &&
@@ -331,11 +342,49 @@ export function materializeCompleteStorefrontSelection(
         candidate.materialFingerprint === selection.materialFingerprint &&
         candidate.asset.id === selection.assetId,
     );
-    if (!presentation) {
+    if (!approvedAsset || !presentation) {
       throw new WholeStorefrontGenerationPlanError(
         "stale-approved-asset",
         "An exact approved asset-role selection has no matching renderer presentation authority.",
       );
+    }
+    const primaryPlacementAuthority = approvedAssetPlacementAuthority(approvedAsset);
+    const assetSlot = input.planningInput.componentDefinitions
+      .find(({ type }) => type === selection.component)
+      ?.assetSlots.find(({ id }) => id === selection.assetSlotId);
+    for (const responsiveSourceAssetId of selection.responsiveSourceAssetIds ?? []) {
+      const responsiveAsset = input.planningInput.approvedAssetContext?.assets.find(
+        (candidate) => candidate.assetId === responsiveSourceAssetId,
+      );
+      const responsivePresentation = input.approvedAssetPresentations.find(
+        (candidate) =>
+          candidate.assetId === responsiveAsset?.assetId &&
+          candidate.asset.id === responsiveAsset.assetId &&
+          candidate.role === responsiveAsset.role &&
+          candidate.revision === responsiveAsset.revision &&
+          candidate.materialFingerprint === responsiveAsset.materialFingerprint,
+      );
+      const responsivePlacementAuthority = responsiveAsset
+        ? approvedAssetPlacementAuthority(responsiveAsset)
+        : undefined;
+      if (
+        !responsiveAsset ||
+        !responsivePresentation ||
+        !responsivePlacementAuthority ||
+        responsiveAsset.assetId === approvedAsset.assetId ||
+        !assetSlot?.acceptedRoles.includes(responsiveAsset.role) ||
+        !primaryPlacementAuthority.responsiveSourceGroupId ||
+        responsivePlacementAuthority?.responsiveSourceGroupId !==
+          primaryPlacementAuthority.responsiveSourceGroupId ||
+        !responsivePlacementAuthority.viewportApplicability.some(
+          (breakpoint) => breakpoint === "mobile" || breakpoint === "tablet",
+        )
+      ) {
+        throw new WholeStorefrontGenerationPlanError(
+          "stale-approved-asset",
+          "An exact responsive source selection has no matching current approved placement and presentation authority.",
+        );
+      }
     }
   }
   const sourceDynamicSelection = input.dynamicCommerceSelection
@@ -477,7 +526,50 @@ export function materializeCompleteStorefrontSelection(
     approvedAssetRoleSelections: input.approvedAssetRoleSelections,
     dynamicCommerceSelection: reboundDynamicSelection,
   });
-  for (const placement of plan.approvedAssetPlacements) {
+  const executionBrandSystem = registeredBrandSystemForDirection(
+    planningInput.draft.brandSystem,
+    planningInput.recipeContext.designSystem,
+    input.directionId,
+    {
+      spacingDensity:
+        input.designSystemNarrowing?.spacingDensity ?? plan.designSystemSelection.spacingDensity,
+      surfaceDepth:
+        input.designSystemNarrowing?.surfaceDepth ?? plan.designSystemSelection.surfaceDepth,
+    },
+  );
+  const plannedComponents = plan.pagePlans.flatMap(({ components }) => components);
+  const placementVariant = (
+    placement: WholeStorefrontGenerationPlan["approvedAssetPlacements"][number],
+  ) => {
+    const planned = plannedComponents.find(
+      (candidate) => "instance" in candidate && candidate.instance.id === placement.componentId,
+    );
+    return planned && "instance" in planned
+      ? planned.instance.variant
+      : planningInput.draft.sharedFrame?.header.id === placement.componentId
+        ? planningInput.draft.sharedFrame.header.variant
+        : planningInput.componentDefinitions.find(({ type }) => type === placement.componentType)
+            ?.defaultVariant;
+  };
+  const selectionForPlacement = (
+    placement: WholeStorefrontGenerationPlan["approvedAssetPlacements"][number],
+  ) => {
+    const planned = plannedComponents.find(
+      (candidate) => "instance" in candidate && candidate.instance.id === placement.componentId,
+    );
+    const slotId = planned && "instance" in planned ? planned.pageBlueprintSlotId : undefined;
+    return plan.approvedAssetRoleSelections.find(
+      (selection) =>
+        selection.assetId === placement.assetId &&
+        selection.role === placement.role &&
+        selection.component === placement.componentType &&
+        selection.assetSlotId === placement.assetSlotId &&
+        (placement.placementContext === "sharedFrame"
+          ? selection.placementContext === "sharedFrame"
+          : slotId !== undefined && selection.slotId === slotId),
+    );
+  };
+  const executionPresentations = plan.approvedAssetPlacements.map((placement) => {
     const presentation = input.approvedAssetPresentations.find(
       (candidate) =>
         candidate.assetId === placement.assetId &&
@@ -492,12 +584,111 @@ export function materializeCompleteStorefrontSelection(
         "A planned approved asset has no matching current renderer presentation authority.",
       );
     }
+    const selection = selectionForPlacement(placement);
+    if (!selection) return approvedAssetPresentationSchema.parse(presentation);
+    const responsiveSources = (selection.responsiveSourceAssetIds ?? []).flatMap((assetId) => {
+      const sourcePresentation = input.approvedAssetPresentations.find(
+        (candidate) => candidate.assetId === assetId,
+      );
+      const sourceAsset = planningInput.approvedAssetContext?.assets.find(
+        (candidate) => candidate.assetId === assetId,
+      );
+      if (!sourcePresentation || !sourceAsset) return [];
+      const breakpoints = sourceAsset.presentation.placementAuthority?.viewportApplicability.filter(
+        (breakpoint) => breakpoint === "mobile" || breakpoint === "tablet",
+      ) ?? ["mobile" as const];
+      if (breakpoints.length === 0) return [];
+      return [
+        {
+          breakpoints,
+          assetId: sourcePresentation.assetId,
+          role: sourcePresentation.role,
+          revision: sourcePresentation.revision,
+          materialFingerprint: sourcePresentation.materialFingerprint,
+          asset: sourcePresentation.asset,
+        },
+      ];
+    });
+    const enriched = approvedAssetPresentationSchema.parse({
+      ...presentation,
+      ...(responsiveSources.length ? { responsiveSources } : {}),
+    });
+    const component = planningInput.componentDefinitions.find(
+      ({ type }) => type === placement.componentType,
+    );
+    if (!component) return enriched;
+    const variant = placementVariant(placement) ?? component.defaultVariant;
+    const approvedAsset = planningInput.approvedAssetContext?.assets.find(
+      (candidate) =>
+        candidate.assetId === presentation.assetId &&
+        candidate.role === presentation.role &&
+        candidate.revision === presentation.revision &&
+        candidate.materialFingerprint === presentation.materialFingerprint,
+    );
+    return migrateApprovedPresentationArtDirection({
+      presentation: enriched,
+      placement,
+      component,
+      variant,
+      dna: executionBrandSystem.designDna!,
+      provenanceKind: placement.sourceProvenanceKind ?? "sourceDiscovered",
+      artDirectionPosture: input.artDirectionPosture,
+      approvedResponsiveCrops: [
+        ...(approvedAsset?.presentation.responsiveCrops ?? []),
+        ...(selection.responsiveSourceAssetIds ?? []).flatMap(
+          (assetId) =>
+            planningInput.approvedAssetContext?.assets.find(
+              (candidate) => candidate.assetId === assetId,
+            )?.presentation.responsiveCrops ?? [],
+        ),
+      ],
+      approvedResponsiveSourceLineages: (selection.responsiveSourceAssetIds ?? []).flatMap(
+        (assetId) => {
+          const asset = planningInput.approvedAssetContext?.assets.find(
+            (candidate) => candidate.assetId === assetId,
+          );
+          return asset
+            ? [
+                {
+                  assetId,
+                  provenanceKind:
+                    asset.provenance.location === "merchant-upload"
+                      ? ("merchantProvided" as const)
+                      : ("sourceDiscovered" as const),
+                  sourceOwnerId: asset.sourceReferenceId,
+                },
+              ]
+            : [];
+        },
+      ),
+      approvedSafeArea: approvedAsset?.presentation.safeArea,
+    });
+  });
+  for (const placement of plan.approvedAssetPlacements) {
+    const presentation = executionPresentations.find(
+      (candidate) =>
+        candidate.assetId === placement.assetId &&
+        candidate.asset.id === placement.assetId &&
+        candidate.role === placement.role &&
+        candidate.revision === placement.assetRevision &&
+        candidate.materialFingerprint === placement.materialFingerprint &&
+        (!candidate.artDirection ||
+          (candidate.artDirection.placement.componentType === placement.componentType &&
+            candidate.artDirection.placement.assetSlotId === placement.assetSlotId &&
+            candidate.artDirection.placement.variant === placementVariant(placement))),
+    );
+    if (!presentation) {
+      throw new WholeStorefrontGenerationPlanError(
+        "stale-approved-asset",
+        "A planned approved asset has no matching current renderer presentation authority.",
+      );
+    }
   }
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const legacyMaterialized = materializeWholeStorefrontRuntimeSnapshot({
     runtime: proposal.proposedStorefront,
     planningInput,
-    approvedAssetPresentations: input.approvedAssetPresentations,
+    approvedAssetPresentations: executionPresentations,
   });
   const materialized = requireMigratedDynamicCommerceSnapshot(
     legacyMaterialized,

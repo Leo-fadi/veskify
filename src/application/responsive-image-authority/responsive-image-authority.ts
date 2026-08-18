@@ -54,7 +54,7 @@ export function createCanonicalProductMediaResponsiveAuthority(
     role,
   })}`;
   return createResponsiveImageAuthority({
-    contractVersion: "1.0.0",
+    contractVersion: "1.1.0",
     source: {
       assetId: input.media.assetId,
       role,
@@ -90,6 +90,7 @@ export function createCanonicalProductMediaResponsiveAuthority(
         overlay: "none" as const,
       },
     })),
+    responsiveSources: [],
     derivatives: [],
   });
 }
@@ -167,7 +168,11 @@ function assertTreatment(
       "Image overlay broadens the Design DNA overlay authority.",
     );
   }
-  if (treatment.ratio !== "natural" && dna.media.ratio !== treatment.ratio) {
+  if (
+    treatment.ratio !== "natural" &&
+    dna.media.ratio !== treatment.ratio &&
+    treatment.approvedCropId === undefined
+  ) {
     throw new ResponsiveImageAuthorityError(
       "invalid-ratio",
       "Image ratio is outside the Design DNA default.",
@@ -292,6 +297,15 @@ export function validateResponsiveImageAuthority({
       "Image role or cardinality does not match the registered slot.",
     );
   }
+  if (
+    authority.contractVersion === "1.1.0" &&
+    authority.responsiveSources.some(({ source }) => !slot.acceptedRoles.includes(source.role))
+  ) {
+    throw new ResponsiveImageAuthorityError(
+      "wrong-role",
+      "A responsive source role does not match the registered slot.",
+    );
+  }
   if (expectedProductId !== undefined) {
     if (
       authority.source.provenanceKind !== "canonicalProductMedia" ||
@@ -359,6 +373,7 @@ export type ResolvedResponsiveImage = Readonly<{
   selectedBreakpoint: ResponsiveImageBreakpoint | "source";
   treatment: ResponsiveImageTreatment;
   derivativeId?: string;
+  source: ResponsiveImageAuthority["source"];
   fingerprint: string;
 }>;
 
@@ -374,6 +389,12 @@ export function resolveResponsiveImage(
     );
   }
   const breakpoint = parsedBreakpoint.data;
+  const responsiveSource =
+    authority.contractVersion === "1.1.0"
+      ? authority.responsiveSources.find(
+          ({ breakpoint: sourceBreakpoint }) => sourceBreakpoint === breakpoint,
+        )?.source
+      : undefined;
   for (const candidate of fallbackOrder[breakpoint]) {
     const treatment = authority.responsiveTreatments.find(
       (item) => item.breakpoint === candidate,
@@ -387,6 +408,7 @@ export function resolveResponsiveImage(
       selectedBreakpoint: candidate,
       treatment,
       ...(derivative ? { derivativeId: derivative.derivativeId } : {}),
+      source: responsiveSource ?? authority.source,
       fingerprint: authority.fingerprint,
     };
   }
@@ -394,6 +416,7 @@ export function resolveResponsiveImage(
     requestedBreakpoint: breakpoint,
     selectedBreakpoint: "source",
     treatment: authority.sourceTreatment,
+    source: responsiveSource ?? authority.source,
     fingerprint: authority.fingerprint,
   };
 }
@@ -418,6 +441,10 @@ export function migrateApprovedPresentationArtDirection({
   dna,
   provenanceKind,
   variant = component.defaultVariant,
+  artDirectionPosture = "editorial",
+  approvedResponsiveCrops = [],
+  approvedResponsiveSourceLineages = [],
+  approvedSafeArea,
 }: {
   presentation: ApprovedAssetPresentation;
   placement: ApprovedAssetPlacementOperation;
@@ -425,24 +452,102 @@ export function migrateApprovedPresentationArtDirection({
   dna: DesignDna;
   variant?: string;
   provenanceKind: ResponsiveImageAuthority["source"]["provenanceKind"];
+  artDirectionPosture?: "contained" | "editorial" | "immersive";
+  approvedResponsiveCrops?: readonly Readonly<{
+    cropId: string;
+    breakpoint: ResponsiveImageBreakpoint;
+    aspectRatio: string;
+    focalPoint: Readonly<{ x: number; y: number }>;
+  }>[];
+  approvedResponsiveSourceLineages?: readonly Readonly<{
+    assetId: string;
+    provenanceKind: ResponsiveImageAuthority["source"]["provenanceKind"];
+    sourceOwnerId: string;
+  }>[];
+  approvedSafeArea?: Readonly<{ x: number; y: number; width: number; height: number }>;
 }): ApprovedAssetPresentation {
-  if (presentation.artDirection) return presentation;
   const anatomy = component.commercialAnatomy;
   const anatomyVariant = anatomy?.variants.find(({ variantId }) => variantId === variant);
   const anatomyPlacement = anatomyVariant?.structure?.assetPlacements.find(
     ({ slotId }) => slotId === placement.assetSlotId,
   );
   if (!anatomy || !anatomyPlacement) return presentation;
-  const sourceTreatment: ResponsiveImageTreatment = {
-    ratio: dna.media.ratio,
-    crop: { mode: dna.media.crop },
-    focalPoint: { x: 0.5, y: 0.5 },
-    overlay: dna.media.overlay,
+  const treatmentFor = (breakpoint?: ResponsiveImageBreakpoint): ResponsiveImageTreatment => {
+    const approvedCrop = approvedResponsiveCrops.find((crop) => crop.breakpoint === breakpoint);
+    const approvedRatio = approvedCrop
+      ? (() => {
+          const [width, height] = approvedCrop.aspectRatio.split(":").map(Number);
+          if (!width || !height) return dna.media.ratio;
+          const ratio = width / height;
+          if (ratio === 1) return "square" as const;
+          if (ratio < 1) return "portrait" as const;
+          if (ratio >= 1.6) return "wide" as const;
+          return "landscape" as const;
+        })()
+      : dna.media.ratio;
+    return {
+      ratio: approvedRatio,
+      crop: {
+        mode:
+          approvedSafeArea || artDirectionPosture === "contained"
+            ? "contain"
+            : artDirectionPosture === "editorial" && dna.media.crop === "editorial"
+              ? "cover"
+              : dna.media.crop,
+      },
+      focalPoint: approvedCrop?.focalPoint ?? ({ x: 0.5, y: 0.5 } as const),
+      overlay:
+        artDirectionPosture === "contained"
+          ? "none"
+          : artDirectionPosture === "editorial" &&
+              (dna.media.overlay === "gradient" || dna.media.overlay === "contrast")
+            ? "subtle"
+            : dna.media.overlay,
+      ...(approvedCrop
+        ? {
+            approvedCropId: approvedCrop.cropId,
+            approvedAspectRatio: approvedCrop.aspectRatio,
+          }
+        : {}),
+    };
   };
+  const sourceTreatment = treatmentFor();
+  const responsiveSources =
+    presentation.responsiveSources?.flatMap((responsiveSource) =>
+      responsiveSource.breakpoints.map((breakpoint) => {
+        const suppliedLineage = approvedResponsiveSourceLineages.find(
+          ({ assetId }) => assetId === responsiveSource.assetId,
+        );
+        const retainedLineage =
+          presentation.artDirection?.contractVersion === "1.1.0"
+            ? presentation.artDirection.responsiveSources.find(
+                ({ source }) => source.assetId === responsiveSource.assetId,
+              )?.source
+            : undefined;
+        const lineage = suppliedLineage ?? retainedLineage;
+        if (!lineage) {
+          throw new ResponsiveImageAuthorityError(
+            "wrong-source",
+            "Responsive source lineage must resolve to its own approved evidence authority.",
+          );
+        }
+        return {
+          breakpoint,
+          source: {
+            assetId: responsiveSource.assetId,
+            role: responsiveSource.role,
+            revision: responsiveSource.revision,
+            materialFingerprint: responsiveSource.materialFingerprint,
+            provenanceKind: lineage.provenanceKind,
+            sourceOwnerId: lineage.sourceOwnerId,
+          },
+        };
+      }),
+    ) ?? [];
   return {
     ...presentation,
     artDirection: createResponsiveImageAuthority({
-      contractVersion: "1.0.0",
+      contractVersion: "1.1.0",
       source: {
         assetId: presentation.assetId,
         role: presentation.role,
@@ -462,12 +567,14 @@ export function migrateApprovedPresentationArtDirection({
         assetSlotId: placement.assetSlotId,
         required: placement.required,
       },
+      ...(approvedSafeArea ? { safeArea: approvedSafeArea } : {}),
       sourceTreatment,
       responsiveTreatments: responsiveImageBreakpoints.map((breakpoint) => ({
         breakpoint,
-        treatment: sourceTreatment,
+        treatment: treatmentFor(breakpoint),
       })),
-      derivatives: [],
+      responsiveSources,
+      derivatives: presentation.artDirection?.derivatives ?? [],
     }),
   };
 }

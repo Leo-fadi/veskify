@@ -104,6 +104,7 @@ type LocaleContext = { activeLocale: Locale; primaryLocale: Locale };
 type Projection = z.infer<typeof componentProjectionContextSchema>;
 type ResolvedAsset = {
   asset: AssetRef;
+  responsiveAssets: readonly AssetRef[];
   metadata: StorefrontAssetMetadata;
   provenance: StorefrontAssetMetadata["provenance"];
   role: StorefrontAssetMetadata["role"];
@@ -173,6 +174,7 @@ function ImageAsset({
       alt={alt}
       asset={resolved.asset}
       authority={resolved.artDirection}
+      responsiveAssets={resolved.responsiveAssets}
       loadingRole={loadingRole}
     />
   );
@@ -190,6 +192,13 @@ function resolveAsset(
       alt: alt ?? metadata.alt,
       decorative: metadata.decorative,
     }),
+    responsiveAssets: (metadata.responsiveSourceAssetIds ?? []).map((assetId) =>
+      assetRefSchema.parse({
+        id: assetId,
+        url: input.resolveAssetUrl(assetId),
+        decorative: true,
+      }),
+    ),
     metadata,
     provenance: metadata.provenance,
     role: metadata.role,

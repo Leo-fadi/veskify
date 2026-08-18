@@ -1457,6 +1457,7 @@ export const storefrontAssetMetadataSchema = z
     usageRights: z.enum(["merchantOwned", "licensed", "publicSource", "generated", "unknown"]),
     responsiveCrops: z.array(assetCropSchema).default([]),
     artDirection: responsiveImageAuthoritySchema.optional(),
+    responsiveSourceAssetIds: z.array(idSchema).max(4).optional(),
     revision: presentationRevisionSchema.optional(),
   })
   .strict()

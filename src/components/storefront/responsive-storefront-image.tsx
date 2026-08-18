@@ -93,12 +93,14 @@ function treatmentStyle(prefix: string, treatment: ResponsiveImageTreatment): Ar
 
 export function ResponsiveStorefrontImage({
   asset,
+  responsiveAssets = [],
   authority,
   alt,
   className,
   loadingRole = "content",
 }: {
   asset: AssetRef;
+  responsiveAssets?: readonly AssetRef[];
   authority?: ResponsiveImageAuthority;
   alt: string;
   className?: string;
@@ -152,6 +154,18 @@ export function ResponsiveStorefrontImage({
   const sourceUrl = safeExternalUrlSchema.safeParse(asset.url).success
     ? new URL(asset.url.trim()).href
     : asset.url;
+  const responsiveAssetById = new Map(
+    responsiveAssets.map((responsiveAsset) => [responsiveAsset.id, responsiveAsset]),
+  );
+  const urlForSource = (sourceId: string) => {
+    const selectedAsset = sourceId === asset.id ? asset : responsiveAssetById.get(sourceId);
+    if (!selectedAsset) {
+      throw new Error(`Responsive image source ${sourceId} has no approved URL projection.`);
+    }
+    return safeExternalUrlSchema.safeParse(selectedAsset.url).success
+      ? new URL(selectedAsset.url.trim()).href
+      : selectedAsset.url;
+  };
   return (
     <span
       className={`${styles.frame}${className ? ` ${className}` : ""}`}
@@ -162,27 +176,45 @@ export function ResponsiveStorefrontImage({
       style={style}
     >
       <picture className={styles.picture}>
-        {[...responsiveImageBreakpoints].reverse().map((breakpoint) => (
-          <source
-            data-art-breakpoint={breakpoint}
-            data-art-crop={resolved[breakpoint].treatment.crop.mode}
-            data-art-crop-rect={
-              resolved[breakpoint].treatment.crop.rect
-                ? `${resolved[breakpoint].treatment.crop.rect.x},${resolved[breakpoint].treatment.crop.rect.y},${resolved[breakpoint].treatment.crop.rect.width},${resolved[breakpoint].treatment.crop.rect.height}`
-                : undefined
-            }
-            data-art-derivative-id={resolved[breakpoint].derivativeId}
-            data-art-focal={`${resolved[breakpoint].treatment.focalPoint.x},${resolved[breakpoint].treatment.focalPoint.y}`}
-            data-art-overlay={resolved[breakpoint].treatment.overlay}
-            data-art-ratio={resolved[breakpoint].treatment.ratio}
-            data-art-selected-breakpoint={resolved[breakpoint].selectedBreakpoint}
-            key={breakpoint}
-            media={media[breakpoint]}
-            sizes={loading.sizes}
-            srcSet={sourceUrl}
-          />
-        ))}
-        {/* The source URL is immutable authority; CDN derivative URL materialization is deferred. */}
+        {[...responsiveImageBreakpoints].reverse().map((breakpoint) => {
+          const sourceChanged = resolved[breakpoint].source.assetId !== authority.source.assetId;
+          const treatmentChanged =
+            JSON.stringify(resolved[breakpoint].treatment) !==
+            JSON.stringify(authority.sourceTreatment);
+          return (
+            <source
+              data-art-breakpoint={breakpoint}
+              data-art-crop={resolved[breakpoint].treatment.crop.mode}
+              data-art-crop-rect={
+                resolved[breakpoint].treatment.crop.rect
+                  ? `${resolved[breakpoint].treatment.crop.rect.x},${resolved[breakpoint].treatment.crop.rect.y},${resolved[breakpoint].treatment.crop.rect.width},${resolved[breakpoint].treatment.crop.rect.height}`
+                  : undefined
+              }
+              data-art-derivative-id={resolved[breakpoint].derivativeId}
+              data-art-focal={`${resolved[breakpoint].treatment.focalPoint.x},${resolved[breakpoint].treatment.focalPoint.y}`}
+              data-art-overlay={resolved[breakpoint].treatment.overlay}
+              data-art-ratio={resolved[breakpoint].treatment.ratio}
+              data-art-selected-breakpoint={resolved[breakpoint].selectedBreakpoint}
+              data-art-source-change={sourceChanged ? "changed" : "same"}
+              data-art-source-id={resolved[breakpoint].source.assetId}
+              data-art-treatment-change={treatmentChanged ? "changed" : "same"}
+              data-art-responsive-result={
+                sourceChanged && treatmentChanged
+                  ? "source-and-treatment"
+                  : sourceChanged
+                    ? "source-only"
+                    : treatmentChanged
+                      ? "treatment-only"
+                      : "no-change"
+              }
+              key={breakpoint}
+              media={media[breakpoint]}
+              sizes={loading.sizes}
+              srcSet={urlForSource(resolved[breakpoint].source.assetId)}
+            />
+          );
+        })}
+        {/* Exact approved alternate source URLs are used when present; CDN derivative URLs remain deferred. */}
         <img
           alt={alt}
           className={styles.image}

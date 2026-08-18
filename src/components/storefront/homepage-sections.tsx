@@ -7,6 +7,10 @@ import {
   type LocalizedText,
 } from "@/domain/shared";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
+import type {
+  ApprovedAssetPlacementOperation,
+  ApprovedAssetPresentation,
+} from "@/domain/storefront";
 import { CanonicalProductCard } from "./canonical-product-card";
 import { projectLegacyProductCardProduct } from "@/domain/product-card";
 import type { CanonicalProductCardAnatomyId } from "@/domain/product-card";
@@ -110,6 +114,8 @@ export function StoreHeader({
   context,
   className,
   variant = "centered",
+  approvedAssetPlacements = [],
+  approvedAssetPresentations = [],
 }: {
   brandName: string;
   showSearch: boolean;
@@ -117,6 +123,8 @@ export function StoreHeader({
   context: StorefrontRenderContext;
   className?: string;
   variant?: "centered" | "split" | "compact" | "transparent" | "editorial";
+  approvedAssetPlacements?: readonly ApprovedAssetPlacementOperation[];
+  approvedAssetPresentations?: readonly ApprovedAssetPresentation[];
 }) {
   if (!context.sharedFrame) {
     const searchPage = context.pages.find((page) => page.pageFamily?.familyId === "search-results");
@@ -166,6 +174,14 @@ export function StoreHeader({
       brandName={brandName}
       className={className}
       context={context}
+      logoPresentation={approvedAssetPresentations.find((presentation) =>
+        approvedAssetPlacements.some(
+          (placement) =>
+            placement.assetSlotId === "brandLogo" &&
+            placement.assetId === presentation.assetId &&
+            placement.role === "logo",
+        ),
+      )}
       showCart={showCart}
       showSearch={showSearch}
       variant={variant}

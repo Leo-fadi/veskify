@@ -102,7 +102,8 @@ P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B
 active-path/compiler rationalisation, P10B-16P-06 canonical search query/results authority, and
 P10B-17 responsive/accessibility/performance closure, P10B-18A commercial-authority audit, and
 P10B-18B-01 Design DNA/shared-frame upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent
-P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-06 is next; P10B-18C remains **Planned**.
+P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-02 is next after accepted P10B-18B-06;
+P10B-18C remains **Planned**.
 P10B-16P-05B remains **Planned** after P10B-18C.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
@@ -150,7 +151,8 @@ Vesko staging, production authentication, or production performance. The accepte
 freezes the commercial ceiling and six conditional improvement packages. Accepted P10B-18B-01
 materializes bounded within-direction density, corrects semantic frame/responsive causality, makes
 the existing compact frame complete-store reachable, and refines shared-frame composition without
-claiming later page-family or P10B-18C closure. P10B-18B-06 is the next focused product task.
+claiming later page-family or P10B-18C closure. Accepted P10B-18B-06 adds only bounded shared
+asset-composition authority; P10B-18B-02 is the next focused product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -291,9 +293,9 @@ complete configurations pass deterministic diversity/protected-state gates and a
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and
-P10B-18B-01 are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and P10B remain
-Partial; P10B-18B-06 is next, P10B-18C remains Planned, and P10B-16P-05B remains Planned after
-P10B-18C. Their ownership
+P10B-18B-01 and P10B-18B-06 are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and
+P10B remain Partial; P10B-18B-02 is next, P10B-18C remains Planned, and P10B-16P-05B remains
+Planned after P10B-18C. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
@@ -501,3 +503,20 @@ Report:
 - confirmation that no rebase, duplicate PR, second review request or unrelated validation was performed.
 
 Then stop.
+
+## P10B-18B-06 accepted bounded-authority note
+
+Current generated presentation selection must use the single approved-asset placement authority.
+Resolve exact assets only after profile, variant, component slot, page/shared-frame context, and
+collection identity are known. Persist approved asset ID/revision/material/provenance plus exact
+purpose, reuse policy, affinity, and responsive pair IDs; never persist raw Puck media state.
+
+Current responsive-image output is `1.1.0`; historical `1.0.0` remains readable. A physical mobile
+source is used only when an approved paired source exists. Diagnostics must keep source change and
+treatment change separate. Presentation selection must reject protected product-media roles.
+
+P10B-18B-06 is **Baseline**, accepted by the product owner on 17 August 2026 for this bounded
+authority only. Do not infer complete-storefront commercial visual acceptance: retained whitespace,
+homepage-composition, merchandising-rhythm and section-hierarchy work belongs to
+P10B-18B-02/03/04/05. The exact next task is **P10B-18B-02 — Homepage / Editorial / Campaign
+Quality Upgrade**.

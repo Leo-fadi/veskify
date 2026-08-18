@@ -284,6 +284,13 @@ function compactApprovedAssetSelections(
           ...(placement.sourceProvenanceKind
             ? { sourceProvenanceKind: placement.sourceProvenanceKind }
             : {}),
+          ...(placement.placementContext ? { placementContext: placement.placementContext } : {}),
+          ...(placement.placementPurpose ? { placementPurpose: placement.placementPurpose } : {}),
+          ...(placement.reusePolicy ? { reusePolicy: placement.reusePolicy } : {}),
+          ...(placement.affinity ? { affinity: placement.affinity } : {}),
+          ...(placement.responsiveSourceAssetIds
+            ? { responsiveSourceAssetIds: [...placement.responsiveSourceAssetIds] }
+            : {}),
           required: placement.required,
           presentation: structuredClone(presentation),
         } satisfies DynamicCommerceApprovedAssetSelection;
@@ -2224,6 +2231,13 @@ function routeSection(
     sourceReferenceId: selection.sourceReferenceId,
     ...(selection.sourceProvenanceKind
       ? { sourceProvenanceKind: selection.sourceProvenanceKind }
+      : {}),
+    ...(selection.placementContext ? { placementContext: selection.placementContext } : {}),
+    ...(selection.placementPurpose ? { placementPurpose: selection.placementPurpose } : {}),
+    ...(selection.reusePolicy ? { reusePolicy: selection.reusePolicy } : {}),
+    ...(selection.affinity ? { affinity: selection.affinity } : {}),
+    ...(selection.responsiveSourceAssetIds
+      ? { responsiveSourceAssetIds: [...selection.responsiveSourceAssetIds] }
       : {}),
     required: selection.required,
   }));

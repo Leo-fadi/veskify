@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" role="img" aria-labelledby="title">
+  <title id="title">Fictional portrait jewellery art-direction test asset</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f4eee6"/>
+      <stop offset="1" stop-color="#d7c3ab"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="960" fill="url(#bg)"/>
+  <circle cx="360" cy="415" r="174" fill="none" stroke="#9b7139" stroke-width="34"/>
+  <circle cx="360" cy="232" r="72" fill="#f8fbff" stroke="#d7dde2" stroke-width="8"/>
+  <path d="M70 790c170-125 410-125 580 0" fill="none" stroke="#fff" stroke-opacity=".72" stroke-width="22"/>
+</svg>

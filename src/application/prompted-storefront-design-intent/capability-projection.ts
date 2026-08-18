@@ -132,17 +132,14 @@ function exactAbsenceFingerprint(authority: string): string {
   return `${authority}-${canonicalValueFingerprint({ state: "absent" })}`;
 }
 
-function exactHomepageAssetAuthorityId(material: {
+function homepageAssetPlacementAuthorityId(material: {
   profileId: string;
   slotId: string;
   component: string;
   assetSlotId: string;
   role: string;
-  assetId: string;
-  assetRevision: string;
-  materialFingerprint: string;
 }): string {
-  return `approved-homepage-asset-${canonicalValueFingerprint(material)}`;
+  return `approved-homepage-placement-${canonicalValueFingerprint(material)}`;
 }
 
 function commercialAuthority(profile: ExecutablePageBlueprintProfile) {
@@ -964,15 +961,12 @@ function addPageBlueprintCapabilities(
               {
                 authorityKind: "approved-assets",
                 authorityId: approvedAsset
-                  ? exactHomepageAssetAuthorityId({
+                  ? homepageAssetPlacementAuthorityId({
                       profileId: profile.id,
                       slotId: selection.slotId,
                       component: selection.component,
                       assetSlotId: assetSlot.id,
                       role,
-                      assetId: approvedAsset.assetId,
-                      assetRevision: approvedAsset.revision,
-                      materialFingerprint: approvedAsset.materialFingerprint,
                     })
                   : `approved-assets:none:${profile.id}:${selection.slotId}:${selection.component}:${assetSlot.id}:${role}`,
                 authorityFingerprint:
@@ -1919,11 +1913,16 @@ function addResponsiveAndAssetCapabilities(
     ...(draft.dynamicCommercePresentation?.collectionSearchArchetypes ?? []),
     ...(draft.dynamicCommercePresentation?.productDetailArchetypes ?? []),
   ];
-  const approvedArtDirections = draft.pages.flatMap(({ sections }) =>
-    sections.flatMap(({ approvedAssetPresentations }) =>
-      (approvedAssetPresentations ?? []).flatMap(({ artDirection }) =>
-        artDirection ? [artDirection] : [],
-      ),
+  const approvedArtDirections = [
+    ...(draft.sharedFrame
+      ? [draft.sharedFrame.header, draft.sharedFrame.footer, draft.sharedFrame.announcement].filter(
+          (section): section is NonNullable<typeof section> => section !== undefined,
+        )
+      : []),
+    ...draft.pages.flatMap(({ sections }) => sections),
+  ].flatMap(({ approvedAssetPresentations }) =>
+    (approvedAssetPresentations ?? []).flatMap(({ artDirection }) =>
+      artDirection ? [artDirection] : [],
     ),
   );
   imageTraits.forEach(([dimension, trait, value]) => {
@@ -1941,7 +1940,8 @@ function addResponsiveAndAssetCapabilities(
           ({ transform }) => (trait === "crop" ? transform.crop.mode : transform[trait]) === value,
         ),
     );
-    const materiallyAvailable = reachableDnaConsumesValue || dynamicAuthorityConsumesValue;
+    const materiallyAvailable =
+      reachableDnaConsumesValue || dynamicAuthorityConsumesValue || approvedAssetConsumesValue;
     const exactAuthority = reachableDnaConsumesValue
       ? {
           authorityKind: "design-dna" as const,
@@ -2003,8 +2003,16 @@ function addResponsiveAndAssetCapabilities(
     manifest.entries.flatMap(({ supportedAssetRoles }) => supportedAssetRoles),
   );
   const protectedProductAssetRoles = new Set(["productMainImage", "productAlternativeImage"]);
+  const exactGeneratedConsumerRoles = new Set([
+    "logo",
+    "heroDesktop",
+    "heroMobile",
+    "collectionImage",
+    "editorialImage",
+  ]);
   for (const role of registeredRoles) {
     const protectedProductRole = protectedProductAssetRoles.has(role);
+    const exactGeneratedConsumer = exactGeneratedConsumerRoles.has(role);
     const evidenceAvailable = !protectedProductRole && (approvedByRole.get(role) ?? 0) > 0;
     addEntry(
       entries,
@@ -2016,18 +2024,20 @@ function addResponsiveAndAssetCapabilities(
         contexts: ["storefront", "approved-media"],
         availability: protectedProductRole
           ? "registered-fail-closed"
-          : evidenceAvailable
-            ? "registered-fail-closed"
-            : "evidence-dependent",
+          : !exactGeneratedConsumer
+            ? "unavailable"
+            : evidenceAvailable
+              ? "available"
+              : "evidence-dependent",
         requirements: protectedProductRole
           ? [
               "Canonical product media is protected and cannot be selected as an approved source asset.",
             ]
-          : evidenceAvailable
-            ? [
-                "Approved role evidence exists, but an exact PageBlueprint slot and component-variant placement must be selected.",
-              ]
-            : [`Requires an approved ${designLabel(role)} asset.`],
+          : !exactGeneratedConsumer
+            ? ["No current generated storefront consumer is registered for this historical role."]
+            : evidenceAvailable
+              ? ["An exact current registered consumer and approved role authority are available."]
+              : [`Requires an approved ${designLabel(role)} asset.`],
         selection: { kind: "capability" },
       },
       {

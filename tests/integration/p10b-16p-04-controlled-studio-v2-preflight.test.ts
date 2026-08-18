@@ -485,8 +485,10 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
         .flatMap(({ approvedAssetPlacements }) => approvedAssetPlacements ?? []),
     ).toEqual([
       expect.objectContaining({
-        assetId: "asset_p10b16p04_aurum_collection",
-        role: "collectionImage",
+        assetId: "asset_p10b18b06_aurum_studio_detail",
+        role: "editorialImage",
+        placementPurpose: "campaign-primary",
+        affinity: "exact-role-exact-purpose",
       }),
     ]);
     const featuredProducts = homepage?.sections.find(

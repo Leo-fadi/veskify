@@ -14,6 +14,9 @@ import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { storefrontDesignBriefContractSchema } from "@/domain/source-discovery";
 import { localeSchema, idSchema } from "@/domain/shared";
 import {
+  approvedAssetAffinitySchema,
+  approvedAssetPlacementPurposeSchema,
+  approvedAssetReusePolicySchema,
   approvedAssetPlacementOperationSchema,
   canonicalValueFingerprint,
   storefrontSnapshotSchema,
@@ -199,8 +202,26 @@ export const wholeStorefrontApprovedAssetRoleSelectionSchema = z
     assetRevision: z.string().trim().min(1).max(120),
     materialFingerprint: fingerprintSchema,
     authorityFingerprint: fingerprintSchema,
+    placementContext: z.enum(["page", "sharedFrame"]).optional(),
+    placementPurpose: approvedAssetPlacementPurposeSchema.optional(),
+    reusePolicy: approvedAssetReusePolicySchema.optional(),
+    affinity: approvedAssetAffinitySchema.optional(),
+    responsiveSourceAssetIds: z.array(idSchema).max(4).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((selection, context) => {
+    const responsiveSourceIds = selection.responsiveSourceAssetIds ?? [];
+    if (
+      new Set(responsiveSourceIds).size !== responsiveSourceIds.length ||
+      responsiveSourceIds.includes(selection.assetId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["responsiveSourceAssetIds"],
+        message: "Responsive source selections must be distinct from the primary asset and unique.",
+      });
+    }
+  });
 
 export const wholeStorefrontApprovedAssetRoleSelectionsSchema = z
   .array(wholeStorefrontApprovedAssetRoleSelectionSchema)
@@ -525,6 +546,33 @@ export const wholeStorefrontGenerationPlanSchema = z
       }
     }
     for (const [selectionIndex, selection] of plan.approvedAssetRoleSelections.entries()) {
+      if (selection.placementContext === "sharedFrame") {
+        const placement = plan.approvedAssetPlacements.find(
+          (candidate) =>
+            candidate.placementContext === "sharedFrame" &&
+            candidate.componentType === selection.component &&
+            candidate.assetSlotId === selection.assetSlotId &&
+            candidate.assetId === selection.assetId &&
+            candidate.role === selection.role &&
+            candidate.assetRevision === selection.assetRevision &&
+            candidate.materialFingerprint === selection.materialFingerprint,
+        );
+        if (
+          selection.component !== "header" ||
+          selection.slotId !== "header" ||
+          !selection.profileId.startsWith("shared-frame:") ||
+          !placement ||
+          selection.authorityFingerprint !== plan.approvedAssetContextFingerprint
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["approvedAssetRoleSelections", selectionIndex],
+            message:
+              "A shared-frame asset-role selection must be consumed by the exact registered frame placement.",
+          });
+        }
+        continue;
+      }
       const materialization = plan.pageBlueprintMaterializations.find(
         ({ pageType }) => pageType === "home",
       );

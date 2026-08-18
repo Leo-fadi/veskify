@@ -9,8 +9,11 @@ import { currentUrlBrief, urlBriefWorkflowMaterialEvidence } from "@/domain/onbo
 import { createStorefrontDesignBriefEvidenceFingerprint } from "@/application/source-discovery";
 import type { StorefrontDesignBriefContract } from "@/domain/source-discovery";
 import { idSchema, localizedTextSchema } from "@/domain/shared";
+import { normalizedRectSchema } from "@/domain/asset-presentation";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
+  approvedAssetPlacementPurposeSchema,
+  approvedAssetReusePolicySchema,
   approvedAssetPlacementOperationSchema,
   type ApprovedAssetPlacementOperation,
 } from "@/domain/storefront";
@@ -56,6 +59,18 @@ export const approvedGenerationAssetSchema = z
             })
             .strict(),
         ),
+        safeArea: normalizedRectSchema.optional(),
+        placementAuthority: z
+          .object({
+            purposes: z.array(approvedAssetPlacementPurposeSchema).min(1),
+            reusePolicy: approvedAssetReusePolicySchema,
+            responsiveSourceGroupId: idSchema.nullable(),
+            viewportApplicability: z.array(z.enum(["mobile", "tablet", "desktop", "wide"])).min(1),
+            collectionIds: z.array(idSchema),
+            priority: z.number().int().min(-100).max(100),
+          })
+          .strict()
+          .optional(),
       })
       .strict(),
     approval: z

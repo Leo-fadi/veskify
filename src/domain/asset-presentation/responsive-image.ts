@@ -2,7 +2,8 @@ import { z } from "zod";
 import { assetRoleSchema, idSchema } from "@/domain/shared";
 import { canonicalValueFingerprint } from "@/domain/storefront/canonical-storefront";
 
-export const responsiveImageAuthorityContractVersion = "1.0.0" as const;
+export const responsiveImageAuthorityContractVersion = "1.1.0" as const;
+export const legacyResponsiveImageAuthorityContractVersion = "1.0.0" as const;
 export const responsiveImageBreakpoints = ["mobile", "tablet", "desktop", "wide"] as const;
 
 export const responsiveImageBreakpointSchema = z.enum(responsiveImageBreakpoints);
@@ -58,8 +59,26 @@ export const responsiveImageTreatmentSchema = z
     crop: responsiveImageCropSchema,
     focalPoint: normalizedPointSchema,
     overlay: responsiveImageOverlaySchema,
+    approvedCropId: idSchema.optional(),
+    approvedAspectRatio: z
+      .string()
+      .trim()
+      .regex(/^\d+:\d+$/)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((treatment, context) => {
+    if (
+      (treatment.approvedCropId === undefined) !==
+      (treatment.approvedAspectRatio === undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedCropId"],
+        message: "Approved crop identity and aspect ratio must be retained together.",
+      });
+    }
+  });
 
 export const responsiveImageSourceLineageSchema = z
   .object({
@@ -111,9 +130,8 @@ const responsiveTreatmentOverrideSchema = z
   })
   .strict();
 
-const authorityMaterialSchema = z
+const authorityBaseMaterialSchema = z
   .object({
-    contractVersion: z.literal(responsiveImageAuthorityContractVersion),
     source: responsiveImageSourceLineageSchema,
     placement: responsiveImagePlacementAuthoritySchema,
     safeArea: normalizedRectSchema.optional(),
@@ -122,6 +140,27 @@ const authorityMaterialSchema = z
     derivatives: z.array(approvedResponsiveImageDerivativeSchema),
   })
   .strict();
+
+const responsiveSourceOverrideSchema = z
+  .object({
+    breakpoint: responsiveImageBreakpointSchema,
+    source: responsiveImageSourceLineageSchema,
+  })
+  .strict();
+
+const legacyAuthorityMaterialSchema = authorityBaseMaterialSchema.extend({
+  contractVersion: z.literal(legacyResponsiveImageAuthorityContractVersion),
+});
+
+const currentAuthorityMaterialSchema = authorityBaseMaterialSchema.extend({
+  contractVersion: z.literal(responsiveImageAuthorityContractVersion),
+  responsiveSources: z.array(responsiveSourceOverrideSchema).max(4),
+});
+
+const authorityMaterialSchema = z.union([
+  legacyAuthorityMaterialSchema,
+  currentAuthorityMaterialSchema,
+]);
 
 function orderedMaterial(input: z.infer<typeof authorityMaterialSchema>) {
   return {
@@ -134,6 +173,15 @@ function orderedMaterial(input: z.infer<typeof authorityMaterialSchema>) {
     derivatives: [...input.derivatives].sort((a, b) =>
       a.derivativeId.localeCompare(b.derivativeId),
     ),
+    ...(input.contractVersion === responsiveImageAuthorityContractVersion
+      ? {
+          responsiveSources: [...input.responsiveSources].sort(
+            (a, b) =>
+              responsiveImageBreakpoints.indexOf(a.breakpoint) -
+              responsiveImageBreakpoints.indexOf(b.breakpoint),
+          ),
+        }
+      : {}),
   };
 }
 
@@ -143,9 +191,11 @@ export function responsiveImageAuthorityFingerprint(
   return canonicalValueFingerprint(orderedMaterial(authorityMaterialSchema.parse(input)));
 }
 
-export const responsiveImageAuthoritySchema = authorityMaterialSchema
-  .extend({ fingerprint: z.string().trim().min(1) })
-  .strict()
+export const responsiveImageAuthoritySchema = z
+  .union([
+    legacyAuthorityMaterialSchema.extend({ fingerprint: z.string().trim().min(1) }),
+    currentAuthorityMaterialSchema.extend({ fingerprint: z.string().trim().min(1) }),
+  ])
   .superRefine((authority, context) => {
     const breakpoints = authority.responsiveTreatments.map(({ breakpoint }) => breakpoint);
     if (new Set(breakpoints).size !== breakpoints.length) {
@@ -161,6 +211,25 @@ export const responsiveImageAuthoritySchema = authorityMaterialSchema
         code: "custom",
         path: ["derivatives"],
         message: "Derivative identities must be unique.",
+      });
+    }
+    if (authority.contractVersion === responsiveImageAuthorityContractVersion) {
+      const responsiveBreakpoints = authority.responsiveSources.map(({ breakpoint }) => breakpoint);
+      if (new Set(responsiveBreakpoints).size !== responsiveBreakpoints.length) {
+        context.addIssue({
+          code: "custom",
+          path: ["responsiveSources"],
+          message: "Responsive source breakpoints must be unique.",
+        });
+      }
+      authority.responsiveSources.forEach(({ source }, index) => {
+        if (source.assetId === authority.source.assetId) {
+          context.addIssue({
+            code: "custom",
+            path: ["responsiveSources", index, "source", "assetId"],
+            message: "Responsive source overrides must identify a distinct approved asset.",
+          });
+        }
       });
     }
     authority.derivatives.forEach((derivative, index) => {

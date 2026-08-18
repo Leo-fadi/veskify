@@ -64,7 +64,7 @@ const driverSpecifications = [
   ),
   driver("pdpIntent.configurableProductPosture", "pdp-profile", [], true),
   driver("responsiveAndArtDirectionIntent.mobileHierarchy", "frame-responsive-authority", [], true),
-  driver("responsiveAndArtDirectionIntent.imageProminence", "art-direction-posture"),
+  driver("responsiveAndArtDirectionIntent.imageProminence", "art-direction-posture", [], true),
 ] as const;
 function signature(values: readonly string[]): string {
   return uniqueSemanticValues(values).join("\u001f");

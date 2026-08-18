@@ -1,3 +1,4 @@
+import { resolveApprovedAssetPlacement } from "@/application/ai-storefront-generation";
 import {
   getCommercialCollectionSearchProfile as collectionProfile,
   getCommercialHomepageProfile as homepageProfile,
@@ -271,11 +272,31 @@ function assetsCompatible(candidate: Candidate, input: SynthesisInput): boolean 
   } catch {
     return false;
   }
-  return selectedPageProfiles(candidate, input).every(
-    (profile) =>
-      profile !== undefined &&
-      profile.requiredAssetRoles.every((requiredRole) => availableRoles.has(requiredRole)),
-  );
+  return selectedPageProfiles(candidate, input).every((profile) => {
+    if (
+      profile === undefined ||
+      !profile.requiredAssetRoles.every((requiredRole) => availableRoles.has(requiredRole))
+    ) {
+      return false;
+    }
+    if (
+      profile.commercialCollectionSearch?.campaignEvidencePolicy ===
+      "approved-editorial-media-required"
+    ) {
+      return (
+        approvedAssetContext !== null &&
+        resolveApprovedAssetPlacement({
+          assets: approvedAssetContext.assets,
+          request: {
+            purpose: "collection-campaign",
+            acceptedRoles: ["editorialImage"],
+          },
+          reuseLedger: new Map(),
+        }) !== null
+      );
+    }
+    return true;
+  });
 }
 
 function designDnaCompatible(candidate: Candidate, input: SynthesisInput): boolean {

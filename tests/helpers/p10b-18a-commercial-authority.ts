@@ -652,6 +652,11 @@ export function p10b18aMaterializerConsumedDesignAuthority(result: P10b18aCompil
       assetId: selection.assetId,
       assetRevision: selection.assetRevision,
       materialFingerprint: selection.materialFingerprint,
+      placementContext: selection.placementContext ?? "page",
+      placementPurpose: selection.placementPurpose,
+      reusePolicy: selection.reusePolicy,
+      affinity: selection.affinity,
+      responsiveSourceAssetIds: selection.responsiveSourceAssetIds ?? [],
     })),
     dynamicCommerceSelection: decision.dynamicCommerceSelection
       ? {
@@ -704,8 +709,19 @@ export function p10b18aNormalizedDesignTopology(result: P10b18aCompiledAuditResu
     boundedLayoutParameters: decision.boundedParameters,
     approvedAssetPlacementModes: uniqueSorted(
       decision.approvedAssetRoleSelections.map(
-        ({ profileId, slotId, component, assetSlotId, role }) =>
-          `${profileId}:${slotId}:${component}:${assetSlotId}:${role}`,
+        ({
+          profileId,
+          slotId,
+          component,
+          assetSlotId,
+          role,
+          placementContext,
+          placementPurpose,
+          reusePolicy,
+          affinity,
+          responsiveSourceAssetIds,
+        }) =>
+          `${profileId}:${slotId}:${component}:${assetSlotId}:${role}:${placementContext ?? "page"}:${placementPurpose ?? "legacy"}:${reusePolicy ?? "legacy"}:${affinity ?? "legacy"}:${responsiveSourceAssetIds?.length ? "responsive-pair" : "single-source"}`,
       ),
     ),
     dynamicArchetypeRoles: decision.dynamicCommerceSelection

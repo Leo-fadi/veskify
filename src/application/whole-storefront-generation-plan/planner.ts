@@ -70,6 +70,12 @@ import {
 } from "@/components/registry/homepage-commerce-bridge";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import {
+  approvedAssetPlacementAuthority,
+  approvedAssetReuseLimit,
+  resolveApprovedAssetPlacement,
+  type ApprovedAssetReuseLedger,
+} from "@/application/ai-storefront-generation/approved-asset-placement-authority";
+import {
   contentSupportContentSchema,
   contentSupportStyleOverridesSchema,
 } from "@/components/registry/content-support";
@@ -672,6 +678,9 @@ export type RegisteredCollectionApprovedAssetSelection = Readonly<{
   sourceProvenanceKind: "merchantProvided" | "sourceDiscovered";
   required: boolean;
   authorityFingerprint: string;
+  placementPurpose: "collection-card" | "collection-campaign";
+  reusePolicy: WholeStorefrontApprovedAssetRoleSelection["reusePolicy"];
+  affinity: WholeStorefrontApprovedAssetRoleSelection["affinity"];
 }>;
 
 /**
@@ -684,6 +693,8 @@ export function resolveRegisteredCollectionApprovedAssetSelections(
     planningInput: WholeStorefrontPlanningInput;
     profileId: CommercialCollectionSearchProfileId;
     variant?: string;
+    collectionId?: string;
+    reuseLedger?: ApprovedAssetReuseLedger;
   }>,
 ): readonly RegisteredCollectionApprovedAssetSelection[] {
   const profile = getCommercialCollectionSearchProfile(input.profileId);
@@ -731,15 +742,20 @@ export function resolveRegisteredCollectionApprovedAssetSelections(
       : []),
   ];
   return selectedRoles.flatMap((role) => {
-    const candidates = context?.assets.filter((candidate) => candidate.role === role) ?? [];
-    if (candidates.length > 1) {
-      invalid(
-        "asset-role-slot-incompatible",
-        `The selected collection profile has ambiguous approved ${role} authority.`,
-      );
-    }
-    const asset = candidates[0];
-    if (!asset) {
+    const placementPurpose =
+      role === "collectionImage" ? ("collection-card" as const) : ("collection-campaign" as const);
+    const resolved = context
+      ? resolveApprovedAssetPlacement({
+          assets: context.assets,
+          request: {
+            purpose: placementPurpose,
+            acceptedRoles: [role],
+            ...(input.collectionId ? { collectionId: input.collectionId } : {}),
+          },
+          reuseLedger: input.reuseLedger ?? new Map<string, number>(),
+        })
+      : null;
+    if (!resolved) {
       if (role === "editorialImage") {
         invalid(
           "missing-required-recipe-asset",
@@ -748,6 +764,7 @@ export function resolveRegisteredCollectionApprovedAssetSelections(
       }
       return [];
     }
+    const asset = resolved.asset;
     const material = {
       profileId: input.profileId,
       slotId: slot.slotId,
@@ -765,6 +782,9 @@ export function resolveRegisteredCollectionApprovedAssetSelections(
           : ("sourceDiscovered" as const),
       required: assetSlot.required,
       authorityFingerprint: context!.fingerprint,
+      placementPurpose,
+      reusePolicy: resolved.reusePolicy,
+      affinity: resolved.affinity,
     };
     return [
       Object.freeze({
@@ -799,13 +819,40 @@ function validateApprovedAssetRoleSelections(input: {
     "brandStory",
   ]);
   return selections.map((selection) => {
-    if (
-      selection.authorityFingerprint !== assetContext.fingerprint ||
-      selection.profileId !== homepage.profileId
-    ) {
+    if (selection.authorityFingerprint !== assetContext.fingerprint) {
       invalid(
         "stale-approved-asset",
-        "An exact approved asset-role selection does not target current homepage and asset authority.",
+        "An exact approved asset-role selection does not target current asset authority.",
+      );
+    }
+    if (selection.placementContext === "sharedFrame") {
+      const frame = planningInput.draft.sharedFrame;
+      const definition = definitions.find(({ type }) => type === "header");
+      const assetSlot = definition?.assetSlots.find(({ id }) => id === selection.assetSlotId);
+      const asset = assetContext.assets.find(({ assetId }) => assetId === selection.assetId);
+      if (
+        !frame ||
+        selection.profileId !== `shared-frame:${frame.profileId}` ||
+        selection.slotId !== "header" ||
+        selection.component !== "header" ||
+        !assetSlot?.acceptedRoles.includes(selection.role) ||
+        selection.role !== "logo" ||
+        !asset ||
+        asset.role !== selection.role ||
+        asset.revision !== selection.assetRevision ||
+        asset.materialFingerprint !== selection.materialFingerprint
+      ) {
+        invalid(
+          "asset-role-slot-incompatible",
+          "An exact shared-frame asset selection must target the current registered header logo slot.",
+        );
+      }
+      return structuredClone(selection);
+    }
+    if (selection.profileId !== homepage.profileId) {
+      invalid(
+        "stale-approved-asset",
+        "An exact approved asset-role selection does not target the current homepage profile.",
       );
     }
     const slot = homepage.slots.find(({ slotId }) => slotId === selection.slotId);
@@ -2265,15 +2312,19 @@ function validateAssetPlacements(
         "Public source assets cannot replace canonical Vesko product media.",
       );
     }
+    const sharedFrameTarget =
+      placement.placementContext === "sharedFrame" &&
+      input.draft.sharedFrame?.header.id === placement.componentId &&
+      placement.componentType === "header";
     const target = targets.get(`${placement.pageId}:${placement.componentId}`);
-    if (!target || target.componentType !== placement.componentType) {
+    if ((!target || target.componentType !== placement.componentType) && !sharedFrameTarget) {
       invalid(
         "provider-invented-target",
         "An approved asset placement targets an unavailable component.",
       );
     }
     if (
-      target.componentType === "homepageFeaturedProducts" &&
+      target?.componentType === "homepageFeaturedProducts" &&
       placement.assetSlotId === "productMedia"
     ) {
       invalid(
@@ -2281,7 +2332,10 @@ function validateAssetPlacements(
         "Approved source assets cannot target commerce-owned homepage product media.",
       );
     }
-    const slot = target.definition.assetSlots.find(
+    const targetDefinition = sharedFrameTarget
+      ? input.componentDefinitions.find(({ type }) => type === "header")
+      : target?.definition;
+    const slot = targetDefinition?.assetSlots.find(
       (candidate) => candidate.id === placement.assetSlotId,
     );
     if (!slot || !slot.acceptedRoles.includes(placement.role)) {
@@ -2475,16 +2529,28 @@ export function createWholeStorefrontGenerationPlan(
       "Commercial collection/search profile is missing its registered component slot.",
     );
   }
+  const planningAssetReuseLedger: ApprovedAssetReuseLedger = new Map();
+  [...input.requiredAssetPlacements, ...approvedAssetRoleSelections].forEach(({ assetId }) => {
+    planningAssetReuseLedger.set(assetId, (planningAssetReuseLedger.get(assetId) ?? 0) + 1);
+  });
   const registeredCollectionApprovedAssetSelections =
     options.collectionProfileId && commercialCollectionProfileVariant
       ? resolveRegisteredCollectionApprovedAssetSelections({
           planningInput: input,
           profileId: options.collectionProfileId,
           variant: commercialCollectionProfileVariant,
+          ...(input.catalogue.collections.length === 1
+            ? { collectionId: input.catalogue.collections[0].id }
+            : {}),
+          reuseLedger: planningAssetReuseLedger,
         })
       : [];
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
+  const registeredCollectionAssetMetadata = new Map<
+    string,
+    RegisteredCollectionApprovedAssetSelection
+  >();
   const usedComponentIds = new Set(
     input.draft.pages.flatMap((page) => page.sections.map((section) => section.id)),
   );
@@ -2543,6 +2609,7 @@ export function createWholeStorefrontGenerationPlan(
           "The registered dynamic collection component does not support collection pages.",
         );
       }
+      const collectionApprovedAssetSelections = registeredCollectionApprovedAssetSelections;
       const instance = dynamicCollectionComponent(
         page.id,
         collectionBinding.collection,
@@ -2554,11 +2621,17 @@ export function createWholeStorefrontGenerationPlan(
           ? {
               authority: commercialCollectionSearchAuthority,
               variant: commercialCollectionProfileVariant,
-              approvedAssetSelections: registeredCollectionApprovedAssetSelections,
+              approvedAssetSelections: collectionApprovedAssetSelections,
             }
           : undefined,
         page.sections.find((section) => section.component === "dynamicCollectionCommerce")?.id,
       );
+      collectionApprovedAssetSelections.forEach((selection) => {
+        registeredCollectionAssetMetadata.set(
+          `${page.id}:${instance.id}:${selection.assetId}`,
+          selection,
+        );
+      });
       try {
         registry.validateInstance(instance);
       } catch (error) {
@@ -2648,7 +2721,9 @@ export function createWholeStorefrontGenerationPlan(
           selectionOverride: pageBlueprintSelectionOverrides.find(
             ({ pageType }) => pageType === "home",
           ),
-          approvedAssetRoleSelections,
+          approvedAssetRoleSelections: approvedAssetRoleSelections.filter(
+            ({ placementContext }) => placementContext !== "sharedFrame",
+          ),
           surfaceDepth: designSystemSelection.surfaceDepth,
         }),
       );
@@ -2690,6 +2765,7 @@ export function createWholeStorefrontGenerationPlan(
         "The registered dynamic collection component does not support collection pages.",
       );
     }
+    const collectionApprovedAssetSelections = registeredCollectionApprovedAssetSelections;
     const instance = dynamicCollectionComponent(
       pageId,
       templateCollection,
@@ -2701,10 +2777,16 @@ export function createWholeStorefrontGenerationPlan(
         ? {
             authority: commercialCollectionSearchAuthority,
             variant: commercialCollectionProfileVariant,
-            approvedAssetSelections: registeredCollectionApprovedAssetSelections,
+            approvedAssetSelections: collectionApprovedAssetSelections,
           }
         : undefined,
     );
+    collectionApprovedAssetSelections.forEach((selection) => {
+      registeredCollectionAssetMetadata.set(
+        `${pageId}:${instance.id}:${selection.assetId}`,
+        selection,
+      );
+    });
     try {
       registry.validateInstance(instance);
     } catch (error) {
@@ -2846,7 +2928,134 @@ export function createWholeStorefrontGenerationPlan(
     .flatMap((component) => component.instance.bindings)
     .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)));
   assertBindingsResolve(canonicalCommerceBindings, target);
-  const approvedAssetPlacements = tokenOnly ? [] : validateAssetPlacements(input, activeTargets);
+  const homepagePageId = target.pages.find(({ role }) => role === "homepage")?.id;
+  const sharedFramePlacements = approvedAssetRoleSelections.flatMap((selection) => {
+    if (
+      selection.placementContext !== "sharedFrame" ||
+      !homepagePageId ||
+      !input.draft.sharedFrame ||
+      !input.approvedAssetContext
+    ) {
+      return [];
+    }
+    const asset = input.approvedAssetContext.assets.find(
+      ({ assetId }) => assetId === selection.assetId,
+    );
+    if (!asset) return [];
+    return [
+      {
+        type: "PLACE_APPROVED_SOURCE_ASSET" as const,
+        pageId: homepagePageId,
+        componentId: input.draft.sharedFrame.header.id,
+        componentType: "header",
+        assetSlotId: selection.assetSlotId,
+        assetId: asset.assetId,
+        role: asset.role,
+        assetRevision: asset.revision,
+        materialFingerprint: asset.materialFingerprint,
+        sourceReferenceId: asset.sourceReferenceId,
+        sourceProvenanceKind:
+          asset.provenance.location === "merchant-upload"
+            ? ("merchantProvided" as const)
+            : ("sourceDiscovered" as const),
+        placementContext: "sharedFrame" as const,
+        placementPurpose: selection.placementPurpose,
+        reusePolicy: selection.reusePolicy,
+        affinity: selection.affinity,
+        responsiveSourceAssetIds: selection.responsiveSourceAssetIds,
+        required: false,
+      },
+    ];
+  });
+  const validatedApprovedAssetPlacements = tokenOnly
+    ? []
+    : validateAssetPlacements(
+        {
+          ...input,
+          requiredAssetPlacements: [...input.requiredAssetPlacements, ...sharedFramePlacements],
+        },
+        activeTargets,
+      );
+  const approvedAssetPlacements = validatedApprovedAssetPlacements.map((placement) => {
+    const selection = approvedAssetRoleSelections.find(
+      (candidate) =>
+        candidate.assetId === placement.assetId &&
+        candidate.role === placement.role &&
+        candidate.assetSlotId === placement.assetSlotId,
+    );
+    if (selection) {
+      return {
+        ...placement,
+        placementContext: selection.placementContext ?? "page",
+        placementPurpose: selection.placementPurpose,
+        reusePolicy: selection.reusePolicy,
+        affinity: selection.affinity,
+        responsiveSourceAssetIds: selection.responsiveSourceAssetIds,
+      };
+    }
+    const registeredCollectionSelection = registeredCollectionAssetMetadata.get(
+      `${placement.pageId}:${placement.componentId}:${placement.assetId}`,
+    );
+    return registeredCollectionSelection
+      ? {
+          ...placement,
+          placementContext: "page" as const,
+          placementPurpose: registeredCollectionSelection.placementPurpose,
+          reusePolicy: registeredCollectionSelection.reusePolicy,
+          affinity: registeredCollectionSelection.affinity,
+        }
+      : placement;
+  });
+  const placementReuseCounts = new Map<string, number>();
+  const placementReusePolicies = new Map<
+    string,
+    ReturnType<typeof approvedAssetPlacementAuthority>["reusePolicy"]
+  >();
+  const countedPlacementReuseIdentities = new Set<string>();
+  approvedAssetPlacements
+    .filter((placement) => placement.reusePolicy !== undefined)
+    .forEach((placement) => {
+      const placementIdentity =
+        placement.componentType === "dynamicCollectionCommerce"
+          ? `${placement.componentType}:${placement.assetSlotId}:${placement.placementPurpose}`
+          : `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}`;
+      const sources = [placement.assetId, ...(placement.responsiveSourceAssetIds ?? [])];
+      sources.forEach((assetId) => {
+        const reuseIdentity = `${assetId}:${placementIdentity}`;
+        if (countedPlacementReuseIdentities.has(reuseIdentity)) return;
+        countedPlacementReuseIdentities.add(reuseIdentity);
+        const approvedAsset = input.approvedAssetContext?.assets.find(
+          (candidate) => candidate.assetId === assetId,
+        );
+        const policy = approvedAsset
+          ? approvedAssetPlacementAuthority(approvedAsset).reusePolicy
+          : assetId === placement.assetId
+            ? placement.reusePolicy
+            : undefined;
+        if (!policy) return;
+        placementReusePolicies.set(assetId, policy);
+        placementReuseCounts.set(assetId, (placementReuseCounts.get(assetId) ?? 0) + 1);
+      });
+    });
+  placementReuseCounts.forEach((count, assetId) => {
+    const reusePolicy = placementReusePolicies.get(assetId);
+    if (reusePolicy && count > approvedAssetReuseLimit(reusePolicy)) {
+      invalid(
+        "asset-role-slot-incompatible",
+        `Approved asset ${assetId} exceeds its ${reusePolicy} reuse bound across ${approvedAssetPlacements
+          .filter(
+            (placement) =>
+              placement.assetId === assetId ||
+              placement.responsiveSourceAssetIds?.includes(assetId),
+          )
+          .map(
+            ({ pageId, componentType, placementPurpose }) =>
+              `${pageId}:${componentType}:${placementPurpose ?? "legacy"}`,
+          )
+          .join(", ")}.`,
+      );
+    }
+  });
   const sharedDesignDirection = {
     brandSystemFingerprint: target.brandSystemFingerprint,
     preferredBrandColours: [...brandDirection.preferredBrandColours].sort(),

@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { assetRoleSchema, idSchema } from "@/domain/shared";
-import { approvedAssetPresentationSchema } from "./approved-asset-placement";
+import {
+  approvedAssetAffinitySchema,
+  approvedAssetPlacementPurposeSchema,
+  approvedAssetPresentationSchema,
+  approvedAssetReusePolicySchema,
+} from "./approved-asset-placement";
 import { canonicalValueFingerprint } from "./canonical-storefront";
 
 export const DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION = "1.0.0" as const;
@@ -147,6 +152,11 @@ export const dynamicCommerceApprovedAssetSelectionSchema = z
     sourceProvenanceKind: z
       .enum(["merchantProvided", "sourceDiscovered", "generated", "preset"])
       .optional(),
+    placementContext: z.enum(["page", "sharedFrame"]).optional(),
+    placementPurpose: approvedAssetPlacementPurposeSchema.optional(),
+    reusePolicy: approvedAssetReusePolicySchema.optional(),
+    affinity: approvedAssetAffinitySchema.optional(),
+    responsiveSourceAssetIds: z.array(idSchema).max(4).optional(),
     required: z.boolean(),
     presentation: approvedAssetPresentationSchema,
   })

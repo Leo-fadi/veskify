@@ -9,9 +9,11 @@ import { splitStorefrontSearchFormTarget } from "@/application/storefront-search
 import {
   commercialSharedFrameProfiles,
   resolveCommercialSharedFrameProfile,
+  type ApprovedAssetPresentation,
   type CommercialSharedFrameProfile,
 } from "@/domain/storefront";
 import { resolveLocalizedText } from "@/domain/shared";
+import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
 import styles from "./commercial-storefront-frame.module.css";
 
 type HeaderVariant = "centered" | "split" | "compact" | "transparent" | "editorial";
@@ -228,6 +230,7 @@ export function CommercialStoreHeader({
   context,
   className,
   variant,
+  logoPresentation,
 }: {
   brandName: string;
   showSearch: boolean;
@@ -235,6 +238,7 @@ export function CommercialStoreHeader({
   context: StorefrontRenderContext;
   className?: string;
   variant: HeaderVariant;
+  logoPresentation?: ApprovedAssetPresentation;
 }) {
   const profile = profileFor(context, variant, "header");
   const [open, setOpen] = useState(false);
@@ -335,6 +339,17 @@ export function CommercialStoreHeader({
     return href ? [{ href, item }] : [];
   });
   const hasSubstantiveServiceNavigation = serviceItems.length >= 2;
+  const brandIdentity = logoPresentation ? (
+    <ResponsiveStorefrontImage
+      alt={brandName}
+      asset={logoPresentation.asset}
+      authority={logoPresentation.artDirection}
+      className={styles.brandLogo}
+      loadingRole="content"
+    />
+  ) : (
+    brandName
+  );
   return (
     <header
       className={`store-header ${styles.header} ${className ?? ""}`}
@@ -374,14 +389,18 @@ export function CommercialStoreHeader({
           className={`store-brand ${styles.brand}`}
           href={context.homePath ?? "/"}
         >
-          {brandName}
+          {brandIdentity}
         </a>
         <PrimaryNavigation context={context} label={primaryLabel} />
         <UtilityControls context={context} showCart={showCart} showSearch={showSearch} />
       </div>
       <div className={styles.mobileFrame} data-frame-region="mobile-header-layout">
-        <a className={`store-brand ${styles.brand}`} href={context.homePath ?? "/"}>
-          {brandName}
+        <a
+          aria-label={`${brandName} ${context.activeLocale === "fi" ? "etusivu" : "home"}`}
+          className={`store-brand ${styles.brand}`}
+          href={context.homePath ?? "/"}
+        >
+          {brandIdentity}
         </a>
         <UtilityControls context={context} showCart={showCart} showSearch={showSearch} />
         <button

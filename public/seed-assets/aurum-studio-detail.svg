@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title">
+  <title id="title">Fictional Aurum studio detail test asset</title>
+  <rect width="1200" height="900" fill="#ece6dc"/>
+  <rect x="120" y="120" width="960" height="660" rx="24" fill="#ded2c1"/>
+  <path d="M230 650c175-310 565-310 740 0" fill="none" stroke="#8f6d37" stroke-width="26"/>
+  <circle cx="600" cy="362" r="116" fill="#faf8f3" stroke="#b89358" stroke-width="14"/>
+  <path d="m600 264 33 66 73 11-53 51 13 72-66-34-66 34 13-72-53-51 73-11z" fill="#d8e1e8"/>
+</svg>

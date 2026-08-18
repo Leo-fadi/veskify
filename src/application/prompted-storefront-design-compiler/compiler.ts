@@ -12,6 +12,10 @@ import {
   type PromptedStorefrontPreferenceSemantics,
 } from "@/application/prompted-storefront-design-intent";
 import { createDynamicCommerceProductMatchContext } from "@/application/dynamic-commerce-routes";
+import {
+  approvedAssetPlacementPurposeForTarget,
+  resolveApprovedAssetPlacement,
+} from "@/application/ai-storefront-generation";
 import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
 import {
   getCommercialCollectionSearchProfile,
@@ -34,10 +38,10 @@ import {
   type WholeStorefrontPageBlueprintSelectionOverride,
 } from "@/application/whole-storefront-generation-plan";
 import { veskifyComponentCapabilityManifest } from "@/components/registry";
+import { homepageCommerceBridgeComponentNames } from "@/components/registry/homepage-commerce-bridge";
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
 import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import {
-  canonicalValueFingerprint,
   canonicalValueString,
   isDynamicCommerceArchetypeCompatibleWithSharedFrame,
   type DynamicCommerceProductDetailArchetype,
@@ -769,86 +773,6 @@ function selectedPlans(
   return plans as readonly StorefrontTemplatePagePlan[];
 }
 
-function approvedAssetSelectionAuthorityId(selection: WholeStorefrontApprovedAssetRoleSelection) {
-  return `approved-homepage-asset-${canonicalValueFingerprint({
-    profileId: selection.profileId,
-    slotId: selection.slotId,
-    component: selection.component,
-    assetSlotId: selection.assetSlotId,
-    role: selection.role,
-    assetId: selection.assetId,
-    assetRevision: selection.assetRevision,
-    materialFingerprint: selection.materialFingerprint,
-  })}`;
-}
-
-function decodeExactApprovedAssetSelection(input: {
-  reference: PromptedStorefrontCapabilityAuthorityReference;
-  currentRequestInput: CreatePromptedStorefrontDesignRequestV2Input;
-  candidate: CandidateContext;
-  slotOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[];
-}): WholeStorefrontApprovedAssetRoleSelection | null {
-  const { reference, currentRequestInput, candidate, slotOverrides } = input;
-  if (
-    reference.authorityKind !== "approved-assets" ||
-    reference.dimension !== "homepage.asset-role" ||
-    reference.availability !== "available"
-  ) {
-    return null;
-  }
-  const assetContext = currentRequestInput.approvedAssetContext;
-  if (!assetContext || reference.authorityFingerprint !== assetContext.fingerprint) return null;
-  const currentAssetContext = assetContext;
-  const plan = getCommercialHomepageProfile(candidate.narrowing.homepageProfileId);
-  if (!plan?.profile) return null;
-  const includedHomepageSlotIds = new Set(candidate.homepageSlotIds);
-  const overrides = new Map(
-    slotOverrides.flatMap(({ profileId, slotSelections }) =>
-      slotSelections.map((selection) => [`${profileId}:${selection.slotId}`, selection] as const),
-    ),
-  );
-  const exact = plan.slots
-    .filter(({ id }) => includedHomepageSlotIds.has(id))
-    .flatMap((slot) => {
-      const component = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
-      const variantId =
-        overrides.get(`${plan.profile!.id}:${slot.id}`)?.variant ?? slot.defaultVariant;
-      const anatomyVariant = component?.commercialAnatomy?.variants.find(
-        ({ variantId: id }) => id === variantId,
-      );
-      if (!component || !anatomyVariant) return [];
-      const placedSlotIds = new Set(
-        anatomyVariant.structure.assetPlacements.map(({ slotId }) => slotId),
-      );
-      return component.assetSlots
-        .filter(({ id }) => placedSlotIds.has(id))
-        .flatMap((assetSlot) =>
-          assetSlot.acceptedRoles.flatMap((role) =>
-            currentAssetContext.assets
-              .filter((asset) => asset.role === role)
-              .sort((left, right) => compareCanonical(left.assetId, right.assetId))
-              .slice(0, 1)
-              .map((asset) => {
-                const selection: WholeStorefrontApprovedAssetRoleSelection = {
-                  profileId: plan.profile!.id,
-                  slotId: slot.id,
-                  component: slot.sectionType,
-                  assetSlotId: assetSlot.id,
-                  role,
-                  assetId: asset.assetId,
-                  assetRevision: asset.revision,
-                  materialFingerprint: asset.materialFingerprint,
-                  authorityFingerprint: assetContext.fingerprint,
-                };
-                return { authorityId: approvedAssetSelectionAuthorityId(selection), selection };
-              }),
-          ),
-        );
-    })
-    .find(({ authorityId }) => authorityId === reference.authorityId);
-  return exact?.selection ?? null;
-}
-
 /**
  * Semantic intent deliberately does not expose registered asset IDs. Resolve
  * the exact current approved placement authority here, after the homepage
@@ -863,49 +787,136 @@ function resolveSemanticApprovedAssetSelections(input: {
   authority: PromptedStorefrontCapabilityAuthority;
   componentDefinitions: PromptedStorefrontCompilerAuthorityInput["compatibilityInput"]["planningInput"]["componentDefinitions"];
 }): readonly WholeStorefrontApprovedAssetRoleSelection[] {
-  const roleRank = (selection: WholeStorefrontApprovedAssetRoleSelection) => {
-    const definition = input.componentDefinitions.find(({ type }) => type === selection.component);
-    const assetSlot = definition?.assetSlots.find(({ id }) => id === selection.assetSlotId);
-    const index = assetSlot?.acceptedRoles.indexOf(selection.role) ?? -1;
-    if (index < 0) {
-      fail(
-        "stale-authority",
-        `Approved role ${selection.role} is no longer registered for ${selection.component}:${selection.assetSlotId}.`,
+  const assetContext = input.currentRequestInput.approvedAssetContext;
+  if (!assetContext) return [];
+  const hasCurrentApprovedAssetAuthority = [
+    ...input.authority.referencesByPreferenceKey.values(),
+  ].some(
+    (reference) =>
+      reference.authorityKind === "approved-assets" &&
+      reference.authorityFingerprint === assetContext.fingerprint,
+  );
+  if (!hasCurrentApprovedAssetAuthority) return [];
+  const plan = getCommercialHomepageProfile(input.candidate.narrowing.homepageProfileId);
+  if (!plan?.profile) return [];
+  const includedHomepageSlotIds = new Set(input.candidate.homepageSlotIds);
+  const overrides = new Map(
+    input.slotOverrides.flatMap(({ profileId, slotSelections }) =>
+      slotSelections.map((selection) => [`${profileId}:${selection.slotId}`, selection] as const),
+    ),
+  );
+  const reuseLedger = new Map<string, number>();
+  const currentSections = [
+    ...input.currentRequestInput.draft.pages.flatMap((page) =>
+      page.type === "home"
+        ? page.sections.filter(
+            ({ component }) =>
+              !homepageCommerceBridgeComponentNames.some(
+                (managedComponent) => managedComponent === component,
+              ),
+          )
+        : page.sections,
+    ),
+    ...(input.currentRequestInput.draft.sharedFrame
+      ? [
+          input.currentRequestInput.draft.sharedFrame.footer,
+          ...(input.currentRequestInput.draft.sharedFrame.announcement
+            ? [input.currentRequestInput.draft.sharedFrame.announcement]
+            : []),
+        ]
+      : []),
+  ];
+  currentSections.forEach((section) => {
+    (section.approvedAssetPlacements ?? []).forEach(({ assetId }) => {
+      reuseLedger.set(assetId, (reuseLedger.get(assetId) ?? 0) + 1);
+    });
+  });
+  const targets: Array<{
+    profileId: string;
+    slotId: string;
+    component: string;
+    assetSlot: PromptedStorefrontCompilerAuthorityInput["compatibilityInput"]["planningInput"]["componentDefinitions"][number]["assetSlots"][number];
+    placementContext: "page" | "sharedFrame";
+  }> = plan.slots
+    .filter(({ id }) => includedHomepageSlotIds.has(id))
+    .flatMap((slot) => {
+      const component = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
+      const variantId =
+        overrides.get(`${plan.profile!.id}:${slot.id}`)?.variant ?? slot.defaultVariant;
+      const anatomyVariant = component?.commercialAnatomy?.variants.find(
+        ({ variantId: id }) => id === variantId,
       );
-    }
-    return index;
-  };
-  const compatible = [...input.authority.referencesByPreferenceKey.values()]
-    .filter(
-      (reference) =>
-        reference.authorityKind === "approved-assets" &&
-        reference.dimension === "homepage.asset-role" &&
-        reference.availability === "available",
-    )
-    .flatMap((reference) => {
-      const selection = decodeExactApprovedAssetSelection({
-        reference,
-        currentRequestInput: input.currentRequestInput,
-        candidate: input.candidate,
-        slotOverrides: input.slotOverrides,
-      });
-      return selection ? [selection] : [];
-    })
-    .sort(
+      if (!component || !anatomyVariant) return [];
+      const placedSlotIds = new Set(
+        anatomyVariant.structure.assetPlacements.map(({ slotId }) => slotId),
+      );
+      return component.assetSlots
+        .filter(({ id }) => placedSlotIds.has(id))
+        .map((assetSlot) => ({
+          profileId: plan.profile!.id,
+          slotId: slot.id,
+          component: slot.sectionType,
+          assetSlot,
+          placementContext: "page" as const,
+        }));
+    });
+  const header = input.componentDefinitions.find(({ type }) => type === "header");
+  const brandLogo = header?.assetSlots.find(({ id }) => id === "brandLogo");
+  if (brandLogo) {
+    targets.unshift({
+      profileId: `shared-frame:${input.candidate.narrowing.sharedFrameProfileId}`,
+      slotId: "header",
+      component: "header",
+      assetSlot: brandLogo,
+      placementContext: "sharedFrame" as const,
+    });
+  }
+  const selections = targets.flatMap((target) => {
+    const purpose = approvedAssetPlacementPurposeForTarget({
+      component: target.component,
+      assetSlotId: target.assetSlot.id,
+    });
+    const resolved = resolveApprovedAssetPlacement({
+      assets: assetContext.assets,
+      request: {
+        purpose,
+        acceptedRoles: target.assetSlot.acceptedRoles.filter(
+          (role) => role !== "productMainImage" && role !== "productAlternativeImage",
+        ),
+      },
+      reuseLedger,
+    });
+    if (!resolved) return [];
+    return [
+      {
+        profileId: target.profileId,
+        slotId: target.slotId,
+        component: target.component,
+        assetSlotId: target.assetSlot.id,
+        role: resolved.asset.role,
+        assetId: resolved.asset.assetId,
+        assetRevision: resolved.asset.revision,
+        materialFingerprint: resolved.asset.materialFingerprint,
+        authorityFingerprint: assetContext.fingerprint,
+        placementContext: target.placementContext,
+        placementPurpose: purpose,
+        reusePolicy: resolved.reusePolicy,
+        affinity: resolved.affinity,
+        ...(resolved.responsivePair
+          ? { responsiveSourceAssetIds: [resolved.responsivePair.assetId] }
+          : {}),
+      } satisfies WholeStorefrontApprovedAssetRoleSelection,
+    ];
+  });
+  return wholeStorefrontApprovedAssetRoleSelectionsSchema.parse(
+    selections.sort(
       (left, right) =>
         left.profileId.localeCompare(right.profileId) ||
         left.slotId.localeCompare(right.slotId) ||
         left.component.localeCompare(right.component) ||
-        left.assetSlotId.localeCompare(right.assetSlotId) ||
-        roleRank(left) - roleRank(right) ||
-        left.assetId.localeCompare(right.assetId),
-    );
-  const selectedBySlot = new Map<string, WholeStorefrontApprovedAssetRoleSelection>();
-  compatible.forEach((selection) => {
-    const boundary = `${selection.profileId}:${selection.slotId}:${selection.component}:${selection.assetSlotId}`;
-    if (!selectedBySlot.has(boundary)) selectedBySlot.set(boundary, selection);
-  });
-  return wholeStorefrontApprovedAssetRoleSelectionsSchema.parse([...selectedBySlot.values()]);
+        left.assetSlotId.localeCompare(right.assetSlotId),
+    ),
+  );
 }
 
 export function resolvePromptedStorefrontExactSlotOverrides(

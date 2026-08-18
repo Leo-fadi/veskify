@@ -75,7 +75,26 @@ function lifecycle(profileId: (typeof commercialCollectionSearchProfileIds)[numb
     fixture.planningInput.draft,
     authority.defaultSharedFrameProfileId,
   );
-  const planningInput = { ...fixture.planningInput, draft };
+  const approvedAssetContext = structuredClone(fixture.planningInput.approvedAssetContext);
+  if (profileId === "collection-campaign-led-discovery" && approvedAssetContext) {
+    const editorialAsset = approvedAssetContext.assets.find(
+      (asset) => asset.role === "editorialImage",
+    );
+    if (!editorialAsset) throw new Error("Missing approved campaign asset fixture.");
+    editorialAsset.presentation.placementAuthority = {
+      purposes: ["editorial-story", "collection-campaign"],
+      reusePolicy: "bounded-editorial",
+      responsiveSourceGroupId: null,
+      viewportApplicability: ["mobile", "tablet", "desktop", "wide"],
+      collectionIds: [],
+      priority: 0,
+    };
+    const { fingerprint: _fingerprint, ...assetMaterial } = approvedAssetContext;
+    void _fingerprint;
+    approvedAssetContext.fingerprint =
+      createApprovedGenerationAssetContextFingerprint(assetMaterial);
+  }
+  const planningInput = { ...fixture.planningInput, draft, approvedAssetContext };
   const plan = createWholeStorefrontGenerationPlan(planningInput, {
     directionId,
     collectionProfileId: profileId,

@@ -1,13 +1,13 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
 **Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
-P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, and accepted P10B-18B-01 are
-**Baseline**; parent P10B-18B, P10B-18 and P10B remain **Partial**; P10B-18C and P10B-16P-05B
-remain **Planned**.
+P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, and accepted
+P10B-18B-06 are **Baseline**; parent P10B-18B, P10B-18 and P10B remain **Partial**; P10B-18C and
+P10B-16P-05B remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 17 August 2026, accepted P10B-18B-01 Design DNA/shared-frame upgrade
+**Baseline:** 17 August 2026, accepted P10B-18B-06 bounded asset-composition/art-direction upgrade
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -59,10 +59,10 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, and accepted P10B-18B-01 are Baseline.
-Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18C remains Planned. P10B-18B-06 is the next
+P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, P10B-18B-01 and P10B-18B-06 are Baseline.
+Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18C remains Planned. P10B-18B-02 is the next
 focused product task, and P10B-16P-05B remains Planned after P10B-18C. The accepted audit baseline
-and first source-authority package are recorded in
+and bounded source-authority packages are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
 ## 2. Storefront and commerce ownership
@@ -418,6 +418,8 @@ shortcut.
 | P10B-18A — Commercial authority audit and quality-ceiling diagnosis | Audit current registered reachability, compatibility, materializer/renderer consumption and commercial output; freeze exact improvement ownership before redesign.                                                            | P10B-17 and current registered authority                             |
 | P10B-18B — Commercial source-authority quality upgrade              | Implement and evidence the accepted coherent source-authority, compatibility, consumer and evaluation packages against the frozen audit baseline.                                                                             | Accepted P10B-18A                                                    |
 | P10B-18B-01 — Design DNA and shared-frames quality upgrade          | Materialize bounded density, truthful semantic causality, complete-store compact reachability and four intentional shared-frame compositions without adding canonical authority.                                              | Accepted P10B-18A                                                    |
+| P10B-18B-06 — Asset composition and art-direction quality upgrade   | Make the existing approved-asset and responsive-image authorities purpose-affine, reuse-bounded and visibly consumed, including paired hero sources and one shared-frame logo slot.                                           | Accepted P10B-18B-01                                                 |
+| P10B-18B-02 — Homepage / editorial / campaign quality upgrade       | Strengthen the existing homepage profiles and hero/editorial/campaign consumers into intentional rich/sparse progression, section hierarchy and merchandising rhythm without a second renderer.                               | Accepted P10B-18B-01 and P10B-18B-06                                 |
 | P10B-18C — 100+ commercial quality and diversity gate               | Run the final deterministic breadth/diversity analysis and fingerprint-stratified retained human acceptance on integrated P10B-18B authority.                                                                                 | Accepted and integrated P10B-18B packages                            |
 | P10B-16P-05B — Final historical acceptance cleanup                  | Remove or archive retained P10B-16L/P9/P04 acceptance scaffolding only after all migration, replay, and quality-scale evidence consumers are clear.                                                                           | P10B-16P-05A and P10B-18C                                            |
 
@@ -800,9 +802,9 @@ keep distinct approved facts where their reading structure is shared.
 - **Status:** **Planned**. This cleanup cannot start before P10B-18C and cannot weaken P10B-16P-04,
   P10B-18A, P10B-18B or P10B-18C evidence.
 
-P10B-17, accepted P10B-18A, and accepted P10B-18B-01 are Baseline. Parent P10B-18B, P10B-18 and
-P10B remain Partial; P10B-18B-06 is next, P10B-18C remains Planned, and P10B-16P-05B remains
-Planned after P10B-18C.
+P10B-17, accepted P10B-18A, accepted P10B-18B-01 and accepted P10B-18B-06 are Baseline. Parent
+P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-02 is next, P10B-18C remains Planned, and
+P10B-16P-05B remains Planned after P10B-18C.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -821,8 +823,8 @@ Planned after P10B-18C.
 
 ### P10B-18 — Commercial quality and scale gate
 
-- **Status:** **Partial**. P10B-18A and P10B-18B-01 are Baseline; parent P10B-18B is Partial and
-  P10B-18C remains Planned.
+- **Status:** **Partial**. P10B-18A, P10B-18B-01 and bounded P10B-18B-06 are Baseline; parent
+  P10B-18B is Partial and P10B-18C remains Planned.
 - Deterministically generate at least 100 complete bounded storefront configurations across
   representative catalogue, evidence, asset, locale, page-set, and direction contexts.
 - Prove valid complete snapshots, protected-commerce parity, no exact duplicates, thresholded
@@ -855,7 +857,8 @@ Planned after P10B-18C.
   and retained human comparison against the frozen P10B-18A baseline.
 - Preserve one `StorefrontSnapshot`, existing renderers and protected commerce/media; no package
   may claim quality from contract or registry changes alone.
-- **Status:** **Partial**. P10B-18B-01 is Baseline; the remaining packages are incomplete.
+- **Status:** **Partial**. P10B-18B-01 and P10B-18B-06 are Baseline; the remaining packages are
+  incomplete.
 
 #### P10B-18B-01 — Design DNA and shared-frames quality upgrade
 
@@ -870,7 +873,21 @@ Planned after P10B-18C.
 - **Status:** **Baseline**. Accepted by the product owner on 17 August 2026 with same-72-case
   consumed-authority evidence, direct former-blocker rendering, 17 retained captures, P10B-17,
   build-budget, lifecycle/compiler and protected-commerce/media preservation.
-- **Next:** P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade.
+- **Historical handoff:** P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade,
+  subsequently accepted on 17 August 2026.
+
+#### P10B-18B-06 — Asset Composition and Art Direction Quality Upgrade
+
+- Select approved presentation assets only after exact profile, variant, slot, page/shared-frame and
+  collection context resolution.
+- Bind exact purpose affinity, bounded reuse, approved responsive source/crop lineage and one
+  registered shared-header logo consumer while preserving protected product-media authority.
+- **Status:** **Baseline**. Accepted by the product owner on 17 August 2026 for this bounded authority
+  with the same-72-case regression and 13 retained captures.
+- **Boundary:** Complete-storefront commercial visual quality is not accepted. Excessive whitespace,
+  generic homepage composition, weak merchandising rhythm and insufficient section hierarchy remain
+  owned by P10B-18B-02/03/04/05.
+- **Next:** P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade.
 
 ### P10B-18C — 100+ commercial quality and diversity gate
 
@@ -931,7 +948,8 @@ P10B-02…13 minimum accepted capability
   → P10B-17 responsive/a11y/performance
   → P10B-18A commercial-authority audit (Baseline / accepted)
   → P10B-18B-01 Design DNA/shared frames (Baseline / accepted)
-  → P10B-18B-06 asset composition/art direction (next)
+  → P10B-18B-06 asset composition/art direction (Baseline / accepted)
+  → P10B-18B-02 homepage/editorial/campaign quality (next)
   → remaining P10B-18B commercial source-authority packages
   → P10B-18C 100+ commercial quality and diversity gate
   → P10B-16P-05B final historical acceptance cleanup
@@ -965,7 +983,33 @@ PR.
 ## 17. Locked handoff
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A, and
-accepted P10B-18B-01 are Baseline under the disjoint ownership constraints in section 15.
-P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-06 is next,
-P10B-18C remains Planned, and P10B-16P-05B remains Planned after P10B-18C. No later implementation
-task is complete merely because this architecture, P10B-18A, or P10B-18B-01 is accepted.
+accepted P10B-18B-01 and accepted P10B-18B-06 are Baseline under the disjoint ownership constraints
+in section 15. P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial;
+P10B-18B-02 is next, P10B-18C remains Planned, and P10B-16P-05B remains Planned after P10B-18C. No
+later implementation task is complete merely because this architecture or an earlier bounded
+P10B-18 package is accepted.
+
+## 18. P10B-18B-06 accepted asset-composition authority
+
+The accepted bounded implementation keeps one asset path:
+
+```text
+approved asset context
+  → server-owned purpose/reuse/source-group metadata
+  → deterministic exact selector after profile/variant/slot/frame resolution
+  → canonical approved placement + presentation on StorefrontSnapshot
+  → responsive-image authority 1.1 exact source/treatment resolution
+  → existing component or shared-frame renderer
+```
+
+The selector owns affinity, reuse counts, collection applicability, and responsive pairing. Provider
+intent supplies image prominence but never an asset ID, registry ID, URL, crop, or component tree.
+`heroMobile` is responsive lineage of a selected `heroDesktop` placement when approved grouping
+exists. Shared header logo consumption uses the registered optional header slot and the existing
+responsive renderer. Missing approved authority omits optional placement or retains text/asset-free
+fallback; canonical product media stays on the protected dynamic-commerce path.
+
+Responsive-image `1.1.0` is additive. Existing `1.0.0` records and approved placements without the
+new optional purpose/reuse fields remain readable, so repository and compiled-publication records
+need no destructive migration. Status is **Baseline** for this bounded authority only. The exact
+next task is **P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade**.

@@ -624,7 +624,8 @@ function normalizeApprovedAssetRoleSelections(
       if (
         !currentFingerprint ||
         entry.authorityFingerprint !== currentFingerprint ||
-        entry.profileId !== selection.homepageProfileId
+        (entry.placementContext !== "sharedFrame" &&
+          entry.profileId !== selection.homepageProfileId)
       ) {
         fail(
           "stale-authority",
@@ -1012,6 +1013,7 @@ export function executeBoundedStorefrontSynthesis(
     },
     pageBlueprintSelectionOverrides: decision.pageBlueprintSelectionOverrides,
     approvedAssetRoleSelections: decision.approvedAssetRoleSelections,
+    artDirectionPosture: decision.artDirectionPosture,
     ...(decision.dynamicCommerceSelection
       ? { dynamicCommerceSelection: decision.dynamicCommerceSelection }
       : {}),
