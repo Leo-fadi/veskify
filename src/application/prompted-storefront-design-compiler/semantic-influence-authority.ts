@@ -59,7 +59,7 @@ const driverSpecifications = [
   driver(
     "collectionIntent.discoveryPosture",
     "collection-profile",
-    ["merchandising-posture"],
+    ["product-card-anatomy", "component-variants", "merchandising-posture"],
     true,
   ),
   driver("pdpIntent.configurableProductPosture", "pdp-profile", [], true),

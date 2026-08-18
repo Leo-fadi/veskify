@@ -279,3 +279,16 @@ P10B remains **Partial**. P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 are 
 P10B-17 and P10B-18 remain **Planned**, and P10B-16P-05B remains Planned after P10B-18.
 P10B-16P-06 claims standalone canonical catalogue search only, not Vesko integration, provider
 calls, AI/semantic/vector/fuzzy search, recommendations, personalization, or analytics.
+
+## Accepted P10B-18B-03 search-presentation continuation
+
+P10B-18B-03 keeps this persisted archetype/runtime separation. Catalogue comparison and dense
+search are both registered executable transient search presentations; editorial and campaign remain
+collection-only. The current frame may narrow an editor projection, but it does not erase a valid
+archetype from registry or provider-capability truth. Missing or incompatible selected mappings
+still fail closed.
+
+The provider-facing compact capability now synchronizes with P10B-16P-06:
+`registered-presentation-authority` plus `canonical-transient-query-results`, `read-only-bounded`
+behavior and `p10b-16p-06-canonical-search-adapter`. This is not a persisted query/result model and
+does not claim AI, semantic, vector, fuzzy, personalized or Vesko search.

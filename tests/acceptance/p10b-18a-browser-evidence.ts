@@ -7,7 +7,7 @@ import type { ProjectAggregate } from "@/services/storage";
 
 export const p10b18aWidths = [375, 1440] as const;
 export type P10B18AWidth = (typeof p10b18aWidths)[number] | 768 | 1024;
-export type P10B18ASurface = "home" | "collection" | "product-detail";
+export type P10B18ASurface = "home" | "collection" | "search" | "product-detail";
 export type P10B18ALocale = "en" | "fi";
 export type P10B18ARuntimeAuthority = "p03-standalone" | "p04-integrated-mock";
 const P04_ACCEPTANCE_HEADER = "x-veskify-p10b-16p-04-acceptance-token";
@@ -281,7 +281,9 @@ function projectRoute({
   runtimeAuthority: P10B18ARuntimeAuthority;
 }): string {
   const suffix = route === "/" ? "" : route;
-  return `${p10b18aOrigin(runtimeAuthority)}/projects/${projectId}${suffix}?locale=${locale}`;
+  const url = new URL(`${p10b18aOrigin(runtimeAuthority)}/projects/${projectId}${suffix}`);
+  url.searchParams.set("locale", locale);
+  return url.toString();
 }
 
 async function navigate(

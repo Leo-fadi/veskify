@@ -290,9 +290,9 @@ describe("P4-05D storefront proposal review projection", () => {
     );
     expect(review.dynamicCommerceConvergence).toMatchObject({
       staticPageCount: migrationProposal.proposedStorefront.pages.length,
-      collectionSearchArchetypeCount: 3,
+      collectionSearchArchetypeCount: 4,
       productDetailArchetypeCount: 3,
-      archetypeCount: 6,
+      archetypeCount: 7,
       runtimeRouteCount: 20,
       collectionRouteCount: 9,
       productRouteCount: 10,
@@ -300,7 +300,7 @@ describe("P4-05D storefront proposal review projection", () => {
     });
     expect(review.dynamicCommerceConvergence?.operationIndexes).toHaveLength(20);
     expect(review.dynamicCommerceConvergence?.summary).toMatch(
-      /20 product, collection, and search page designs are coordinated into 6 reusable shopping layouts/i,
+      /20 product, collection, and search page designs are coordinated into 7 reusable shopping layouts/i,
     );
     expect(review.dynamicCommerceConvergence?.protectedBindingSummary).toMatch(
       /collection order.*product imagery stay unchanged/i,
@@ -341,7 +341,7 @@ describe("P4-05D storefront proposal review projection", () => {
     const disclosure = screen.getByTestId("dynamic-commerce-migration-review");
     expect(disclosure).toHaveTextContent("Coordinated storefront page design");
     expect(disclosure).toHaveTextContent("Storefront pages13");
-    expect(disclosure).toHaveTextContent("Reusable shopping layouts6");
+    expect(disclosure).toHaveTextContent("Reusable shopping layouts7");
     expect(disclosure).toHaveTextContent("Product, collection, and search pages20");
     expect(disclosure).toHaveTextContent("product imagery stay unchanged");
     expect(disclosure).not.toHaveTextContent(

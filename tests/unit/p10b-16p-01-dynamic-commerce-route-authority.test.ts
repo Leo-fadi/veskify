@@ -54,6 +54,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     const collectionProjections = projections.filter(
       ({ archetype }) => archetype.family === "collection-search",
     );
+    const frameProfileId = result.snapshot.sharedFrame?.profileId;
 
     expect(catalogue.products).toHaveLength(10);
     expect(catalogue.collections).toHaveLength(9);
@@ -61,16 +62,35 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     expect(authority.routeInventory.filter(({ kind }) => kind === "collection")).toHaveLength(9);
     expect(authority.routeInventory.filter(({ kind }) => kind === "search")).toHaveLength(1);
     expect(productProjections).toHaveLength(authority.productDetailArchetypes.length);
-    expect(collectionProjections).toHaveLength(authority.collectionSearchArchetypes.length);
+    expect(collectionProjections).toHaveLength(
+      authority.collectionSearchArchetypes.filter(({ compatibleSharedFrameProfileIds }) =>
+        frameProfileId ? compatibleSharedFrameProfileIds.includes(frameProfileId) : true,
+      ).length,
+    );
     expect(productProjections.length).toBeLessThan(10);
     expect(collectionProjections.length).toBeLessThan(9);
-    const frameProfileId = result.snapshot.sharedFrame?.profileId;
     expect(frameProfileId).toBeTruthy();
     expect(
-      [...authority.collectionSearchArchetypes, ...authority.productDetailArchetypes].every(
-        ({ compatibleSharedFrameProfileIds }) =>
+      authority.collectionSearchArchetypes.map(({ profile }) => profile.profileId).sort(),
+    ).toEqual([
+      "collection-campaign-led-discovery",
+      "collection-catalogue-comparison",
+      "collection-dense-search",
+      "collection-editorial-discovery",
+    ]);
+    const selectedCollectionIds = new Set([
+      ...authority.collectionRouteMappings.map(({ archetypeId }) => archetypeId),
+      ...authority.collectionContextRules.map(({ archetypeId }) => archetypeId),
+      authority.searchArchetypeId,
+      authority.fallbacks.collectionArchetypeId,
+      authority.fallbacks.searchArchetypeId,
+    ]);
+    expect(
+      authority.collectionSearchArchetypes
+        .filter(({ id }) => selectedCollectionIds.has(id))
+        .every(({ compatibleSharedFrameProfileIds }) =>
           frameProfileId ? compatibleSharedFrameProfileIds.includes(frameProfileId) : true,
-      ),
+        ),
     ).toBe(true);
     for (const archetype of authority.collectionSearchArchetypes) {
       const presentation = archetype.componentPresentations[0];
@@ -93,6 +113,15 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
       authority.collectionSearchArchetypes.find(({ id }) => id === authority.searchArchetypeId)
         ?.supportedContexts,
     ).toContain("search");
+    expect(
+      authority.collectionSearchArchetypes
+        .filter(({ profile }) =>
+          ["collection-catalogue-comparison", "collection-dense-search"].includes(
+            profile.profileId,
+          ),
+        )
+        .every(({ supportedContexts }) => supportedContexts.includes("search")),
+    ).toBe(true);
     expect(
       authority.collectionSearchArchetypes.some(
         ({ id }) => id === authority.fallbacks.collectionArchetypeId,

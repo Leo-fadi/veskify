@@ -774,7 +774,11 @@ test("retains deterministic Design DNA and shared-frame evidence across seventee
       expect(alternate.binding.frameAuthority.profileId).toBe(
         primary.binding.frameAuthority.profileId,
       );
-      expect(alternate.binding.profiles).toEqual(primary.binding.profiles);
+      expect(alternate.binding.profiles).toEqual({
+        ...primary.binding.profiles,
+        collection: "collection-campaign-led-discovery",
+      });
+      expect(primary.binding.profiles.collection).toBe("collection-editorial-discovery");
     }
   }
 

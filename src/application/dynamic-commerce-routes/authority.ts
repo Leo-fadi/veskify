@@ -372,6 +372,14 @@ function collectionPresentation(
       gridDensity: authority.gridDensity,
       cardVariant: authority.productCardAnatomyId,
       filterLayout: authority.filterLayout,
+      conciseAttributeLimit:
+        authority.productCardAnatomyId === "standard"
+          ? 3
+          : authority.productCardAnatomyId === "horizontal"
+            ? 2
+            : authority.productCardAnatomyId === "imageFirst"
+              ? 1
+              : 0,
       showChildCollections: authority.childCollectionTreatment !== "omit",
     },
   );
@@ -458,7 +466,9 @@ function productPresentation(
 function createCollectionArchetype(
   profileId: string,
   legacyEntries: readonly LegacyDynamicPresentationEntry[] = [],
-  supportsSearch = profileId === "collection-dense-search",
+  supportsSearch = ["collection-catalogue-comparison", "collection-dense-search"].includes(
+    profileId,
+  ),
 ): DynamicCommerceCollectionSearchArchetype {
   const plan = getCommercialCollectionSearchProfile(profileId);
   const profile = plan?.profile;
@@ -1188,7 +1198,10 @@ function buildAuthority(input: {
   if (decisions.length) return decisions;
 
   const frameProfileId = input.snapshot.sharedFrame?.profileId;
-  const compatibleCollectionPlans = listCommercialCollectionSearchProfiles().filter(
+  const registeredCollectionPlans = listCommercialCollectionSearchProfiles().filter(
+    ({ profile }) => profile?.commercialCollectionSearch,
+  );
+  const compatibleCollectionPlans = registeredCollectionPlans.filter(
     ({ profile }) =>
       profile?.commercialCollectionSearch &&
       (!frameProfileId ||
@@ -1220,7 +1233,11 @@ function buildAuthority(input: {
       },
     ];
   }
-  if (!compatibleCollectionPlans.length || !compatibleProductPlans.length) {
+  if (
+    !registeredCollectionPlans.length ||
+    !compatibleCollectionPlans.length ||
+    !compatibleProductPlans.length
+  ) {
     return [
       {
         code: "conflicting-legacy-presentation",
@@ -1237,12 +1254,12 @@ function buildAuthority(input: {
     compatibleCollectionPlans.find(({ profile }) => profile?.id === "collection-dense-search") ??
     compatibleCollectionPlans[0];
   const searchProfileId = searchPlan.profile!.id;
-  const collectionSearchArchetypes = compatibleCollectionPlans.map((plan) => {
+  const collectionSearchArchetypes = registeredCollectionPlans.map((plan) => {
     const profileId = plan.profile!.id;
     return createCollectionArchetype(
       profileId,
       byProfile.get(profileId),
-      profileId === searchProfileId,
+      ["collection-catalogue-comparison", "collection-dense-search"].includes(profileId),
     );
   });
   const genericProductPlan =
@@ -1294,13 +1311,16 @@ function buildAuthority(input: {
   }
 
   const collectionArchetypeIds = new Set(collectionSearchArchetypes.map(({ id }) => id));
+  const compatibleCollectionArchetypeIds = new Set(
+    compatibleCollectionPlans.map(({ profile }) => collectionArchetypeId(profile!.id)),
+  );
   const collectionFallbackId =
     collectionArchetypeId(
       compatibleCollectionPlans.find(({ profile }) => byProfile.has(profile!.id))?.profile?.id ??
         compatibleCollectionPlans[0].profile!.id,
     ) || collectionSearchArchetypes[0].id;
   const collectionContextRules = createCollectionContextRules(
-    collectionArchetypeIds,
+    compatibleCollectionArchetypeIds,
     collectionFallbackId,
   );
   const collectionRouteMappings = routeInventory.flatMap((route) => {
@@ -1967,6 +1987,7 @@ export function applyDynamicCommerceDesignSelection(
 function assertCurrentArchetype(
   snapshot: StorefrontSnapshot,
   archetype: DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype,
+  enforceSelectedFrame = true,
 ) {
   const plan =
     archetype.family === "collection-search"
@@ -2111,6 +2132,7 @@ function assertCurrentArchetype(
     );
   }
   if (
+    enforceSelectedFrame &&
     snapshot.sharedFrame &&
     !isDynamicCommerceArchetypeCompatibleWithSharedFrame(archetype, snapshot.sharedFrame.profileId)
   ) {
@@ -2132,9 +2154,29 @@ export function validateCurrentDynamicCommercePresentationAuthority(
   if (!snapshot.dynamicCommercePresentation) return;
   const authority = exactAuthority(snapshot);
   for (const archetype of authority.collectionSearchArchetypes) {
-    assertCurrentArchetype(snapshot, archetype);
+    assertCurrentArchetype(snapshot, archetype, false);
   }
   for (const archetype of authority.productDetailArchetypes) {
+    assertCurrentArchetype(snapshot, archetype, false);
+  }
+  const selectedArchetypeIds = new Set([
+    ...authority.collectionRouteMappings.map(({ archetypeId }) => archetypeId),
+    ...authority.collectionContextRules.map(({ archetypeId }) => archetypeId),
+    authority.searchArchetypeId,
+    authority.fallbacks.collectionArchetypeId,
+    authority.fallbacks.searchArchetypeId,
+    authority.fallbacks.productDetailArchetypeId,
+    ...authority.productTypeMappings.map(({ archetypeId }) => archetypeId),
+    ...authority.productComplexityRules.map(({ archetypeId }) => archetypeId),
+  ]);
+  for (const archetypeId of selectedArchetypeIds) {
+    const archetype = [
+      ...authority.collectionSearchArchetypes,
+      ...authority.productDetailArchetypes,
+    ].find(({ id }) => id === archetypeId);
+    if (!archetype) {
+      fail("unknown-archetype", "The dynamic route selection references an unavailable archetype.");
+    }
     assertCurrentArchetype(snapshot, archetype);
   }
 }
@@ -2498,6 +2540,15 @@ export function projectDynamicCommerceArchetypePages(
   const authority = exactAuthority(snapshot);
   const projections: DynamicCommerceEditorProjection[] = [];
   for (const archetype of authority.collectionSearchArchetypes) {
+    if (
+      snapshot.sharedFrame &&
+      !isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+        archetype,
+        snapshot.sharedFrame.profileId,
+      )
+    ) {
+      continue;
+    }
     const mapped = authority.collectionRouteMappings.find(
       ({ archetypeId }) => archetypeId === archetype.id,
     );

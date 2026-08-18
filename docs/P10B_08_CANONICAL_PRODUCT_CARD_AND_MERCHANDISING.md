@@ -169,3 +169,24 @@ Presentation windows and responsive grids may bound how many cards render at onc
 canonical product fingerprints and never rewrite product identity, ordering, price, availability,
 or media. No card registry or product model was added. P10B-18 remains the commercial
 merchandising-quality and scale gate.
+
+## Accepted P10B-18B-03 continuation
+
+P10B-18B-03 retains this singleton card authority, renderer, version and five anatomy IDs while
+strengthening their existing commercial purposes. `standard` is the fact-forward comparison card;
+`editorial` keeps expressive merchandising with bounded mobile height and action after essential
+facts; `compact` exposes title, price, availability and action without an attribute stack;
+`imageFirst` keeps visual priority without irresponsibly enlarging low-resolution canonical media;
+and `horizontal` supplies wide high-scanability rows with a registered narrow stacked reflow.
+
+Every anatomy continues to consume canonical product facts and P10B-04/P10B-18B-06 media lineage.
+The renderer bounds media inside the card instead of fabricating a larger derivative, enhancement or
+replacement. Context-specific fact density uses only existing canonical attributes. Product cards
+continue to expose navigation rather than quick-add/cart authority, and accessible title/action
+semantics remain intact.
+
+Accepted evidence covers all five anatomies in truthful homepage, collection, search or related
+contexts, four responsive widths, exact save/reload/render identity and unchanged protected product
+IDs, membership/order, variants/options, price, availability and media. This is bounded canonical
+card-quality acceptance only; PDP related-merchandising composition remains P10B-18B-04 and final
+designer-grade/100+ acceptance remains P10B-18C.

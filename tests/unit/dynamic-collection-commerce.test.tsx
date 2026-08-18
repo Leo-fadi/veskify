@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
   COLLECTION_PRESENTATION_WINDOW_SIZE,
+  collectionCardinalityClass,
   collectionRangeFilterIntentSchema,
   createCollectionRangeFilterIntent,
   dynamicCollectionCommerceComponentByTarget,
@@ -900,7 +901,7 @@ describe("P6-04 dynamic collection commerce", () => {
     expect(panel).toHaveAttribute("data-disclosure-expanded", "false");
     expect(css).toMatch(/\.filterPanel\[data-disclosure-expanded="false"\][^}]*display: none/s);
     expect(css).toMatch(
-      /@media \(min-width: 64rem\)[\s\S]*\.filterTrigger[^}]*display: none[\s\S]*\.filterPanel\[data-disclosure-expanded\][^}]*display: grid/,
+      /@media \(min-width: 64rem\)[\s\S]*data-filter-panel-mode="persistent"[^}]*\.filterTrigger[^}]*display: none[\s\S]*data-filter-panel-mode="persistent"[^}]*\.filterPanel\[data-disclosure-expanded\][^}]*display: grid/,
     );
     expect(css).toMatch(
       /\.filters input\[type="checkbox"\][^}]*min-width: 1\.5rem[^}]*min-height: 1\.5rem/s,
@@ -1061,9 +1062,28 @@ describe("P6-04 dynamic collection commerce", () => {
     );
 
     expect(grid).toHaveAttribute("data-product-count", "1");
+    expect(grid).toHaveAttribute("data-cardinality", "micro");
     expect(grid).toHaveAttribute("data-wide-grid-columns", "1");
+    expect(rendered.container.firstElementChild).toHaveAttribute(
+      "data-catalogue-cardinality",
+      "micro",
+    );
     expect(grid?.children).toHaveLength(1);
     expect(css).toMatch(/\.productGrid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  });
+
+  it("classifies transient result cardinality without changing canonical membership", () => {
+    expect([
+      collectionCardinalityClass(0),
+      collectionCardinalityClass(1),
+      collectionCardinalityClass(2),
+      collectionCardinalityClass(4),
+      collectionCardinalityClass(5),
+      collectionCardinalityClass(12),
+      collectionCardinalityClass(13),
+    ]).toEqual(["zero", "micro", "small", "small", "medium", "medium", "dense"]);
+    expect(() => collectionCardinalityClass(-1)).toThrow(/non-negative integer/);
+    expect(() => collectionCardinalityClass(1.5)).toThrow(/non-negative integer/);
   });
 
   it("renders four canonical products as one deliberate wide row and two tablet columns", () => {

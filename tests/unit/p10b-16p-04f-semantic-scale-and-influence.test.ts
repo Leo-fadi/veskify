@@ -431,7 +431,7 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
         path: "collectionIntent.discoveryPosture",
         values: deterministicDriverValues.discoveryPosture,
         selected: (decision: Decision) =>
-          `${decision.profiles.collection.profileId}:${decision.dynamicCommerceSelection.collectionArchetypeId}:${decision.productCardAnatomyIds.join("|")}`,
+          `${decision.profiles.collection.profileId}:${decision.profiles.search.profileId}:${decision.dynamicCommerceSelection.collectionArchetypeId}:${decision.dynamicCommerceSelection.searchArchetypeId}:${decision.productCardAnatomyIds.join("|")}`,
       },
       "pdpIntent.configurableProductPosture": {
         driver: "configurableProductPosture",

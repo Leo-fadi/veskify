@@ -132,9 +132,9 @@ export const promptedStorefrontCapabilityEntrySchema = z
 const searchCapabilityStateSchema = z
   .object({
     registration: z.literal("registered-presentation-authority"),
-    execution: z.literal("unavailable"),
-    behavior: z.literal("fail-closed"),
-    reason: z.literal("missing-canonical-search-results-adapter"),
+    execution: z.literal("canonical-transient-query-results"),
+    behavior: z.literal("read-only-bounded"),
+    reason: z.literal("p10b-16p-06-canonical-search-adapter"),
   })
   .strict();
 

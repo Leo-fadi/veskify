@@ -292,7 +292,7 @@ export const semanticStorefrontDesignRequestV1MaterialSchema = z
       .object({
         commerce: z.literal("read-only"),
         canonicalMedia: z.literal("protected"),
-        searchExecution: z.literal("registered-presentation-runtime-unavailable"),
+        searchExecution: z.literal("canonical-transient-query-results"),
       })
       .strict(),
     semanticInfluenceAuthority: semanticInfluenceAuthoritySchema,

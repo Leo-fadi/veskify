@@ -96,9 +96,9 @@ type ProjectionInput = Readonly<{
 
 const searchCapabilityState = Object.freeze({
   registration: "registered-presentation-authority" as const,
-  execution: "unavailable" as const,
-  behavior: "fail-closed" as const,
-  reason: "missing-canonical-search-results-adapter" as const,
+  execution: "canonical-transient-query-results" as const,
+  behavior: "read-only-bounded" as const,
+  reason: "p10b-16p-06-canonical-search-adapter" as const,
 });
 
 function compareCanonical(left: string, right: string): number {
@@ -1657,10 +1657,13 @@ function addDynamicCommerceCapabilities(
     if (!plan || !profileAuthority) {
       throw new PromptedStorefrontDesignIntentError("stale-authority");
     }
-    assertProjectedDynamicArchetypeAuthority(archetype, plan, draft.sharedFrame?.profileId);
-    const availability = archetype.supportedContexts.includes("collection")
-      ? "available"
-      : "registered-fail-closed";
+    assertProjectedDynamicArchetypeAuthority(archetype, plan, undefined);
+    const availability =
+      archetype.supportedContexts.includes("collection") &&
+      (draft.sharedFrame === undefined ||
+        archetype.compatibleSharedFrameProfileIds.includes(draft.sharedFrame.profileId))
+        ? "available"
+        : "registered-fail-closed";
     const capabilities = [
       [
         "collection-search.archetype",
@@ -1720,14 +1723,14 @@ function addDynamicCommerceCapabilities(
         entries,
         references,
         {
-          key: `collection-search.search-relationship.${archetype.id}.presentation-only`,
+          key: `collection-search.search-relationship.${archetype.id}.canonical-results`,
           dimension: "collection-search.search-relationship",
           description:
-            "Use registered search-result presentation only when canonical results exist.",
+            "Use the registered search-result presentation with transient read-only canonical product query/results.",
           contexts: ["search"],
-          availability: "available",
+          availability,
           requirements: [
-            "No first-class canonical search query and results adapter is currently executable.",
+            "Standalone bounded catalogue search only; no AI, semantic, vector, fuzzy, personalized, or Vesko search is claimed.",
           ],
           selection: { kind: "capability" },
         },

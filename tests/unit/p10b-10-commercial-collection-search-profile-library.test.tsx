@@ -171,6 +171,19 @@ describe("P10B-10 commercial collection and search profile library", () => {
         "dense-search",
       ]),
     );
+    expect(
+      Object.fromEntries(
+        profiles.map((profile) => [
+          profile.profile!.id,
+          profile.profile!.commercialCollectionSearch!.productCardAnatomyId,
+        ]),
+      ),
+    ).toEqual({
+      "collection-editorial-discovery": "editorial",
+      "collection-catalogue-comparison": "standard",
+      "collection-campaign-led-discovery": "imageFirst",
+      "collection-dense-search": "horizontal",
+    });
   });
 
   it("materializes only the registered collection component and rejects shallow or stale authority", () => {
@@ -507,6 +520,86 @@ describe("P10B-10 commercial collection and search profile library", () => {
     expect(markup).toContain("No products match");
     expect(markup).not.toMatch(/canonical products/i);
     expect(markup).not.toContain('data-card-context="searchResults"');
+  });
+
+  it("renders comparison search as a query-led transient result experience", () => {
+    const result = lifecycle("collection-catalogue-comparison");
+    const instance = structuredClone(result.presentation.instance);
+    const projection = structuredClone(result.presentation.projection);
+    const productIds = projection.products.slice(0, 2).map(({ productId }) => productId);
+    const material: StorefrontSearchResultMaterialV1 = {
+      contractVersion: STOREFRONT_SEARCH_RESULTS_CONTRACT_VERSION,
+      state: "results",
+      requestFingerprint: "p10b18b03-comparison-search-request",
+      catalogueFingerprint: canonicalValueFingerprint(result.fixture.aggregate.catalogue),
+      authorityFingerprint: "p10b18b03-comparison-search-authority",
+      normalizedQuery: "gold watch",
+      normalizedTerms: ["gold", "watch"],
+      totalCount: productIds.length,
+      page: 1,
+      pageSize: 12,
+      productIds,
+      availableFacets: [
+        {
+          field: "stockStatus",
+          values: [
+            { value: "inStock", count: 1 },
+            { value: "lowStock", count: 1 },
+          ],
+        },
+      ],
+      appliedFilters: [{ field: "stockStatus", values: ["inStock"] }],
+      sort: "price-ascending",
+    };
+    const search = { ...material, resultFingerprint: storefrontSearchResultFingerprint(material) };
+    const productList = instance.bindings.find((binding) => binding.source === "productList");
+    if (!productList || productList.source !== "productList") {
+      throw new Error("Missing product list.");
+    }
+    productList.productIds = productIds;
+    productList.revision = search.resultFingerprint;
+    instance.bindings = instance.bindings.filter(
+      ({ slotId }) => slotId !== "primaryCollection" && slotId !== "childCollections",
+    );
+    projection.products = projection.products.filter(({ productId }) =>
+      productIds.includes(productId),
+    );
+    const productAssetIds = new Set(
+      projection.products.flatMap((product) => product.media.map(({ assetId }) => assetId)),
+    );
+    projection.assets = projection.assets.filter(({ assetId }) => productAssetIds.has(assetId));
+    projection.collections = [];
+    projection.productListRevision = search.resultFingerprint;
+    instance.assetAssignments = instance.assetAssignments.filter(({ assetId }) =>
+      productAssetIds.has(assetId),
+    );
+    const markup = renderToStaticMarkup(
+      renderDynamicCollectionCommerce({
+        target: "preview",
+        instance,
+        projection,
+        activeLocale: "en",
+        primaryLocale: "en",
+        loading: { status: "ready" },
+        search,
+        resolveAssetUrl: result.presentation.resolveAssetUrl,
+        onNavigateProduct: () => undefined,
+        onNavigateCollection: () => undefined,
+        onFilterIntent: () => undefined,
+        onSortIntent: () => undefined,
+        onContinueShopping: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("Search results");
+    expect(markup).toContain("gold watch");
+    expect(markup).toContain('data-search-state-summary="true"');
+    expect(markup).toContain("Price, low to high");
+    expect(markup).toContain('data-search-filter="stockStatus"');
+    expect(markup).toContain('data-card-context="searchResults"');
+    expect(markup).toContain('data-card-anatomy="standard"');
+    expect(markup).toContain('data-catalogue-cardinality="small"');
+    expect(markup).not.toContain("Canonical collection description");
   });
 
   it("retains every profile through save/reload and deterministic publication", async () => {

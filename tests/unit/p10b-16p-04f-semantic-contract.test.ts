@@ -102,7 +102,7 @@ describe("P10B-16P-04F compact semantic request and wire contract", () => {
     expect(first.fixedRuntimeTruth).toEqual({
       commerce: "read-only",
       canonicalMedia: "protected",
-      searchExecution: "registered-presentation-runtime-unavailable",
+      searchExecution: "canonical-transient-query-results",
     });
     expect(serialized).not.toContain("capabilityProjection");
     expect(serialized).not.toContain("capabilities");

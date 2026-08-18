@@ -165,3 +165,40 @@ The four profiles, renderer, canonical card family, membership/order, snapshot, 
 authorities remain singular and unchanged. The presentation window is not persisted and cannot
 write catalogue truth. P10B-18 retains broad catalogue visual quality, representative density, and
 scale acceptance.
+
+## Accepted P10B-18B-03 continuation
+
+P10B-18B-03 keeps all four profile IDs, the canonical `PageBlueprint`, one dynamic renderer, one
+product-card family, one catalogue and the P10B-16P-06 transient search adapter. Their accepted
+purposes are now explicit:
+
+| Profile                             | Context and accepted material purpose                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `collection-editorial-discovery`    | Collection-only curated identity and discovery; editorial cards and proportionate disclosed filters, including deliberate one/few-product composition. |
+| `collection-catalogue-comparison`   | Collection or search comparison; standard fact-forward cards, `standardCondense` and useful stronger filters only for sufficient result complexity.    |
+| `collection-campaign-led-discovery` | Collection-only approved campaign focal art, proposition and product continuation; image-first cards and fail-closed asset requirement.                |
+| `collection-dense-search`           | Compact collection or explicit query/results scanning; horizontal cards, `denseReflow` and space-efficient filters/sort.                               |
+
+The renderer derives presentation-only result cardinality as `micro` (1), `small` (2–4), `medium`
+(5–12) or `dense` (13+). It never persists the class or changes product membership/order. Facets
+with no decision value are suppressed unless selected, sort is omitted for zero/one results, active
+filters remain operable, and persistent comparison/dense filters require medium/dense complexity.
+Child collection identity/order remains canonical and renders as compact continuation distinct from
+product cards.
+
+Catalogue comparison and dense search are both executable for transient search results. Search
+renders its exact query, result count and active sort/filter state without synthetic collection
+identity or campaign language. Zero results render no cards or fake suggestions; one/few results use
+bounded geometry; many results preserve the existing bounded result window.
+
+The compact provider-facing capability now reports `canonical-transient-query-results`,
+`read-only-bounded` behavior and the `p10b-16p-06-canonical-search-adapter` reason. It expressly does
+not claim AI, semantic, vector, fuzzy, personalized or Vesko search, and the provider schema is
+unchanged.
+
+Accepted same-strata evidence records collection editorial 35 / dense 27 / comparison 9 / campaign
+1, search dense 63 / comparison 9, 39 normalized topologies, 53/72 repeated memberships and a
+largest cluster of seven. Twenty-one retained captures cover all four profiles, all five card
+anatomies, three directions, four widths and zero/one/multiple search states with unchanged
+protected commerce/media. This bounded acceptance does not redesign PDP/content/utility surfaces or
+complete P10B-18C.

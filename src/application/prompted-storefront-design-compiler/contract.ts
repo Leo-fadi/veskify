@@ -69,7 +69,7 @@ const dynamicCommerceSelectionSchema = z
     authorityFingerprint: fingerprintSchema,
     collectionArchetypeId: referenceSchema,
     searchArchetypeId: referenceSchema,
-    searchExecution: z.literal("registered-presentation-fail-closed-runtime"),
+    searchExecution: z.literal("canonical-transient-query-results"),
     standardSimpleArchetypeId: referenceSchema,
     configurableArchetypeId: referenceSchema,
     galleryLedArchetypeId: referenceSchema,

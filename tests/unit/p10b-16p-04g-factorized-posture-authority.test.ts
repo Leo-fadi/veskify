@@ -52,7 +52,7 @@ describe("P10B-16P-04G factorized posture authority", () => {
     expect(diagnostic).toMatchObject({
       contractVersion: "1.1.0",
       initialCandidateCount: 1728,
-      finalCandidateCount: 135,
+      finalCandidateCount: 159,
       firstEmptyStage: null,
       stages: [
         {
@@ -76,16 +76,16 @@ describe("P10B-16P-04G factorized posture authority", () => {
         {
           stage: "dynamic-commerce-profile-context",
           enteringCandidateCount: 540,
-          remainingCandidateCount: 165,
+          remainingCandidateCount: 195,
           eliminationReasons: [
-            { reasonCode: "incompatible-dynamic-commerce-profile-context", count: 375 },
+            { reasonCode: "incompatible-dynamic-commerce-profile-context", count: 345 },
           ],
         },
         {
           stage: "page-set-shared-frame",
-          enteringCandidateCount: 165,
-          remainingCandidateCount: 135,
-          eliminationReasons: [{ reasonCode: "incompatible-page-set-shared-frame", count: 30 }],
+          enteringCandidateCount: 195,
+          remainingCandidateCount: 159,
+          eliminationReasons: [{ reasonCode: "incompatible-page-set-shared-frame", count: 36 }],
         },
       ],
     });
@@ -103,8 +103,8 @@ describe("P10B-16P-04G factorized posture authority", () => {
     ).toEqual({
       "editorial-masthead": 54,
       "centered-minimal": 57,
-      "commerce-utility": 12,
-      "compact-technical": 12,
+      "commerce-utility": 24,
+      "compact-technical": 24,
     });
     const expandedPostureCardinality = factorized.reduce(
       (total, candidate) =>

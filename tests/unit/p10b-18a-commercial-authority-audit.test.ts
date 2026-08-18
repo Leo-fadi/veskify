@@ -4,6 +4,7 @@ import { writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { inspectCompatibleCoordinatedDirectionCandidateInventory } from "@/application/bounded-storefront-synthesis";
 import { createRawKarvonenStorefrontFixture } from "@/data/demo/raw-karvonen-storefront-fixture";
+import { collectionCardinalityClass } from "@/components/storefront/dynamic-collection-commerce";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   compileP10b18aAuditCase,
@@ -209,6 +210,9 @@ describe("P10B-18A commercial authority audit", () => {
         const compiledHomepageComposition = homepageComposition(result);
         const dynamicArchetypes = dynamicArchetypeMetrics(result);
         const approvedAssetDiagnostics = approvedAssetSelectionDiagnostics(authority, result);
+        const representativeCollectionProductCount = Math.max(
+          ...authority.catalogue.collections.map(({ productIds }) => productIds.length),
+        );
         const materializerConsumedDesignAuthority =
           p10b18aMaterializerConsumedDesignAuthority(result);
         return {
@@ -216,6 +220,10 @@ describe("P10B-18A commercial authority audit", () => {
           variationId: variation.id,
           productCount: authority.catalogue.products.length,
           collectionCount: authority.catalogue.collections.length,
+          representativeCollectionProductCount,
+          collectionCardinalityClass: collectionCardinalityClass(
+            representativeCollectionProductCount,
+          ),
           fixtureKind: authority.fixtureKind,
           productTypes: [
             ...new Set(authority.catalogue.products.map(({ productType }) => productType)),
@@ -629,6 +637,9 @@ describe("P10B-18A commercial authority audit", () => {
           ),
         ),
         collection: distribution(outcomes.map(({ collection }) => collection)),
+        collectionCardinalityClass: distribution(
+          outcomes.map(({ collectionCardinalityClass }) => collectionCardinalityClass),
+        ),
         search: distribution(outcomes.map(({ search }) => search)),
         pdp: distribution(outcomes.map(({ pdp }) => pdp)),
         dynamicCollectionArchetype: distribution(
