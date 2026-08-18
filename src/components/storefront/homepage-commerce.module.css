@@ -141,14 +141,14 @@
   min-height: min(38rem, 72vh);
 }
 
-.promotion.variant_overlay .editorialCopy,
-.promotion.variant_overlay .campaignAction {
+.promotion.variant_overlay[data-media-state="approved"] .editorialCopy,
+.promotion.variant_overlay[data-media-state="approved"] .campaignAction {
   color: var(--brand-color-surface);
   position: relative;
   z-index: 2;
 }
 
-.promotion.variant_overlay .editorialCopy p {
+.promotion.variant_overlay[data-media-state="approved"] .editorialCopy p {
   color: color-mix(in srgb, var(--brand-color-surface) 86%, transparent);
 }
 

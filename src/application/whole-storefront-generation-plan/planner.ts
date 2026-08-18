@@ -1624,6 +1624,7 @@ function assertDistinctHomepageCollectionDiscovery(
       const first = collectionSections[left];
       const second = collectionSections[right];
       if (
+        first.component === second.component &&
         first.presentation === second.presentation &&
         canonicalValueString(first.collectionIds) === canonicalValueString(second.collectionIds)
       ) {

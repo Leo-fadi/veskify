@@ -769,6 +769,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
   const style = homepageSurfaceStyleSchema.parse(instance.styleOverrides);
   const headingId = useId();
   const collections = collectionsFor(instance, projection, "collections");
+  const assigned = assignedAssetIds(instance, "collectionMedia");
   const columnCount = Math.min(props.columns, Math.max(collections.length, 1));
   const anatomy = anatomyIdentity(instance);
   return (
@@ -780,6 +781,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       className={sectionClass("collectionNavigation", instance.variant, style)}
       data-component={instance.component}
       data-catalogue-scale={catalogueScale(collections.length)}
+      data-collection-presentation={props.presentation}
       data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
@@ -788,34 +790,54 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       {...anatomy.responsiveAttributes}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
-      <ul
-        className={styles.collectionNavigationList}
-        data-column-count={columnCount}
-        data-item-count={collections.length}
-        data-region="collection-navigation-grid"
-        style={{ "--homepage-columns": columnCount } as CSSProperties}
-      >
-        {collections.map((collection, index) => (
-          <li key={collection.collectionId}>
-            <button
-              onClick={() =>
-                input.onNavigate(
-                  collectionNavigationIntentSchema.parse({
-                    type: "navigateToCollection",
-                    collectionId: collection.collectionId,
-                    collectionRevision: collection.revision,
-                  }),
-                )
-              }
-              type="button"
-            >
-              <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <strong>{text(collection.title, locale)}</strong>
-              <span aria-hidden="true">↗</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {props.presentation === "compact" ? (
+        <ul
+          className={styles.collectionNavigationList}
+          data-column-count={columnCount}
+          data-item-count={collections.length}
+          data-region="collection-navigation-grid"
+          style={{ "--homepage-columns": columnCount } as CSSProperties}
+        >
+          {collections.map((collection, index) => (
+            <li key={collection.collectionId}>
+              <button
+                onClick={() =>
+                  input.onNavigate(
+                    collectionNavigationIntentSchema.parse({
+                      type: "navigateToCollection",
+                      collectionId: collection.collectionId,
+                      collectionRevision: collection.revision,
+                    }),
+                  )
+                }
+                type="button"
+              >
+                <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <strong>{text(collection.title, locale)}</strong>
+                <span aria-hidden="true">↗</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div
+          className={styles.collectionGrid}
+          data-column-count={columnCount}
+          data-item-count={collections.length}
+          data-region="collection-navigation-grid"
+          style={{ "--homepage-columns": columnCount } as CSSProperties}
+        >
+          <CollectionCards
+            assigned={assigned}
+            collections={collections}
+            input={input}
+            locale={locale}
+            presentation={props.presentation}
+            projection={projection}
+            showDescriptions={false}
+          />
+        </div>
+      )}
     </nav>
   );
 }
