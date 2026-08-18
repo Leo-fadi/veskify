@@ -1807,6 +1807,16 @@ approved purpose-affine asset; catalogue comparison uses standard fact-forward c
 collection/search uses horizontal high-scanability cards. Comparison and dense profiles are both
 truthfully executable in transient search-results context. Search renders explicit query/result/
 filter/sort identity without synthetic collection claims through the same renderer and catalogue.
+Applied filter fields and canonical stock states render as localized EN/FI merchant labels.
+Medium/dense collection filters remain collapsible below 1024 px and become persistent only at the
+desktop breakpoint; comparison search omits the collection-only sidebar and spans the result grid.
+
+Exact pre-P10B-18B-03 comparison/compact and dense-search/compact profile fingerprints have one
+deterministic compatibility migration to the current standard and horizontal anatomies. It
+increments the root authority revision/fingerprint while preserving routes, mappings, protected
+commerce, bounded presentation choices and approved assets. Unknown stale authorities remain
+fail-closed, while direct runtime projection keeps saved, historical and compiled snapshots
+renderable until the current authority is persisted.
 
 The provider-facing compact capability now reports registered presentation plus
 `canonical-transient-query-results`, `read-only-bounded` behavior and the

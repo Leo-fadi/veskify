@@ -884,7 +884,39 @@ describe("P6-04 dynamic collection commerce", () => {
   });
 
   it("uses one server-stable panel with mobile disclosure and desktop CSS persistence", () => {
-    const view = render(renderDynamicCollectionCommerce(rendererInput()));
+    const additionalProducts = [3, 4, 5].map((suffix) => ({
+      ...structuredClone(watch),
+      productId: `product_filter_${suffix}`,
+      media: [
+        {
+          assetId: `asset_filter_${suffix}`,
+          role: "main" as const,
+          alt: localized(`Filter product ${suffix}`),
+        },
+      ],
+    }));
+    const persistentCollection = {
+      ...structuredClone(collection),
+      productIds: [
+        ...collection.productIds,
+        ...additionalProducts.map(({ productId }) => productId),
+      ],
+    };
+    const input = rendererInput(persistentCollection);
+    const projection = input.projection as Record<string, unknown> & {
+      products: ProductPresentationContext[];
+    };
+    input.projection = {
+      ...projection,
+      products: [...projection.products, ...additionalProducts],
+      assets: [
+        ...((projection.assets as StorefrontAssetMetadata[]) ?? []),
+        ...additionalProducts.map((_, index) =>
+          asset(`asset_filter_${index + 3}`, "productMainImage"),
+        ),
+      ],
+    };
+    const view = render(renderDynamicCollectionCommerce(input));
     const trigger = screen.getByRole("button", { name: /Show filters/ });
     const panels = view.container.querySelectorAll<HTMLElement>(
       '[data-filter-panel-content="true"]',
@@ -897,6 +929,12 @@ describe("P6-04 dynamic collection commerce", () => {
 
     expect(panels).toHaveLength(1);
     expect(trigger).toHaveAttribute("aria-controls", panel.id);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(panel).toHaveAttribute("data-disclosure-expanded", "false");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(panel).toHaveAttribute("data-disclosure-expanded", "true");
+    fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(panel).toHaveAttribute("data-disclosure-expanded", "false");
     expect(css).toMatch(/\.filterPanel\[data-disclosure-expanded="false"\][^}]*display: none/s);
@@ -1326,6 +1364,20 @@ describe("P6-04 dynamic collection commerce", () => {
     expect(layout.className).toMatch(/layout_sidebar/);
     expect(css).toMatch(
       /\.layout_sidebar[^}]*grid-template-columns: minmax\(14rem, 0\.25fr\) minmax\(0, 1fr\)/s,
+    );
+  });
+
+  it("spans search results across a sidebar profile when collection filters are absent", () => {
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
+    );
+
+    expect(css).toMatch(
+      /data-search-context="transient-canonical-results"[^}]*\.layout_sidebar[^}]*grid-template-columns: minmax\(0, 1fr\)/s,
+    );
+    expect(css).toMatch(
+      /data-search-context="transient-canonical-results"[\s\S]*\.layout_sidebar[\s\S]*> \.productResults[^}]*grid-column: 1 \/ -1/,
     );
   });
 

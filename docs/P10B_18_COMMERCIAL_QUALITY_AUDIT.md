@@ -1649,6 +1649,13 @@ search-results contexts. Search uses the same renderer and catalogue but exposes
 count, sort/filter state and no-result continuation without synthetic collection membership,
 campaign copy or collection hero identity.
 
+The two profile anatomy upgrades retain compatibility with exact pre-P10B-18B-03 stored authority:
+the previously fingerprinted comparison/compact and dense-search/compact archetypes migrate
+deterministically to the current standard and horizontal anatomies. Migration increments the root
+authority revision/fingerprint while preserving route inventory, mappings, protected commerce,
+bounded presentation choices and approved assets; unknown stale fingerprints continue to fail
+closed.
+
 ### 19.2 Cardinality, facets, geometry and card authority
 
 The renderer derives one deterministic presentation-only cardinality class from the exact visible
@@ -1658,9 +1665,11 @@ card geometry; it never persists, duplicates products or changes membership/orde
 
 Facets with zero or one effective value are suppressed unless selected. Sort is omitted for zero or
 one result. Persistent comparison/dense filter chrome appears only for medium/dense result sets,
-while low-cardinality editorial/campaign presentation remains disclosed and subordinate. Active
-filters remain visible and operable. Child collection IDs and ordering remain canonical and their
-compact continuation is visually distinct from product cards.
+while low-cardinality editorial/campaign presentation remains disclosed and subordinate. The same
+panel remains collapsible below the desktop breakpoint and becomes CSS-persistent only on desktop,
+so trigger state and panel visibility stay synchronized. Active filters use localized EN/FI field
+and canonical stock-status labels and remain visible and operable. Child collection IDs and ordering
+remain canonical and their compact continuation is visually distinct from product cards.
 
 | Anatomy      | Accepted hierarchy and purpose                                                                       | Media, fact and responsive posture                                                                                     |
 | ------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |

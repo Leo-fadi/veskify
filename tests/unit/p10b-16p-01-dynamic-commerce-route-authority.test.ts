@@ -700,6 +700,112 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     }
   });
 
+  it("migrates the two exact pre-P10B-18B-03 collection authorities without rewriting commerce", () => {
+    const { catalogue, result } = migratedScenario();
+    const legacyProfiles = {
+      "collection-catalogue-comparison": {
+        fingerprint:
+          "page-blueprint-v1_1822_47ab13e9edd6bdd344b0511153f7a96d81c99a9d74e4ce06872102f30c77b3f9",
+        currentTransformation: "standardCondense",
+      },
+      "collection-dense-search": {
+        fingerprint:
+          "page-blueprint-v1_1876_ba5bddba871565c4c64444103318ba535c16149ff9fb38300e91687abc565a0e",
+        currentTransformation: "denseReflow",
+      },
+    } as const;
+    const { authorityFingerprint: _authorityFingerprint, ...material } = result.authority;
+    void _authorityFingerprint;
+    const legacyAuthority = createDynamicCommercePresentationAuthority({
+      ...structuredClone(material),
+      collectionSearchArchetypes: material.collectionSearchArchetypes.map((archetype) => {
+        const legacy = legacyProfiles[archetype.profile.profileId as keyof typeof legacyProfiles];
+        if (!legacy) return structuredClone(archetype);
+        return {
+          ...structuredClone(archetype),
+          profile: { ...structuredClone(archetype.profile), fingerprint: legacy.fingerprint },
+          responsivePosture: archetype.responsivePosture.map((entry) => ({
+            ...structuredClone(entry),
+            transformationIds: entry.transformationIds.map((id) =>
+              id === legacy.currentTransformation ? "compactSimplify" : id,
+            ),
+          })),
+          componentPresentations: archetype.componentPresentations.map((presentation) => {
+            const props = structuredClone(presentation.props);
+            delete props.conciseAttributeLimit;
+            return {
+              ...structuredClone(presentation),
+              anatomyId: "compact",
+              props: { ...props, cardVariant: "compact" },
+            };
+          }),
+        };
+      }) as unknown as typeof material.collectionSearchArchetypes,
+    });
+    const legacySnapshot = storefrontSnapshotSchema.parse({
+      ...structuredClone(result.snapshot),
+      dynamicCommercePresentation: legacyAuthority,
+    });
+
+    const migration = migrateLegacyDynamicCommerceRoutes(legacySnapshot, catalogue);
+    expect(migration.status).toBe("migrated");
+    if (migration.status !== "migrated") throw new Error("Expected registered migration.");
+    expect(migration.migratedRouteCount).toBe(0);
+    expect(migration.authority.authorityRevision).toBe(legacyAuthority.authorityRevision + 1);
+    expect(migration.authority.routeInventory).toEqual(legacyAuthority.routeInventory);
+    expect(migration.authority.collectionRouteMappings).toEqual(
+      legacyAuthority.collectionRouteMappings,
+    );
+    expect(
+      migration.authority.collectionSearchArchetypes.map((archetype) => [
+        archetype.profile.profileId,
+        archetype.componentPresentations[0]?.anatomyId,
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        ["collection-catalogue-comparison", "standard"],
+        ["collection-dense-search", "horizontal"],
+      ]),
+    );
+
+    const collectionRoute = legacyAuthority.routeInventory.find(
+      ({ kind }) => kind === "collection",
+    )!;
+    expect(
+      resolveDynamicCommerceRoutePage({
+        snapshot: legacySnapshot,
+        catalogue,
+        routeId: collectionRoute.id,
+        projection: "editor",
+        archetypeId: "archetype_collection_search_dense",
+      }).archetype.componentPresentations[0]?.anatomyId,
+    ).toBe("horizontal");
+
+    const unknownMaterial = structuredClone(material);
+    unknownMaterial.collectionSearchArchetypes = legacyAuthority.collectionSearchArchetypes.map(
+      (archetype) =>
+        archetype.profile.profileId === "collection-dense-search"
+          ? {
+              ...structuredClone(archetype),
+              profile: { ...structuredClone(archetype.profile), fingerprint: "unknown-stale" },
+            }
+          : structuredClone(archetype),
+    );
+    const unknownSnapshot = storefrontSnapshotSchema.parse({
+      ...structuredClone(result.snapshot),
+      dynamicCommercePresentation: createDynamicCommercePresentationAuthority(unknownMaterial),
+    });
+    expect(() =>
+      resolveDynamicCommerceRoutePage({
+        snapshot: unknownSnapshot,
+        catalogue,
+        routeId: collectionRoute.id,
+        projection: "editor",
+        archetypeId: "archetype_collection_search_dense",
+      }),
+    ).toThrow(/stale PageBlueprint profile|no longer matches registered authority/i);
+  });
+
   it("returns typed decisions for incomplete, mismatched, unknown, or invalid legacy inputs", () => {
     const scenario = createLegacyDynamicCommerceRouteScenario();
     const decisionCodes = (

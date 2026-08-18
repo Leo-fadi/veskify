@@ -766,6 +766,25 @@ function SearchResultsContext({
     "price-descending": fallback("Price, high to low", "Hinta, kallein ensin", locale),
     "title-ascending": fallback("Product name", "Tuotteen nimi", locale),
   };
+  const filterLabel = {
+    brand: fallback("Brand", "Brändi", locale),
+    category: fallback("Category", "Kategoria", locale),
+    productType: fallback("Product type", "Tuotetyyppi", locale),
+    stockStatus: fallback("Availability", "Saatavuus", locale),
+  } as const satisfies Readonly<
+    Record<StorefrontSearchResultPageV1["appliedFilters"][number]["field"], string>
+  >;
+  const filterValue = (
+    field: StorefrontSearchResultPageV1["appliedFilters"][number]["field"],
+    value: string,
+  ) => {
+    if (field !== "stockStatus") return value;
+    return {
+      inStock: fallback("In stock", "Varastossa", locale),
+      lowStock: fallback("Limited availability", "Rajoitetusti saatavilla", locale),
+      outOfStock: fallback("Currently unavailable", "Ei juuri nyt saatavilla", locale),
+    }[value];
+  };
   if (input.search.state === "empty-query") {
     return (
       <p className={styles.searchContext} data-search-state="empty-query">
@@ -799,8 +818,8 @@ function SearchResultsContext({
         </div>
         {input.search.appliedFilters.map((filter) => (
           <div data-search-filter={filter.field} key={filter.field}>
-            <dt>{filter.field.replace(/([A-Z])/gu, " $1")}</dt>
-            <dd>{filter.values.join(", ")}</dd>
+            <dt>{filterLabel[filter.field]}</dt>
+            <dd>{filter.values.map((value) => filterValue(filter.field, value)).join(", ")}</dd>
           </div>
         ))}
       </dl>
@@ -1183,7 +1202,7 @@ function CollectionFilters({
         </button>
         <div
           className={styles.filterPanel}
-          data-disclosure-expanded={panelMode === "persistent" || disclosureOpen}
+          data-disclosure-expanded={disclosureOpen}
           data-filter-panel-content="true"
           id={filterPanelId}
         >

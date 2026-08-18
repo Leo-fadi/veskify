@@ -531,6 +531,14 @@
     grid-template-columns: minmax(14rem, 0.25fr) minmax(0, 1fr);
   }
 
+  .root[data-search-context="transient-canonical-results"] .layout_sidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .root[data-search-context="transient-canonical-results"] .layout_sidebar > .productResults {
+    grid-column: 1 / -1;
+  }
+
   .root[data-catalogue-cardinality="micro"] .layout_sidebar,
   .root[data-catalogue-cardinality="small"] .layout_sidebar {
     grid-template-columns: minmax(0, 1fr);
