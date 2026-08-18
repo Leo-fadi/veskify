@@ -702,8 +702,8 @@ export function p10b18aNormalizedDesignTopology(result: P10b18aCompiledAuditResu
     ),
     componentVariantAnatomySequence: uniqueSorted(
       decision.componentChoices.map(
-        ({ pageKey, slotId, component, variant, anatomyId }) =>
-          `${familyByPageKey.get(pageKey) ?? "unknown"}:${slotId}:${component}:${variant}:${anatomyId ?? "none"}`,
+        ({ pageKey, slotId, component, variant, anatomyId, transitionIntent }) =>
+          `${familyByPageKey.get(pageKey) ?? "unknown"}:${slotId}:${component}:${variant}:${anatomyId ?? "none"}:${transitionIntent ?? "none"}`,
       ),
     ),
     boundedLayoutParameters: decision.boundedParameters,

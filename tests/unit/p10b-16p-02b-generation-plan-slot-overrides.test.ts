@@ -197,4 +197,51 @@ describe("P10B-16P-02B whole-storefront PageBlueprint selection authority", () =
     expect(product).toMatchObject({ instance: { variant: "galleryDominant" } });
     expect(() => compileWholeStorefrontProposal({ plan, planningInput: input })).not.toThrow();
   });
+
+  it("keeps different collection-discovery anatomies valid when their presentation labels match", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    const initialInput = {
+      ...structuredClone(fixture.planningInput),
+      catalogue: {
+        ...structuredClone(fixture.planningInput.catalogue),
+        collections: structuredClone(fixture.planningInput.catalogue.collections.slice(0, 1)),
+      },
+      draft: applyCommercialSharedFrame(fixture.planningInput.draft, "compact-technical"),
+    };
+    const initialPlan = createWholeStorefrontGenerationPlan(initialInput, {
+      directionId: "modernTechnical",
+      homepageProfileId: "homepage-collection-gateway",
+    });
+    const initialProposal = compileWholeStorefrontProposal({
+      plan: initialPlan,
+      planningInput: initialInput,
+    });
+    const editedDraft = materializeWholeStorefrontRuntimeSnapshot({
+      runtime: initialProposal.proposedStorefront,
+      planningInput: initialInput,
+    });
+    const homepage = editedDraft.pages.find(({ type }) => type === "home");
+    if (!homepage) throw new Error("Missing homepage.");
+    const featuredCollections = homepage.sections.find(
+      ({ component }) => component === "homepageFeaturedCollections",
+    );
+    const collectionNavigation = homepage.sections.find(
+      ({ component }) => component === "homepageCollectionNavigation",
+    );
+    if (!featuredCollections || !collectionNavigation) {
+      throw new Error("Missing collection-discovery sections.");
+    }
+    featuredCollections.props = { ...featuredCollections.props, cardPresentation: "compact" };
+    collectionNavigation.props = { ...collectionNavigation.props, presentation: "compact" };
+
+    expect(() =>
+      createWholeStorefrontGenerationPlan(
+        { ...initialInput, draft: editedDraft },
+        {
+          directionId: "modernTechnical",
+          homepageProfileId: "homepage-collection-gateway",
+        },
+      ),
+    ).not.toThrow();
+  });
 });

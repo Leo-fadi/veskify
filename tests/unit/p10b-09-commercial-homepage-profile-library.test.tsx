@@ -174,7 +174,7 @@ describe("P10B-09 commercial homepage profile library", () => {
       approvedMerchantEvidence: false,
       approvedMediaSlotIds: [],
     });
-    expect(sparse.omittedSlotIds).toEqual(["brand-story", "editorial-lookbook", "approved-proof"]);
+    expect(sparse.omittedSlotIds).toEqual(["brand-story", "approved-proof"]);
     expect(sparse.includedSlotIds).toEqual(["hero", "curated-products", "continuation"]);
     expect(() =>
       resolveCommercialHomepageProfileSlots("homepage-campaign-led", {
@@ -184,7 +184,7 @@ describe("P10B-09 commercial homepage profile library", () => {
         approvedMerchantEvidence: false,
         approvedMediaSlotIds: [],
       }),
-    ).toThrow(/campaign lacks required approved authority/);
+    ).toThrow(/hero lacks required approved authority/);
     expect(() =>
       resolveCommercialHomepageProfileSlots("homepage-collection-gateway", {
         canonicalCommerce: false,
@@ -242,7 +242,7 @@ describe("P10B-09 commercial homepage profile library", () => {
         },
         { directionId: "premiumEditorial", homepageProfileId: "homepage-campaign-led" },
       ),
-    ).toThrow(/campaign lacks required approved authority/);
+    ).toThrow(/hero lacks required approved authority/);
 
     const commerceFixture = createP905aFreshMerchantFixture("modernTechnical");
     const commerceDraft = structuredClone(commerceFixture.planningInput.draft);
@@ -384,7 +384,7 @@ describe("P10B-09 commercial homepage profile library", () => {
       if (binding.source === "collectionList") return binding.collectionIds;
       throw new Error(`Unexpected ${binding.source} authority for ${slotId}.`);
     };
-    expect(boundIds("homepageFeaturedCollections", "collections")).toHaveLength(4);
+    expect(boundIds("homepageFeaturedCollections", "collections")).toHaveLength(3);
     expect(boundIds("homepageCollectionNavigation", "collections")).toHaveLength(6);
     expect(boundIds("homepageFeaturedProducts", "products")).toHaveLength(4);
   });

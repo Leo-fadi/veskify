@@ -86,8 +86,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline includes the accepted P10B-18B-01 Design DNA/shared-frame
-upgrade on 17 August 2026. Phase 9 is
+The verified v1.3.0 source baseline includes the accepted P10B-18B-02 homepage/editorial/campaign
+quality upgrade on 18 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
 BrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction
@@ -101,8 +101,9 @@ P10B-16P-02A/P10B-16P-02B prompted Design Intent V2 authority and deterministic 
 P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B-16P-05A
 active-path/compiler rationalisation, P10B-16P-06 canonical search query/results authority, and
 P10B-17 responsive/accessibility/performance closure, P10B-18A commercial-authority audit, and
-P10B-18B-01 Design DNA/shared-frame upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent
-P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-02 is next after accepted P10B-18B-06;
+P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-direction upgrade,
+and P10B-18B-02 homepage/editorial/campaign quality upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent
+P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-03 is next after accepted P10B-18B-02;
 P10B-18C remains **Planned**.
 P10B-16P-05B remains **Planned** after P10B-18C.
 
@@ -152,7 +153,8 @@ freezes the commercial ceiling and six conditional improvement packages. Accepte
 materializes bounded within-direction density, corrects semantic frame/responsive causality, makes
 the existing compact frame complete-store reachable, and refines shared-frame composition without
 claiming later page-family or P10B-18C closure. Accepted P10B-18B-06 adds only bounded shared
-asset-composition authority; P10B-18B-02 is the next focused product task.
+asset-composition authority; accepted P10B-18B-02 closes bounded homepage/editorial/campaign
+quality and P10B-18B-03 is the next focused product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -294,7 +296,7 @@ fingerprint-stratified subset passes retained human review at 375, 768, 1024, an
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and
 P10B-18B-01 and P10B-18B-06 are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and
-P10B remain Partial; P10B-18B-02 is next, P10B-18C remains Planned, and P10B-16P-05B remains
+P10B remain Partial; P10B-18B-03 is next, P10B-18C remains Planned, and P10B-16P-05B remains
 Planned after P10B-18C. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
@@ -518,5 +520,20 @@ treatment change separate. Presentation selection must reject protected product-
 P10B-18B-06 is **Baseline**, accepted by the product owner on 17 August 2026 for this bounded
 authority only. Do not infer complete-storefront commercial visual acceptance: retained whitespace,
 homepage-composition, merchandising-rhythm and section-hierarchy work belongs to
-P10B-18B-02/03/04/05. The exact next task is **P10B-18B-02 — Homepage / Editorial / Campaign
-Quality Upgrade**.
+P10B-18B-02/03/04/05. P10B-18B-02 was subsequently accepted on 18 August 2026.
+
+## P10B-18B-02 accepted homepage-quality note
+
+Homepage plans must use the existing executable profile and component-slot authority. Preserve each
+slot's explicit transition intent from semantic resolution through synthesis, planner output,
+snapshot materialization and the shared renderer; do not infer hierarchy from CSS order alone or
+create a second recipe/page representation.
+
+Story/catalogue balance is a compound homepage-profile driver. Asset-dependent campaign and
+editorial regions must fail closed or collapse cleanly when approved P10B-18B-06 authority is
+absent. Canonical product cards and commerce bindings remain the only merchandising truth.
+
+P10B-18B-02 is **Baseline**, accepted by the product owner on 18 August 2026 for bounded
+homepage/editorial/campaign quality only. Collection/search/product-card, PDP, content/utility and
+complete-storefront designer-grade quality remain unaccepted. The exact next task is
+**P10B-18B-03 — Collection / Search / Product-card Quality Upgrade**.

@@ -557,7 +557,6 @@ describe("P10B-18B-01 Design DNA and shared-frame authority", () => {
       ({ path }) => path === "commercialPosture",
     );
     expect(commercial?.supportedValues).toEqual([
-      "bold-campaign",
       "catalogue-comparison",
       "fast-conversion",
       "high-consideration",
@@ -572,12 +571,8 @@ describe("P10B-18B-01 Design DNA and shared-frame authority", () => {
         mode: "compound-driver",
         reasonCode: "coupled-axis-provider-driver",
         providerDriverPath: "commercialPosture",
-        coupledExactAxisIds: [
-          "art-direction-posture",
-          "merchandising-posture",
-          "optional-page-set",
-        ],
-        semanticValueCount: 8,
+        coupledExactAxisIds: ["art-direction-posture", "optional-page-set"],
+        semanticValueCount: 7,
         exactValueCount: 3,
       },
       ...(["design-dna", "typography", "spacing-density", "shared-frame"] as const).map(
@@ -587,7 +582,7 @@ describe("P10B-18B-01 Design DNA and shared-frame authority", () => {
           reasonCode: "correlated-candidate-substitution" as const,
           providerDriverPath: null,
           coupledExactAxisIds: [],
-          semanticValueCount: 8,
+          semanticValueCount: 7,
           exactValueCount: [6, 3, 4, 4][index],
         }),
       ),

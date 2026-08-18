@@ -397,6 +397,15 @@ function sectionClass(component: string, variant: string, style: HomepageSurface
   return `${styles.root} ${styles[component]} ${styles[`variant_${variant}`]} ${styles[`surface_${style.surface}`]}`;
 }
 
+type HomepageCatalogueScale = "micro" | "small" | "medium" | "dense";
+
+function catalogueScale(itemCount: number): HomepageCatalogueScale {
+  if (itemCount <= 1) return "micro";
+  if (itemCount <= 3) return "small";
+  if (itemCount <= 8) return "medium";
+  return "dense";
+}
+
 function anatomyIdentity(instance: ComponentInstanceV2) {
   const anatomy = veskifyComponentRegistryV2.get(instance.component).commercialAnatomy;
   if (!anatomy) throw new Error(`Missing commercial anatomy for ${instance.component}.`);
@@ -479,18 +488,13 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       <ImageAsset loadingRole="primary" locale={locale} resolved={media} />
     </figure>
   ) : null;
-  const mediaFirst = [
-    "imageLed",
-    "asymmetric",
-    "fullBleedOverlay",
-    "fullBleed",
-    "campaignMerchandising",
-  ].includes(instance.variant);
+  const mediaFirst = ["imageLed", "fullBleedOverlay", "fullBleed"].includes(instance.variant);
   return (
     <section
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass("hero", instance.variant, style)}
       data-content-width={props.contentWidth}
+      data-composition-density={media ? "media-supported" : "copy-focused"}
       data-component={instance.component}
       data-variant={instance.variant}
       data-copy-treatment={usesOverlayCopy ? "overlay" : "default"}
@@ -509,6 +513,20 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
           {merchandising}
           {copy}
           {actions}
+        </>
+      ) : usesOverlayCopy ? (
+        <>
+          {mediaFrame}
+          <div className={styles.heroOverlayPanel} data-region="overlay-panel">
+            {copy}
+          </div>
+        </>
+      ) : instance.variant === "asymmetric" ? (
+        <>
+          <div className={styles.heroAsymmetricRail} data-region="asymmetric-rail">
+            {copy}
+          </div>
+          {mediaFrame}
         </>
       ) : (
         <>
@@ -535,7 +553,6 @@ function CollectionCards({
   projection,
   input,
   locale,
-  placeholder,
   showDescriptions,
   presentation,
   assigned,
@@ -544,16 +561,15 @@ function CollectionCards({
   projection: Projection;
   input: HomepageCommerceRendererInput;
   locale: LocaleContext;
-  placeholder: LocalizedText;
   showDescriptions: boolean;
   presentation: "image" | "text" | "compact";
   assigned?: ReadonlySet<string>;
 }) {
   return collections.map((collection) => {
     const media =
-      presentation === "text"
-        ? undefined
-        : canonicalCollectionMedia(collection, projection, input, assigned);
+      presentation === "image"
+        ? canonicalCollectionMedia(collection, projection, input, assigned)
+        : undefined;
     return (
       <article
         className={`${styles.collectionCard} ${styles[`card_${presentation}`]}`}
@@ -568,9 +584,7 @@ function CollectionCards({
           >
             <ImageAsset loadingRole="merchandising" locale={locale} resolved={media} />
           </figure>
-        ) : presentation === "text" ? null : (
-          <p className={styles.placeholder}>{text(placeholder, locale)}</p>
-        )}
+        ) : null}
         <h3>
           <button
             onClick={() =>
@@ -616,6 +630,7 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
       aria-labelledby={content.heading ? headingId : undefined}
       className={sectionClass("featuredCollections", instance.variant, style)}
       data-component={instance.component}
+      data-catalogue-scale={catalogueScale(collections.length)}
       data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
@@ -641,7 +656,6 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
           collections={collections}
           input={input}
           locale={locale}
-          placeholder={content.mediaPlaceholderLabel}
           presentation={props.cardPresentation}
           projection={projection}
           showDescriptions={props.showDescriptions}
@@ -688,6 +702,7 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
       aria-labelledby={content.heading ? headingId : undefined}
       className={sectionClass("featuredProducts", instance.variant, style)}
       data-component={instance.component}
+      data-catalogue-scale={catalogueScale(products.length)}
       data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
@@ -754,6 +769,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
   const style = homepageSurfaceStyleSchema.parse(instance.styleOverrides);
   const headingId = useId();
   const collections = collectionsFor(instance, projection, "collections");
+  const assigned = assignedAssetIds(instance, "collectionMedia");
   const columnCount = Math.min(props.columns, Math.max(collections.length, 1));
   const anatomy = anatomyIdentity(instance);
   return (
@@ -764,6 +780,8 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       }
       className={sectionClass("collectionNavigation", instance.variant, style)}
       data-component={instance.component}
+      data-catalogue-scale={catalogueScale(collections.length)}
+      data-collection-presentation={props.presentation}
       data-presentation-mode={anatomy.presentationMode}
       data-variant={instance.variant}
       data-render-target={input.target}
@@ -772,98 +790,55 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       {...anatomy.responsiveAttributes}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
-      <div
-        className={styles.collectionGrid}
-        data-column-count={columnCount}
-        data-item-count={collections.length}
-        data-region="collection-navigation-grid"
-        style={{ "--homepage-columns": columnCount } as CSSProperties}
-      >
-        <CollectionCards
-          assigned={assignedAssetIds(instance, "collectionMedia")}
-          collections={collections}
-          input={input}
-          locale={locale}
-          placeholder={content.mediaPlaceholderLabel}
-          presentation={props.presentation}
-          projection={projection}
-          showDescriptions={false}
-        />
-      </div>
-    </nav>
-  );
-}
-
-function EditorialSection({
-  component,
-  instance,
-  input,
-  locale,
-  style,
-  heading,
-  description,
-  actionLabel,
-  actionId,
-  actionPresentation,
-  media,
-  mediaPosition,
-  textAlignment,
-}: {
-  component: string;
-  instance: ComponentInstanceV2;
-  input: HomepageCommerceRendererInput;
-  locale: LocaleContext;
-  style: HomepageSurfaceStyle;
-  heading: LocalizedText;
-  description: LocalizedText;
-  actionLabel?: LocalizedText;
-  actionId?: string;
-  actionPresentation: "primary" | "secondary" | "text";
-  media?: ResolvedAsset;
-  mediaPosition: "left" | "right" | "background";
-  textAlignment: "left" | "center";
-}) {
-  const anatomy = anatomyIdentity(instance);
-  return (
-    <section
-      aria-labelledby={`${instance.id}-heading`}
-      className={sectionClass(component, instance.variant, style)}
-      data-component={instance.component}
-      data-variant={instance.variant}
-      data-media-position={mediaPosition}
-      data-media-state={media ? "approved" : "omitted"}
-      data-presentation-mode={anatomy.presentationMode}
-      data-render-target={input.target}
-      data-responsive-layout="content-driven"
-      data-surface={style.surface}
-      {...anatomy.responsiveAttributes}
-    >
-      <div
-        className={`${styles.editorialCopy} ${styles[`align_${textAlignment}`]}`}
-        data-region="content"
-      >
-        <h2 id={`${instance.id}-heading`}>{text(heading, locale)}</h2>
-        <p>{text(description, locale)}</p>
-        <ActionButton
-          label={actionLabel}
-          locale={locale}
-          navigationId={actionId}
-          onNavigate={input.onNavigate}
-          presentation={actionPresentation}
-        />
-      </div>
-      {media ? (
-        <figure
-          className={`${styles.editorialMedia} ${styles[`media_${mediaPosition}`]}`}
-          data-asset-id={media.asset.id}
-          data-asset-provenance={media.provenance.kind}
-          data-asset-role={media.role}
-          data-region="media"
+      {props.presentation === "compact" ? (
+        <ul
+          className={styles.collectionNavigationList}
+          data-column-count={columnCount}
+          data-item-count={collections.length}
+          data-region="collection-navigation-grid"
+          style={{ "--homepage-columns": columnCount } as CSSProperties}
         >
-          <ImageAsset locale={locale} resolved={media} />
-        </figure>
-      ) : null}
-    </section>
+          {collections.map((collection, index) => (
+            <li key={collection.collectionId}>
+              <button
+                onClick={() =>
+                  input.onNavigate(
+                    collectionNavigationIntentSchema.parse({
+                      type: "navigateToCollection",
+                      collectionId: collection.collectionId,
+                      collectionRevision: collection.revision,
+                    }),
+                  )
+                }
+                type="button"
+              >
+                <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <strong>{text(collection.title, locale)}</strong>
+                <span aria-hidden="true">↗</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div
+          className={styles.collectionGrid}
+          data-column-count={columnCount}
+          data-item-count={collections.length}
+          data-region="collection-navigation-grid"
+          style={{ "--homepage-columns": columnCount } as CSSProperties}
+        >
+          <CollectionCards
+            assigned={assigned}
+            collections={collections}
+            input={input}
+            locale={locale}
+            presentation={props.presentation}
+            projection={projection}
+            showDescriptions={false}
+          />
+        </div>
+      )}
+    </nav>
   );
 }
 
@@ -883,22 +858,73 @@ export function HomepagePromotionSection(input: HomepageCommerceRendererInput) {
     assignmentSlot: "promotionMedia",
     acceptedRoles: ["collectionImage", "editorialImage", "heroDesktop", "heroMobile"],
   });
+  const mediaPosition = instance.variant === "overlay" ? "background" : props.mediaPosition;
+  const anatomy = anatomyIdentity(instance);
+  const action = (
+    <div className={styles.campaignAction} data-region="actions" key="action">
+      <ActionButton
+        label={content.actionLabel}
+        locale={locale}
+        navigationId={bindingFor(instance, "promotionAction", "navigation")?.navigationId}
+        onNavigate={input.onNavigate}
+        presentation={props.actionPresentation}
+      />
+    </div>
+  );
+  const copy = (
+    <div
+      className={`${styles.editorialCopy} ${styles[`align_${props.textAlignment}`]}`}
+      data-region="content"
+      key="copy"
+    >
+      <h2 id={`${instance.id}-heading`}>{text(content.heading, locale)}</h2>
+      <p>{text(content.description, locale)}</p>
+    </div>
+  );
+  const mediaFrame = media ? (
+    <figure
+      className={`${styles.editorialMedia} ${styles[`media_${mediaPosition}`]}`}
+      data-asset-id={media.asset.id}
+      data-asset-provenance={media.provenance.kind}
+      data-asset-role={media.role}
+      data-region="media"
+      key="media"
+    >
+      <ImageAsset locale={locale} resolved={media} />
+    </figure>
+  ) : null;
+  const children =
+    instance.variant === "imageLed"
+      ? [
+          mediaFrame,
+          <div className={styles.campaignProposition} data-region="merchandising" key="copy">
+            {copy}
+            {action}
+          </div>,
+        ]
+      : instance.variant === "overlay"
+        ? [mediaFrame, copy, action]
+        : instance.variant === "minimal"
+          ? [copy, action]
+          : instance.variant === "editorial"
+            ? [copy, mediaFrame, action]
+            : [copy, action, mediaFrame];
   return (
-    <EditorialSection
-      actionId={bindingFor(instance, "promotionAction", "navigation")?.navigationId}
-      actionLabel={content.actionLabel}
-      actionPresentation={props.actionPresentation}
-      component="promotion"
-      description={content.description}
-      heading={content.heading}
-      input={input}
-      instance={instance}
-      locale={locale}
-      media={media}
-      mediaPosition={props.mediaPosition}
-      style={style}
-      textAlignment={props.textAlignment}
-    />
+    <section
+      aria-labelledby={`${instance.id}-heading`}
+      className={sectionClass("promotion", instance.variant, style)}
+      data-component={instance.component}
+      data-variant={instance.variant}
+      data-media-position={mediaPosition}
+      data-media-state={media ? "approved" : "omitted"}
+      data-presentation-mode={anatomy.presentationMode}
+      data-render-target={input.target}
+      data-responsive-layout="governed-campaign"
+      data-surface={style.surface}
+      {...anatomy.responsiveAttributes}
+    >
+      {children}
+    </section>
   );
 }
 
@@ -954,9 +980,14 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
   });
   const action = bindingFor(instance, "editorialAction", "navigation");
   const anatomy = anatomyIdentity(instance);
+  const renderedAssets =
+    instance.variant === "continuationCta" ||
+    (instance.variant === "lookbookGallery" && assets.length < 2)
+      ? []
+      : assets;
   const gallery = (
     <EditorialMediaGallery
-      assets={instance.variant === "continuationCta" ? [] : assets}
+      assets={renderedAssets}
       columns={instance.variant === "lookbookGallery" ? props.galleryColumns : 1}
       locale={locale}
       position={props.mediaPosition}
@@ -964,14 +995,16 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
   );
   const copy = (
     <div
-      className={`${styles.editorialCopy} ${styles[`align_${props.textAlignment}`]}`}
+      className={`${styles.editorialCopy} ${
+        instance.variant === "brandStory" ? styles.brandStoryCopy : ""
+      } ${styles[`align_${props.textAlignment}`]}`}
       data-region="content"
     >
       {content.eyebrow ? <p className={styles.eyebrow}>{text(content.eyebrow, locale)}</p> : null}
       <h2 id={`${instance.id}-heading`}>{text(content.heading, locale)}</h2>
       <p>{text(content.body, locale)}</p>
       {instance.variant === "craftProcess" ? (
-        <ol className={styles.processList}>
+        <ol className={styles.processList} data-region="process">
           {content.steps.map((step) => (
             <li key={step.id}>
               <h3>{text(step.title, locale)}</h3>
@@ -989,13 +1022,20 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
       />
     </div>
   );
-  const mediaFirst = instance.variant === "lookbookGallery";
+  const mediaFirst = instance.variant === "lookbookGallery" || instance.variant === "brandStory";
   return (
     <section
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass("editorialStory", instance.variant, style)}
       data-component={instance.component}
-      data-media-state={assets.length > 0 ? "approved" : "omitted"}
+      data-gallery-readiness={
+        instance.variant === "lookbookGallery"
+          ? renderedAssets.length >= 2
+            ? "ready"
+            : "insufficient"
+          : "not-applicable"
+      }
+      data-media-state={renderedAssets.length > 0 ? "approved" : "omitted"}
       data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-responsive-layout="governed-editorial"
@@ -1017,6 +1057,54 @@ export function HomepageProofSection(input: HomepageCommerceRendererInput) {
   const style = homepageSurfaceStyleSchema.parse(instance.styleOverrides);
   const anatomy = anatomyIdentity(instance);
   const headingId = useId();
+  const proofItems = content.items.map((item) => (
+    <article
+      data-evidence-authority={item.evidence.authorityId}
+      data-evidence-source={item.evidence.source}
+      data-proof-kind={item.kind}
+      key={item.id}
+    >
+      {instance.variant === "serviceAssurance" ? (
+        <span aria-hidden="true" className={styles.serviceMark}>
+          ◇
+        </span>
+      ) : null}
+      {item.kind === "quote" ? (
+        <blockquote>
+          <p>{text(item.statement, locale)}</p>
+          {item.attribution ? <cite>{text(item.attribution, locale)}</cite> : null}
+        </blockquote>
+      ) : (
+        <>
+          <p>{text(item.statement, locale)}</p>
+          {item.attribution ? (
+            <p className={styles.proofAttribution}>{text(item.attribution, locale)}</p>
+          ) : null}
+        </>
+      )}
+    </article>
+  ));
+  const grid = (
+    <div
+      className={`${styles.proofGrid} ${styles[`align_${props.textAlignment}`]}`}
+      data-region="proof-grid"
+      style={
+        {
+          "--homepage-columns": Math.max(1, Math.min(props.columns, content.items.length)),
+        } as CSSProperties
+      }
+    >
+      {proofItems}
+    </div>
+  );
+  const proofRegion =
+    instance.variant === "quoteSpotlight" ? (
+      <div className={styles.quoteSpotlight} data-region="proof">
+        <div data-region="quote">{proofItems}</div>
+      </div>
+    ) : (
+      <div data-region="proof">{grid}</div>
+    );
   return (
     <section
       aria-label={
@@ -1034,35 +1122,13 @@ export function HomepageProofSection(input: HomepageCommerceRendererInput) {
       {...anatomy.responsiveAttributes}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
-      <div
-        className={`${styles.proofGrid} ${styles[`align_${props.textAlignment}`]}`}
-        data-region="proof-grid"
-        style={
-          { "--homepage-columns": Math.min(props.columns, content.items.length) } as CSSProperties
-        }
-      >
-        {content.items.map((item) => (
-          <article
-            data-evidence-authority={item.evidence.authorityId}
-            data-evidence-source={item.evidence.source}
-            key={item.id}
-          >
-            {item.kind === "quote" ? (
-              <blockquote>
-                <p>{text(item.statement, locale)}</p>
-                {item.attribution ? <cite>{text(item.attribution, locale)}</cite> : null}
-              </blockquote>
-            ) : (
-              <>
-                <p>{text(item.statement, locale)}</p>
-                {item.attribution ? (
-                  <p className={styles.proofAttribution}>{text(item.attribution, locale)}</p>
-                ) : null}
-              </>
-            )}
-          </article>
-        ))}
-      </div>
+      {instance.variant === "serviceAssurance" ? (
+        <div className={styles.serviceAssurance} data-region="service">
+          {proofRegion}
+        </div>
+      ) : (
+        proofRegion
+      )}
     </section>
   );
 }
@@ -1082,6 +1148,7 @@ export function HomepageTrustSection(input: HomepageCommerceRendererInput) {
   const style = homepageSurfaceStyleSchema.parse(instance.styleOverrides);
   const headingId = useId();
   const anatomy = anatomyIdentity(instance);
+  const columnCount = Math.min(props.columns, Math.max(content.items.length, 1));
   return (
     <section
       aria-labelledby={content.heading ? headingId : undefined}
@@ -1100,8 +1167,9 @@ export function HomepageTrustSection(input: HomepageCommerceRendererInput) {
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
         className={`${styles.trustGrid} ${styles[`align_${props.textAlignment}`]}`}
+        data-item-count={content.items.length}
         data-region="trust-grid"
-        style={{ "--homepage-columns": props.columns } as CSSProperties}
+        style={{ "--homepage-columns": columnCount } as CSSProperties}
       >
         {content.items.map((item) => (
           <article key={item.id}>

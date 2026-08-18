@@ -755,14 +755,16 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     }
   });
 
-  it("uses safe collection and product placeholders when optional media is unavailable", () => {
+  it("uses a text-led collection fallback and preserves canonical product placeholders", () => {
     const noMediaProjection = { ...projection, assets: projection.assets.slice(0, 2) };
     const { rerender } = render(
       renderHomepageCommerce(
         rendererInput(featuredCollectionsInstance(), { projection: noMediaProjection }),
       ),
     );
-    expect(screen.getAllByText("Collection image unavailable")).toHaveLength(2);
+    expect(screen.queryByText("Collection image unavailable")).not.toBeInTheDocument();
+    expect(screen.getByText("Watches")).toBeInTheDocument();
+    expect(screen.getByText("Rings")).toBeInTheDocument();
 
     rerender(
       renderHomepageCommerce(
@@ -798,6 +800,55 @@ describe("P6-05 dynamic homepage commerce component family", () => {
       collectionId: "collection_rings",
       collectionRevision: "collection-rev-rings",
     });
+  });
+
+  it("renders each registered collection-navigation presentation without dropping approved media", () => {
+    const navigation = (presentation: "image" | "text" | "compact") =>
+      instance(
+        "homepageCollectionNavigation",
+        "standard",
+        {
+          heading: localized("Browse"),
+          mediaPlaceholderLabel: localized("No collection image"),
+        },
+        { presentation, columns: 2 },
+        [
+          {
+            slotId: "collections",
+            source: "collectionList",
+            collectionIds: [rings.collectionId],
+            revision: "collection-list-rev-home",
+          },
+        ],
+      );
+
+    const compact = render(renderHomepageCommerce(rendererInput(navigation("compact"))));
+    expect(compact.container.querySelector("nav")).toHaveAttribute(
+      "data-collection-presentation",
+      "compact",
+    );
+    expect(
+      compact.container.querySelector("[data-region='collection-navigation-grid']"),
+    ).toHaveProperty("tagName", "UL");
+    expect(compact.container.querySelector("article, figure")).toBeNull();
+    compact.unmount();
+
+    const textPresentation = render(renderHomepageCommerce(rendererInput(navigation("text"))));
+    expect(textPresentation.container.querySelector("article")).toHaveAttribute(
+      "data-has-media",
+      "false",
+    );
+    expect(textPresentation.container.querySelector("figure")).toBeNull();
+    textPresentation.unmount();
+
+    const imagePresentation = render(renderHomepageCommerce(rendererInput(navigation("image"))));
+    expect(imagePresentation.container.querySelector("article")).toHaveAttribute(
+      "data-has-media",
+      "true",
+    );
+    expect(
+      imagePresentation.container.querySelector("[data-asset-id='asset_rings']"),
+    ).toBeVisible();
   });
 
   it("keeps promotional and trust content presentation-only", () => {
@@ -1096,6 +1147,36 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     });
   });
 
+  it("renders all five promotion variants with distinct region relationships", () => {
+    const regionOrder = Object.fromEntries(
+      (["split", "overlay", "minimal", "editorial", "imageLed"] as const).map((variant) => {
+        const promotion = promotionInstance();
+        promotion.variant = variant;
+        if (variant === "minimal") {
+          promotion.bindings = promotion.bindings.filter(
+            (binding) => binding.slotId !== "promotionAsset",
+          );
+          promotion.assetAssignments = [];
+        }
+        const root = render(renderHomepageCommerce(rendererInput(promotion))).container
+          .firstElementChild!;
+        return [
+          variant,
+          [...root.querySelectorAll<HTMLElement>("[data-region]")].map(
+            ({ dataset }) => dataset.region,
+          ),
+        ];
+      }),
+    );
+    expect(regionOrder).toEqual({
+      split: ["content", "actions", "media"],
+      overlay: ["media", "content", "actions"],
+      minimal: ["content", "actions"],
+      editorial: ["content", "media", "actions"],
+      imageLed: ["media", "merchandising", "content", "actions"],
+    });
+  });
+
   it("uses canonical brand tokens and safe stacking for all homepage surfaces", () => {
     const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
     expect(css).not.toMatch(/--color-/);
@@ -1116,6 +1197,10 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     );
     expect(css).not.toMatch(/z-index:\s*-\d/);
     expect(css).toMatch(/\.heroCopy,[\s\S]*\.editorialCopy\s*\{[\s\S]*z-index:\s*2;/);
+    expect(css).toMatch(
+      /\.promotion\.variant_overlay\[data-media-state="approved"\] \.editorialCopy/,
+    );
+    expect(css).not.toMatch(/\.promotion\.variant_overlay \.editorialCopy/);
   });
 
   it("caps navigation columns at the registered responsive maximum", () => {

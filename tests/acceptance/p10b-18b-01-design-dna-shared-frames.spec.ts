@@ -732,12 +732,17 @@ test("retains deterministic Design DNA and shared-frame evidence across seventee
     const alternate = stores.find(({ binding }) => binding.key === alternateKey)!;
     expect(alternate.binding.shapeId).toBe(primary.binding.shapeId);
     expect(alternate.binding.directionId).toBe(primary.binding.directionId);
-    if (primary.binding.directionId !== "warmApproachable") {
+    if (primary.binding.directionId === "premiumEditorial") {
       expect(alternate.binding.profiles.homepage).toBe(primary.binding.profiles.homepage);
       expect(alternate.binding.legacyManifest.homepageComponentSequence).toEqual(
         primary.binding.legacyManifest.homepageComponentSequence,
       );
     } else {
+      expect([primary.binding.profiles.homepage, alternate.binding.profiles.homepage]).toEqual(
+        primary.binding.directionId === "modernTechnical"
+          ? ["homepage-commerce-led-discovery", "homepage-collection-gateway"]
+          : ["homepage-minimal-brand-commerce", "homepage-editorial-storytelling"],
+      );
       expect(alternate.binding.profiles.homepage).not.toBe(primary.binding.profiles.homepage);
       expect(alternate.binding.legacyManifest.homepageComponentSequence).not.toEqual(
         primary.binding.legacyManifest.homepageComponentSequence,

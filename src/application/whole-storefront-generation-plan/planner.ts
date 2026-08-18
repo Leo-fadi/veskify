@@ -68,6 +68,10 @@ import {
   homepageCommerceBridgeDefaults,
   type HomepageCommerceBridgeComponent,
 } from "@/components/registry/homepage-commerce-bridge";
+import {
+  homepageCollectionNavigationPropsSchema,
+  homepageFeaturedCollectionsPropsSchema,
+} from "@/components/registry/homepage-commerce";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import {
   approvedAssetPlacementAuthority,
@@ -656,9 +660,7 @@ function executableHomepageAssetSlot(
   if (component === "homepageHero") return "heroMedia";
   if (component === "homepagePromotion") return "promotionMedia";
   if (component === "homepageEditorial") return "storyMedia";
-  if (component === "homepageFeaturedCollections" || component === "homepageCollectionNavigation") {
-    return "collectionMedia";
-  }
+  if (component === "homepageFeaturedCollections") return "collectionMedia";
   if (component === "brandStory") return "brandStoryMedia";
   return null;
 }
@@ -1460,6 +1462,10 @@ function mappedHomepageBridgePresentation(
           : [];
   }
 
+  if (component === "homepageFeaturedCollections" && variant === "imageLed") {
+    props.cardPresentation = "image";
+  }
+
   const preferredAssetId =
     objectValue(source?.content.media)?.id ?? source?.content.approvedAssetId;
   const acceptedRoles =
@@ -1469,8 +1475,7 @@ function mappedHomepageBridgePresentation(
         ? ["collectionImage", "editorialImage", "heroDesktop", "heroMobile"]
         : component === "homepageEditorial"
           ? ["editorialImage", "heroDesktop", "heroMobile"]
-          : component === "homepageFeaturedCollections" ||
-              component === "homepageCollectionNavigation"
+          : component === "homepageFeaturedCollections"
             ? ["collectionImage", "editorialImage"]
             : [];
   const assetSlotId = executableHomepageAssetSlot(component);
@@ -1584,6 +1589,52 @@ function mappedBrandStoryPresentation(
       },
     ],
   };
+}
+
+function assertDistinctHomepageCollectionDiscovery(
+  components: WholeStorefrontGenerationPlan["pagePlans"][number]["components"],
+): void {
+  const collectionSections = components.flatMap((component) => {
+    if (!("instance" in component)) return [];
+    const instance = component.instance;
+    if (
+      instance.component !== "homepageFeaturedCollections" &&
+      instance.component !== "homepageCollectionNavigation"
+    ) {
+      return [];
+    }
+    const binding = instance.bindings.find(
+      (candidate) => candidate.slotId === "collections" && candidate.source === "collectionList",
+    );
+    if (!binding || binding.source !== "collectionList") return [];
+    const presentation =
+      instance.component === "homepageFeaturedCollections"
+        ? homepageFeaturedCollectionsPropsSchema.parse(instance.props).cardPresentation
+        : homepageCollectionNavigationPropsSchema.parse(instance.props).presentation;
+    return [
+      {
+        component: instance.component,
+        collectionIds: binding.collectionIds,
+        presentation,
+      },
+    ];
+  });
+  for (let left = 0; left < collectionSections.length; left += 1) {
+    for (let right = left + 1; right < collectionSections.length; right += 1) {
+      const first = collectionSections[left];
+      const second = collectionSections[right];
+      if (
+        first.component === second.component &&
+        first.presentation === second.presentation &&
+        canonicalValueString(first.collectionIds) === canonicalValueString(second.collectionIds)
+      ) {
+        invalid(
+          "invalid-component-contract",
+          "A homepage cannot repeat the same canonical collection membership with the same presentation anatomy.",
+        );
+      }
+    }
+  }
 }
 
 function authoritativeHomepageProfileComponents(input: {
@@ -1818,14 +1869,17 @@ function authoritativeHomepageProfileComponents(input: {
                   !materialization.commercialHomepage || surfaceDepth === "flat"
                     ? "plain"
                     : surfaceDepth === "subtle"
-                      ? profileSlot.visualWeight === "heavy"
+                      ? profileSlot.visualWeight === "heavy" ||
+                        profileSlot.transitionIntent === "escalation"
                         ? "soft"
                         : "plain"
-                      : profileSlot.narrativeRole === "brand-proof" ||
-                          profileSlot.narrativeRole === "continuation"
+                      : profileSlot.transitionIntent === "contrast" ||
+                          profileSlot.transitionIntent === "proof" ||
+                          profileSlot.transitionIntent === "conversion"
                         ? "contrast"
-                        : profileSlot.narrativeRole === "brand-story" ||
-                            profileSlot.narrativeRole === "education"
+                        : profileSlot.transitionIntent === "continuation" ||
+                            profileSlot.transitionIntent === "clarification" ||
+                            profileSlot.transitionIntent === "escalation"
                           ? "soft"
                           : "plain",
               }
@@ -1891,6 +1945,7 @@ function authoritativeHomepageProfileComponents(input: {
           variant: section.variant,
         };
       });
+  assertDistinctHomepageCollectionDiscovery(selectedComponents);
   return [...selectedComponents, ...removedComponents];
 }
 

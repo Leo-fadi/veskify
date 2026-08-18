@@ -189,3 +189,18 @@ assets, surfaces, and art direction remain unchanged.
 This adds no family, variant, PageBlueprint, registry, or copy authority and does not mutate the
 snapshot, commerce, or media. P10B-18 retains the cross-store commercial storytelling and visual
 quality gate.
+
+## Accepted P10B-18B-02 continuation
+
+P10B-18B-02 keeps these registered families and their canonical renderer bridge, but makes their
+existing anatomy observable as intentional page hierarchy. Hero, promotion, editorial and proof
+regions now expose distinct structural hooks; asset-free variants collapse without reserved media;
+campaign media no longer forces viewport-overflowing minimum heights; proof and trust columns adapt
+to actual evidence cardinality; and bounded responsive rules keep actions, copy and media legible.
+
+The homepage plan now carries an exact transition intent between adjacent roles, and the existing
+renderer consumes that intent without adding a component family, page graph, snapshot field or
+alternate rendering path. Approved P10B-18B-06 asset/source/crop authority and canonical product
+media remain unchanged. This bounded continuation is Baseline as part of accepted P10B-18B-02; it
+does not accept collection/search/product-card, PDP, content/utility or P10B-18C complete-storefront
+designer-grade quality.

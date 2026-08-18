@@ -171,12 +171,30 @@ async function expectRenderedProfile(
   await expect(
     surface.locator('[data-component="homepageFeaturedProducts"] article'),
   ).not.toHaveCount(0);
-  const collectionSurface = surface.locator(
-    '[data-component="homepageFeaturedCollections"], [data-component="homepageCollectionNavigation"]',
-  );
-  if ((await collectionSurface.count()) > 0) {
-    await expect(collectionSurface.locator("[data-item-count]")).toHaveCount(1);
-    await expect(collectionSurface.locator("article")).not.toHaveCount(0);
+  const featuredCollections = surface.locator('[data-component="homepageFeaturedCollections"]');
+  if ((await featuredCollections.count()) > 0) {
+    await expect(featuredCollections.locator("[data-item-count]")).toHaveCount(1);
+    await expect(featuredCollections.locator("article")).not.toHaveCount(0);
+  }
+  const collectionNavigation = surface.locator('[data-component="homepageCollectionNavigation"]');
+  if ((await collectionNavigation.count()) > 0) {
+    await expect(collectionNavigation.locator("[data-item-count]")).toHaveCount(1);
+    const presentation = await collectionNavigation.getAttribute("data-collection-presentation");
+    if (presentation === "compact") {
+      const collectionItems = collectionNavigation.locator("li");
+      const collectionControls = collectionItems.locator("button, a[href]");
+      const itemCount = await collectionItems.count();
+      expect(itemCount).toBeGreaterThan(0);
+      await expect(collectionControls).toHaveCount(itemCount);
+      for (const control of await collectionControls.all()) {
+        await expect(control).toBeVisible();
+        await expect(control).toHaveAccessibleName(/\S+/);
+      }
+      await expect(collectionNavigation.locator("article")).toHaveCount(0);
+    } else {
+      expect(presentation).toMatch(/^(image|text)$/);
+      await expect(collectionNavigation.locator("article")).not.toHaveCount(0);
+    }
   }
   if ((await surface.locator('[data-component="homepagePromotion"]').count()) > 0) {
     await expect(

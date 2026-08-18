@@ -9,9 +9,9 @@ The overall product is **Partial**. Phase 9 is closed by product-owner handoff, 
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
 v1 is **Partial / active**: P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A,
 P10B-16P-06, the accepted P10B-18A commercial-authority audit, accepted P10B-18B-01 Design DNA
-and shared-frame quality upgrade, and accepted P10B-18B-06 bounded asset-composition and
-art-direction upgrade are Baseline. Parent P10B-18B and P10B-18 remain Partial; P10B-18B-02 is
-next, and P10B-18C remains Planned.
+and shared-frame quality upgrade, accepted P10B-18B-06 bounded asset-composition and art-direction
+upgrade, and accepted P10B-18B-02 homepage/editorial/campaign quality upgrade are Baseline. Parent
+P10B-18B and P10B-18 remain Partial; P10B-18B-03 is next, and P10B-18C remains Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -86,9 +86,12 @@ P10B-18B-01 gives each coordinated direction two materially consumed non-colour 
 outcomes, makes every shared-frame family reachable without changing frame identity contracts, and
 corrects the audited long-navigation and footer defects. Accepted P10B-18B-06 adds bounded shared
 purpose-affine asset selection, reuse, responsive-source/crop, logo-consumer, and art-direction
-authority. It does not accept complete-storefront visual quality: P10B-18B-02 is next, while
-P10B-18C remains Planned for the 100+ quality/diversity gate. P10B Commercial Storefront Generation
-System v1 therefore remains Partial.
+authority. Accepted P10B-18B-02 strengthens the six existing homepage profiles and their shared
+hero, editorial, campaign, proof, merchandising, and continuation renderer into intentional rich
+and sparse progression with explicit transition and story/catalogue authority. This bounded
+acceptance does not accept collection/search/product-card, PDP, content/utility, or complete-store
+visual quality: P10B-18B-03 is next, while P10B-18C remains Planned for the 100+
+quality/diversity gate. P10B Commercial Storefront Generation System v1 therefore remains Partial.
 
 Its target is:
 
@@ -186,8 +189,8 @@ Historical phase records retain their original evidence meaning. Superseded expo
 
 ## Non-claim
 
-This repository does not claim completion of P10B-18B beyond accepted P10B-18B-01 and bounded
-P10B-18B-06, complete-storefront commercial visual quality, P10B-18C designer-grade commercial
+This repository does not claim completion of P10B-18B beyond accepted P10B-18B-01, bounded
+P10B-18B-06, and bounded P10B-18B-02, complete-storefront commercial visual quality, P10B-18C designer-grade commercial
 quality/100+ scale acceptance, merchant-complete Storefront Studio editing, complete Vesko
 integration, Vesko staging acceptance, production readiness, or production operation.
 

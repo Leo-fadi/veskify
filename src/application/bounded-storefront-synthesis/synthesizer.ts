@@ -741,6 +741,7 @@ function profileMaterial(
         component: slot.component,
         variant: slot.variant,
         anatomyId,
+        ...(slot.transitionIntent === undefined ? {} : { transitionIntent: slot.transitionIntent }),
         capabilityFingerprint: `component-capability-${canonicalValueFingerprint(definition)}`,
       });
     }
