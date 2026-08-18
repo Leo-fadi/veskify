@@ -840,6 +840,7 @@ function resolveSemanticApprovedAssetSelections(input: {
   }> = plan.slots
     .filter(({ id }) => includedHomepageSlotIds.has(id))
     .flatMap((slot) => {
+      if (slot.sectionType === "homepageCollectionNavigation") return [];
       const component = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
       const variantId =
         overrides.get(`${plan.profile!.id}:${slot.id}`)?.variant ?? slot.defaultVariant;

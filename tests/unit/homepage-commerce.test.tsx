@@ -755,14 +755,16 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     }
   });
 
-  it("uses safe collection and product placeholders when optional media is unavailable", () => {
+  it("uses a text-led collection fallback and preserves canonical product placeholders", () => {
     const noMediaProjection = { ...projection, assets: projection.assets.slice(0, 2) };
     const { rerender } = render(
       renderHomepageCommerce(
         rendererInput(featuredCollectionsInstance(), { projection: noMediaProjection }),
       ),
     );
-    expect(screen.getAllByText("Collection image unavailable")).toHaveLength(2);
+    expect(screen.queryByText("Collection image unavailable")).not.toBeInTheDocument();
+    expect(screen.getByText("Watches")).toBeInTheDocument();
+    expect(screen.getByText("Rings")).toBeInTheDocument();
 
     rerender(
       renderHomepageCommerce(
@@ -1093,6 +1095,36 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     expect(onNavigate).toHaveBeenCalledWith({
       type: "navigateToApprovedAction",
       navigationId: "navigation_shop",
+    });
+  });
+
+  it("renders all five promotion variants with distinct region relationships", () => {
+    const regionOrder = Object.fromEntries(
+      (["split", "overlay", "minimal", "editorial", "imageLed"] as const).map((variant) => {
+        const promotion = promotionInstance();
+        promotion.variant = variant;
+        if (variant === "minimal") {
+          promotion.bindings = promotion.bindings.filter(
+            (binding) => binding.slotId !== "promotionAsset",
+          );
+          promotion.assetAssignments = [];
+        }
+        const root = render(renderHomepageCommerce(rendererInput(promotion))).container
+          .firstElementChild!;
+        return [
+          variant,
+          [...root.querySelectorAll<HTMLElement>("[data-region]")].map(
+            ({ dataset }) => dataset.region,
+          ),
+        ];
+      }),
+    );
+    expect(regionOrder).toEqual({
+      split: ["content", "actions", "media"],
+      overlay: ["media", "content", "actions"],
+      minimal: ["content", "actions"],
+      editorial: ["content", "media", "actions"],
+      imageLed: ["media", "merchandising", "content", "actions"],
     });
   });
 

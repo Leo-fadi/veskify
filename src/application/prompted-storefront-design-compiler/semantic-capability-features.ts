@@ -17,7 +17,6 @@ export const semanticExactInfluenceAxisIds = [
   "shared-frame",
   "frame-responsive-authority",
   "homepage-profile",
-  "narrative-posture",
   "collection-profile",
   "merchandising-posture",
   "pdp-profile",
@@ -119,13 +118,17 @@ function navigationPosture(frameId: string): string {
   return result;
 }
 
-function storyCatalogueBalance(narrativePosture: string): string {
-  if (narrativePosture === "story-led" || narrativePosture === "campaign-led") {
+function storyCatalogueBalance(homepageProfileId: string): string {
+  if (
+    homepageProfileId === "homepage-editorial-storytelling" ||
+    homepageProfileId === "homepage-campaign-led"
+  ) {
     return "story-first";
   }
-  return narrativePosture === "catalogue-dense" || narrativePosture === "discovery-led"
-    ? "catalogue-first"
-    : "balanced";
+  if (homepageProfileId === "homepage-commerce-led-discovery") {
+    return "catalogue-first";
+  }
+  return "balanced";
 }
 
 function collectionDiscoveryPosture(
@@ -187,7 +190,7 @@ export function semanticFeaturesFor(
     ["commercialPosture", commercialPostures(selection, campaign)],
     ["globalVisualIntent.density", [densityPosture(selection.designSystemSpacingDensity)]],
     ["sharedFrameIntent.navigationPosture", [navigationPosture(frame.id)]],
-    ["homepageIntent.storyCatalogueBalance", [storyCatalogueBalance(selection.narrativePosture)]],
+    ["homepageIntent.storyCatalogueBalance", [storyCatalogueBalance(selection.homepageProfileId)]],
     [
       "collectionIntent.discoveryPosture",
       [collectionDiscoveryPosture(collection.presentationMode, selection.merchandisingPosture)],
@@ -236,7 +239,6 @@ export function semanticExactInfluenceAxesFor(
       responsiveTransformationIds: frame.responsiveTransformationIds,
     }),
     "homepage-profile": selection.homepageProfileId,
-    "narrative-posture": selection.narrativePosture,
     "collection-profile": selection.collectionProfileId,
     "merchandising-posture": selection.merchandisingPosture,
     "pdp-profile": selection.pdpProfileId,

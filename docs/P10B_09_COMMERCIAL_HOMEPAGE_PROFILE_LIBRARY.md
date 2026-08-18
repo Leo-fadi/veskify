@@ -151,3 +151,28 @@ shared image-loading roles and responsive `sizes` authority.
 No homepage profile, section family, registry, snapshot, commerce binding, or approved-asset
 authority changed. P10B-18 still owns repeated human review of complete-homepage commercial
 quality and diversity.
+
+## Accepted P10B-18B-02 continuation
+
+P10B-18B-02 refines the six existing version `1.0.0` profile records without introducing another
+profile system or changing their IDs. Each slot now declares an explicit transition intent so the
+planner and renderer can distinguish narrative continuation, editorial contrast, merchandising
+acceleration, proof reinforcement and closing progression. Story/catalogue balance is a truthful
+compound semantic driver of exact homepage-profile material; the raw narrative posture remains
+metadata rather than a falsely independent renderer axis.
+
+The accepted profiles now omit weak or unsupported duplication: editorial storytelling no longer
+promises a one-asset lookbook, campaign-led requires approved campaign media, high-consideration
+places selected products before service context, commerce-led omits a weak optional campaign, and
+collection-gateway avoids redundant editorial reinforcement while targeting three featured
+collections. The renderer gives rich and sparse paths deliberate rhythm, keeps canonical product
+cards and protected commerce/media unchanged, and collapses unavailable asset regions rather than
+leaving placeholders or reserved whitespace.
+
+Against the unchanged nine-by-eight audit strata, accepted P10B-18B-02 raises normalized material
+topologies from 36 to 38, reduces repeated memberships from 57/72 to 55/72, keeps the largest
+cluster at seven and raises singletons from 15 to 17. Fourteen retained captures cover rich/sparse
+outcomes and same-direction Premium, Modern and Warm profile contrasts at 375/1024/1440 where
+applicable. This is bounded homepage/editorial/campaign acceptance only; P10B-18B-03 owns the next
+collection/search/product-card quality upgrade and P10B-18C remains the final designer-grade/100+
+gate.

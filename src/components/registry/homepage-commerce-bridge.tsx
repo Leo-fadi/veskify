@@ -554,6 +554,12 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
       );
       const migratedPresentations = approvedAssetPresentations.map((presentation) => {
         const placement = placementByAssetId.get(presentation.assetId);
+        const currentArtDirection =
+          placement &&
+          presentation.artDirection?.placement.componentType === placement.componentType &&
+          presentation.artDirection.placement.assetSlotId === placement.assetSlotId &&
+          presentation.artDirection.placement.variant === variant;
+        if (currentArtDirection) return presentation;
         return placement?.sourceProvenanceKind
           ? migrateApprovedPresentationArtDirection({
               presentation,

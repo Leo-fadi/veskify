@@ -16,6 +16,7 @@ import {
   type SemanticStorefrontDesignRequestV1,
 } from "@/application/prompted-storefront-design-intent";
 import { createP10B16P03RawKarvonenStudioFixture } from "@/data/demo/p10b-16p-03-studio-prompt-generation";
+import { createP10B16P04RawAurumCommercialFixture } from "@/data/demo/p10b-16p-04-commercial-acceptance";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   semanticIntentFixture,
@@ -24,8 +25,14 @@ import {
 
 const prompt = "Create a complete commercially credible jewellery storefront.";
 
-function testAuthority(priorDiversityFingerprints: readonly string[] = []) {
-  const fixture = createP10B16P03RawKarvonenStudioFixture();
+function testAuthority(
+  priorDiversityFingerprints: readonly string[] = [],
+  fixtureKind: "karvonen" | "aurum" = "karvonen",
+) {
+  const fixture =
+    fixtureKind === "aurum"
+      ? createP10B16P04RawAurumCommercialFixture()
+      : createP10B16P03RawKarvonenStudioFixture();
   const currentRequestInput = {
     merchantPrompt: prompt,
     project: fixture.aggregate.project,
@@ -372,7 +379,7 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
   }, 600_000);
 
   it("gives every advertised direct or compound semantic driver an exact causal witness", () => {
-    const fixture = testAuthority();
+    const fixture = testAuthority([], "aurum");
     const prepared = prepareSemanticStorefrontDesignCompilationAuthority({
       originalRequest: fixture.request,
       currentRequestInput: fixture.currentRequestInput,
@@ -409,11 +416,15 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
       },
       "homepageIntent.storyCatalogueBalance": {
         driver: "storyCatalogueBalance",
-        baseline: premiumDrivers,
+        baseline: {
+          ...premiumDrivers,
+          commercialPosture: "high-consideration",
+          density: "balanced",
+          navigationPosture: "minimal",
+        },
         path: "homepageIntent.storyCatalogueBalance",
         values: deterministicDriverValues.storyCatalogueBalance,
-        selected: (decision: Decision) =>
-          `${decision.profiles.homepage.profileId}:${decision.exactSelection.narrativePosture}`,
+        selected: (decision: Decision) => decision.profiles.homepage.profileId,
       },
       "collectionIntent.discoveryPosture": {
         driver: "discoveryPosture",
@@ -531,21 +542,22 @@ describe("P10B-16P-04F semantic scale and material influence", () => {
       const causalCase = cases[field];
       expect(causalCase).toBeDefined();
       const exactValues = new Set<string>();
+      const observations: string[] = [];
       for (const value of causalCase.values) {
         const drivers = {
           ...("baseline" in causalCase ? causalCase.baseline : baseline),
           [causalCase.driver]: value,
         } as SemanticDriverOverrides;
-        exactValues.add(
-          causalCase.selected(
-            compile(fixture, `causal-${field}-${value}`, drivers, prepared).compiledDecision,
-          ),
+        const selected = causalCase.selected(
+          compile(fixture, `causal-${field}-${value}`, drivers, prepared).compiledDecision,
         );
+        exactValues.add(selected);
+        observations.push(`${value}=${selected}`);
       }
       expect
         .soft(
           exactValues.size,
-          `${causalCase.path} requires exact causal influence; observed ${[...exactValues].join(",")}`,
+          `${causalCase.path} requires exact causal influence; observed ${observations.join(",")}`,
         )
         .toBeGreaterThan(1);
     }

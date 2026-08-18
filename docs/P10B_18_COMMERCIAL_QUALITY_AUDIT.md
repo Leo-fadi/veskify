@@ -1,13 +1,13 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A, P10B-18B-01 and P10B-18B-06 Baseline; parent P10B-18B/P10B-18/P10B Partial
+**Status:** P10B-18A, P10B-18B-01, P10B-18B-06 and P10B-18B-02 Baseline; parent P10B-18B/P10B-18/P10B Partial
 
 **Authority date:** 17 August 2026
 
 **Branch:** `codex/p10b-18b-06-asset-composition-art-direction`
 
-**Baseline:** P10B-18A, P10B-18B-01 and P10B-18B-06 are Baseline; parent P10B-18B, P10B-18 and
-P10B are Partial; P10B-18B-02 is next and P10B-18C remains Planned
+**Baseline:** P10B-18A, P10B-18B-01, P10B-18B-06 and P10B-18B-02 are Baseline; parent P10B-18B, P10B-18 and
+P10B are Partial; P10B-18B-03 is next and P10B-18C remains Planned
 
 ## 1. Purpose and boundaries
 
@@ -1512,3 +1512,107 @@ remaining page-family packages, P10B-18C 100+ quality/diversity gate, parent P10
 remain incomplete. The frozen P10B-18A denominators and accepted P10B-18B-01 source-authority
 baseline remain the comparison authority. The exact next task is
 **P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade**.
+
+## 18. P10B-18B-02 accepted homepage/editorial/campaign implementation
+
+**Status:** **Baseline**. The product owner accepted P10B-18B-02 on 18 August 2026 for the bounded
+homepage, editorial and campaign quality authority. Parent P10B-18B, P10B-18 and P10B remain
+**Partial**. P10B-18B-03 is next; P10B-18C and P10B-16P-05B after it remain **Planned**.
+
+Sections 1 through 15 remain the frozen P10B-18A diagnosis. Sections 16 and 17 remain the accepted
+P10B-18B-01 and P10B-18B-06 baselines. This section records only the accepted P10B-18B-02 delta and
+does not rewrite any earlier denominator, visual verdict or historical handoff.
+
+### 18.1 Bounded authority change
+
+P10B-18B-02 retains the six existing homepage profile IDs and version `1.0.0`, the canonical
+`PageBlueprint` and `StorefrontSnapshot`, the existing component families and shared renderer, and
+all accepted Design DNA, shared-frame and approved-asset authority. It adds no page graph, recipe
+engine, component registry, renderer, commerce model, provider path or migration.
+
+Each homepage slot now declares an exact transition intent. That material survives semantic
+resolution, compatible selection, bounded synthesis, normalized topology accounting and the
+whole-storefront planner before the shared renderer consumes it. The accepted transitions
+distinguish narrative continuation, editorial contrast, merchandising acceleration, proof
+reinforcement and closing progression instead of treating every adjacent section as generic
+vertical flow.
+
+`homepageIntent.storyCatalogueBalance` is now a truthful compound driver of the selected homepage
+profile. Raw narrative posture stays in diagnostic metadata and is no longer counted as an
+independent renderer-visible axis. Canonical product-card, product media, price, option, collection
+and route authority remain unchanged.
+
+### 18.2 Profile and consumer corrections
+
+| Existing profile                  | Accepted correction                                                                                          | Bounded result                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `homepage-editorial-storytelling` | Removes the one-selected-asset lookbook promise and carries explicit editorial-to-merchandising transitions. | Rich approved evidence produces a deliberate story; sparse evidence does not duplicate one asset as a gallery.    |
+| `homepage-campaign-led`           | Requires an approved campaign asset and uses observable campaign merchandising structure.                    | Campaign hierarchy is visible when grounded and fails closed without a placeholder or reserved media box.         |
+| `homepage-high-consideration`     | Places selected products before optional service context.                                                    | Decision support progresses from proposition and proof to commerce before secondary service material.             |
+| `homepage-commerce-led-discovery` | Removes the weak optional campaign and strengthens direct collection/product rhythm.                         | Dense commerce is shorter and more legible without an unsupported narrative interruption.                         |
+| `homepage-collection-gateway`     | Removes redundant editorial reinforcement and targets three featured collections.                            | Taxonomy navigation and collection cards remain distinct while sparse catalogues avoid repeated discovery blocks. |
+| `homepage-minimal-brand-commerce` | Retains the restrained sequence with explicit sparse transitions.                                            | Minimal output stays intentionally short rather than appearing unfinished through reserved whitespace.            |
+
+The renderer exposes distinct hero, promotion, editorial and proof structures; asset-free variants
+collapse cleanly; trust/proof columns adapt to evidence cardinality; taxonomy links are distinct
+from collection cards; and compact mobile merchandising uses two columns where the registered
+profile permits it. Campaign media no longer imposes a fixed minimum height that can overflow the
+1024 px Premium evidence case. All treatment continues to consume canonical Design DNA variables
+and accepted P10B-18B-06 source/crop/placement authority.
+
+### 18.3 Same-strata structural result
+
+The accepted result reuses the exact nine audit shapes and eight intent variations from P10B-18A.
+No fixture, shape, denominator, protected-commerce baseline or exclusion rule was removed.
+
+| Same-strata measure            | Accepted P10B-18B-01 / retained P10B-18B-06 baseline |                                Accepted P10B-18B-02 |
+| ------------------------------ | ---------------------------------------------------: | --------------------------------------------------: |
+| Deterministic outcomes         |                                                   72 |                                                  72 |
+| Normalized material topologies |                                                   36 |                                                  38 |
+| Repeated material memberships  |                                              57 / 72 |                                             55 / 72 |
+| Largest material cluster       |                                                    7 |                                                   7 |
+| Singleton material topologies  |                                                   15 |                                                  17 |
+| Non-colour Design DNA outcomes |                                                    6 |                                                   6 |
+| Frame distribution             |  editorial 27 / utility 9 / centered 18 / compact 18 | editorial 27 / utility 9 / centered 18 / compact 18 |
+
+Accepted homepage-profile occurrence is campaign-led 2, collection-gateway 11, commerce-led 16,
+editorial-storytelling 33, high-consideration 2 and minimal-brand-commerce 8. Every registered
+homepage profile remains current-authority reachable. The result is a measured structural
+improvement, not a claim that 38 registered topologies are all designer-grade or that the P10B-18C
+100+ gate has passed.
+
+### 18.4 Retained browser and visual evidence
+
+The accepted browser checkpoint contains 14 full-document captures spanning rich approved-asset,
+sparse no-presentation-asset and same-direction alternatives. It includes:
+
+- Premium campaign/editorial against Premium high-consideration/centered;
+- Modern commerce/compact against Modern collection-gateway/utility;
+- Warm minimal/centered against Warm editorial/editorial;
+- representative mobile and wide homepage outcomes at 375, 1024 and 1440 px where the evidence
+  question applies.
+
+Every capture binds exact semantic intent, homepage profile, ordered section and transition
+authority, material topology, Design DNA, shared frame, approved asset placement, canonical
+commerce/media fingerprints, materialized snapshot, save/reload result and rendered authority.
+Rendered section parity is exact, placeholder count is zero, measured internal overflow is false,
+maximum adjacent blank-gap count is zero or one, and the first meaningful action occurs within one
+viewport. The ledger records zero external/provider/Vesko/browser generation-endpoint/publication
+or runtime-error calls. No real publication was attempted.
+
+Measured page-height comparisons against the retained pre-change evidence are Premium wide
+`4340 → 3996` px (`-7.9%`), sparse gateway mobile `6912 → 3454` px (`-50.0%`), medium Modern mobile
+`10810 → 3258` px (`-69.9%`, including the truthful gateway-to-commerce profile correction), and
+Minimal wide `2907 → 2676` px (`-7.9%`). These are evidence-specific composition changes, not a
+general performance or quality percentage.
+
+### 18.5 Acceptance boundary and handoff
+
+Acceptance is strictly for the bounded homepage profile, semantic transition, hero/editorial/
+campaign/proof consumer and rendered hierarchy/rhythm authority described above. It is not
+commercial visual acceptance of the complete storefront. Collection/search/product-card, PDP and
+content/utility visual quality remain explicitly owned by P10B-18B-03/04/05. The 100+ deterministic
+quality/diversity analysis and fingerprint-stratified designer review remain owned by P10B-18C.
+
+The exact next task is
+**P10B-18B-03 — Collection / Search / Product-card Quality Upgrade**.

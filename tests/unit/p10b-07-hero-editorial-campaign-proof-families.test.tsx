@@ -226,6 +226,53 @@ function proof(items: ComponentInstanceV2["content"][string]): ComponentInstance
   };
 }
 
+function editorial(
+  variant: (typeof homepageEditorialDefinition.variants)[number]["id"],
+): ComponentInstanceV2 {
+  const assetIds =
+    variant === "continuationCta"
+      ? []
+      : variant === "lookbookGallery"
+        ? ["asset_story", "asset_hero"]
+        : ["asset_story"];
+  return {
+    id: `section_editorial_${variant.toLowerCase()}`,
+    component: "homepageEditorial",
+    componentVersion: { major: 2, minor: 0, patch: 0 },
+    variant,
+    content: {
+      heading: localized("A considered story"),
+      body: localized("Approved merchant context."),
+      steps:
+        variant === "craftProcess"
+          ? [
+              {
+                id: "approved_step",
+                title: localized("Designed"),
+                description: localized("Approved process context."),
+              },
+            ]
+          : [],
+    },
+    props: { mediaPosition: "right", textAlignment: "left", galleryColumns: 2 },
+    styleOverrides: { surface: "plain" },
+    bindings: [
+      presentationBinding,
+      ...assetIds.map((assetId, index) => ({
+        slotId: index === 0 ? "storyPrimaryAsset" : "storySecondaryAsset",
+        source: "asset" as const,
+        assetId,
+        revision: `${assetId}-r1`,
+      })),
+    ],
+    assetAssignments: assetIds.map((assetId) => ({
+      slotId: "storyMedia",
+      assetId,
+      role: assetId === "asset_story" ? ("editorialImage" as const) : ("heroDesktop" as const),
+    })),
+  };
+}
+
 function rendererInput(instance: ComponentInstanceV2): HomepageCommerceRendererInput {
   return {
     target: "preview",
@@ -647,6 +694,107 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
       veskifyComponentRegistryV2.validateInstanceConformance(legacy, projection),
     ).not.toThrow();
     expect(() => render(renderHomepageCommerce(rendererInput(legacy)))).not.toThrow();
+  });
+
+  it("18 renders the six hero and three proof anatomies through observable region order", () => {
+    const heroRegions = Object.fromEntries(
+      heroVariants.map((variant) => {
+        const root = render(renderHomepageCommerce(rendererInput(hero(variant)))).container
+          .firstElementChild!;
+        return [
+          variant,
+          [...root.querySelectorAll<HTMLElement>("[data-region]")].map(
+            ({ dataset }) => dataset.region,
+          ),
+        ];
+      }),
+    );
+    expect(heroRegions).toEqual({
+      editorialSplit: ["content", "actions", "media"],
+      imageLed: ["media", "content", "actions"],
+      fullBleedOverlay: ["media", "overlay-panel", "content", "actions"],
+      asymmetric: ["asymmetric-rail", "content", "actions", "media"],
+      restrained: ["content", "actions"],
+      campaignMerchandising: ["media", "merchandising", "content", "actions"],
+    });
+
+    const approved = homepageProofContentSchema.parse({
+      heading: localized("Approved evidence"),
+      items: [
+        {
+          id: "approved_fact",
+          kind: "brandFact",
+          statement: localized("Designed in Helsinki"),
+          evidence: projection.evidenceReferences[0],
+        },
+      ],
+    });
+    const proofRegions = Object.fromEntries(
+      (["quoteSpotlight", "proofGrid", "serviceAssurance"] as const).map((variant) => {
+        const value = proof(approved.items);
+        value.variant = variant;
+        value.content = approved;
+        const root = render(renderHomepageCommerce(rendererInput(value))).container
+          .firstElementChild!;
+        return [
+          variant,
+          [...root.querySelectorAll<HTMLElement>("[data-region]")].map(
+            ({ dataset }) => dataset.region,
+          ),
+        ];
+      }),
+    );
+    expect(proofRegions).toEqual({
+      quoteSpotlight: ["section-heading", "proof", "quote"],
+      proofGrid: ["section-heading", "proof", "proof-grid"],
+      serviceAssurance: ["section-heading", "service", "proof", "proof-grid"],
+    });
+  });
+
+  it("19 renders editorial story, process, gallery and continuation anatomy truthfully", () => {
+    const material = Object.fromEntries(
+      homepageEditorialDefinition.variants.map(({ id: variant }) => {
+        const root = render(renderHomepageCommerce(rendererInput(editorial(variant)))).container
+          .firstElementChild!;
+        return [
+          variant,
+          {
+            regions: [...root.querySelectorAll<HTMLElement>("[data-region]")].map(
+              ({ dataset }) => dataset.region,
+            ),
+            mediaCount: root.querySelectorAll("[data-region='editorial-media'] figure").length,
+            galleryReadiness: (root as HTMLElement).dataset.galleryReadiness,
+          },
+        ];
+      }),
+    );
+    expect(material).toEqual({
+      imageText: {
+        regions: ["content", "editorial-media"],
+        mediaCount: 1,
+        galleryReadiness: "not-applicable",
+      },
+      brandStory: {
+        regions: ["editorial-media", "content"],
+        mediaCount: 1,
+        galleryReadiness: "not-applicable",
+      },
+      craftProcess: {
+        regions: ["content", "process", "editorial-media"],
+        mediaCount: 1,
+        galleryReadiness: "not-applicable",
+      },
+      lookbookGallery: {
+        regions: ["editorial-media", "content"],
+        mediaCount: 2,
+        galleryReadiness: "ready",
+      },
+      continuationCta: {
+        regions: ["content"],
+        mediaCount: 0,
+        galleryReadiness: "not-applicable",
+      },
+    });
   });
 
   it("keeps the new families reachable from canonical PageBlueprint selections", () => {

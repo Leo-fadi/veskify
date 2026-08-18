@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 17 August 2026, accepted P10B-18B-01 Design DNA/shared-frame upgrade                                                |
+| Baseline                    | 18 August 2026, accepted P10B-18B-02 homepage/editorial/campaign quality upgrade                                    |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -71,7 +71,8 @@ required evidence are accepted.
 | ☐    | P10B-18B     | Commercial source-authority quality upgrade          | **Partial**  | Generation/component/profile owners   | Accepted P10B-18A                         | Six coherent packages with focused and integrated browser/human evidence against the frozen audit baseline                                                                                  |
 | ☑    | P10B-18B-01  | Design DNA and shared-frames quality upgrade         | **Baseline** | Design DNA, direction, frame owners   | Accepted P10B-18A                         | Same-72-case material deltas, compact complete-store proof, 17 accepted captures, responsive/build/lifecycle/protected-state preservation                                                   |
 | ☑    | P10B-18B-06  | Asset composition and art-direction quality upgrade  | **Baseline** | Asset, responsive-image, frame owners | Accepted P10B-18B-01                      | Accepted bounded purpose affinity, reuse, paired responsive sources, shared-frame logo, same-72-case regression and 13-capture checkpoint; complete-store visual quality remains unaccepted |
-| ☐    | P10B-18B-02  | Homepage / editorial / campaign quality upgrade      | **Planned**  | Homepage profile/component owners     | Accepted P10B-18B-01 and P10B-18B-06      | Intentional rich/sparse homepage progression, stronger section hierarchy and merchandising rhythm, four-width retained commercial review                                                    |
+| ☑    | P10B-18B-02  | Homepage / editorial / campaign quality upgrade      | **Baseline** | Homepage profile/component owners     | Accepted P10B-18B-01 and P10B-18B-06      | Accepted intentional rich/sparse progression, exact transition authority, stronger hierarchy/rhythm, same-strata accounting, retained review and lifecycle preservation                     |
+| ☐    | P10B-18B-03  | Collection / search / product-card quality upgrade   | **Planned**  | Collection/search/product-card owners | Accepted P10B-18B-02                      | Stronger collection/search composition, card hierarchy and merchandising density with retained four-width and protected-commerce evidence                                                   |
 | ☐    | P10B-18C     | 100+ commercial quality and diversity gate           | **Planned**  | Product owner, generation, QA         | Accepted and integrated P10B-18B packages | 100+ complete configurations, protected-state/diversity gates and fingerprint-stratified four-width retained human review                                                                   |
 | ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Planned**  | Generation architecture/evidence      | P10B-16P-05A and P10B-18C                 | Consumer-proven removal/archival of remaining historical scaffolding with migration and evidence retention                                                                                  |
 
@@ -180,7 +181,8 @@ required evidence are accepted.
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A,
-accepted P10B-18B-01 and accepted P10B-18B-06 are **Baseline**. P10B-16P-02 is **Baseline**. Parent
+accepted P10B-18B-01, accepted P10B-18B-06 and accepted P10B-18B-02 are **Baseline**. P10B-16P-02
+is **Baseline**. Parent
 P10B-18B, P10B-18, and P10B remain **Partial**; P10B-18C remains **Planned**. P10B-16P-04
 acceptance evidence is retained
 in
@@ -189,8 +191,8 @@ The remaining Done conditions are implementation gates, not claims about the cur
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18B-02 is the
-next focused product task after accepted P10B-18B-06.
+P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18B-03 is the
+next focused product task after accepted P10B-18B-02.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -696,8 +698,8 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   evidence dependency; final removal preserves historical records and all valid snapshots/artifacts.
 - **Non-goal:** Deleting P10B-18 visual fixtures or compatibility data before their removal gate.
 
-P10B-17, accepted P10B-18A, accepted P10B-18B-01, and accepted P10B-18B-06 are Baseline. Parent
-P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-02 is next, P10B-18C remains Planned, and
+P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, and accepted P10B-18B-02
+are Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-03 is next, P10B-18C remains Planned, and
 P10B-16P-05B remains Planned after P10B-18C.
 
 #### P10B-17 — Responsive, accessibility and performance closure
@@ -727,7 +729,7 @@ P10B-16P-05B remains Planned after P10B-18C.
 
 - **Outcome:** Prove repeated generation of publishable, premium, materially different complete
   storefronts.
-- **Status:** **Partial**. P10B-18A and P10B-18B-01 are Baseline; parent P10B-18B is Partial and
+- **Status:** **Partial**. P10B-18A, P10B-18B-01, P10B-18B-06 and P10B-18B-02 are Baseline; parent P10B-18B is Partial and
   P10B-18C remains Planned.
 - **Authority:** Existing golden-store/human-review evidence plus the P10B synthesis and fingerprint
   authorities.
@@ -765,7 +767,7 @@ P10B-16P-05B remains Planned after P10B-18C.
 
 - **Outcome:** Implement the accepted coherent improvements to current Design DNA, compatibility,
   profiles, component consumers, asset-role selection and evaluation authority.
-- **Status:** **Partial**. P10B-18B-01 is Baseline; the remaining packages are incomplete.
+- **Status:** **Partial**. P10B-18B-01, P10B-18B-06 and P10B-18B-02 are Baseline; the remaining packages are incomplete.
 - **Depends on:** Accepted P10B-18A and its frozen package order/ownership.
 - **Done when:** Every implemented package has focused positive/fail-closed evidence and the
   integrated authority produces improved multi-surface output against the frozen P10B-18A
@@ -812,7 +814,25 @@ P10B-16P-05B remains Planned after P10B-18C.
 - **Boundary:** This is not complete-storefront commercial visual acceptance. Excessive whitespace,
   generic homepage composition, weak merchandising rhythm and insufficient section hierarchy remain
   owned by P10B-18B-02/03/04/05.
-- **Next:** P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade.
+- **Historical handoff:** P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade,
+  subsequently accepted on 18 August 2026.
+
+#### P10B-18B-02 — Homepage / Editorial / Campaign Quality Upgrade
+
+- **Status:** **Baseline**. Accepted by the product owner on 18 August 2026 for the bounded homepage,
+  editorial and campaign quality authority.
+- **Depends on:** Accepted P10B-18B-01 and P10B-18B-06.
+- **Done:** The six existing homepage profiles now carry explicit transition intent, truthful
+  story/catalogue semantic causality, asset-aware rich/sparse progression and distinct hierarchy;
+  the renderer consumes observable hero, promotion, editorial and proof structures without a
+  second page graph or renderer.
+- **Evidence:** The unchanged nine-by-eight strata produce 38 normalized topologies, 55/72 repeated
+  material memberships, a largest cluster of seven and 17 singletons. Fourteen retained captures
+  prove rich/sparse, three same-direction profile/frame contrasts, compact mobile merchandising,
+  internal overflow bounds, persistence and protected commerce/media parity.
+- **Boundary:** This does not accept collection/search/product-card, PDP or content/utility visual
+  quality and does not satisfy the P10B-18C designer-grade/100+ gate.
+- **Next:** P10B-18B-03 — Collection / Search / Product-card Quality Upgrade.
 
 #### P10B-18C — 100+ commercial quality and diversity gate
 

@@ -205,6 +205,7 @@ const synthesisMaterialSchema = z
           component: referenceSchema,
           variant: referenceSchema,
           anatomyId: referenceSchema.nullable(),
+          transitionIntent: z.string().trim().min(1).max(80).optional(),
           capabilityFingerprint: fingerprintSchema,
         })
         .strict(),

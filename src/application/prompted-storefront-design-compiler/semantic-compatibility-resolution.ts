@@ -212,7 +212,6 @@ function structuralFingerprint(selection: BoundedStorefrontSynthesisSelectionNar
     includedOptionalPageFamilyIds: selection.includedOptionalPageFamilyIds,
     designSystemSpacingDensity: selection.designSystemSpacingDensity,
     designSystemSurfaceDepth: selection.designSystemSurfaceDepth,
-    narrativePosture: selection.narrativePosture,
     merchandisingPosture: selection.merchandisingPosture,
     artDirectionPosture: selection.artDirectionPosture,
   })}`;
@@ -252,7 +251,6 @@ function postureFactors(
 }
 
 const factorDrivers = [
-  ["narrativePosture", "narrativePostureOptions", "homepageIntent.storyCatalogueBalance"],
   ["merchandisingPosture", "merchandisingPostureOptions", "collectionIntent.discoveryPosture"],
   [
     "artDirectionPosture",

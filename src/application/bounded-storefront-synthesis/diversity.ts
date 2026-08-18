@@ -119,12 +119,13 @@ export function storefrontDiversityMaterialFromDecision(input: {
     ),
     sharedFrame: structuredClone(input.decision.sharedFrame),
     componentAnatomies: input.decision.componentChoices.map(
-      ({ pageKey, slotId, component, variant, anatomyId }) => ({
+      ({ pageKey, slotId, component, variant, anatomyId, transitionIntent }) => ({
         pageKey,
         slotId,
         component,
         variant,
         anatomyId,
+        ...(transitionIntent === undefined ? {} : { transitionIntent }),
       }),
     ),
     boundedParameters: structuredClone(input.decision.boundedParameters),

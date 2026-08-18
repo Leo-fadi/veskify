@@ -84,6 +84,7 @@ type SlotInput = Readonly<{
   purpose: StorefrontTemplateSlot["purpose"];
   narrativeRole: StorefrontTemplateSlot["narrativeRole"];
   visualWeight: StorefrontTemplateSlot["visualWeight"];
+  transitionIntent?: StorefrontTemplateSlot["transitionIntent"];
   omitWhen?: StorefrontTemplateSlot["omitWhen"];
 }>;
 
@@ -130,6 +131,7 @@ function slot(input: SlotInput): StorefrontTemplateSlot {
     purpose: input.purpose,
     narrativeRole: input.narrativeRole,
     visualWeight: input.visualWeight,
+    ...(input.transitionIntent === undefined ? {} : { transitionIntent: input.transitionIntent }),
     boundedParameterConstraints: [],
     omitWhen: input.required ? "never" : (input.omitWhen ?? "when-not-requested"),
   };
@@ -225,6 +227,7 @@ function createProfile(input: CommercialProfileInput): StorefrontTemplatePagePla
       variant: entry.defaultVariant,
       required: entry.required,
       omitWhen: entry.omitWhen,
+      transitionIntent: entry.transitionIntent,
     })),
     compatibleSharedFrameProfileIds: [...input.compatibleSharedFrameProfileIds],
     merchandisingEmphasis: input.merchandisingEmphasis,
@@ -309,6 +312,7 @@ const continuation = (id = "continuation"): SlotInput => ({
   purpose: "editorial-story",
   narrativeRole: "continuation",
   visualWeight: "light",
+  transitionIntent: "conversion",
 });
 
 const profileInputs: readonly CommercialProfileInput[] = [
@@ -330,13 +334,11 @@ const profileInputs: readonly CommercialProfileInput[] = [
       "splitToStack",
       "storyReorder",
       "editorialStack",
-      "lookbookCarousel",
       "quotePreserve",
       "continuationCondense",
     ],
     evidenceRequirements: [
       { slotId: "brand-story", authority: "approved-merchant-evidence", unsatisfiedPolicy: "omit" },
-      { slotId: "editorial-lookbook", authority: "approved-media", unsatisfiedPolicy: "omit" },
       {
         slotId: "approved-proof",
         authority: "approved-merchant-evidence",
@@ -352,6 +354,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "hero",
         narrativeRole: "orientation",
         visualWeight: "dominant",
+        transitionIntent: "reset",
       },
       {
         id: "brand-story",
@@ -361,6 +364,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "editorial-story",
         narrativeRole: "brand-story",
         visualWeight: "heavy",
+        transitionIntent: "continuation",
         omitWhen: "when-evidence-is-unavailable",
       },
       {
@@ -371,16 +375,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-products",
         narrativeRole: "primary-discovery",
         visualWeight: "heavy",
-      },
-      {
-        id: "editorial-lookbook",
-        required: false,
-        sectionType: "homepageEditorial",
-        defaultVariant: "lookbookGallery",
-        purpose: "editorial-story",
-        narrativeRole: "education",
-        visualWeight: "heavy",
-        omitWhen: "when-imagery-is-unavailable",
+        transitionIntent: "escalation",
       },
       {
         id: "approved-proof",
@@ -390,6 +385,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "social-proof",
         narrativeRole: "brand-proof",
         visualWeight: "medium",
+        transitionIntent: "proof",
         omitWhen: "when-evidence-is-unavailable",
       },
       continuation(),
@@ -413,7 +409,6 @@ const profileInputs: readonly CommercialProfileInput[] = [
     responsiveTransformationIds: [
       "asymmetricReflow",
       "compactSimplify",
-      "campaignCondense",
       "serviceCondense",
       "continuationCondense",
     ],
@@ -428,7 +423,6 @@ const profileInputs: readonly CommercialProfileInput[] = [
         authority: "canonical-commerce",
         unsatisfiedPolicy: "fail-closed",
       },
-      { slotId: "campaign", authority: "approved-merchant-evidence", unsatisfiedPolicy: "omit" },
       {
         slotId: "service-proof",
         authority: "approved-merchant-evidence",
@@ -444,6 +438,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "hero",
         narrativeRole: "orientation",
         visualWeight: "dominant",
+        transitionIntent: "reset",
       },
       {
         id: "collection-discovery",
@@ -453,6 +448,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-categories",
         narrativeRole: "secondary-discovery",
         visualWeight: "heavy",
+        transitionIntent: "escalation",
       },
       {
         id: "product-discovery",
@@ -462,16 +458,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-products",
         narrativeRole: "primary-discovery",
         visualWeight: "heavy",
-      },
-      {
-        id: "campaign",
-        required: false,
-        sectionType: "homepagePromotion",
-        defaultVariant: "minimal",
-        purpose: "campaign-promotion",
-        narrativeRole: "campaign",
-        visualWeight: "medium",
-        omitWhen: "when-evidence-is-unavailable",
+        transitionIntent: "continuation",
       },
       {
         id: "service-proof",
@@ -481,6 +468,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "social-proof",
         narrativeRole: "trust",
         visualWeight: "medium",
+        transitionIntent: "proof",
         omitWhen: "when-evidence-is-unavailable",
       },
       continuation(),
@@ -522,6 +510,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "hero",
         narrativeRole: "orientation",
         visualWeight: "heavy",
+        transitionIntent: "reset",
       },
       {
         id: "focused-products",
@@ -531,6 +520,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-products",
         narrativeRole: "primary-discovery",
         visualWeight: "heavy",
+        transitionIntent: "escalation",
       },
       {
         id: "concise-service",
@@ -540,6 +530,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "brand-values",
         narrativeRole: "trust",
         visualWeight: "light",
+        transitionIntent: "clarification",
         omitWhen: "when-evidence-is-unavailable",
       },
       continuation(),
@@ -568,6 +559,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
       "continuationCondense",
     ],
     evidenceRequirements: [
+      { slotId: "hero", authority: "approved-media", unsatisfiedPolicy: "fail-closed" },
       {
         slotId: "campaign",
         authority: "approved-merchant-evidence",
@@ -599,6 +591,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "hero",
         narrativeRole: "orientation",
         visualWeight: "dominant",
+        transitionIntent: "reset",
       },
       {
         id: "campaign",
@@ -608,6 +601,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "campaign-promotion",
         narrativeRole: "campaign",
         visualWeight: "heavy",
+        transitionIntent: "contrast",
       },
       {
         id: "campaign-products",
@@ -617,6 +611,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-products",
         narrativeRole: "primary-discovery",
         visualWeight: "heavy",
+        transitionIntent: "escalation",
       },
       {
         id: "supporting-story",
@@ -626,6 +621,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "editorial-story",
         narrativeRole: "brand-story",
         visualWeight: "medium",
+        transitionIntent: "clarification",
         omitWhen: "when-evidence-is-unavailable",
       },
       {
@@ -636,6 +632,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "social-proof",
         narrativeRole: "brand-proof",
         visualWeight: "medium",
+        transitionIntent: "proof",
         omitWhen: "when-evidence-is-unavailable",
       },
       continuation(),
@@ -648,7 +645,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
     merchandisingEmphasis: "collection-discovery",
     productCardAnatomyId: "compact",
     contentCardinality: [
-      { slotId: "featured-collections", resource: "collections", minimum: 1, ideal: 4, maximum: 6 },
+      { slotId: "featured-collections", resource: "collections", minimum: 1, ideal: 3, maximum: 4 },
       {
         slotId: "collection-navigation",
         resource: "collections",
@@ -666,7 +663,6 @@ const profileInputs: readonly CommercialProfileInput[] = [
     responsiveTransformationIds: [
       "mediaFirstStack",
       "compactSimplify",
-      "storyReorder",
       "serviceCondense",
       "continuationCondense",
     ],
@@ -687,11 +683,6 @@ const profileInputs: readonly CommercialProfileInput[] = [
         unsatisfiedPolicy: "fail-closed",
       },
       {
-        slotId: "editorial-reinforcement",
-        authority: "approved-merchant-evidence",
-        unsatisfiedPolicy: "omit",
-      },
-      {
         slotId: "service-proof",
         authority: "approved-merchant-evidence",
         unsatisfiedPolicy: "omit",
@@ -706,6 +697,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "hero",
         narrativeRole: "orientation",
         visualWeight: "dominant",
+        transitionIntent: "reset",
       },
       {
         id: "featured-collections",
@@ -715,6 +707,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-categories",
         narrativeRole: "secondary-discovery",
         visualWeight: "heavy",
+        transitionIntent: "continuation",
       },
       {
         id: "collection-navigation",
@@ -724,6 +717,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-categories",
         narrativeRole: "secondary-discovery",
         visualWeight: "medium",
+        transitionIntent: "clarification",
       },
       {
         id: "category-products",
@@ -733,16 +727,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-products",
         narrativeRole: "primary-discovery",
         visualWeight: "heavy",
-      },
-      {
-        id: "editorial-reinforcement",
-        required: false,
-        sectionType: "homepageEditorial",
-        defaultVariant: "brandStory",
-        purpose: "editorial-story",
-        narrativeRole: "brand-story",
-        visualWeight: "medium",
-        omitWhen: "when-evidence-is-unavailable",
+        transitionIntent: "escalation",
       },
       {
         id: "service-proof",
@@ -752,6 +737,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "social-proof",
         narrativeRole: "trust",
         visualWeight: "medium",
+        transitionIntent: "proof",
         omitWhen: "when-evidence-is-unavailable",
       },
       continuation(),
@@ -820,6 +806,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "hero",
         narrativeRole: "orientation",
         visualWeight: "dominant",
+        transitionIntent: "reset",
       },
       {
         id: "process-explanation",
@@ -829,6 +816,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "editorial-story",
         narrativeRole: "brand-story",
         visualWeight: "heavy",
+        transitionIntent: "clarification",
       },
       {
         id: "approved-proof",
@@ -838,16 +826,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "social-proof",
         narrativeRole: "brand-proof",
         visualWeight: "medium",
-      },
-      {
-        id: "service-context",
-        required: false,
-        sectionType: "homepageTrust",
-        defaultVariant: "cards",
-        purpose: "brand-values",
-        narrativeRole: "trust",
-        visualWeight: "medium",
-        omitWhen: "when-evidence-is-unavailable",
+        transitionIntent: "proof",
       },
       {
         id: "selected-products",
@@ -857,6 +836,18 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "featured-products",
         narrativeRole: "primary-discovery",
         visualWeight: "heavy",
+        transitionIntent: "escalation",
+      },
+      {
+        id: "service-context",
+        required: false,
+        sectionType: "homepageTrust",
+        defaultVariant: "cards",
+        purpose: "brand-values",
+        narrativeRole: "trust",
+        visualWeight: "medium",
+        transitionIntent: "clarification",
+        omitWhen: "when-evidence-is-unavailable",
       },
       {
         id: "supporting-editorial",
@@ -866,6 +857,7 @@ const profileInputs: readonly CommercialProfileInput[] = [
         purpose: "editorial-story",
         narrativeRole: "education",
         visualWeight: "medium",
+        transitionIntent: "continuation",
         omitWhen: "when-evidence-is-unavailable",
       },
       continuation(),
@@ -999,6 +991,7 @@ export function validateCommercialHomepageProfileLibrary(
         variant: entry.defaultVariant,
         required: entry.required,
         omitWhen: entry.omitWhen,
+        transitionIntent: entry.transitionIntent,
       })),
       compatibleSharedFrameProfileIds: [...authority.compatibleSharedFrameProfileIds],
       merchandisingEmphasis: authority.merchandisingEmphasis,

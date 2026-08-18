@@ -55,7 +55,7 @@ const driverSpecifications = [
   driver("sharedFrameIntent.navigationPosture", "shared-frame", [], false, [
     "frame-responsive-authority",
   ]),
-  driver("homepageIntent.storyCatalogueBalance", "narrative-posture", ["homepage-profile"], true),
+  driver("homepageIntent.storyCatalogueBalance", "homepage-profile", [], true),
   driver(
     "collectionIntent.discoveryPosture",
     "collection-profile",
