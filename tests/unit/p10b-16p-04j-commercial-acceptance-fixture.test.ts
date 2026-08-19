@@ -158,7 +158,9 @@ describe("P10B-16P-04J Aurum commercial acceptance fixture", () => {
     expect(configurable && createDynamicCommerceProductMatchContext(configurable)).toMatchObject({
       optionStructure: "configurable",
       optionGroupCount: 2,
-      mediaAvailability: "multiple",
+      mediaAvailability: "single",
+      mediaCount: 1,
+      mediaDepth: "sparse",
       highConsideration: false,
     });
     expect(P10B16P04_COMMERCIAL_CONTEXTS.highConsiderationProduct).toBeNull();
