@@ -249,7 +249,7 @@ describe("P6-03 dynamic PDP option integration", () => {
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled();
   });
 
-  it("preserves invalid text as a visible draft while the canonical action uses accepted text", async () => {
+  it("preserves invalid text as a visible draft while disabling purchase after failure", async () => {
     const { onPrimaryAction } = renderIntegrated(personalizedProductFixture, {
       resolver: { resolve: () => personalizedProductResult },
     });
@@ -263,11 +263,9 @@ describe("P6-03 dynamic PDP option integration", () => {
 
     expect(engraving).toHaveValue("Leo💍");
     const action = screen.getByRole("button", { name: "Add to cart" });
-    expect(action).toBeEnabled();
+    expect(action).toBeDisabled();
     await userEvent.click(action);
-    expect(onPrimaryAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({ textEntries: [{ groupId: "engraving", value: "Leo" }] }),
-    );
+    expect(onPrimaryAction).not.toHaveBeenCalled();
   });
 
   it("keeps local and canonical text state aligned after clear and reset", async () => {
@@ -392,7 +390,7 @@ describe("P6-03 dynamic PDP option integration", () => {
     expect(controller.getSnapshot().result).toBe(valid);
   });
 
-  it("keeps only the preserved purchasable action enabled after a failed attempted change", async () => {
+  it("keeps preserved product truth visible but disables purchase after a failed change", async () => {
     let blackAttempt = deferred<unknown>();
     const resolver: CanonicalProductConfigurationResolver = {
       resolve(input) {
@@ -424,7 +422,7 @@ describe("P6-03 dynamic PDP option integration", () => {
     await screen.findByText(
       "Product options are temporarily unavailable. Your previous selection is unchanged.",
     );
-    expect(action).toBeEnabled();
+    expect(action).toBeDisabled();
     expect(screen.getByRole("button", { name: "silver" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("In stock")).toBeInTheDocument();
     expect(document.querySelector("figure[data-asset-id]")).toHaveAttribute(
@@ -432,12 +430,7 @@ describe("P6-03 dynamic PDP option integration", () => {
       "asset_watch_silver",
     );
     await userEvent.click(action);
-    expect(onPrimaryAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        resolvedConfiguration: { kind: "variant", variantId: "variant_watch_silver" },
-        selectedValues: [{ groupId: "colour", valueId: "colour_silver" }],
-      }),
-    );
+    expect(onPrimaryAction).not.toHaveBeenCalled();
 
     blackAttempt = deferred<unknown>();
     await userEvent.click(screen.getByRole("button", { name: "black" }));

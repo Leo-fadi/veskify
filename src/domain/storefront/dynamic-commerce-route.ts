@@ -430,7 +430,12 @@ export const dynamicCommerceProductComplexityRuleSchema = z
       .object({
         optionStructure: z.enum(["any", "simple", "configurable"]),
         optionGroupCount: boundedIntegerRangeSchema.optional(),
+        configurationComplexity: z
+          .enum(["any", "simple", "light", "moderate", "complex"])
+          .optional(),
         mediaAvailability: z.enum(["any", "none", "single", "multiple"]),
+        mediaCount: boundedIntegerRangeSchema.optional(),
+        mediaDepth: z.enum(["any", "sparse", "standard", "rich"]).optional(),
         highConsideration: z.enum(["any", "required", "excluded"]),
       })
       .strict(),

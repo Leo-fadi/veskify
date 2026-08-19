@@ -121,3 +121,22 @@ failure, availability, and primary-action feedback use appropriate busy/live sem
 focus treatment. No product-type renderer, registry, snapshot, option resolver, commerce state, or
 media authority was added or mutated. P10B-18 remains responsible for final PDP visual quality and
 scale.
+
+## P10B-18B-04 accepted quality continuation
+
+P10B-18B-04 retains the four profile IDs, versions, structural fingerprints, one PageBlueprint,
+one `dynamicProductDetail` renderer, one canonical option resolver and the existing product-media
+and related-card authorities. Standard commerce now uses a proportionate media/purchase opening;
+variant led puts price, availability, canonical options, a presentation-only current-configuration
+summary and action in one work area; gallery led keeps the purchase hierarchy beside a bounded rich
+gallery; and high consideration accepts only current approved optional support evidence and omits
+that region cleanly when absent.
+
+All profiles keep canonical price, compare-at price, availability, SKU, option order, media order,
+related IDs and action intent. Gallery presentation remains deduplicated and capped at eight;
+related merchandising remains capped at eight, with zero omitted and one bounded to a useful
+single-card measure. Mobile sticky purchase remains limited to the profiles that already authorize
+it, and resolver failure now always disables purchase while retaining visible canonical truth.
+
+This bounded PDP package is **Baseline**, accepted by the product owner on 19 August 2026. It does
+not accept standalone content/support/utility pages or complete-store designer-grade quality.

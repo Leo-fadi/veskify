@@ -36,6 +36,7 @@
 }
 
 .highConsiderationLayout,
+.galleryLedOpening,
 .galleryLedPurchase,
 .galleryLedDetail,
 .variantLedLayout,
@@ -59,7 +60,7 @@
 .variantLedPurchase,
 .purchasePanel {
   background: var(--brand-color-background);
-  padding: clamp(2rem, calc(var(--brand-section-rhythm) * 0.38), 4.5rem)
+  padding: clamp(1.5rem, calc(var(--brand-section-rhythm) * 0.3), 3.5rem)
     max(var(--brand-page-gutter), calc((100% - var(--brand-container-commerce, 80rem)) / 2));
 }
 
@@ -85,7 +86,7 @@
 .supportingContent,
 .relatedProducts {
   min-width: 0;
-  padding: clamp(2rem, calc(var(--brand-section-rhythm) * 0.38), 4.5rem)
+  padding: clamp(1.5rem, calc(var(--brand-section-rhythm) * 0.3), 3.5rem)
     max(var(--brand-page-gutter), calc((100% - var(--brand-container-commerce, 80rem)) / 2));
 }
 
@@ -111,34 +112,46 @@
 }
 
 .primaryMedia {
+  display: grid;
   margin: 0;
   overflow: hidden;
   position: relative;
+  place-items: center;
 }
 
 .primaryImage {
   display: block;
-  width: 100%;
+  width: min(100%, 42rem);
   height: auto;
-  max-height: calc(42rem * min(var(--brand-media-prominence, 1), 1.2));
-  aspect-ratio: var(--brand-media-ratio);
-  object-fit: var(--brand-media-crop);
+  max-height: min(40rem, 72vh);
+  aspect-ratio: auto;
+  object-fit: contain;
   background: var(--brand-color-background);
 }
 
 .media_crop .primaryImage {
+  width: min(100%, 38rem);
   aspect-ratio: 4 / 5;
   object-fit: cover;
 }
 
 .media_editorial .primaryImage {
+  width: min(100%, 40rem);
+  max-height: min(44rem, 72vh);
   aspect-ratio: 3 / 4;
   object-fit: cover;
 }
 
+.media_contained .primaryImage {
+  width: min(100%, 34rem);
+  max-height: min(34rem, 66vh);
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
 .thumbnails {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(3.25rem, 5rem));
+  grid-template-columns: repeat(auto-fit, minmax(4rem, 5.5rem));
   gap: calc(0.75rem * var(--brand-density-commerce, 1));
   margin-top: 1rem;
 }
@@ -150,6 +163,7 @@
   border-radius: var(--brand-control-radius, var(--brand-radius));
   background: var(--brand-color-background);
   padding: 0.25rem;
+  cursor: pointer;
 }
 
 .thumbnails button[aria-pressed="true"] {
@@ -159,11 +173,13 @@
 .thumbnails img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
 }
 
 .gallery_grid .thumbnails {
-  grid-template-columns: repeat(auto-fit, minmax(3.25rem, 5rem));
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 6.5rem));
 }
 
 .productInformation {
@@ -172,7 +188,8 @@
 }
 
 .identity h1 {
-  margin: 0.5rem 0 1rem;
+  max-width: 18ch;
+  margin: 0 0 0.75rem;
   font-family: var(--brand-font-display);
   font-size: clamp(2.25rem, 6vw, var(--brand-type-display-size));
   font-weight: var(--brand-type-display-weight);
@@ -201,7 +218,15 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.75rem;
-  margin: 1.25rem 0 0.25rem;
+  margin: 0;
+}
+
+.purchaseState {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  padding-top: 1.25rem;
 }
 
 .price,
@@ -218,6 +243,7 @@
 }
 
 .availability {
+  margin: 0;
   color: var(--brand-color-primary);
   font-weight: 700;
 }
@@ -227,6 +253,10 @@
   max-width: 42rem;
   color: var(--brand-color-muted-text);
   line-height: 1.7;
+}
+
+.description {
+  margin: 0.5rem 0 0;
 }
 
 .supportingContent > figure {
@@ -271,7 +301,7 @@
 }
 
 .options {
-  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+  margin-top: clamp(1.25rem, 2.5vw, 2rem);
 }
 
 .options h2,
@@ -284,6 +314,12 @@
   letter-spacing: var(--brand-type-heading-tracking, normal);
   line-height: var(--brand-type-heading-line-height, 1.15);
   overflow-wrap: anywhere;
+}
+
+.options h2 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(1.35rem, 2.25vw, 2rem);
 }
 
 .options_compact > * + * {
@@ -313,7 +349,7 @@
 }
 
 .variant_galleryDominant .primaryImage {
-  max-height: 58rem;
+  max-height: min(44rem, 72vh);
 }
 
 .variant_editorialSplit .identity h1 {
@@ -337,6 +373,11 @@
   border: var(--brand-border-width, 1px) solid var(--brand-color-border);
   border-radius: var(--brand-radius);
   box-shadow: var(--brand-elevation-shadow, none);
+}
+
+.variant_compact .options :is(.buttonGroup, .radioGroup, .dropdownGroup, .textOption) {
+  border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  padding-top: 1rem;
 }
 
 .buttonGroup,
@@ -504,7 +545,7 @@
 }
 
 .primaryAction {
-  margin-top: 2rem;
+  margin-top: 1.25rem;
 }
 
 .primaryAction button {
@@ -528,6 +569,66 @@
   line-height: 1.45;
 }
 
+.configurationSummary {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-surface);
+  padding: 0.9rem 1rem;
+}
+
+.configurationSummaryHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.configurationSummaryHeading h2 {
+  margin: 0;
+  font-family: var(--brand-font-utility, inherit);
+  font-size: var(--brand-type-utility-size, 0.85rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.configurationSummaryHeading span {
+  color: var(--brand-color-muted-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.configurationSummaryHeading span[data-complete="true"] {
+  color: var(--brand-color-primary);
+}
+
+.configurationSummary ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.configurationSummary li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.configurationSummary li span,
+.configurationSummary > p {
+  margin: 0;
+  color: var(--brand-color-muted-text);
+  font-size: 0.78rem;
+}
+
+.configurationSummary li strong {
+  overflow-wrap: anywhere;
+}
+
 .specifications,
 .relatedProducts {
   background: var(--brand-color-surface);
@@ -547,6 +648,11 @@
 
 .relatedGrid {
   grid-auto-rows: 1fr;
+}
+
+.relatedGrid[data-related-product-count="1"] {
+  max-width: 27rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .specificationGroups section,
@@ -648,19 +754,15 @@
   }
 
   .root[data-responsive-tablet~="pdpStandardStack"] .media_contained .primaryImage {
-    height: min(28rem, 58vh);
-    max-height: none;
+    width: min(100%, 30rem);
+    max-height: min(26rem, 54vh);
   }
 }
 
 @media (min-width: 64rem) {
   .root[data-presentation-mode="standardCommercePdp"] .productCore {
-    grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.78fr);
     align-items: start;
-  }
-
-  .root[data-presentation-mode] :is(.gallery, .emptyGallery, .productInformation) {
-    min-height: 34rem;
   }
 
   .root[data-presentation-mode="standardCommercePdp"] .productInformation {
@@ -669,21 +771,18 @@
   }
 
   .root[data-presentation-mode="highConsiderationPdp"] .highConsiderationLayout {
-    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+    grid-template-columns: minmax(0, 1fr) minmax(23rem, 0.9fr);
     align-items: start;
   }
 
-  .root[data-presentation-mode="galleryLedPdp"] .productCore {
-    grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  .root[data-presentation-mode="galleryLedPdp"] .galleryLedOpening {
+    grid-template-columns: minmax(0, 1.12fr) minmax(24rem, 0.88fr);
+    align-items: start;
   }
 
   .root[data-presentation-mode="galleryLedPdp"] .galleryLedPurchase {
-    grid-template-columns: minmax(0, 0.8fr) minmax(22rem, 0.65fr);
-    align-items: start;
-  }
-
-  .root[data-presentation-mode="galleryLedPdp"] .galleryLedStage :is(.gallery, .emptyGallery) {
-    min-height: 50rem;
+    position: sticky;
+    top: 0;
   }
 
   .root[data-presentation-mode="galleryLedPdp"] .galleryLedDetail {
@@ -691,7 +790,7 @@
   }
 
   .root[data-presentation-mode="variantLedPdp"] .variantLedLayout {
-    grid-template-columns: minmax(22rem, 0.72fr) minmax(0, 1.28fr);
+    grid-template-columns: minmax(25rem, 1fr) minmax(0, 0.86fr);
     align-items: start;
   }
 
@@ -700,17 +799,16 @@
     top: 0;
   }
 
-  .root[data-presentation-mode="variantLedPdp"] .variantLedGallery :is(.gallery, .emptyGallery) {
-    min-height: 42rem;
-  }
-
   .root[data-presentation-mode="variantLedPdp"] .variantLedDetail {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  .relatedGrid[data-related-product-count="1"],
   .relatedGrid[data-related-product-count="2"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .relatedGrid[data-related-product-count="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -722,16 +820,12 @@
 
 @media (min-width: 75rem) {
   .root[data-presentation-mode="highConsiderationPdp"] .highConsiderationLayout {
-    grid-template-columns: minmax(0, 1.15fr) minmax(23rem, 0.85fr);
+    grid-template-columns: minmax(0, 1.08fr) minmax(24rem, 0.92fr);
   }
 
   .root[data-presentation-mode="highConsiderationPdp"] .highConsiderationDecision {
     position: sticky;
     top: 0;
-  }
-
-  .relatedGrid[data-related-product-count="3"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .relatedGrid[data-related-product-count="4"] {
@@ -751,7 +845,7 @@
   }
 
   .root[data-responsive-tablet] .primaryImage {
-    max-height: min(28rem, 58vh);
+    max-height: min(26rem, 54vh);
   }
 
   .root[data-responsive-tablet] .primaryAction_sticky {
@@ -779,7 +873,32 @@
 }
 
 @media (max-width: 47.999rem) {
+  .root[data-responsive-mobile] .primaryImage {
+    max-height: min(22rem, 46vh);
+  }
+
+  .root[data-responsive-mobile] .gallery,
+  .root[data-responsive-mobile] .emptyGallery {
+    padding-block: 1rem;
+  }
+
+  .root[data-responsive-mobile] .primaryAction_sticky {
+    position: sticky;
+    z-index: 4;
+    bottom: 0;
+    margin-inline: -0.5rem;
+    border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
+    background: color-mix(in srgb, var(--brand-color-background) 94%, transparent);
+    padding: 0.75rem 0.5rem max(0.75rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -0.5rem 1.25rem color-mix(in srgb, var(--brand-color-text) 10%, transparent);
+  }
+
+  .root[data-responsive-mobile] .options {
+    scroll-margin-bottom: 8rem;
+  }
+
   .root[data-responsive-mobile] .relatedGrid {
     grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
   }
 }

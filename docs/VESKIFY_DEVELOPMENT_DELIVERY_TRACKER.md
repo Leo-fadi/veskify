@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 18 August 2026, accepted P10B-18B-03 collection/search/product-card quality upgrade                                 |
+| Baseline                    | 19 August 2026, accepted P10B-18B-04 PDP quality upgrade                                                            |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -73,7 +73,7 @@ required evidence are accepted.
 | ☑    | P10B-18B-06  | Asset composition and art-direction quality upgrade  | **Baseline** | Asset, responsive-image, frame owners    | Accepted P10B-18B-01                      | Accepted bounded purpose affinity, reuse, paired responsive sources, shared-frame logo, same-72-case regression and 13-capture checkpoint; complete-store visual quality remains unaccepted |
 | ☑    | P10B-18B-02  | Homepage / editorial / campaign quality upgrade      | **Baseline** | Homepage profile/component owners        | Accepted P10B-18B-01 and P10B-18B-06      | Accepted intentional rich/sparse progression, exact transition authority, stronger hierarchy/rhythm, same-strata accounting, retained review and lifecycle preservation                     |
 | ☑    | P10B-18B-03  | Collection / search / product-card quality upgrade   | **Baseline** | Collection/search/product-card owners    | Accepted P10B-18B-02                      | Accepted cardinality/facet hierarchy, four distinct profile purposes, five canonical card anatomies, executable search truth, same-72 accounting and 21-capture retained review             |
-| ☐    | P10B-18B-04  | PDP quality upgrade                                  | **Planned**  | PDP profile/commerce presentation owners | Accepted P10B-18B-03                      | Stronger PDP opening, gallery, option/purchase and related-merchandising hierarchy with protected variant/price/media and retained four-width evidence                                      |
+| ☑    | P10B-18B-04  | PDP quality upgrade                                  | **Baseline** | PDP profile/commerce presentation owners | Accepted P10B-18B-03                      | Accepted 19 August 2026: stronger PDP opening, gallery, option/purchase and related-merchandising hierarchy with protected variant/price/media and retained four-width evidence             |
 | ☐    | P10B-18B-05  | Content / support / utilities quality upgrade        | **Planned**  | Content/support/utility owners           | Accepted P10B-18B-04                      | Stronger registered content, support and utility compositions with lifecycle, navigation and protected-commerce preservation                                                                |
 | ☐    | P10B-18C     | 100+ commercial quality and diversity gate           | **Planned**  | Product owner, generation, QA            | Accepted and integrated P10B-18B packages | 100+ complete configurations, protected-state/diversity gates and fingerprint-stratified four-width retained human review                                                                   |
 | ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Planned**  | Generation architecture/evidence         | P10B-16P-05A and P10B-18C                 | Consumer-proven removal/archival of remaining historical scaffolding with migration and evidence retention                                                                                  |
@@ -193,8 +193,8 @@ The remaining Done conditions are implementation gates, not claims about the cur
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18B-04 is the
-next focused product task after accepted P10B-18B-03.
+P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18B-05 is the
+next focused product task after accepted P10B-18B-04.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -700,8 +700,9 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   evidence dependency; final removal preserves historical records and all valid snapshots/artifacts.
 - **Non-goal:** Deleting P10B-18 visual fixtures or compatibility data before their removal gate.
 
-P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02, and accepted P10B-18B-03
-are Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-04 is next, P10B-18C remains Planned, and
+P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02,
+accepted P10B-18B-03 and accepted P10B-18B-04 are Baseline. Parent P10B-18B, P10B-18 and P10B
+remain Partial; P10B-18B-05 is next, P10B-18C remains Planned, and
 P10B-16P-05B remains Planned after P10B-18C.
 
 #### P10B-17 — Responsive, accessibility and performance closure
@@ -731,7 +732,7 @@ P10B-16P-05B remains Planned after P10B-18C.
 
 - **Outcome:** Prove repeated generation of publishable, premium, materially different complete
   storefronts.
-- **Status:** **Partial**. P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 are Baseline; parent P10B-18B is Partial and
+- **Status:** **Partial**. P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 are Baseline; parent P10B-18B is Partial and
   P10B-18C remains Planned.
 - **Authority:** Existing golden-store/human-review evidence plus the P10B synthesis and fingerprint
   authorities.
@@ -769,7 +770,7 @@ P10B-16P-05B remains Planned after P10B-18C.
 
 - **Outcome:** Implement the accepted coherent improvements to current Design DNA, compatibility,
   profiles, component consumers, asset-role selection and evaluation authority.
-- **Status:** **Partial**. P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 are Baseline; P10B-18B-04/05 remain incomplete.
+- **Status:** **Partial**. P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 are Baseline; P10B-18B-05 remains incomplete.
 - **Depends on:** Accepted P10B-18A and its frozen package order/ownership.
 - **Done when:** Every implemented package has focused positive/fail-closed evidence and the
   integrated authority produces improved multi-surface output against the frozen P10B-18A
@@ -856,7 +857,26 @@ P10B-16P-05B remains Planned after P10B-18C.
 - **Boundaries:** No PDP, content/support/utility redesign, new product/search/filter/card authority,
   commerce mutation, provider call, Vesko call, generated media or real publication. Parent
   P10B-18B/P10B-18/P10B remain Partial and P10B-18C designer-grade/100+ acceptance is unproved.
-- **Next:** P10B-18B-04 — PDP Quality Upgrade. P10B-18B-05 and P10B-18C remain Planned;
+- **Historical handoff:** P10B-18B-04 — PDP Quality Upgrade, subsequently accepted on 19 August 2026.
+
+#### P10B-18B-04 — PDP Quality Upgrade
+
+- **Status:** **Baseline**. Accepted by the product owner on 19 August 2026 for bounded PDP quality.
+- **Depends on:** Accepted P10B-18B-03.
+- **Delivered:** Retains the four stable PDP profiles and one canonical renderer/resolver while
+  adding exact-product configuration, media-depth and decision-support matching; bounded
+  content-driven media stages; stronger gallery, purchase, configuration-summary and related-
+  merchandising hierarchy; failure-disabled purchase; and profile-authorized mobile sticky action.
+- **Evidence:** Focused deterministic context and renderer matrices plus 20 retained captures at
+  375/768/1024/1440 cover standard simple, light configurable, complex variant-led, rich gallery-
+  led, high consideration with and without optional approved evidence, sparse media and
+  zero/one/three related products. The unchanged 72 strata retain 39 normalized material
+  topologies, 53/72 repeated memberships and the prior profile/frame/DNA distributions while
+  preserving exact canonical variants, options, prices and media.
+- **Boundaries:** No content/support/utility redesign, new commerce authority, product-type-name
+  matching, provider call, Vesko call, generated media or real publication. This does not accept
+  complete-store commercial visual quality or P10B-18C designer-grade/100+ quality.
+- **Next:** P10B-18B-05 — Content / Support / Utilities Quality Upgrade. P10B-18C remains Planned;
   P10B-16P-05B remains after P10B-18C.
 
 #### P10B-18C — 100+ commercial quality and diversity gate

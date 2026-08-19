@@ -429,6 +429,10 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(screen.getByRole("textbox", { name: /engraving/i })).toBeVisible();
     expect(screen.getByText("From €1,290")).toBeVisible();
     expect(screen.getByText("Made to order")).toBeVisible();
+    const summary = screen.getByRole("region", { name: "Current configuration" });
+    expect(summary).toHaveAttribute("data-configuration-ready");
+    expect(summary).toHaveAttribute("data-selected-option-count", "3");
+    expect(within(summary).queryByText(/product_|variant_/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeDisabled();
     expect(screen.getByText("Choose every required option.")).toBeVisible();
   });
@@ -450,6 +454,7 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(
       screen.queryByRole("heading", { name: "Choose product options" }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Current configuration" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled();
   });
 
@@ -756,20 +761,20 @@ describe("P6-02 dynamic product-detail component family", () => {
       '.root[data-presentation-mode="highConsiderationPdp"] .highConsiderationLayout',
     );
     expect(css).toContain(
-      '.root[data-responsive-tablet~="pdpStandardStack"] .media_contained .primaryImage {\n    height: min(28rem, 58vh);\n    max-height: none;',
+      '.root[data-responsive-tablet~="pdpStandardStack"] .media_contained .primaryImage {\n    width: min(100%, 30rem);\n    max-height: min(26rem, 54vh);',
     );
     expect(css).toContain(
       '@media (min-width: 75rem) {\n  .root[data-presentation-mode="highConsiderationPdp"]',
     );
     expect(css).toContain(
-      '.relatedGrid[data-related-product-count="1"],\n  .relatedGrid[data-related-product-count="2"] {\n    grid-template-columns: repeat(2, minmax(0, 1fr));',
+      '.relatedGrid[data-related-product-count="1"] {\n  max-width: 27rem;\n  grid-template-columns: minmax(0, 1fr);',
     );
     expect(css).toContain(
       '@media (min-width: 64rem) and (max-width: 79.999rem) {\n  .root[data-presentation-mode="highConsiderationPdp"] .highConsiderationDecision {\n    padding-inline: min(var(--brand-page-gutter, 5rem), clamp(2rem, 5vw, 5rem));\n  }\n}',
     );
     const desktopBreakpoint = css.indexOf("@media (min-width: 64rem) {");
     const relatedTwoColumnRule = css.indexOf(
-      '.relatedGrid[data-related-product-count="1"]',
+      '.relatedGrid[data-related-product-count="2"]',
       desktopBreakpoint,
     );
     const transitionalBreakpoint = css.indexOf(
@@ -825,7 +830,7 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(canonicalValueString(ringProduct.media)).toBe(before);
   });
 
-  it("bounds the transient gallery to eight, offers only alternate image actions, and preserves media", async () => {
+  it("bounds the transient gallery to eight, exposes exact image selection, and preserves media", async () => {
     const galleryProduct: ProductPresentationContext = {
       ...structuredClone(ringProduct),
       media: Array.from({ length: 10 }, (_, index) => ({
@@ -862,19 +867,18 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(gallery).toHaveAttribute("data-presented-media-count", "8");
     expect(primaryImage).toHaveAttribute("fetchpriority", "high");
     const thumbnailButtons = within(thumbnails).getAllByRole("button");
-    expect(thumbnailButtons).toHaveLength(7);
-    thumbnailButtons.forEach((button) => expect(button).not.toHaveAttribute("aria-pressed"));
-    expect(
-      within(thumbnails).queryByRole("button", { name: "View product image 1" }),
-    ).not.toBeInTheDocument();
-    await userEvent.click(within(thumbnails).getByRole("button", { name: "View product image 2" }));
-    expect(within(thumbnails).getAllByRole("button")).toHaveLength(7);
+    expect(thumbnailButtons).toHaveLength(8);
     expect(
       within(thumbnails).getByRole("button", { name: "View product image 1" }),
-    ).not.toHaveAttribute("aria-pressed");
+    ).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(within(thumbnails).getByRole("button", { name: "View product image 2" }));
+    expect(within(thumbnails).getAllByRole("button")).toHaveLength(8);
     expect(
-      within(thumbnails).queryByRole("button", { name: "View product image 2" }),
-    ).not.toBeInTheDocument();
+      within(thumbnails).getByRole("button", { name: "View product image 1" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      within(thumbnails).getByRole("button", { name: "View product image 2" }),
+    ).toHaveAttribute("aria-pressed", "true");
     within(thumbnails)
       .getAllByRole("img")
       .forEach((image) => expect(image).toHaveAttribute("fetchpriority", "low"));
