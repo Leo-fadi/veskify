@@ -45,6 +45,30 @@ describe("P10B-18B-04 bounded PDP quality authority", () => {
     const moderate = withOptions(simpleMulti, 3);
     const complex = withOptions(simpleMulti, 4);
     const richConfigurable = withOptions(rich, 2);
+    const variantDimensions = {
+      ...structuredClone(simple),
+      variants: [
+        {
+          id: "variant_dimensions_one",
+          label: { en: "One", fi: "Yksi" },
+          attributes: { size: "S", metal: "silver", finish: "polished", engraving: "plain" },
+        },
+        {
+          id: "variant_dimensions_two",
+          label: { en: "Two", fi: "Kaksi" },
+          attributes: { size: "M", metal: "gold", finish: "brushed", engraving: "marked" },
+        },
+      ],
+      orderOptions: [],
+    };
+    const duplicateMedia = {
+      ...structuredClone(simple),
+      images: [
+        simple.images[0],
+        { ...simple.images[0], id: "media_duplicate_two" },
+        { ...simple.images[0], id: "media_duplicate_three" },
+      ],
+    };
 
     expect(createDynamicCommerceProductMatchContext(simple)).toMatchObject({
       optionStructure: "simple",
@@ -72,6 +96,16 @@ describe("P10B-18B-04 bounded PDP quality authority", () => {
       optionStructure: "configurable",
       configurationComplexity: "moderate",
       mediaDepth: "rich",
+    });
+    expect(createDynamicCommerceProductMatchContext(variantDimensions)).toMatchObject({
+      optionGroupCount: 4,
+      configurationComplexity: "complex",
+      decisionSupport: "high-consideration",
+    });
+    expect(createDynamicCommerceProductMatchContext(duplicateMedia)).toMatchObject({
+      mediaCount: 1,
+      mediaAvailability: "single",
+      mediaDepth: "sparse",
     });
     expect(createDynamicCommerceProductMatchContext(simple, true).decisionSupport).toBe(
       "high-consideration",

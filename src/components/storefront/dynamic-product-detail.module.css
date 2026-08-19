@@ -600,7 +600,7 @@
   font-weight: 700;
 }
 
-.configurationSummaryHeading span[data-complete="true"] {
+.configurationSummaryHeading span[data-ready="true"] {
   color: var(--brand-color-primary);
 }
 

@@ -722,7 +722,8 @@ export function DynamicProductConfigurationSummary({
     const selected = group.values.find(({ id }) => id === selectedId);
     return selected ? [{ group, value: text(selected.label, locale) }] : [];
   });
-  const complete = resolvedOptions.incompleteRequiredGroupIds.length === 0;
+  const selectionComplete = resolvedOptions.incompleteRequiredGroupIds.length === 0;
+  const ready = resolvedOptions.canAddToCart;
   return (
     <section
       aria-label={fallbackLabel("Current configuration", "Nykyinen kokoonpano", locale)}
@@ -733,10 +734,12 @@ export function DynamicProductConfigurationSummary({
     >
       <div className={styles.configurationSummaryHeading}>
         <h2>{fallbackLabel("Current configuration", "Nykyinen kokoonpano", locale)}</h2>
-        <span data-complete={complete}>
-          {complete
+        <span data-ready={ready}>
+          {ready
             ? fallbackLabel("Ready", "Valmis", locale)
-            : fallbackLabel("Needs selections", "Valintoja puuttuu", locale)}
+            : selectionComplete
+              ? fallbackLabel("Unavailable", "Ei saatavilla", locale)
+              : fallbackLabel("Needs selections", "Valintoja puuttuu", locale)}
         </span>
       </div>
       {selections.length > 0 ? (

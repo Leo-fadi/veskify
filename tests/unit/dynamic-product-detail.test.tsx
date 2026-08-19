@@ -990,21 +990,22 @@ describe("P6-02 dynamic product-detail component family", () => {
 
   it("does not emit a primary-action intent while the supplied action is disabled", () => {
     const onPrimaryAction = vi.fn();
-    render(
-      renderDynamicProductDetail(
-        rendererInput(watchProduct, {
-          onPrimaryAction,
-          primaryAction: {
-            enabled: false,
-            state: "unavailable",
-            message: localized("This product is unavailable."),
-          },
-        }),
-      ),
-    );
+    const input = rendererInput(watchProduct, {
+      onPrimaryAction,
+      primaryAction: {
+        enabled: false,
+        state: "unavailable",
+        message: localized("This product is unavailable."),
+      },
+    });
+    input.resolvedOptions = { ...input.resolvedOptions, canAddToCart: false };
+    render(renderDynamicProductDetail(input));
 
     fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
     expect(onPrimaryAction).not.toHaveBeenCalled();
+    const summary = screen.getByRole("region", { name: "Current configuration" });
+    expect(within(summary).getByText("Unavailable")).toHaveAttribute("data-ready", "false");
+    expect(within(summary).queryByText("Ready")).not.toBeInTheDocument();
   });
 
   it("marks incomplete required option groups invalid without inventing validation state", () => {
