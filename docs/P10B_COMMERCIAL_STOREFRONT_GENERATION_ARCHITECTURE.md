@@ -2,12 +2,12 @@
 
 **Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
 P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, and accepted
-P10B-18B-06, accepted P10B-18B-02 and accepted P10B-18B-03 are **Baseline**; parent P10B-18B, P10B-18 and P10B remain **Partial**; P10B-18C and
+P10B-18B-06, accepted P10B-18B-02, accepted P10B-18B-03 and accepted P10B-18B-04 are **Baseline**; parent P10B-18B, P10B-18 and P10B remain **Partial**; P10B-18C and
 P10B-16P-05B remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 18 August 2026, accepted P10B-18B-03 collection/search/product-card quality upgrade
+**Baseline:** 19 August 2026, accepted P10B-18B-04 PDP quality upgrade
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -61,7 +61,7 @@ P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03
 are Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18C remains Planned.
-P10B-18B-04 is the next
+P10B-18B-04 is Baseline and P10B-18B-05 is the next
 focused product task, and P10B-16P-05B remains Planned after P10B-18C. The accepted audit baseline
 and bounded source-authority packages are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
@@ -807,9 +807,10 @@ keep distinct approved facts where their reading structure is shared.
 - **Status:** **Planned**. This cleanup cannot start before P10B-18C and cannot weaken P10B-16P-04,
   P10B-18A, P10B-18B or P10B-18C evidence.
 
-P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02 and accepted P10B-18B-03
-are Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-04 is next, P10B-18C remains Planned, and
-P10B-16P-05B remains Planned after P10B-18C.
+P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted
+P10B-18B-02, accepted P10B-18B-03 and accepted P10B-18B-04 are Baseline. Parent
+P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-05 is next, P10B-18C remains Planned,
+and P10B-16P-05B remains Planned after P10B-18C.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -862,7 +863,7 @@ P10B-16P-05B remains Planned after P10B-18C.
   and retained human comparison against the frozen P10B-18A baseline.
 - Preserve one `StorefrontSnapshot`, existing renderers and protected commerce/media; no package
   may claim quality from contract or registry changes alone.
-- **Status:** **Partial**. P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 are Baseline; P10B-18B-04/05 are
+- **Status:** **Partial**. P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 are Baseline; P10B-18B-05 is
   incomplete.
 
 #### P10B-18B-01 — Design DNA and shared-frames quality upgrade
@@ -973,8 +974,8 @@ P10B-02…13 minimum accepted capability
   → P10B-18B-06 asset composition/art direction (Baseline / accepted)
   → P10B-18B-02 homepage/editorial/campaign quality (Baseline / accepted)
   → P10B-18B-03 collection/search/product-card quality (Baseline / accepted)
-  → P10B-18B-04 PDP quality (next)
-  → remaining P10B-18B commercial source-authority packages
+  → P10B-18B-04 PDP quality (Baseline / accepted)
+  → P10B-18B-05 content/support/utilities quality (next)
   → P10B-18C 100+ commercial quality and diversity gate
   → P10B-16P-05B final historical acceptance cleanup
 ```
@@ -1009,7 +1010,7 @@ PR.
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A, and
 accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02 and accepted P10B-18B-03 are Baseline under the disjoint ownership constraints
 in section 15. P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial;
-P10B-18B-04 is next, P10B-18C remains Planned, and P10B-16P-05B remains Planned after P10B-18C. No
+P10B-18B-04 is Baseline, P10B-18B-05 is next, P10B-18C remains Planned, and P10B-16P-05B remains Planned after P10B-18C. No
 later implementation task is complete merely because this architecture or an earlier bounded
 P10B-18 package is accepted.
 
@@ -1068,4 +1069,22 @@ Status is **Baseline**, accepted by the product owner on 18 August 2026 for boun
 search-results and canonical card quality only. Same-strata evidence contains 39 normalized
 topologies, 53/72 repeated memberships and a largest cluster of seven; 21 retained captures cover
 all four profiles, all five card anatomies and zero/one/multiple search states. Parent P10B-18B,
-P10B-18 and P10B remain Partial. P10B-18B-04 is next; P10B-18B-05 and P10B-18C remain Planned.
+P10B-18 and P10B remain Partial. P10B-18B-04 is Baseline; P10B-18B-05 is next and P10B-18C remains Planned.
+
+## 20. P10B-18B-04 accepted PDP quality architecture
+
+The accepted package keeps the P10B-11 four-profile registry and one dynamic PDP execution path. Runtime
+matching consumes the exact current product's bounded configuration complexity, media depth and
+decision-support posture; the compact product-type map remains an editor projection only. Standard,
+variant-led, gallery-led and high-consideration anatomy continue through the same PageBlueprint,
+snapshot, adapter, renderer, shared frame, Design DNA and lifecycle compiler.
+
+The renderer separates product identity from canonical purchase state, adds a presentation-only
+summary derived from the existing resolver, bounds canonical media without source enhancement,
+keeps the purchase hierarchy beside rich galleries, and makes related grids cardinality-aware.
+No product truth, resolver semantics, product-media selection, relationship membership, schema
+identity or profile ID/version is replaced. This bounded acceptance does not change the parent
+phase status.
+
+The product owner accepted this bounded package as **Baseline** on 19 August 2026. Parent
+P10B-18B/P10B-18/P10B remain Partial and P10B-18B-05 is next.

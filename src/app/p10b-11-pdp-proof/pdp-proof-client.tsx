@@ -4,7 +4,7 @@ import { createStorefrontRenderContext } from "@/components/registry";
 import { StorefrontProductCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { getCommercialPdpProfile } from "@/application/storefront-templates";
 import { brandSystemToCssVariables } from "@/domain/design-system";
-import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
+import type { PageFactEvidenceReference, PageModel, StorefrontSnapshot } from "@/domain/storefront";
 import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import type { ProjectAggregate } from "@/services/storage";
 
@@ -15,10 +15,12 @@ export function P10B11PdpProofClient({
   productPage,
   profileId,
   profileVersion,
+  proofScenario,
   responsiveArchitecture,
   snapshot,
   snapshotFingerprint,
   structuralFingerprint,
+  supportingEvidence,
 }: {
   aggregate: ProjectAggregate;
   materializationFingerprint: string;
@@ -26,6 +28,7 @@ export function P10B11PdpProofClient({
   productPage: PageModel;
   profileId: string;
   profileVersion: string;
+  proofScenario: string;
   responsiveArchitecture: readonly Readonly<{
     viewport: number;
     transformationIds: readonly string[];
@@ -33,6 +36,7 @@ export function P10B11PdpProofClient({
   snapshot: StorefrontSnapshot;
   snapshotFingerprint: string;
   structuralFingerprint: string;
+  supportingEvidence?: PageFactEvidenceReference;
 }) {
   const currentAuthority = getCommercialPdpProfile(profileId)?.profile?.commercialProductDetail;
   if (!currentAuthority || currentAuthority.structuralFingerprint !== structuralFingerprint) {
@@ -50,7 +54,7 @@ export function P10B11PdpProofClient({
   });
   const presentation = createCatalogueStorefrontCommerceRouteAdapter().product({
     aggregate,
-    evidenceReferences: context.evidenceReferences,
+    evidenceReferences: supportingEvidence ? [supportingEvidence] : context.evidenceReferences,
     snapshot,
     page: productPage,
     product,
@@ -61,6 +65,7 @@ export function P10B11PdpProofClient({
       data-materialization-fingerprint={materializationFingerprint}
       data-p10b-11-pdp-profile={profileId}
       data-profile-version={profileVersion}
+      data-proof-scenario={proofScenario}
       data-responsive-viewports={responsiveArchitecture.map((entry) => entry.viewport).join(",")}
       data-snapshot-fingerprint={snapshotFingerprint}
       data-structural-fingerprint={currentAuthority.structuralFingerprint}

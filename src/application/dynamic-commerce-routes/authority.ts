@@ -808,8 +808,15 @@ function selectProductComplexityRule(input: {
     return (
       (match.optionStructure === "any" || match.optionStructure === context.optionStructure) &&
       inBoundedRange(context.optionGroupCount, match.optionGroupCount) &&
+      (match.configurationComplexity === undefined ||
+        match.configurationComplexity === "any" ||
+        match.configurationComplexity === context.configurationComplexity) &&
       (match.mediaAvailability === "any" ||
         match.mediaAvailability === context.mediaAvailability) &&
+      inBoundedRange(context.mediaCount, match.mediaCount) &&
+      (match.mediaDepth === undefined ||
+        match.mediaDepth === "any" ||
+        match.mediaDepth === context.mediaDepth) &&
       (match.highConsideration === "any" ||
         (match.highConsideration === "required" && context.highConsideration) ||
         (match.highConsideration === "excluded" && !context.highConsideration))
@@ -1000,8 +1007,10 @@ function createProductComplexityRules(
       priority: 100,
       match: {
         optionStructure: "configurable",
-        optionGroupCount: { minimum: 4, maximum: 100 },
+        optionGroupCount: { minimum: 1, maximum: 100 },
+        configurationComplexity: "any",
         mediaAvailability: "any",
+        mediaDepth: "any",
         highConsideration: "required",
       },
       archetypeId: productArchetypeIds.has("archetype_pdp_high_consideration")
@@ -1013,8 +1022,10 @@ function createProductComplexityRules(
       priority: 90,
       match: {
         optionStructure: "configurable",
-        optionGroupCount: { minimum: 3, maximum: 100 },
+        optionGroupCount: { minimum: 1, maximum: 100 },
+        configurationComplexity: "complex",
         mediaAvailability: "any",
+        mediaDepth: "any",
         highConsideration: "any",
       },
       archetypeId: productArchetypeIds.has("archetype_pdp_high_consideration")
@@ -1027,7 +1038,9 @@ function createProductComplexityRules(
       match: {
         optionStructure: "configurable",
         optionGroupCount: { minimum: 1, maximum: 100 },
+        configurationComplexity: "any",
         mediaAvailability: "any",
+        mediaDepth: "any",
         highConsideration: "any",
       },
       archetypeId: productArchetypeIds.has("archetype_pdp_configurable")
@@ -1036,10 +1049,14 @@ function createProductComplexityRules(
     },
     {
       id: "product_rule_gallery",
-      priority: 70,
+      priority: 85,
       match: {
         optionStructure: "any",
+        optionGroupCount: { minimum: 0, maximum: 3 },
+        configurationComplexity: "any",
         mediaAvailability: "multiple",
+        mediaCount: { minimum: 3, maximum: 100 },
+        mediaDepth: "rich",
         highConsideration: "excluded",
       },
       archetypeId: productArchetypeIds.has("archetype_pdp_gallery")
@@ -1051,7 +1068,9 @@ function createProductComplexityRules(
       priority: 0,
       match: {
         optionStructure: "simple",
+        configurationComplexity: "simple",
         mediaAvailability: "any",
+        mediaDepth: "any",
         highConsideration: "excluded",
       },
       archetypeId: productArchetypeIds.has("archetype_pdp_standard")
@@ -2652,11 +2671,13 @@ export function resolveDynamicCommerceRoutePage(
   if (!archetypeId && route.kind === "product") {
     const product = input.catalogue.products.find(({ id }) => id === route.productId);
     if (!product) return fail("unknown-commerce-identity", "The route product is unavailable.");
-    archetypeId =
-      authority.productTypeMappings.find(
-        ({ productTypeId }) =>
-          productTypeId === canonicalProductTypePresentationId(product.productType),
-      )?.archetypeId ?? authority.fallbacks.productDetailArchetypeId;
+    const knownType = authority.productTypeMappings.some(
+      ({ productTypeId }) =>
+        productTypeId === canonicalProductTypePresentationId(product.productType),
+    );
+    archetypeId = knownType
+      ? resolveProductComplexityArchetype({ product, rules: authority.productComplexityRules })
+      : authority.fallbacks.productDetailArchetypeId;
   }
   const archetype =
     authority.collectionSearchArchetypes.find(({ id }) => id === archetypeId) ??

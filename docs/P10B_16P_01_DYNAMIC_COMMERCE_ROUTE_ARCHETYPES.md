@@ -301,3 +301,21 @@ The provider-facing compact capability now synchronizes with P10B-16P-06:
 `registered-presentation-authority` plus `canonical-transient-query-results`, `read-only-bounded`
 behavior and `p10b-16p-06-canonical-search-adapter`. This is not a persisted query/result model and
 does not claim AI, semantic, vector, fuzzy, personalized or Vesko search.
+
+## P10B-18B-04 accepted product-context continuation
+
+Runtime PDP selection now resolves each exact product against the stored bounded matching rules;
+the product-type map remains a compact editor projection and no longer over-applies one sibling
+product's complexity to every product of that type. New optional match facts classify configuration
+as simple/light/moderate/complex, canonical media as sparse/standard/rich and decision support as
+standard/high-consideration. Three distinct canonical media items constitute the bounded rich
+witness; gallery matching permits at most three option groups and excludes a high-consideration
+context. Four-or-more option groups remain complex/high-consideration.
+
+These fields are additive and optional in the existing `1.0.0` authority schema so historical
+records remain readable with their prior rules. Fresh authorities fingerprint the added facts.
+Unknown, ambiguous, stale or frame-incompatible matches still fail closed or use the governed
+generic fallback exactly as before. The classifier contains no product-type, merchant or fixture
+branches.
+
+This bounded PDP selection continuation is **Baseline**, accepted by the product owner on 19 August 2026. Parent P10B-18B/P10B-18/P10B remain Partial.

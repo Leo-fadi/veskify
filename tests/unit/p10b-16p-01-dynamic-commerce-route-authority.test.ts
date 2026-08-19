@@ -43,6 +43,13 @@ function expectInvalidPresentation(operation: () => unknown, message: RegExp): v
   throw new Error("Expected matching-rule selection to fail closed.");
 }
 
+function contextualProductArchetypeId(
+  product: Parameters<typeof resolveProductComplexityArchetype>[0]["product"],
+  authority: ReturnType<typeof migratedScenario>["result"]["authority"],
+) {
+  return resolveProductComplexityArchetype({ product, rules: authority.productComplexityRules });
+}
+
 describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
   it("migrates ten PDP and nine collection routes into bounded archetype authority", () => {
     const { catalogue, result } = migratedScenario();
@@ -339,7 +346,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     );
   });
 
-  it("resolves every compact route through exact collection, search, product-type, or matching-rule authority", () => {
+  it("resolves every compact route through exact collection, search, per-product, or fallback authority", () => {
     const { catalogue, legacySnapshot, result } = migratedScenario();
     const authority = result.authority;
     for (const route of authority.routeInventory) {
@@ -372,13 +379,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
         });
       } else {
         const product = catalogue.products.find(({ id }) => id === route.productId)!;
-        const mapping = authority.productTypeMappings.find(
-          ({ productTypeId }) =>
-            productTypeId === canonicalProductTypePresentationId(product.productType),
-        );
-        expect(resolved.archetype.id).toBe(
-          mapping?.archetypeId ?? authority.fallbacks.productDetailArchetypeId,
-        );
+        expect(resolved.archetype.id).toBe(contextualProductArchetypeId(product, authority));
         const legacyPage = legacySnapshot.pages.find(({ id }) => id === route.id);
         const expectedRelatedProductIds = legacyPage?.sections[0]?.content.relatedProductIds;
         expect(Array.isArray(expectedRelatedProductIds)).toBe(true);
@@ -520,7 +521,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     expect(aggregate.catalogue).toEqual(protectedBaseline);
   });
 
-  it("recomputes runtime archetypes from canonical mappings and reserves overrides for editor projection", () => {
+  it("recomputes runtime archetypes from canonical product facts and reserves overrides for editor projection", () => {
     const { catalogue, result } = migratedScenario();
     const authority = result.authority;
     const productRoute = authority.routeInventory.find(({ kind }) => kind === "product");
@@ -529,11 +530,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     }
     const product = catalogue.products.find(({ id }) => id === productRoute.productId);
     if (!product) throw new Error("Expected the exact routed product.");
-    const canonicalArchetypeId = authority.productTypeMappings.find(
-      ({ productTypeId }) =>
-        productTypeId === canonicalProductTypePresentationId(product.productType),
-    )?.archetypeId;
-    if (!canonicalArchetypeId) throw new Error("Expected a canonical product-type mapping.");
+    const canonicalArchetypeId = contextualProductArchetypeId(product, authority);
     const alternativeArchetypeId = authority.productDetailArchetypes.find(
       ({ id }) => id !== canonicalArchetypeId,
     )?.id;
@@ -928,10 +925,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     const route = result.authority.routeInventory.find(({ kind }) => kind === "product")!;
     if (route.kind !== "product") throw new Error("Expected a product route.");
     const product = catalogue.products.find(({ id }) => id === route.productId)!;
-    const mappedArchetypeId = result.authority.productTypeMappings.find(
-      ({ productTypeId }) =>
-        productTypeId === canonicalProductTypePresentationId(product.productType),
-    )!.archetypeId;
+    const mappedArchetypeId = contextualProductArchetypeId(product, result.authority);
     const { authorityFingerprint: _fingerprint, ...material } = result.authority;
     void _fingerprint;
     const softAuthority = createDynamicCommercePresentationAuthority({
@@ -996,10 +990,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     const route = result.authority.routeInventory.find(({ kind }) => kind === "product")!;
     if (route.kind !== "product") throw new Error("Expected a product route.");
     const product = catalogue.products.find(({ id }) => id === route.productId)!;
-    const archetypeId = result.authority.productTypeMappings.find(
-      ({ productTypeId }) =>
-        productTypeId === canonicalProductTypePresentationId(product.productType),
-    )!.archetypeId;
+    const archetypeId = contextualProductArchetypeId(product, result.authority);
     const { authorityFingerprint: _fingerprint, ...material } = result.authority;
     void _fingerprint;
     const invalidAuthority = createDynamicCommercePresentationAuthority({
@@ -1035,10 +1026,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     const route = result.authority.routeInventory.find(({ kind }) => kind === "product")!;
     if (route.kind !== "product") throw new Error("Expected a product route.");
     const product = catalogue.products.find(({ id }) => id === route.productId)!;
-    const archetypeId = result.authority.productTypeMappings.find(
-      ({ productTypeId }) =>
-        productTypeId === canonicalProductTypePresentationId(product.productType),
-    )!.archetypeId;
+    const archetypeId = contextualProductArchetypeId(product, result.authority);
     const { authorityFingerprint: _fingerprint, ...sourceMaterial } = result.authority;
     void _fingerprint;
     type ProductArchetype = (typeof sourceMaterial.productDetailArchetypes)[number];

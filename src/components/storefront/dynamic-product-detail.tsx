@@ -581,6 +581,7 @@ export function DynamicProductGallery({
       data-layout={layout}
       data-presented-media-count={presentationMedia.length}
       data-resolved-media-count={galleryMedia.length}
+      data-source-quality-authority="unavailable-bounded-stage"
     >
       <figure
         className={styles.primaryMedia}
@@ -601,27 +602,25 @@ export function DynamicProductGallery({
           className={styles.thumbnails}
           role="group"
         >
-          {presentationMedia
-            .map((item, index) => ({ ...item, index }))
-            .filter(({ reference }) => reference.assetId !== selected.reference.assetId)
-            .map(({ reference, resolved, index }) => {
-              return (
-                <button
-                  aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
-                  data-asset-provenance={resolved.provenance.kind}
-                  key={reference.assetId}
-                  onClick={() => setSelection({ mediaFingerprint, assetId: reference.assetId })}
-                  type="button"
-                >
-                  <ProductAssetImage
-                    artDirection={resolved.artDirection}
-                    asset={resolved.asset}
-                    locale={locale}
-                    loadingRole="thumbnail"
-                  />
-                </button>
-              );
-            })}
+          {presentationMedia.map(({ reference, resolved }, index) => {
+            return (
+              <button
+                aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
+                aria-pressed={reference.assetId === selected.reference.assetId}
+                data-asset-provenance={resolved.provenance.kind}
+                key={reference.assetId}
+                onClick={() => setSelection({ mediaFingerprint, assetId: reference.assetId })}
+                type="button"
+              >
+                <ProductAssetImage
+                  artDirection={resolved.artDirection}
+                  asset={resolved.asset}
+                  locale={locale}
+                  loadingRole="thumbnail"
+                />
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </section>
@@ -631,14 +630,12 @@ export function DynamicProductGallery({
 export function DynamicProductIdentity({
   product,
   resolvedOptions,
-  showDescription,
   showSku,
   locale,
   titleId,
 }: {
   product: ProductPresentationContext;
   resolvedOptions: DynamicProductOptionPresentation;
-  showDescription: boolean;
   showSku: boolean;
   locale: LocaleContext;
   titleId: string;
@@ -651,6 +648,23 @@ export function DynamicProductIdentity({
           <span>{fallbackLabel("SKU", "Tuotetunnus", locale)}:</span> {resolvedOptions.displayedSku}
         </p>
       ) : null}
+    </header>
+  );
+}
+
+export function DynamicProductPurchaseState({
+  product,
+  resolvedOptions,
+  showDescription,
+  locale,
+}: {
+  product: ProductPresentationContext;
+  resolvedOptions: DynamicProductOptionPresentation;
+  showDescription: boolean;
+  locale: LocaleContext;
+}) {
+  return (
+    <div className={styles.purchaseState} data-product-region="purchase-state">
       <div aria-label={fallbackLabel("Price", "Hinta", locale)} className={styles.priceRow}>
         {resolvedOptions.displayedPrice ? (
           <>
@@ -679,7 +693,70 @@ export function DynamicProductIdentity({
           {text(product.description, locale)}
         </p>
       ) : null}
-    </header>
+    </div>
+  );
+}
+
+export function DynamicProductConfigurationSummary({
+  product,
+  resolvedOptions,
+  locale,
+}: {
+  product: ProductPresentationContext;
+  resolvedOptions: DynamicProductOptionPresentation;
+  locale: LocaleContext;
+}) {
+  if (product.optionGroups.length === 0) return null;
+  const selectedValues = new Map(
+    resolvedOptions.selectedValues.map(({ groupId, valueId }) => [groupId, valueId]),
+  );
+  const textValues = new Map(
+    resolvedOptions.textEntryValues.map(({ groupId, value }) => [groupId, value]),
+  );
+  const selections = product.optionGroups.flatMap((group) => {
+    if (group.presentation === "textInput") {
+      const value = textValues.get(group.id);
+      return value ? [{ group, value }] : [];
+    }
+    const selectedId = selectedValues.get(group.id);
+    const selected = group.values.find(({ id }) => id === selectedId);
+    return selected ? [{ group, value: text(selected.label, locale) }] : [];
+  });
+  const selectionComplete = resolvedOptions.incompleteRequiredGroupIds.length === 0;
+  const ready = resolvedOptions.canAddToCart;
+  return (
+    <section
+      aria-label={fallbackLabel("Current configuration", "Nykyinen kokoonpano", locale)}
+      aria-live="polite"
+      className={styles.configurationSummary}
+      data-configuration-ready={resolvedOptions.canAddToCart}
+      data-selected-option-count={selections.length}
+    >
+      <div className={styles.configurationSummaryHeading}>
+        <h2>{fallbackLabel("Current configuration", "Nykyinen kokoonpano", locale)}</h2>
+        <span data-ready={ready}>
+          {ready
+            ? fallbackLabel("Ready", "Valmis", locale)
+            : selectionComplete
+              ? fallbackLabel("Unavailable", "Ei saatavilla", locale)
+              : fallbackLabel("Needs selections", "Valintoja puuttuu", locale)}
+        </span>
+      </div>
+      {selections.length > 0 ? (
+        <ul>
+          {selections.map(({ group, value }) => (
+            <li key={group.id}>
+              <span>{text(group.label, locale)}</span>
+              <strong>{value}</strong>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>
+          {fallbackLabel("No options selected yet.", "Vaihtoehtoja ei ole vielä valittu.", locale)}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -1439,6 +1516,23 @@ function productDetailAnatomyIdentity(variantId: DynamicProductDetailVariant) {
   };
 }
 
+function productPresentationComplexity(product: ProductPresentationContext) {
+  if (product.optionGroups.length === 0) return "simple";
+  if (product.optionGroups.length === 1) return "light";
+  if (
+    product.optionGroups.length <= 3 &&
+    product.optionGroups.every(({ dependsOn }) => dependsOn.length === 0)
+  ) {
+    return "moderate";
+  }
+  return "complex";
+}
+
+function productMediaDepth(product: ProductPresentationContext) {
+  const count = product.media.filter(({ role }) => role !== "editorial").length;
+  return count <= 1 ? "sparse" : count === 2 ? "standard" : "rich";
+}
+
 export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
   const titleId = useId();
   const locale = {
@@ -1461,15 +1555,19 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
         locale={locale}
         product={input.product}
         resolvedOptions={input.resolvedOptions}
-        showDescription={input.props.showDescription}
         showSku={input.props.showSku}
         titleId={titleId}
       />
-      <DynamicProductResolutionStatus lifecycle={input.resolutionLifecycle} locale={locale} />
     </>
   );
   const purchase = (
     <>
+      <DynamicProductPurchaseState
+        locale={locale}
+        product={input.product}
+        resolvedOptions={input.resolvedOptions}
+        showDescription={input.props.showDescription}
+      />
       <DynamicProductOptionGroups
         assetFor={input.assetFor}
         density={input.props.optionDensity}
@@ -1483,6 +1581,12 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
         resolvedOptions={input.resolvedOptions}
         textEntryDrafts={input.textEntryDrafts}
       />
+      <DynamicProductConfigurationSummary
+        locale={locale}
+        product={input.product}
+        resolvedOptions={input.resolvedOptions}
+      />
+      <DynamicProductResolutionStatus lifecycle={input.resolutionLifecycle} locale={locale} />
       <DynamicProductPrimaryAction
         label={input.content.primaryActionLabel}
         locale={locale}
@@ -1535,6 +1639,8 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
       className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
       data-component="dynamicProductDetail"
       data-pdp-composition={composition}
+      data-product-configuration-complexity={productPresentationComplexity(input.product)}
+      data-product-media-depth={productMediaDepth(input.product)}
       data-presentation-mode={anatomy.presentationMode}
       data-render-target={input.target}
       data-variant={input.variant}
@@ -1581,14 +1687,16 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
       ) : null}
       {composition === "gallery-led" ? (
         <>
-          <div className={styles.galleryLedStage}>{gallery}</div>
-          <div
-            className={styles.galleryLedPurchase}
-            data-layout-region="product-purchase-hierarchy"
-            data-purchase-region="opening"
-          >
-            <div className={styles.galleryLedIdentity}>{identity}</div>
-            <div className={styles.purchasePanel}>{purchase}</div>
+          <div className={styles.galleryLedOpening}>
+            <div className={styles.galleryLedStage}>{gallery}</div>
+            <div
+              className={styles.galleryLedPurchase}
+              data-layout-region="product-purchase-hierarchy"
+              data-purchase-region="opening"
+            >
+              <div className={styles.galleryLedIdentity}>{identity}</div>
+              <div className={styles.purchasePanel}>{purchase}</div>
+            </div>
           </div>
           <div className={styles.galleryLedDetail}>
             {supporting}

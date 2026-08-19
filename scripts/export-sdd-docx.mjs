@@ -233,8 +233,8 @@ try {
     title: "Veskify Software Design Document",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Verified baseline: 18 August 2026",
-      "Accepted P10B-18B-03 collection/search/product-card quality upgrade",
+      "Verified baseline: 19 August 2026",
+      "Accepted P10B-18B-04 PDP quality upgrade",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

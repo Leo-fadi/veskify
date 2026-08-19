@@ -86,8 +86,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline includes the accepted P10B-18B-03 collection/search/product-card
-quality upgrade on 18 August 2026. Phase 9 is
+The verified v1.3.0 source baseline includes the accepted P10B-18B-04 PDP quality upgrade on
+19 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
 BrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction
@@ -102,9 +102,9 @@ P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B
 active-path/compiler rationalisation, P10B-16P-06 canonical search query/results authority, and
 P10B-17 responsive/accessibility/performance closure, P10B-18A commercial-authority audit, and
 P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-direction upgrade,
-P10B-18B-02 homepage/editorial/campaign quality upgrade, and P10B-18B-03 collection/search/product-card
-quality upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent
-P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-04 is next after accepted P10B-18B-03;
+P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
+quality upgrade, and P10B-18B-04 PDP quality upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent
+P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-05 is next;
 P10B-18C remains **Planned**.
 P10B-16P-05B remains **Planned** after P10B-18C.
 
@@ -155,7 +155,8 @@ materializes bounded within-direction density, corrects semantic frame/responsiv
 the existing compact frame complete-store reachable, and refines shared-frame composition without
 claiming later page-family or P10B-18C closure. Accepted P10B-18B-06 adds only bounded shared
 asset-composition authority; accepted P10B-18B-02 closes bounded homepage/editorial/campaign
-quality, accepted P10B-18B-03 closes bounded collection/search/card quality, and P10B-18B-04 is the next focused product task.
+quality, accepted P10B-18B-03 closes bounded collection/search/card quality, accepted P10B-18B-04
+closes bounded PDP quality, and P10B-18B-05 is the next focused product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -296,8 +297,8 @@ complete configurations pass deterministic diversity/protected-state gates and a
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and
-P10B-18B-01 and P10B-18B-06 are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and
-P10B remain Partial; P10B-18B-04 is next, P10B-18C remains Planned, and P10B-16P-05B remains
+P10B-18B-01, P10B-18B-06 and P10B-18B-04 are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and
+P10B remain Partial; P10B-18B-05 is next, P10B-18C remains Planned, and P10B-16P-05B remains
 Planned after P10B-18C. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
@@ -553,6 +554,17 @@ suggestions or campaign claims. Provider capability text may describe only bound
 transient query/results; it must not imply AI, semantic, vector, fuzzy, personalized or Vesko search.
 
 P10B-18B-03 is **Baseline**, accepted by the product owner on 18 August 2026 for bounded collection,
-search-results and canonical card quality only. PDP and content/utility quality remain unaccepted;
-parent P10B-18B/P10B-18/P10B remain Partial. The exact next task is
-**P10B-18B-04 — PDP Quality Upgrade**.
+search-results and canonical card quality only. P10B-18B-04 is **Baseline**, accepted on 19 August
+2026 for bounded PDP quality. Content/utility quality remains unaccepted; parent
+P10B-18B/P10B-18/P10B remain Partial. The exact next task is
+**P10B-18B-05 — Content / Support / Utilities Quality Upgrade**.
+
+## P10B-18B-04 accepted quality note
+
+The candidate keeps the four P10B-11 profiles and the single dynamic PDP renderer. Local proof uses
+`playwright.p10b-18b-04.config.ts` for 20 bounded captures and
+`tests/unit/p10b-18b-04-pdp-quality.test.ts` for exact product-context matching. The production-
+disabled proof route still executes the normal plan, snapshot, catalogue adapter, canonical resolver
+and renderer. It does not call providers, Vesko, generation endpoints or publication. The product
+owner accepted this package as Baseline on 19 August 2026. Parent P10B-18B/P10B-18/P10B remain
+Partial and P10B-18B-05 is next.

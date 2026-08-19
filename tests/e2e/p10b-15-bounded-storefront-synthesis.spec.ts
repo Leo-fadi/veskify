@@ -5,7 +5,7 @@ const widths = [375, 768, 1024, 1440] as const;
 const outcomes = [
   ["editorial-led", "homepage-editorial-storytelling", "pdp-high-consideration"],
   ["commerce-led", "homepage-high-consideration", "pdp-high-consideration"],
-  ["restrained-minimal", "homepage-minimal-brand-commerce", "pdp-standard-commerce"],
+  ["restrained-minimal", "homepage-minimal-brand-commerce", "pdp-high-consideration"],
 ] as const;
 const routes = [
   "/",

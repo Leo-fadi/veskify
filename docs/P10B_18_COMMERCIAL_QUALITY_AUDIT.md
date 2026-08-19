@@ -1,13 +1,13 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 Baseline; parent P10B-18B/P10B-18/P10B Partial
+**Status:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 Baseline; parent P10B-18B/P10B-18/P10B Partial
 
-**Authority date:** 17 August 2026
+**Authority date:** 19 August 2026
 
-**Branch:** `codex/p10b-18b-03-collection-search-product-card-quality`
+**Branch:** `codex/p10b-18b-04-pdp-quality`
 
-**Baseline:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03 are Baseline; parent P10B-18B, P10B-18 and
-P10B are Partial; P10B-18B-04 is next and P10B-18C remains Planned
+**Baseline:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 are Baseline; parent P10B-18B, P10B-18 and
+P10B are Partial; P10B-18B-05 is next and P10B-18C remains Planned
 
 ## 1. Purpose and boundaries
 
@@ -1621,7 +1621,7 @@ The exact next task is
 
 **Status:** **Baseline**. The product owner accepted P10B-18B-03 on 18 August 2026 for the bounded
 collection, search-results, filter hierarchy and canonical product-card quality authority. Parent
-P10B-18B, P10B-18 and P10B remain **Partial**. P10B-18B-04 is next; P10B-18B-05, P10B-18C and
+P10B-18B, P10B-18 and P10B remain **Partial**. P10B-18B-04 is Baseline and P10B-18B-05 is next; P10B-18C and
 P10B-16P-05B remain **Planned**.
 
 Sections 1 through 15 remain the frozen P10B-18A diagnosis. Sections 16 through 18 remain the
@@ -1754,3 +1754,59 @@ remain owned by P10B-18C.
 
 The exact next task is
 **P10B-18B-04 — PDP Quality Upgrade**.
+
+## 20. P10B-18B-04 accepted PDP quality
+
+**Status:** **Baseline**, accepted by the product owner on 19 August 2026 for bounded PDP quality.
+Frozen P10B-18A and accepted P10B-18B-01/06/02/03 history above is unchanged. Parent P10B-18B,
+P10B-18 and P10B remain Partial; P10B-18B-05 is next.
+
+The accepted package retains all four stable PDP profiles and the single canonical renderer/resolver.
+Product matching is now per exact canonical product rather than a product-type sibling proxy. The
+bounded facts are configuration simple/light/moderate/complex, media sparse/standard/rich and
+decision support standard/high-consideration. Rich means at least three distinct canonical media
+items; gallery matching admits simple through moderate configuration (maximum three option groups)
+and excludes high-consideration. Complex configuration and an explicit high-consideration context
+continue to select guided authority where its frame is available.
+
+The dedicated deterministic matrix covers simple/one-media, simple/multi-media, one option group,
+three independent groups, four-group complex, dependent groups through the retained renderer suite,
+media-rich configurable, high-consideration with and without optional approved evidence, and zero,
+one and three related products. No product-type name participates in production matching.
+
+Fixed desktop media floors were removed in favor of bounded content-driven stages. Standard simple
+PDPs omit empty configuration geometry. Variant-led uses a wider coherent purchase column than its
+media column and keeps price, availability, options, current-configuration summary and action in
+one region. Gallery-led keeps its bounded thumbnail gallery and purchase panel together at wide
+widths. High-consideration integrates canonical specifications and exact current approved support
+evidence; the evidence-free path has no empty premium region.
+
+Thumbnails expose all bounded presented media with exact selected state while preserving canonical
+order and the eight-item cap. Related merchandising omits zero, bounds one to a useful single-card
+measure and uses wider grids only at sufficient widths. Pending and failure preserve the last
+canonical truth; failure always disables purchase. Mobile sticky action is restricted to the
+existing authorized profiles below 768 px and option groups reserve scroll clearance.
+
+The focused browser run retains 20 captures across 375, 768, 1024 and 1440 px for standard simple,
+standard light-configurable, variant-led complex, gallery-led rich, high-consideration with and
+without optional evidence, sparse media, zero/one/three related products and Premium/Modern/Minimal
+directions. Each manifest entry records document/opening/media/purchase geometry; title, price,
+option, action, support and related offsets; canonical media, option-group and related counts; exact
+profile/anatomy/context; and sticky state. All captures have zero horizontal clipping and the run
+records zero provider, Vesko, generation-endpoint or publication calls.
+
+The unchanged 72 strata rerun green with the selected PDP distribution unchanged at standard 28,
+high consideration 20, gallery led 16 and variant led 8. Exact runtime representative distributions
+are simple standard 72; configurable variant/configurable 24, gallery 16, high consideration 20 and
+standard 12; gallery-role configurable 8, gallery 32, high consideration 12 and standard 20; and
+high-consideration-role configurable 8, high consideration 45 and standard 19. Related-card
+occurrences remain compact 27, editorial 36, horizontal 71, image-first 18 and standard 36.
+Normalized topology remains 39, with 53/72 repeated memberships, largest cluster seven and 19
+singletons; frame remains editorial 27 / centered 18 / utility 9 / compact 18 and non-colour Design
+DNA remains six. The implementation improves quality and exact runtime context matching without
+claiming copy/asset/ID variety or manufacturing a topology increase.
+
+Evidence was retained locally at the mandatory checkpoint, including the 20-capture geometry
+manifest. This acceptance does not accept standalone content/support/utility pages, complete-store
+commercial visual quality or P10B-18C designer-grade/100+ quality. The exact next task is
+**P10B-18B-05 — Content / Support / Utilities Quality Upgrade**.

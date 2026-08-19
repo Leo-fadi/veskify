@@ -68,8 +68,8 @@ function primaryActionPresentation(
   if (!result) {
     return { enabled: false, state: "unavailable", message: unavailableMessage };
   }
-  if (snapshot.phase === "failure" && result.canAddToCart) {
-    return { enabled: true, state: "ready" };
+  if (snapshot.phase === "failure") {
+    return { enabled: false, state: "unavailable", message: unavailableMessage };
   }
   if (result.canAddToCart) return { enabled: true, state: "ready" };
   if (result.incompleteRequiredGroupIds.length > 0) {

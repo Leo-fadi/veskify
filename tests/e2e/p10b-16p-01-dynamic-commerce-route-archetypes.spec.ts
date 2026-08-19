@@ -194,7 +194,7 @@ test("representative product and collection choices remain transient editor cont
   );
 });
 
-test("two concrete product URLs share one archetype while binding exact simple and configurable commerce", async ({
+test("two concrete product URLs share one registered component while binding exact commerce and context-specific anatomy", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
@@ -211,8 +211,8 @@ test("two concrete product URLs share one archetype while binding exact simple a
   for (const searchLink of await searchLinks.all()) {
     await expect(searchLink).toHaveAttribute("href", `/projects/${projectId}/search?locale=en`);
   }
-  const simpleVariant = await simple.getAttribute("data-variant");
-  const simpleComposition = await simple.getAttribute("data-pdp-composition");
+  await expect(simple).toHaveAttribute("data-variant", "balanced");
+  await expect(simple).toHaveAttribute("data-pdp-composition", "standard-commerce");
   const simpleRoot = page.locator(".project-preview__storefront");
   await prepareEvidence(page);
   await testInfo.attach("p10b16p01-product-arc-studs", {
@@ -230,8 +230,8 @@ test("two concrete product URLs share one archetype while binding exact simple a
     "8",
   );
   await expect(page.getByText("Made to order", { exact: true })).toBeVisible();
-  await expect(configurable).toHaveAttribute("data-variant", simpleVariant!);
-  await expect(configurable).toHaveAttribute("data-pdp-composition", simpleComposition!);
+  await expect(configurable).toHaveAttribute("data-variant", "editorialSplit");
+  await expect(configurable).toHaveAttribute("data-pdp-composition", "high-consideration");
   const configurableRoot = page.locator(".project-preview__storefront");
   await prepareEvidence(page);
   await testInfo.attach("p10b16p01-product-custom-halo-ring", {
