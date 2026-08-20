@@ -68,7 +68,9 @@
 }
 
 .article h2,
-.card h2 {
+.card h2,
+.directoryGroup > h2,
+.storySteps h2 {
   margin: 0;
   font-family: var(--brand-font-heading);
   font-size: var(--brand-type-heading-size, 2rem);
@@ -147,6 +149,30 @@
   text-decoration: none;
 }
 
+.campaignActions {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0
+    max(var(--brand-page-gutter, 1rem), calc((100% - var(--brand-container-content, 78rem)) / 2))
+    clamp(2.5rem, calc(var(--brand-section-rhythm, 4rem) * 0.45), 4.5rem);
+}
+
+.continuationInner .campaignActions {
+  padding: 0;
+}
+
+.campaignActions a {
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-control-primary-border);
+  border-radius: var(--brand-control-radius, var(--brand-radius));
+  background: var(--brand-control-primary-background);
+  color: var(--brand-control-primary-text);
+  padding: 0.7rem var(--brand-control-padding-inline, 1rem);
+  font-family: var(--brand-font-utility, inherit);
+  font-weight: var(--brand-control-emphasis, 700);
+  text-decoration: none;
+}
+
 .article,
 .card,
 .faq {
@@ -186,10 +212,218 @@
   font-weight: 650;
 }
 
+.process,
+.contactChannels,
+.contactDirectory,
+.locationList,
+.faqRegion,
+.serviceDetails,
+.policyReading,
+.genericReading,
+.storyProgression {
+  margin-top: clamp(0.5rem, calc(var(--brand-section-rhythm, 4rem) * 0.2), 1.25rem);
+}
+
+.stepGrid,
+.contactGrid,
+.locationGrid,
+.faqGrid,
+.serviceGrid,
+.readingFlow,
+.directoryGroups {
+  display: grid;
+  gap: 1rem;
+}
+
+.stepGrid {
+  align-items: start;
+}
+
+[data-component="contentSupport"] .contactGrid,
+[data-component="contentSupport"] .locationGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+[data-component="contentSupport"][data-variant="aboutStory"] .stepGrid,
+[data-component="contentSupport"][data-variant="locationDirectory"] .locationGrid,
+[data-component="contentSupport"][data-variant="faqTopicGuide"] .faqGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.contactCard {
+  border-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.channelStack {
+  gap: 0;
+  border-block: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  font-style: normal;
+}
+
+.channelAction {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  min-height: calc(var(--brand-control-height, 2.75rem) + 0.75rem);
+  padding: 1rem 0;
+  border-bottom: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.channelAction:last-child {
+  border-bottom: 0;
+}
+
+.channelAction span {
+  color: var(--brand-color-muted-text);
+  font-family: var(--brand-font-utility, inherit);
+  font-size: var(--brand-type-utility-size, 0.82rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.channelAction strong {
+  overflow-wrap: anywhere;
+  font-family: var(--brand-font-heading);
+  font-size: clamp(1.15rem, 2.6vw, 1.8rem);
+}
+
+.directoryGroups {
+  max-width: min(var(--brand-container-content, 78rem), 68rem);
+}
+
+.directoryGroup {
+  display: grid;
+  gap: 1rem;
+  padding-block: 1.25rem;
+  border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
+}
+
+.directoryGroup > h2,
+.contactCard h3 {
+  margin: 0;
+}
+
+.contactCard h3 {
+  color: var(--brand-color-muted-text);
+  font-family: var(--brand-font-utility, inherit);
+  font-size: var(--brand-type-utility-size, 0.82rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.locationCard {
+  gap: 0.45rem;
+}
+
+.locationCard address,
+.locationCard ul {
+  margin: 0;
+}
+
+.locationCard ul {
+  list-style: none;
+  padding: 0;
+}
+
+.faqGuide {
+  border-radius: var(--brand-radius);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  padding: 0.75rem var(--brand-card-inset, 1.25rem);
+  background: var(--brand-color-surface);
+}
+
+.faqGuide summary {
+  font-family: var(--brand-font-heading);
+  font-size: var(--brand-type-heading-size, 1.55rem);
+}
+
+.faqGuide p {
+  margin: 0.6rem 0 0;
+  color: var(--brand-color-muted-text);
+}
+
+.policyReading {
+  border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
+}
+
+.policyReading .article {
+  border-top: 0;
+  padding-block: clamp(1rem, 2vw, 1.75rem);
+  border-bottom: var(--brand-border-width, 1px) solid
+    color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.legalSequence {
+  max-width: min(var(--brand-container-reading, 48rem), 42rem);
+  gap: 0;
+}
+
+.serviceGrid {
+  max-width: min(var(--brand-container-content, 78rem), 68rem);
+}
+
+.serviceCard {
+  border-top: 0;
+  box-shadow: var(--brand-elevation-shadow, none);
+}
+
+.readingFlow {
+  max-width: min(var(--brand-container-reading, 48rem), 42rem);
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.storySteps {
+  display: grid;
+  gap: 1rem;
+  margin: 0 auto;
+  padding: 0;
+  max-width: min(var(--brand-container-content, 78rem), 68rem);
+  list-style: none;
+  counter-reset: campaign-story;
+}
+
+.storySteps li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.35rem 1rem;
+  padding-block: 1rem;
+  border-top: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  counter-increment: campaign-story;
+}
+
+.storySteps li::before {
+  grid-row: 1 / span 2;
+  color: var(--brand-color-muted-text);
+  content: counter(campaign-story, decimal-leading-zero);
+  font-family: var(--brand-font-utility, inherit);
+  font-weight: 700;
+}
+
+.storySteps p {
+  margin: 0;
+}
+
 @media (min-width: 64rem) {
   [data-component="contentSupport"][data-responsive-transformations~="contentStack"] .factGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: clamp(2rem, 5vw, 5rem);
+  }
+
+  [data-component="contentSupport"][data-variant="aboutProcess"] .stepGrid,
+  [data-component="contentSupport"][data-variant="serviceDetails"] .serviceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .storySteps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .storySteps li {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
   }
 
   [data-component="contentSupport"][data-responsive-transformations~="contentStack"]
@@ -215,18 +449,20 @@
 }
 
 @media (min-width: 48rem) {
-  [data-component="contentSupport"][data-variant="contactDirectory"][data-responsive-transformations~="contactCondense"]
-    .reading {
+  [data-component="contentSupport"][data-responsive-transformations~="contactCondense"]
+    .contactGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 68rem;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .channelAction {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
   }
 
-  [data-component="contentSupport"][data-variant="contactDirectory"][data-responsive-transformations~="contactCondense"]
-    .reading
-    > h1,
-  [data-component="contentSupport"][data-variant="contactDirectory"][data-responsive-transformations~="contactCondense"]
-    .reading
-    > .introduction {
-    grid-column: 1 / -1;
+  .campaignActions a {
+    width: 100%;
+    text-align: center;
   }
 }

@@ -1,13 +1,13 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 Baseline; parent P10B-18B/P10B-18/P10B Partial
+**Status:** P10B-18A and P10B-18B-01/06/02/03/04/05 Baseline; parent P10B-18B Baseline/complete; P10B-18/P10B Partial
 
-**Authority date:** 19 August 2026
+**Authority date:** 20 August 2026
 
-**Branch:** `codex/p10b-18b-04-pdp-quality`
+**Branch:** `codex/p10b-18b-05-content-support-utilities-quality`
 
-**Baseline:** P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 are Baseline; parent P10B-18B, P10B-18 and
-P10B are Partial; P10B-18B-05 is next and P10B-18C remains Planned
+**Baseline:** P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
+Baseline/complete; P10B-18 and P10B are Partial; P10B-18C is the exact next task
 
 ## 1. Purpose and boundaries
 
@@ -347,33 +347,35 @@ Fifteen profile IDs do not equal fifteen visual compositions. Renderer inspectio
 principal composition modes plus two direct CSS grid specializations. Important collapse and
 correctness findings:
 
-- `landing-campaign-image-led` declares approved media but `CampaignReuse` supplies no resolved
-  media, empty asset assignments and a placeholder resolver;
-- FAQ disclosure and topic guide share the same `<details>` loop;
-- location appointments declares separated actions but renders address/hours only;
+- `landing-campaign-image-led` now requires resolved, authority-validated media for media and
+  continuation regions; absent approved media, no invented placeholder is emitted;
+- FAQ disclosure and topic guide share the same `<details>` loop; topic-guide falls back to disclosure
+  when no topic-guide authority exists;
+- location appointments currently reclassifies to location-directory unless explicit location-appointment
+  authority is present;
 - service, policy and generic reading share the same fact-stream renderer;
 - content quality is bounded by approved factual richness as well as layout authority.
 
 Frame abbreviations below are E = editorial masthead, C = commerce utility, M = centered minimal
 and T = compact technical.
 
-| Profile                         | Family / exact variant              | Frames  | Renderer-visible result                                                           |
-| ------------------------------- | ----------------------------------- | ------- | --------------------------------------------------------------------------------- |
-| `content-about-story`           | About / `aboutStory`                | E, M, C | `StorytellingReuse`; copy/image relationship shared with process/editorial modes. |
-| `content-about-process`         | About / `aboutProcess`              | E, C    | `StorytellingReuse`; factual process changes, base composition shared.            |
-| `content-contact-channels`      | Contact / `contactChannels`         | C, M    | Contact-grid specialization.                                                      |
-| `content-contact-directory`     | Contact / `contactDirectory`        | C, T    | Contact-grid specialization with directory facts.                                 |
-| `content-location-directory`    | Location / `locationDirectory`      | C, M    | Location-grid specialization.                                                     |
-| `content-location-appointments` | Location / `locationAppointments`   | C, T    | Location-grid specialization; declared separated action is not rendered.          |
-| `content-faq-disclosure`        | FAQ / `faqDisclosure`               | C, M    | Shared `<details>` loop.                                                          |
-| `content-faq-topic-guide`       | FAQ / `faqTopicGuide`               | E, C    | Same `<details>` loop; topic metadata does not create another composition.        |
-| `content-service-details`       | Shipping/returns / `serviceDetails` | C, T, M | Shared fact-stream reading composition.                                           |
-| `content-policy-reading`        | Policy / `policyReading`            | M, T    | Shared fact-stream reading composition.                                           |
-| `content-generic-reading`       | Generic / `genericReading`          | E, M    | Shared fact-stream reading composition.                                           |
-| `content-generic-editorial`     | Generic / `genericEditorial`        | E, M    | `StorytellingReuse`; editorial facts/media change content, not the base topology. |
-| `landing-campaign-editorial`    | Campaign / `campaignEditorial`      | E, C    | `CampaignReuse` with split promotion variant.                                     |
-| `landing-campaign-image-led`    | Campaign / `campaignImageLed`       | E, C    | `CampaignReuse` with image-led variant, but no resolved media assignment.         |
-| `landing-campaign-story`        | Campaign / `campaignStory`          | M, E    | `CampaignReuse` with editorial promotion variant.                                 |
+| Profile                         | Family / exact variant              | Frames  | Renderer-visible result                                                                                                  |
+| ------------------------------- | ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `content-about-story`           | About / `aboutStory`                | E, M, C | `StorytellingReuse`; copy/image relationship shared with process/editorial modes.                                        |
+| `content-about-process`         | About / `aboutProcess`              | E, C    | `StorytellingReuse`; factual process changes, base composition shared.                                                   |
+| `content-contact-channels`      | Contact / `contactChannels`         | C, M    | Contact-grid specialization.                                                                                             |
+| `content-contact-directory`     | Contact / `contactDirectory`        | C, T    | Contact-grid specialization with directory facts.                                                                        |
+| `content-location-directory`    | Location / `locationDirectory`      | C, M    | Location-grid specialization.                                                                                            |
+| `content-location-appointments` | Location / `locationAppointments`   | C, T    | Reclassified to `locationDirectory` unless explicit location-appointment authority exists.                               |
+| `content-faq-disclosure`        | FAQ / `faqDisclosure`               | C, M    | Shared `<details>` loop.                                                                                                 |
+| `content-faq-topic-guide`       | FAQ / `faqTopicGuide`               | E, C    | Reclassified to `faqDisclosure` without topic-guide authority.                                                           |
+| `content-service-details`       | Shipping/returns / `serviceDetails` | C, T, M | Shared fact-stream reading composition.                                                                                  |
+| `content-policy-reading`        | Policy / `policyReading`            | M, T    | Shared fact-stream reading composition.                                                                                  |
+| `content-generic-reading`       | Generic / `genericReading`          | E, M    | Shared fact-stream reading composition.                                                                                  |
+| `content-generic-editorial`     | Generic / `genericEditorial`        | E, M    | `StorytellingReuse`; editorial facts/media change content, not the base topology.                                        |
+| `landing-campaign-editorial`    | Campaign / `campaignEditorial`      | E, C    | `CampaignReuse` with split promotion variant.                                                                            |
+| `landing-campaign-image-led`    | Campaign / `campaignImageLed`       | E, C    | `CampaignReuse` with image-led variant and fail-closed media consumption; no placeholder when assignment is unavailable. |
+| `landing-campaign-story`        | Campaign / `campaignStory`          | M, E    | `CampaignReuse` with editorial promotion variant.                                                                        |
 
 All content profiles use registered `contentStack` responsive execution except
 `content-contact-directory` (`contactCondense`), `content-faq-topic-guide`
@@ -445,13 +447,13 @@ existing authority or reclassify an equivalent one.
 | Image first          | Retain canonical anatomy as asset-dependent.  | Source quality and action placement at mobile and wide widths.     |
 | Horizontal           | Retain canonical anatomy.                     | Intentional reflow rather than a visually equivalent stacked card. |
 
-| Content/support group                | Static disposition                                         | P10B-18B decision signal                                                             |
-| ------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| About/process/editorial storytelling | Strengthen shared implementation.                          | More than one intentional image/text relationship where approved evidence permits.   |
-| Contact/location grids               | Retain; restore declared action where applicable.          | Directory and appointment purposes remain visibly distinct.                          |
-| FAQ pair                             | Reclassify or strengthen; current loop is equivalent.      | Topic-guide metadata must create a real compositional difference or become an alias. |
-| Service/policy/generic reading       | Strengthen or explicitly group.                            | Reading width, hierarchy and continuation reflect the factual purpose.               |
-| Campaign trio                        | Retain as asset-dependent; fix the missing media consumer. | Image-led authority must not compile without a usable resolved assignment.           |
+| Content/support group                | Static disposition                                                | P10B-18B decision signal                                                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| About/process/editorial storytelling | Strengthen shared implementation.                                 | More than one intentional image/text relationship where approved evidence permits.                                                |
+| Contact/location grids               | Retain with explicit aliases where authority is absent.           | `locationAppointments` is aliased to `locationDirectory` unless authority exists; location/contact remain intentionally distinct. |
+| FAQ pair                             | Retain; topic-guide now aliases to disclosure by default.         | Distinguish with explicit authority, or preserve alias while documenting composition boundary.                                    |
+| Service/policy/generic reading       | Strengthen or explicitly group.                                   | Reading width, hierarchy and continuation reflect the factual purpose.                                                            |
+| Campaign trio                        | Retain as asset-dependent; fail-close when media is not approved. | Image-led authority must not compile without a usable resolved assignment.                                                        |
 
 | Utility group                                     | Static disposition                                      | P10B-18B decision signal                                                                      |
 | ------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -830,12 +832,12 @@ observed visual frequency.
 
 ### P0 — static blockers to truthful, repeatable designer-grade authority
 
-| Rank / root cause                                                                    | Static evidence and frequency                                                                                                                                                                                                                                                | Exact owner                                                                                                                                                                                                                                                                                                                                                   | Affected authority and merchant consequence                                                                                   | Source correction                                                                                                                      |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| P0.1 — five posture axes are not independently materialized                          | Fixed-backbone proof: 5/5 labels change lineage but not normalized material selection; 18 within-shape matrix collapse witnesses; two Premium Aurum stores create six byte-identical surface/width pairs (12/36 Premium files participate).                                  | `createBoundedStorefrontSynthesisDecision` and `executeBoundedStorefrontSynthesis` in `src/application/bounded-storefront-synthesis/synthesizer.ts`; `deriveSemanticInfluenceAuthority` in `src/application/prompted-storefront-design-compiler/semantic-influence-authority.ts`                                                                              | Narrative, merchandising, density, art and responsive semantic claims can overcount equivalent storefronts.                   | Give an advertised axis one existing exact consumer, or reclassify it as derived/substitution/unavailable.                             |
-| P0.2 — asset placement/art direction lacks purpose affinity and breakpoint execution | 64/72 matrix cases and 14/18 browser stores (84/108 captures) have no approved presentation assets; 2/4 Aurum stores reuse one editorial asset for two home slots; Premium immersive/editorial intents are pixel-identical.                                                  | `resolveSemanticApprovedAssetSelections` in `src/application/prompted-storefront-design-compiler/compiler.ts`; `resolveRegisteredCollectionApprovedAssetSelections` in `src/application/whole-storefront-generation-plan/planner.ts`; `migrateApprovedPresentationArtDirection` in `src/application/responsive-image-authority/responsive-image-authority.ts` | Asset-poor homes select unusable focal regions, approved art repeats and the separate art posture has no visible consequence. | Add purpose-affine selection, explicit reuse bounds and truthful paired source/crop consumption inside existing asset authority.       |
-| P0.3 — content profile identity exceeds renderer composition                         | Static-only/global: 15 profiles collapse to about six modes; 2/2 FAQ profiles share one loop; one appointment profile omits its action; one image-led campaign omits media. The 18-store browser sample contains 0 content/support surfaces, so human frequency is unproven. | `inputs` in `src/application/storefront-templates/commercial-content-support-profiles.ts`; `ContentSupportReading` and `CampaignReuse` in `src/components/registry/content-support-bridge.tsx`                                                                                                                                                                | Static topology predicts weak distinction across About, campaign, FAQ, location and service.                                  | Strengthen existing implementations or explicitly alias/reclassify equivalent profiles, then obtain focused visual evidence in 18B-05. |
-| P0.4 — complete-store compatibility excludes the technical frame                     | `compact-technical` is 0/63 Karvonen and 0/114 Aurum survivors, 0/72 matrix cases and 0/18 browser stores; direct renderer tests are the only execution evidence.                                                                                                            | `pageSetFrameCompatible` in `src/application/bounded-storefront-synthesis/compatible-direction-selections.ts`; commercial profile inputs under `src/application/storefront-templates`                                                                                                                                                                         | Modern Technical loses its named frame and borrows centered/utility structure.                                                | Prove complete-page compatibility from renderer contracts or register truthful unavailability; never broaden metadata alone.           |
+| Rank / root cause                                                                    | Static evidence and frequency                                                                                                                                                                                                                                                                                                                                   | Exact owner                                                                                                                                                                                                                                                                                                                                                   | Affected authority and merchant consequence                                                                                   | Source correction                                                                                                                |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| P0.1 — five posture axes are not independently materialized                          | Fixed-backbone proof: 5/5 labels change lineage but not normalized material selection; 18 within-shape matrix collapse witnesses; two Premium Aurum stores create six byte-identical surface/width pairs (12/36 Premium files participate).                                                                                                                     | `createBoundedStorefrontSynthesisDecision` and `executeBoundedStorefrontSynthesis` in `src/application/bounded-storefront-synthesis/synthesizer.ts`; `deriveSemanticInfluenceAuthority` in `src/application/prompted-storefront-design-compiler/semantic-influence-authority.ts`                                                                              | Narrative, merchandising, density, art and responsive semantic claims can overcount equivalent storefronts.                   | Give an advertised axis one existing exact consumer, or reclassify it as derived/substitution/unavailable.                       |
+| P0.2 — asset placement/art direction lacks purpose affinity and breakpoint execution | 64/72 matrix cases and 14/18 browser stores (84/108 captures) have no approved presentation assets; 2/4 Aurum stores reuse one editorial asset for two home slots; Premium immersive/editorial intents are pixel-identical.                                                                                                                                     | `resolveSemanticApprovedAssetSelections` in `src/application/prompted-storefront-design-compiler/compiler.ts`; `resolveRegisteredCollectionApprovedAssetSelections` in `src/application/whole-storefront-generation-plan/planner.ts`; `migrateApprovedPresentationArtDirection` in `src/application/responsive-image-authority/responsive-image-authority.ts` | Asset-poor homes select unusable focal regions, approved art repeats and the separate art posture has no visible consequence. | Add purpose-affine selection, explicit reuse bounds and truthful paired source/crop consumption inside existing asset authority. |
+| P0.3 — content profile identity exceeds renderer composition                         | Static-only/global: 15 profiles collapse to about six modes; FAQ topic-guide now aliases to disclosure, and location-appointments aliases to directory unless explicit authority is present; image-led campaign blocks now fail closed without approved media. The 18-store browser sample contains 0 content/support surfaces, so human frequency is unproven. | `inputs` in `src/application/storefront-templates/commercial-content-support-profiles.ts`; `ContentSupportReading` and `CampaignReuse` in `src/components/registry/content-support-bridge.tsx`                                                                                                                                                                | Static topology still predicts weak distinction across About, campaign, FAQ, location and service.                            | Implement aliasing where authority is absent and obtain focused visual evidence in 18B-05 for remaining distinctions.            |
+| P0.4 — complete-store compatibility excludes the technical frame                     | `compact-technical` is 0/63 Karvonen and 0/114 Aurum survivors, 0/72 matrix cases and 0/18 browser stores; direct renderer tests are the only execution evidence.                                                                                                                                                                                               | `pageSetFrameCompatible` in `src/application/bounded-storefront-synthesis/compatible-direction-selections.ts`; commercial profile inputs under `src/application/storefront-templates`                                                                                                                                                                         | Modern Technical loses its named frame and borrows centered/utility structure.                                                | Prove complete-page compatibility from renderer contracts or register truthful unavailability; never broaden metadata alone.     |
 
 ### P1 — materially suppresses distinction
 
@@ -1810,3 +1812,167 @@ Evidence was retained locally at the mandatory checkpoint, including the 20-capt
 manifest. This acceptance does not accept standalone content/support/utility pages, complete-store
 commercial visual quality or P10B-18C designer-grade/100+ quality. The exact next task is
 **P10B-18B-05 — Content / Support / Utilities Quality Upgrade**.
+
+## 21. P10B-18B-05 accepted Baseline evidence
+
+**Status on 20 August 2026:** accepted by the product owner with the exact decision
+`ACCEPT P10B-18B-05 CONTENT SUPPORT UTILITIES QUALITY`. P10B-18B-05 is Baseline and the
+P10B-18B package is complete/Baseline. P10B-18 and P10B remain Partial, and the accepted
+P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 records and denominators remain
+unchanged. The exact next task is P10B-18C.
+
+### 21.1 Takeover and authority disposition
+
+The inherited uncommitted implementation correctly started state-specific utility compositions,
+approved campaign-media consumption and explicit content-profile reclassification. The takeover
+audit retained those directions but corrected incomplete authority consumption: process rendering,
+campaign action pairing, exact navigation projection, contact/service/policy anatomy, story
+progression, utility action hierarchy, proof copy and the media-free image-led outcome. No second
+content model, fact registry, utility renderer, cart/checkout/error engine, page graph, provider path
+or publication path was introduced.
+
+The pre-change collapse was concrete rather than copy-based: About story/process shared one reading
+shell and process stages were under-consumed; contact channels/directory shared one list; location
+appointments and FAQ topic guide claimed unsupported identities; service/policy/generic reading
+shared a fact stream; campaigns shared one promotion shell and image-led could survive without an
+image; and non-cart utilities shared one centered heading/body template. The current candidate
+either consumes distinct truthful authority or reclassifies to the compatible registered profile.
+
+### 21.2 Final content/support current-generation truth table
+
+| Profile                         | Family and effective DOM anatomy                                                                                              | Factual, media and action authority                                                                                                          | Responsive treatment                                                     | Current-generation classification                                   |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `content-about-story`           | About; identity/origin lead -> approved values/story sequence                                                                 | Approved About narrative facts; media optional; no invented action                                                                           | Registered `contentStack`                                                | `meaningfully-distinct`                                             |
+| `content-about-process`         | About; process lead -> ordered approved craft/process stages                                                                  | Approved non-empty process stages required; generic narrative cannot become process                                                          | Registered `contentStack`                                                | `meaningfully-distinct`                                             |
+| `content-contact-channels`      | Contact; fast-contact identity -> prioritized actionable channel cards                                                        | Exact approved channel facts; only executable `mailto:`, `tel:` or approved link values                                                      | Registered `contentStack`                                                | `meaningfully-distinct`                                             |
+| `content-contact-directory`     | Contact; directory identity -> channel-type groups -> records                                                                 | Exact approved channel enum and values; no generated directory groups                                                                        | Registered `contactCondense`                                             | `meaningfully-distinct`                                             |
+| `content-location-directory`    | Locations; identity -> approved location records/details                                                                      | Approved location facts only; no booking promise or invented URL                                                                             | Registered `contentStack`                                                | `contextually-distinct`                                             |
+| `content-location-appointments` | Effective location-directory anatomy                                                                                          | No truthful appointment-action contract exists; exact compatibility alias to directory                                                       | Registered directory `contentStack`                                      | `reclassified`                                                      |
+| `content-faq-disclosure`        | FAQ; identity -> semantic `<details>/<summary>` question/answer disclosures                                                   | Approved FAQ entries in source order; no word-derived grouping                                                                               | Registered `faqDisclosureStack`                                          | `contextually-distinct`                                             |
+| `content-faq-topic-guide`       | Effective FAQ-disclosure anatomy                                                                                              | No approved topic-group contract exists; exact compatibility alias to disclosure                                                             | Registered disclosure stack                                              | `reclassified`                                                      |
+| `content-service-details`       | Service; identity -> scannable approved service/shipping/returns cards                                                        | Approved service facts only; no delivery, return or guarantee invention                                                                      | Registered `contentStack`                                                | `meaningfully-distinct`                                             |
+| `content-policy-reading`        | Policy; legal identity -> deliberate long-form section sequence                                                               | Approved policy/legal facts only; no generic card treatment                                                                                  | Registered `contentStack` with narrow reading measure                    | `meaningfully-distinct`                                             |
+| `content-generic-reading`       | Generic; restrained intro -> intentional reading flow                                                                         | Approved generic facts; no raw fact-document dump                                                                                            | Registered `contentStack`                                                | `contextually-distinct`                                             |
+| `content-generic-editorial`     | Generic; editorial lead -> supporting fact composition and approved media where present                                       | Approved facts and placement-authorized media only                                                                                           | Registered `contentStack` with editorial reflow                          | `evidence-limited`                                                  |
+| `landing-campaign-editorial`    | Campaign; proposition -> support -> optional exact action                                                                     | Approved campaign facts; CTA requires an exact label/navigation pair                                                                         | Registered `contentStack`                                                | `contextually-distinct`                                             |
+| `landing-campaign-image-led`    | With media: exact image lead -> proposition -> support -> optional action; without media: effective editorial campaign        | Exact purpose-affine approved placement, revision/provenance and P10B-18B-06 art direction required; canonical product media is not promoted | Registered `campaignReadingReflow`; otherwise editorial reclassification | `evidence-limited` with explicit `reclassified` no-media generation |
+| `landing-campaign-story`        | With narrative: proposition -> approved story progression -> optional action; without narrative: effective editorial campaign | Approved campaign story facts required; no story synthesized from generic prose                                                              | Registered `contentStack`; otherwise editorial reclassification          | `evidence-limited` with truthful fallback                           |
+
+Campaign actions now follow one exact chain: approved fact label -> canonical navigation projection at
+its exact revision -> matching path -> visible anchor. An absent label, absent navigation, label-only
+fact or unmatched navigation produces no CTA. Campaign media follows approved asset presentation ->
+exact purpose-affine placement -> exact asset revision/provenance -> retained responsive art
+direction -> renderer. Missing placement authority produces no image slot and no meaningful
+image-led identity.
+
+### 21.3 Final utility state table
+
+| Runtime state     | DOM anatomy                                                                                      | Primary and secondary actions                               | Runtime requirement                                                                        | Responsive treatment                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Populated cart    | Cart identity -> line items -> quantity/remove controls -> subtotal/total -> actions             | Checkout primary; continuation secondary                    | Canonical transient cart lines/totals plus each declared capability and executable handler | Aside summary becomes ordered stack; controls remain labelled            |
+| Empty cart        | Empty-cart identity -> concise explanation -> action                                             | One continuation primary; no recommendations                | Empty canonical cart plus continuation capability and handler                              | Single-column compact state                                              |
+| Unavailable cart  | Unavailable identity -> clear status explanation                                                 | None                                                        | Missing/unresolved cart projection; no fake capability                                     | Bounded status region, no dead action gap                                |
+| Checkout boundary | Checkout identity -> boundary explanation -> action                                              | One checkout-continuation primary                           | Checkout runtime plus executable checkout capability/handler                               | Single-column boundary; no checkout fields                               |
+| No results        | Query/result identity -> exact query or active-filter chips -> recovery -> optional continuation | Clear search/filter primary; continuation secondary         | No-results runtime plus matching recovery capability/handler                               | Chips/actions wrap and stack without overflow                            |
+| Generic empty     | Distinct empty identity -> explanation -> action                                                 | One continuation primary                                    | Generic-empty runtime plus executable continuation                                         | Compact branded state distinct from cart/search/404                      |
+| Recoverable error | Problem identity -> safe message -> recovery -> optional continuation                            | Retry primary only when recoverable; continuation secondary | Error runtime; `recoverable=true`, retry capability and handler for retry                  | `role=alert`, `aria-live=assertive`; stacked actions                     |
+| Not found         | Explicit 404 identity -> useful return path                                                      | One return primary                                          | Not-found runtime plus executable continuation                                             | Large bounded 404 marker, not the error shell                            |
+| Loading           | Branded transient indicator -> loading message                                                   | None                                                        | Transient loading runtime only; excluded from snapshot/history                             | `role=status`, `aria-live=polite`, `aria-busy=true`; reduced-motion safe |
+
+Every utility action requires both a runtime capability and an executable intent handler. Utility
+profile/design configuration remains canonical, while cart/error/loading/query runtime payloads
+remain transient and are absent from `StorefrontSnapshot`, history and saved/reloaded documents.
+
+### 21.4 Focused matrices, lifecycle and retained visual evidence
+
+- Current focused P10B-12/P10B-13 unit rerun: 2 files, 27/27 tests passed.
+- Final focused content/support, utility and P10B-18B-05 matrix: 3 files, 31/31 tests passed.
+- Retained P10B-12/P10B-13 Playwright rerun after final corrections: 78/78 tests passed. The only
+  browser console diagnostics were existing Next image-LCP suggestions for a seed SVG; no runtime
+  errors occurred.
+- Focused fact/action, asset placement/art direction, lifecycle/protected-state and frozen-audit
+  bundle: 8 files, 70/70 tests passed. It proves accept -> undo -> redo, save/reload,
+  preview/deterministic compilation, protected commerce/navigation/media and transient utility
+  runtime state without real publication.
+- Dedicated P10B-18B-05 Playwright: 2/2 tests passed over 24 content/support records, 14 utility
+  records and exactly 30 retained captures in EN/FI at 375 and 1440 pixels. Maximum measured content
+  internal gap is 58 px, utility internal gap 68 px, content component height 1164 px and utility
+  component height 574 px; horizontal overflow is zero.
+- The six before/after comparisons cover About generic composition, story/process collapse, FAQ
+  collapse, appointment reclassification, media-free image-led behavior and utility/cart hierarchy.
+  Exact pre-change screenshots do not exist because the frozen P10B-18A browser sample contains zero
+  content/support and zero utility surfaces; each comparison therefore discloses that it uses the
+  `origin/main` source/DOM baseline against a retained current capture.
+- Provider calls, Vesko calls, external image fetch/generation, generation-endpoint calls and real
+  publication calls are all zero.
+
+The unchanged P10B-18A strata remain 72/72 deterministic compiles, 39 normalized material
+topologies, 53/72 repeated-cluster memberships, largest cluster seven and 19 singletons. Frame
+distribution remains editorial 27 / centered 18 / utility 9 / compact 18. The six non-colour DNA
+outcomes remain Premium standard 18 and spacious 9, Modern compact 18 and standard 9, Minimal
+standard 9 and spacious 9. Approved-asset-bearing/asset-free remains 8/64, canonical commerce and
+media fingerprints remain protected, optional content/support authority remains compatible, and the
+dedicated current-generation promised-but-unrendered content/support count is zero after explicit
+alias/reclassification and fail-closed handling.
+
+### 21.5 Accepted limitations
+
+This package does not add appointment booking, FAQ topic taxonomy, checkout fields, recommendations,
+an operational cart/error engine, generated campaign imagery or designer-grade/100+ diversity. A
+topic guide or appointment profile can become independently meaningful only through a future
+approved executable authority. Image-led and story campaigns remain evidence-limited by exact
+approved media/narrative availability. These bounded limitations were disclosed at and accepted by
+the product-owner commercial visual checkpoint.
+
+### 21.6 Accepted checkpoint gate ledger
+
+| Gate                                    | Final current result                                                                                                                                                              |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused plus frozen unit rerun          | 4 files, 33/33 tests passed in 138.37 s: P10B-12, P10B-13, dedicated P10B-18B-05 and unchanged P10B-18A audit.                                                                    |
+| Retained P10B-12/P10B-13 browser suites | 78/78 passed in 1.1 min; only existing seed-SVG Next LCP suggestions, with no runtime errors.                                                                                     |
+| Dedicated P10B-18B-05 browser matrix    | 2/2 passed in 50.1 s; 30 captures, 24 content records, 14 utility records, 15 profile truths, nine utility truths and six comparisons.                                            |
+| Type safety                             | `pnpm typecheck` passed after the two takeover type-boundary corrections.                                                                                                         |
+| Targeted ESLint                         | Passed for every changed TypeScript/TSX/config/test file.                                                                                                                         |
+| Targeted Prettier                       | Passed for every changed source, CSS, test, config and Markdown file.                                                                                                             |
+| Deterministic DOCX synchronization      | SDD source SHA-256 `f4a8ea2171b3f1f7c87c14442b7790ca8e476fe32d441b5e2143432ad72cc1f1`; tracker source SHA-256 `ce9b18d30924c96418c42c989bb6071d5636d361b35e69f7f46616286b8783ba`. |
+| Documentation validation                | Passed: 38 active Markdown files, FR 24, NFR 10, AC 38, dangling references zero.                                                                                                 |
+| Webpack production build                | Passed, including 25/25 static pages.                                                                                                                                             |
+| Storefront budgets                      | Passed: content/utility 1.53 MB raw / 417.04 KB gzip; all home/search/collection/product/editor budgets also passed.                                                              |
+| Diff whitespace                         | `git diff --check origin/main` passed.                                                                                                                                            |
+
+The final retained evidence root is
+`/var/folders/wh/31lggb5x2256ghczqd00brjh0000gn/T/veskify-p10b-18b-05-content-support-utilities/run-mt167tzs-dbfacf1ce46a1588`.
+Complete repository Vitest was not run before the checkpoint. The worktree remains uncommitted and
+no push or PR exists for P10B-18B-05.
+
+### 21.7 Post-acceptance completion evidence
+
+The mandated complete repository run was invoked exactly once with one worker and no file
+parallelism. It completed 224 files with 221 passed and three failed; 2,925 tests passed, three
+failed and one intentionally live-gated test was skipped. The failures were retained-contract
+findings rather than reasons to weaken production authority:
+
+- P10B-16P-04J expected the former duplicated About contribution count and campaign continuation;
+  the focused assertion now requires the exact two non-duplicate story contributions and approved
+  story facts.
+- P10B-03 expected every content/support variant to be commercially promoted; it now proves the
+  exact `locationAppointments -> locationDirectory` and `faqTopicGuide -> faqDisclosure`
+  compatibility aliases while requiring every other current variant to remain meaningfully
+  structural.
+- P10B-17 caught contact-directory CSS keyed directly to a variant instead of registered
+  `contactCondense`; production CSS now gates the reflow through that responsive authority.
+
+Focused correction runs leave all three affected files green with 48/48 unique tests. The complete
+suite was not invoked a second time.
+
+Final successful retained Playwright runs total 92/92 cases: P10B-18B-05 2/2, P10B-18B-04 1/1,
+P10B-18B-03 1/1, P10B-18B-02 1/1, P10B-18B-06 1/1, P10B-18B-01 1/1, unchanged P10B-18A 1/1,
+P10B-17 1/1, P10B-12 61/61, P10B-13 17/17, P10B-16P-03 Studio lifecycle 4/4 and mocked
+P10B-16P-04 1/1 after its exact About assertion correction. The focused deterministic Studio,
+atomic proposal and publication compiler/adapter selection passed six files and 84/84 tests.
+
+Post-acceptance typecheck and targeted ESLint passed. Webpack compiled and generated 25/25 static
+pages; every storefront client-chunk budget passed, including content/utility at 1.53 MB of 1.60
+MB raw and 417.04 KB of 450 KB gzip. Provider, Vesko, generation-endpoint, external-media and real
+publication calls remain zero. P10B-18B-05 and P10B-18B remain Baseline/complete; P10B-18 and
+P10B remain Partial, and P10B-18C is the exact next task after this accepted package merges.

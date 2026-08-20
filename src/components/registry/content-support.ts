@@ -129,6 +129,14 @@ const contentSupportDefinitionInput = {
       revisionRequired: true,
       emptyState: "message",
     },
+    {
+      id: "campaignAction",
+      title: { en: "Campaign action", fi: "Kampanja-toiminto" },
+      acceptedSourceTypes: ["navigation"],
+      required: false,
+      revisionRequired: true,
+      emptyState: "message",
+    },
   ],
   assetSlots: [
     {
@@ -164,7 +172,7 @@ const contentSupportDefinitionInput = {
     },
   ],
   protectedFields: {
-    readOnlyPaths: ["bindings.supportFacts", "assets.*.provenance"],
+    readOnlyPaths: ["bindings.supportFacts", "bindings.campaignAction", "assets.*.provenance"],
   },
   responsiveRules,
   accessibilityRequirements: {
@@ -315,15 +323,15 @@ const contentSupportCommercialAnatomy: RegisteredCommercialAnatomyInput = {
     },
     {
       variantId: "locationAppointments",
-      classification: "meaningfulStructuralVariant",
-      materialDifferences: ["regionArrangement", "ctaRelationship", "presentationMode"],
+      classification: "compatibilityAlias",
+      materialDifferences: [],
       finishingTokenIds: [],
+      aliasOf: "locationDirectory",
       structure: {
         ...commonStructure,
-        regionOrder: ["frame", "content", "heading", "body", "service", "actions"],
-        omittedRegions: ["media", "proof", "continuation"],
-        ctaRelationship: "separated",
-        presentationMode: "locationAppointments",
+        regionOrder: ["frame", "heading", "service", "content", "body"],
+        omittedRegions: ["media", "proof", "actions", "continuation"],
+        presentationMode: "locationDirectory",
       },
     },
     {
@@ -341,15 +349,16 @@ const contentSupportCommercialAnatomy: RegisteredCommercialAnatomyInput = {
     },
     {
       variantId: "faqTopicGuide",
-      classification: "meaningfulStructuralVariant",
-      materialDifferences: ["regionArrangement", "responsiveTransformation", "presentationMode"],
+      classification: "compatibilityAlias",
+      materialDifferences: [],
       finishingTokenIds: [],
+      aliasOf: "faqDisclosure",
       structure: {
         ...commonStructure,
-        regionOrder: ["frame", "content", "heading", "proof", "body"],
+        regionOrder: ["frame", "heading", "content", "proof", "body"],
         omittedRegions: ["media", "service", "actions", "continuation"],
-        responsiveTransformationIds: ["faqDisclosureStack"],
-        presentationMode: "faqTopicGuide",
+        navigationModel: "disclosure",
+        presentationMode: "faqDisclosure",
       },
     },
     {

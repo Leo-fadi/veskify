@@ -73,12 +73,18 @@ function responsiveArchitecture(
       (transformation) => [transformation.id, transformation],
     ),
   );
-  const preferredTransformation =
-    variant === "contactDirectory"
-      ? "contactCondense"
+  const effectiveVariant =
+    variant === "locationAppointments"
+      ? "locationDirectory"
       : variant === "faqTopicGuide"
+        ? "faqDisclosure"
+        : variant;
+  const preferredTransformation =
+    effectiveVariant === "contactDirectory"
+      ? "contactCondense"
+      : effectiveVariant === "faqDisclosure"
         ? "faqDisclosureStack"
-        : variant === "campaignImageLed"
+        : effectiveVariant === "campaignImageLed"
           ? "campaignReadingReflow"
           : "contentStack";
   const transformation = registered.get(preferredTransformation);

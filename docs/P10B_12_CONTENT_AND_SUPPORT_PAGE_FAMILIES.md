@@ -98,3 +98,15 @@ under the original family policy.
 
 No content registry, PageBlueprint, renderer, snapshot, evidence, commerce, or media authority was
 added or mutated. P10B-18 retains final multi-page editorial/support quality and scale review.
+
+## P10B-18B-05 accepted quality Baseline
+
+The accepted package preserves the one P10B-12 fact-document and `contentSupport` authority while
+making About story/process, contact channels/directory, service/policy, generic reading/editorial and
+campaign editorial/image/story compositions consume visibly different truthful regions. Appointment
+and FAQ topic-guide registrations are exact compatibility aliases until executable appointment or
+approved topic-group authority exists. Image-led campaigns require exact approved purpose-affine
+presentation placement and P10B-18B-06 art direction; no media reclassifies to editorial and
+canonical product imagery is never promoted. A campaign CTA renders only for an exact approved
+label/navigation pair. The final focused matrix is green and the product owner accepted this
+bounded visual-quality Baseline on 20 August 2026.

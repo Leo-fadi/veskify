@@ -11,8 +11,9 @@ v1 is **Partial / active**: P10B-01 through P10B-17, P10B-16P-01 through P10B-16
 P10B-16P-06, the accepted P10B-18A commercial-authority audit, accepted P10B-18B-01 Design DNA
 and shared-frame quality upgrade, accepted P10B-18B-06 bounded asset-composition and art-direction
 upgrade, accepted P10B-18B-02 homepage/editorial/campaign quality upgrade, accepted P10B-18B-03
-collection/search/product-card quality upgrade, and accepted P10B-18B-04 PDP quality upgrade are
-Baseline. Parent P10B-18B and P10B-18 remain Partial; P10B-18B-05 is next, and P10B-18C remains
+collection/search/product-card quality upgrade, accepted P10B-18B-04 PDP quality upgrade, and
+accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Parent P10B-18B is
+Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the exact next task and remains
 Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
@@ -94,9 +95,11 @@ and sparse progression with explicit transition and story/catalogue authority. A
 adds bounded collection cardinality/facet hierarchy, four distinct collection/search purposes, five
 strengthened canonical card anatomies, and executable comparison/dense search. Accepted P10B-18B-04
 adds bounded exact-product PDP matching, stronger purchase/configuration hierarchy, bounded
-canonical galleries and cardinality-aware related merchandising. This bounded acceptance does not
-accept content/utility or complete-store visual quality: P10B-18B-05 is next, while P10B-18C remains Planned for the 100+
-quality/diversity gate. P10B Commercial Storefront Generation System v1 therefore remains Partial.
+canonical galleries and cardinality-aware related merchandising. Accepted P10B-18B-05 adds
+truthful content/support/utility anatomy, exact campaign media/action authority, transient utility
+runtime state and 30 retained captures. Parent P10B-18B is complete; P10B-18C remains Planned for
+the 100+ quality/diversity gate. P10B Commercial Storefront Generation System v1 therefore remains
+Partial.
 
 Its target is:
 
@@ -202,6 +205,12 @@ integration, Vesko staging acceptance, production readiness, or production opera
 P10B-18B-04 is **Baseline**, accepted by the product owner on 19 August 2026. It retains one
 canonical PDP renderer and resolver while adding bounded exact-product context matching, stronger
 purchase/configuration hierarchy, bounded canonical galleries and cardinality-aware related
-merchandising. Parent P10B-18B/P10B-18/P10B remain Partial; P10B-18B-05 is next.
+merchandising. At that checkpoint, parent P10B-18B/P10B-18/P10B remained Partial and
+P10B-18B-05 was the historical handoff.
+
+P10B-18B-05 is **Baseline**, accepted by the product owner on 20 August 2026. It strengthens the
+existing content/support and utility families without a second model or renderer, preserves
+protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
+Partial; P10B-18C is the exact next task.
 
 Owner: Vesko Oy

@@ -129,8 +129,9 @@ requireText("README.md", [
   "The overall product is **Partial**. Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B Commercial Storefront Generation System\nv1 is **Partial / active**",
-  "accepted P10B-18B-04 PDP quality upgrade are\nBaseline",
-  "Parent P10B-18B and P10B-18 remain Partial; P10B-18B-05 is next, and P10B-18C remains\nPlanned",
+  "accepted P10B-18B-05 content/support/utility quality upgrade are Baseline",
+  "Parent P10B-18B is\nBaseline/complete; P10B-18 and P10B remain Partial",
+  "P10B-18C is the exact next task",
   "Canonical `/search` execution is Baseline",
   "P10B-16P-05B\nremains Planned after P10B-18C",
   "docs/VESKIFY_SDD_v1.3.0.docx",
@@ -158,9 +159,9 @@ requireText("docs/VESKIFY_SDD.md", [
   "There is no Vesko staging or production evidence",
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
-  "accepted P10B-18B-04 PDP quality upgrade are Baseline",
-  "parent P10B-18B, P10B-18, and P10B remain Partial",
-  "P10B-18B-05 is the next focused product task; P10B-18C",
+  "accepted P10B-18B-05\ncontent/support/utility quality upgrade are Baseline",
+  "parent P10B-18B is\nBaseline/complete",
+  "P10B-18C is the exact next task",
   "### 10.25 P10B-17 responsive, accessibility and performance closure",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
@@ -170,9 +171,9 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "accepted P10B-18B-04 are the current bounded collection/search/product-card and PDP baselines",
-  "parent P10B-18B, P10B-18, and P10B remain **Partial**",
-  "P10B-18B-05 is the next focused product task",
+  "P10B-18B-05 are the current bounded collection/search/product-card, PDP and\ncontent/support/utility baselines",
+  "parent P10B-18B is Baseline/complete",
+  "P10B-18C is exact next",
   "P10B-16P-05B is the final historical-cleanup gate after P10B-18C",
   "P10A owns internal governed initial/follow-up execution",
   "1 — Grammar",
@@ -193,9 +194,9 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "| ☑",
   "P11-00",
   "P10A_PHASE_CLOSURE.md",
-  "accepted P10B-18B-04 are Baseline",
-  "P10B-18B, P10B-18, and P10B remain **Partial**",
-  "P10B-18B-05 is the\nnext focused product task after accepted P10B-18B-04",
+  "P10B-18B-04 and P10B-18B-05 are\n**Baseline**",
+  "Parent P10B-18B is **Baseline** / complete",
+  "P10B-18C is the\nexact next product task after accepted and completed P10B-18B",
   "P10B-16P-05B follows P10B-18C",
 ]);
 
@@ -207,7 +208,9 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "accepted P10B-18B-03 and accepted P10B-18B-04 are **Baseline**",
+  "P10B-18B-05 accepted consumption boundary",
+  "Parent P10B-18B\nis Baseline/complete",
+  "P10B-18C is the exact next task",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -223,9 +226,9 @@ requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
 ]);
 
 requireText("docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md", [
-  "P10B-18B-03 and P10B-18B-04 Baseline; parent P10B-18B/P10B-18/P10B Partial",
-  "P10B-18B-03 and P10B-18B-04 are Baseline",
-  "P10B-18B-05 is next and P10B-18C remains Planned",
+  "P10B-18A and P10B-18B-01/06/02/03/04/05 Baseline",
+  "parent P10B-18B Baseline/complete",
+  "P10B-18C is the exact next task",
   "P10B-16P-05B remains Planned after P10B-18C",
   "### 15.3 Accepted product-owner checkpoint crosswalk",
 ]);
@@ -276,9 +279,10 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-18B-03 collection/search/product-card\nquality upgrade, and P10B-18B-04 PDP quality upgrade are **Baseline**.",
-  "parent\nP10B-18B, P10B-18, and P10B remain **Partial**",
-  "P10B-18B-05 is next;\nP10B-18C remains **Planned**",
+  "P10B-18B-05 content/support/utility quality\nupgrade are **Baseline**",
+  "parent P10B-18B is **Baseline / complete**",
+  "P10B-18 and P10B remain **Partial**",
+  "P10B-18C is the exact next task",
   "P10B-16P-05B remains **Planned** after P10B-18C",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
@@ -289,25 +293,28 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "P10B-18A is **Baseline**, accepted on 16 August 2026",
   "P10B-18B-01 is **Baseline**, accepted on 17 August 2026",
   "P10B-18B-06 is **Baseline**, accepted on 17 August 2026",
-  "Accepted P10B-18B-02 closes bounded homepage/editorial/campaign quality and accepted\nP10B-18B-03 closes bounded collection/search/product-card quality",
-  "Parent P10B-18B\nand P10B-18 remain **Partial**. P10B-18B-04 is Baseline, P10B-18B-05 is next, P10B-18C remains\nPlanned",
+  "P10B-18B-05 closes bounded content/support/utility quality",
+  "Parent P10B-18B is\n**Baseline / complete**; P10B-18 and P10B remain **Partial**",
+  "P10B-18C is the exact next task",
   "P10B-16P-05B remains Planned after P10B-18C",
 ]);
 
 requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
-  "P10B-18B-04\n**Baseline / accepted 19 August 2026**",
-  "P10B-18B-05 is next; P10B-18C and P10B-16P-05B after it remain\n**Planned**",
+  "P10B-18B-05 **Baseline / accepted 20 August 2026**",
+  "P10B-18B **Baseline / complete** and P10B-18 **Partial**",
+  "| P10B-18B-05 content/support/utility quality",
   "| P10B-18A commercial-authority audit",
   "| P10B-18B-01 Design DNA and shared frames",
   "## P10B-18B-06 accepted bounded-authority evidence",
   "## P10B-18B-02 accepted bounded homepage-quality evidence",
   "## P10B-18B-03 accepted bounded collection/search/card-quality evidence",
   "## P10B-18B-04 accepted evidence",
+  "### P10B-18B-05 accepted evidence Baseline",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 38) {
-  failures.push("Delivery tracker must contain exactly thirty-eight completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 39) {
+  failures.push("Delivery tracker must contain exactly thirty-nine completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(

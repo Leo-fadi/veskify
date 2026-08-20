@@ -107,6 +107,13 @@ type ResolvedContentSupportMedia = Readonly<{
   presentation: ApprovedAssetPresentation;
 }>;
 
+type ResolvedCampaignAction = Readonly<{
+  label: NonNullable<NonNullable<ContentSupportFactDocument["payload"]["campaign"]>["actionLabel"]>;
+  navigationId: string;
+  path: string;
+  revision: string;
+}>;
+
 function resolvedContentSupportMedia(
   sectionId: string,
   placements: readonly ApprovedAssetPlacementOperation[],
@@ -187,7 +194,10 @@ function projectionFor(
           },
         ]
       : [],
-    navigation: [],
+    navigation: [...context.navigation.primary, ...context.navigation.footer].map((item) => ({
+      navigationId: item.id,
+      revision,
+    })),
     projectBrandContexts: [
       { projectId: `project_${context.catalogue.id}`, brandSystemRefs: [], revision },
     ],
@@ -214,9 +224,11 @@ function instanceFor(
   props: ContentSupportProps;
   styleOverrides: ContentSupportStyleOverrides;
   media: ResolvedContentSupportMedia | null;
+  campaignAction: ResolvedCampaignAction | null;
 }> {
   const parsedContent = contentSupportContentSchema.parse(content);
   const document = supportedDocument(context, parsedContent.factDocumentId);
+  const campaignAction = resolvedCampaignAction(document, context);
   const media = resolvedContentSupportMedia(
     sectionId,
     approvedAssetPlacements,
@@ -242,6 +254,16 @@ function instanceFor(
         fallbackLocale: context.primaryLocale,
         revision: document.fingerprint,
       },
+      ...(campaignAction
+        ? [
+            {
+              slotId: "campaignAction" as const,
+              source: "navigation" as const,
+              navigationId: campaignAction.navigationId,
+              revision: campaignAction.revision,
+            },
+          ]
+        : []),
     ],
     assetAssignments: media
       ? [
@@ -261,6 +283,7 @@ function instanceFor(
     props: contentSupportPropsSchema.parse(instance.props),
     styleOverrides: parsedStyleOverrides,
     media,
+    campaignAction,
   };
 }
 
@@ -274,6 +297,64 @@ function reusableSurface(
 
 function text(value: Record<string, string>, context: StorefrontRenderContext) {
   return resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
+}
+
+function resolvedCampaignAction(
+  document: ContentSupportFactDocument,
+  context: StorefrontRenderContext,
+): ResolvedCampaignAction | null {
+  const label = document.payload.campaign?.actionLabel;
+  if (!label) return null;
+  const revision = `catalogue-${context.catalogue.id}`;
+  const matches = [...context.navigation.primary, ...context.navigation.footer].flatMap((item) => {
+    if (canonicalValueString(item.label) !== canonicalValueString(label)) return [];
+    const path = resolveStorefrontNavigationPath(context, {
+      type: "navigateToApprovedAction",
+      navigationId: item.id,
+    });
+    return path ? [{ label, navigationId: item.id, path, revision }] : [];
+  });
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function contentSupportSectionAttributes({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+  contributionCount,
+  reclassifiedFrom,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+  contributionCount?: number;
+  reclassifiedFrom?: string;
+}) {
+  return {
+    ...contentResponsiveAttributes(variant),
+    "data-component": "contentSupport",
+    "data-evidence-id": document.evidence.authorityId,
+    "data-page-family": document.payload.familyId,
+    "data-render-target": context.renderTarget ?? "preview",
+    "data-responsive-layout": "governed-content-support",
+    "data-reading-width": props.readingWidth,
+    "data-surface": surface,
+    "data-text-alignment": props.textAlignment,
+    "data-variant": variant,
+    ...(reclassifiedFrom ? { "data-reclassified-from": reclassifiedFrom } : {}),
+    ...(contributionCount === undefined
+      ? {}
+      : {
+          "data-content-contribution-count": String(contributionCount),
+        }),
+    id: sectionId,
+  } satisfies Record<string, string>;
 }
 
 function contentResponsiveAttributes(variant: string) {
@@ -290,6 +371,9 @@ function StorytellingReuse({
   props,
   surface,
   media,
+  editorialVariant,
+  openingRegion,
+  includeProcessSteps = false,
 }: {
   sectionId: string;
   variant: string;
@@ -298,6 +382,9 @@ function StorytellingReuse({
   props: ContentSupportProps;
   surface: ContentSupportStyleOverrides["surface"];
   media: ResolvedContentSupportMedia | null;
+  editorialVariant: "brandStory" | "craftProcess";
+  openingRegion: string;
+  includeProcessSteps?: boolean;
 }) {
   const story = document.payload.story;
   if (!story) throw new Error("The selected content/support layout requires approved story facts.");
@@ -306,54 +393,25 @@ function StorytellingReuse({
       block.kind !== "paragraph" ||
       canonicalValueString(block.body) !== canonicalValueString(story.body),
   );
-  const firstCollection = context.catalogue.collections[0];
-  const collectionPaths = new Set([
-    ...context.pages
-      .filter((page) => page.type === "collection")
-      .map((page) => context.pagePaths[page.id])
-      .filter((path): path is string => path !== undefined),
-    ...(context.dynamicCommercePresentation?.routeInventory
-      .filter((route) => route.kind === "collection")
-      .map((route) => context.pagePaths[route.id])
-      .filter((path): path is string => path !== undefined) ?? []),
-  ]);
-  const approvedCollectionPath = context.navigation.primary
-    .map((item) =>
-      resolveStorefrontNavigationPath(context, {
-        type: "navigateToApprovedAction",
-        navigationId: item.id,
-      }),
-    )
-    .find((path) => path !== undefined && collectionPaths.has(path));
-  const continuationPath =
-    approvedCollectionPath ??
-    (firstCollection
-      ? resolveStorefrontNavigationPath(context, {
-          type: "navigateToCollection",
-          collectionId: firstCollection.id,
-        })
-      : undefined);
+  const processSteps = includeProcessSteps ? story.steps : [];
   const contributionCount =
-    1 +
-    additionalBlocks.filter(({ kind }) => kind === "paragraph").length +
-    (document.payload.campaign?.actionLabel && continuationPath ? 1 : 0);
+    1 + additionalBlocks.filter(({ kind }) => kind === "paragraph").length + processSteps.length;
   return (
     <div
-      {...contentResponsiveAttributes(variant)}
-      data-component="contentSupport"
-      data-content-contribution-count={contributionCount}
-      data-evidence-id={document.evidence.authorityId}
-      data-page-family={document.payload.familyId}
-      data-render-target={context.renderTarget ?? "preview"}
-      data-responsive-layout="governed-content-support"
-      data-reading-width={props.readingWidth}
-      data-surface={surface}
-      data-text-alignment={props.textAlignment}
-      data-variant={variant}
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+        contributionCount,
+      })}
     >
       <section
         aria-labelledby={`${sectionId}-heading`}
         className={`${styles.section} ${styles.opening}`}
+        data-content-region={openingRegion}
       >
         <div className={styles.reading}>
           <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
@@ -368,7 +426,7 @@ function StorytellingReuse({
           id: `${sectionId}-p10b07-story`,
           component: "homepageEditorial",
           componentVersion: homepageEditorialDefinition.version,
-          variant: variant === "aboutProcess" ? "craftProcess" : "brandStory",
+          variant: editorialVariant,
           content: { ...story },
           props: {
             mediaPosition: "right",
@@ -417,7 +475,10 @@ function StorytellingReuse({
         onNavigate={() => undefined}
       />
       {additionalBlocks.length > 0 ? (
-        <section className={`${styles.section} ${styles.factSequence}`}>
+        <section
+          className={`${styles.section} ${styles.factSequence}`}
+          data-content-region="story-facts"
+        >
           <div className={`${styles.reading} ${styles.factGrid}`}>
             {additionalBlocks.map((block) =>
               block.kind === "paragraph" ? (
@@ -430,18 +491,27 @@ function StorytellingReuse({
           </div>
         </section>
       ) : null}
-      {document.payload.campaign?.actionLabel && continuationPath ? (
-        <aside className={styles.continuation} data-content-region="continuation">
-          <div className={styles.continuationInner}>
-            {document.payload.campaign.eyebrow ? (
-              <p className={styles.eyebrow}>{text(document.payload.campaign.eyebrow, context)}</p>
-            ) : null}
-            <h2>{text(document.payload.campaign.heading, context)}</h2>
-            <p>{text(document.payload.campaign.description, context)}</p>
-            <a href={continuationPath}>{text(document.payload.campaign.actionLabel, context)}</a>
-          </div>
-        </aside>
-      ) : null}
+    </div>
+  );
+}
+
+function CampaignActionLink({
+  action,
+  context,
+}: {
+  action: ResolvedCampaignAction | null;
+  context: StorefrontRenderContext;
+}) {
+  if (!action) return null;
+  return (
+    <div className={styles.campaignActions} data-content-region="campaign-action">
+      <a
+        data-campaign-navigation-id={action.navigationId}
+        data-content-support-action="campaign"
+        href={action.path}
+      >
+        {text(action.label, context)}
+      </a>
     </div>
   );
 }
@@ -453,6 +523,9 @@ function CampaignReuse({
   context,
   props,
   surface,
+  media,
+  action,
+  requestedVariant,
 }: {
   sectionId: string;
   variant: string;
@@ -460,17 +533,23 @@ function CampaignReuse({
   context: StorefrontRenderContext;
   props: ContentSupportProps;
   surface: ContentSupportStyleOverrides["surface"];
+  media: ResolvedContentSupportMedia | null;
+  action: ResolvedCampaignAction | null;
+  requestedVariant?: string;
 }) {
   const campaign = document.payload.campaign;
   if (!campaign) throw new Error("The selected campaign layout requires approved campaign facts.");
   return (
     <div
-      {...contentResponsiveAttributes(variant)}
-      data-component="contentSupport"
-      data-reading-width={props.readingWidth}
-      data-surface={surface}
-      data-text-alignment={props.textAlignment}
-      data-variant={variant}
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+        reclassifiedFrom: requestedVariant,
+      })}
     >
       <section
         aria-labelledby={`${sectionId}-campaign-heading`}
@@ -514,15 +593,628 @@ function CampaignReuse({
               projectId: `project_${context.catalogue.id}`,
               revision: `catalogue-${context.catalogue.id}`,
             },
+            ...(media
+              ? [
+                  {
+                    slotId: "promotionAsset" as const,
+                    source: "asset" as const,
+                    assetId: media.placement.assetId,
+                    role: media.placement.role,
+                    revision: media.placement.assetRevision,
+                  },
+                ]
+              : []),
           ],
-          assetAssignments: [],
+          assetAssignments: media
+            ? [
+                {
+                  slotId: "promotionMedia",
+                  assetId: media.placement.assetId,
+                  role: media.placement.role,
+                },
+              ]
+            : [],
         }}
-        projection={projectionFor(context)}
+        projection={projectionFor(context, media)}
         activeLocale={context.activeLocale}
         primaryLocale={context.primaryLocale}
-        resolveAssetUrl={() => "/seed-assets/placeholder.svg"}
+        resolveAssetUrl={(assetId) => {
+          if (!media || media.presentation.asset.id !== assetId) {
+            throw new Error("Campaign media URL is outside current approved authority.");
+          }
+          return media.presentation.asset.url;
+        }}
         onNavigate={() => undefined}
       />
+      <CampaignActionLink action={action} context={context} />
+    </div>
+  );
+}
+
+function CampaignStoryReuse({
+  sectionId,
+  document,
+  context,
+  props,
+  surface,
+  media,
+  action,
+}: {
+  sectionId: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+  media: ResolvedContentSupportMedia | null;
+  action: ResolvedCampaignAction | null;
+}) {
+  const campaign = document.payload.campaign;
+  const story = document.payload.story;
+  if (!campaign || !story) {
+    throw new Error("Campaign story rendering requires approved campaign and story facts.");
+  }
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant: "campaignStory",
+        document,
+        context,
+        props,
+        surface,
+      })}
+      data-content-region="campaign-story"
+    >
+      <section
+        aria-labelledby={`${sectionId}-campaign-heading`}
+        className={`${styles.section} ${styles.opening}`}
+        data-content-region="campaign-opening"
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-campaign-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <HomepageEditorialSection
+        target={context.renderTarget ?? "preview"}
+        instance={{
+          id: `${sectionId}-p10b07-campaign-story`,
+          component: "homepageEditorial",
+          componentVersion: homepageEditorialDefinition.version,
+          variant: "brandStory",
+          content: { ...story },
+          props: { mediaPosition: "right", textAlignment: "left", galleryColumns: 2 },
+          styleOverrides: { surface: reusableSurface(surface) },
+          bindings: [
+            {
+              slotId: "presentationContext",
+              source: "projectBrandContext",
+              projectId: `project_${context.catalogue.id}`,
+              revision: `catalogue-${context.catalogue.id}`,
+            },
+            ...(media
+              ? [
+                  {
+                    slotId: "storyPrimaryAsset" as const,
+                    source: "asset" as const,
+                    assetId: media.placement.assetId,
+                    role: media.placement.role,
+                    revision: media.placement.assetRevision,
+                  },
+                ]
+              : []),
+          ],
+          assetAssignments: media
+            ? [
+                {
+                  slotId: "storyMedia",
+                  assetId: media.placement.assetId,
+                  role: media.placement.role,
+                },
+              ]
+            : [],
+        }}
+        projection={projectionFor(context, media)}
+        activeLocale={context.activeLocale}
+        primaryLocale={context.primaryLocale}
+        resolveAssetUrl={(assetId) => {
+          if (!media || media.presentation.asset.id !== assetId) {
+            throw new Error("Campaign story media URL is outside current approved authority.");
+          }
+          return media.presentation.asset.url;
+        }}
+        onNavigate={() => undefined}
+      />
+      {story.steps.length ? (
+        <section
+          className={`${styles.section} ${styles.storyProgression}`}
+          data-content-region="campaign-progression"
+        >
+          <ol className={styles.storySteps}>
+            {story.steps.map((step) => (
+              <li key={step.id} data-content-subregion="campaign-story-step">
+                <h2>{text(step.title, context)}</h2>
+                <p>{text(step.description, context)}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+      <aside className={styles.continuation} data-content-region="campaign-proposition">
+        <div className={styles.continuationInner}>
+          {campaign.eyebrow ? (
+            <p className={styles.eyebrow}>{text(campaign.eyebrow, context)}</p>
+          ) : null}
+          <h2>{text(campaign.heading, context)}</h2>
+          <p>{text(campaign.description, context)}</p>
+          <CampaignActionLink action={action} context={context} />
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function ContactChannelsReuse({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+  mode,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+  mode: "channels" | "directory";
+}) {
+  const blocks = document.payload.blocks.filter(
+    (
+      block,
+    ): block is Extract<(typeof document.payload.blocks)[number], { kind: "contact-channel" }> =>
+      block.kind === "contact-channel",
+  );
+  const hrefFor = (block: (typeof blocks)[number]) =>
+    block.channel === "email"
+      ? `mailto:${block.value}`
+      : block.channel === "phone"
+        ? `tel:${block.value.replace(/[^+0-9]/gu, "")}`
+        : undefined;
+  const groupLabel = (channel: (typeof blocks)[number]["channel"]) =>
+    context.activeLocale === "fi"
+      ? channel === "email"
+        ? "Sähköposti"
+        : channel === "phone"
+          ? "Puhelin"
+          : "Yhteydenottolomake"
+      : channel === "email"
+        ? "Email"
+        : channel === "phone"
+          ? "Phone"
+          : "Contact form";
+  const groups = ["email", "phone", "contact-form"] as const;
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+      })}
+      data-contact-anatomy={mode}
+      data-content-region={mode === "channels" ? "contactChannels" : "contactDirectory"}
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      {mode === "channels" ? (
+        <section
+          className={`${styles.section} ${styles.contactChannels}`}
+          data-content-region="contact-actions"
+        >
+          <address className={`${styles.reading} ${styles.channelStack}`}>
+            {blocks.map((block) => {
+              const href = hrefFor(block);
+              const content = (
+                <>
+                  <span>{text(block.label, context)}</span>
+                  <strong>{block.value}</strong>
+                </>
+              );
+              return href ? (
+                <a
+                  className={styles.channelAction}
+                  href={href}
+                  key={block.id}
+                  data-content-subregion="contact-action"
+                >
+                  {content}
+                </a>
+              ) : (
+                <div
+                  className={styles.channelAction}
+                  key={block.id}
+                  data-content-subregion="contact-reference"
+                >
+                  {content}
+                </div>
+              );
+            })}
+          </address>
+        </section>
+      ) : (
+        <section
+          className={`${styles.section} ${styles.contactDirectory}`}
+          data-content-region="contact-directory-groups"
+        >
+          <div className={`${styles.reading} ${styles.directoryGroups}`}>
+            {groups.map((channel) => {
+              const entries = blocks.filter((block) => block.channel === channel);
+              if (!entries.length) return null;
+              return (
+                <section
+                  className={styles.directoryGroup}
+                  key={channel}
+                  data-channel-group={channel}
+                >
+                  <h2>{groupLabel(channel)}</h2>
+                  <div className={styles.contactGrid}>
+                    {entries.map((block) => {
+                      const href = hrefFor(block);
+                      return (
+                        <article
+                          className={`${styles.card} ${styles.contactCard}`}
+                          key={block.id}
+                          data-content-subregion="directory-entry"
+                        >
+                          <h3>{text(block.label, context)}</h3>
+                          {href ? <a href={href}>{block.value}</a> : <p>{block.value}</p>}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function LocationReuse({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+  contextRegion,
+  reclassifiedFrom,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+  contextRegion: string;
+  reclassifiedFrom?: string;
+}) {
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+        reclassifiedFrom,
+      })}
+      data-content-region={contextRegion}
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <section
+        className={`${styles.section} ${styles.locationList}`}
+        data-content-region="location-list"
+      >
+        <div className={`${styles.reading} ${styles.locationGrid}`}>
+          {document.payload.blocks.map((block) =>
+            block.kind === "location" ? (
+              <article
+                className={`${styles.card} ${styles.locationCard}`}
+                key={block.id}
+                data-content-subregion="location"
+              >
+                <h2>{text(block.name, context)}</h2>
+                <address>
+                  {block.addressLines.map((line) => (
+                    <span key={text(line, context)}>
+                      {text(line, context)}
+                      <br />
+                    </span>
+                  ))}
+                </address>
+                {block.openingHours.length ? (
+                  <ul>
+                    {block.openingHours.map((line) => (
+                      <li key={text(line, context)}>{text(line, context)}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </article>
+            ) : null,
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FAQReuse({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+  mode,
+  reclassifiedFrom,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+  mode: "disclosure" | "guide";
+  reclassifiedFrom?: string;
+}) {
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+        reclassifiedFrom,
+      })}
+      data-content-region={mode === "guide" ? "faq-topic-guide" : "faq-disclosure"}
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <section
+        className={`${styles.section} ${styles.faqRegion}`}
+        data-content-region="faq-content"
+      >
+        <div className={`${styles.reading} ${styles.faqGrid}`}>
+          {document.payload.blocks.map((block) =>
+            block.kind === "faq" ? (
+              <details
+                className={mode === "guide" ? styles.faqGuide : styles.faq}
+                key={block.id}
+                data-content-subregion="faq-entry"
+              >
+                <summary>{text(block.question, context)}</summary>
+                <p>{text(block.answer, context)}</p>
+              </details>
+            ) : null,
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PolicyReadingReuse({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+}) {
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+      })}
+      data-content-region="policy-reading"
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <section
+        className={`${styles.section} ${styles.policyReading}`}
+        data-content-region="policy-body"
+      >
+        <div className={`${styles.reading} ${styles.legalSequence}`}>
+          {document.payload.blocks.map((block) =>
+            block.kind === "policy-section" ? (
+              <article className={styles.article} key={block.id} data-content-subregion="policy">
+                <h2>{text(block.heading, context)}</h2>
+                <p>{text(block.body, context)}</p>
+              </article>
+            ) : null,
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ServiceDetailsReuse({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+}) {
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+      })}
+      data-content-region="service-details"
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <section
+        className={`${styles.section} ${styles.serviceDetails}`}
+        data-content-region="service-sections"
+      >
+        <div className={`${styles.reading} ${styles.serviceGrid}`}>
+          {document.payload.blocks.map((block) =>
+            block.kind === "policy-section" ? (
+              <article
+                className={`${styles.card} ${styles.serviceCard}`}
+                key={block.id}
+                data-content-subregion="service-section"
+              >
+                <h2>{text(block.heading, context)}</h2>
+                <p>{text(block.body, context)}</p>
+              </article>
+            ) : null,
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function GenericReadingReuse({
+  sectionId,
+  variant,
+  document,
+  context,
+  props,
+  surface,
+}: {
+  sectionId: string;
+  variant: string;
+  document: ContentSupportFactDocument;
+  context: StorefrontRenderContext;
+  props: ContentSupportProps;
+  surface: ContentSupportStyleOverrides["surface"];
+}) {
+  const blocks = document.payload.blocks;
+  return (
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+      })}
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <section
+        className={`${styles.section} ${styles.genericReading}`}
+        data-content-region="generic-reading"
+      >
+        <div className={`${styles.reading} ${styles.readingFlow}`}>
+          {blocks.map((block) =>
+            block.kind === "paragraph" ? (
+              <article className={styles.article} key={block.id} data-content-subregion="paragraph">
+                {block.heading ? <h2>{text(block.heading, context)}</h2> : null}
+                <p>{text(block.body, context)}</p>
+              </article>
+            ) : null,
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -545,22 +1237,82 @@ function ContentSupportReading({
   media: ResolvedContentSupportMedia | null;
 }) {
   const payload = document.payload;
-  if (["aboutStory", "aboutProcess", "genericEditorial"].includes(variant)) {
+  if (variant === "aboutStory") {
     return (
       <StorytellingReuse
         sectionId={sectionId}
         variant={variant}
+        editorialVariant="brandStory"
         document={document}
         context={context}
         props={props}
         surface={surface}
         media={media}
+        openingRegion="about-story"
       />
     );
   }
-  if (["campaignEditorial", "campaignImageLed", "campaignStory"].includes(variant)) {
+  if (variant === "aboutProcess") {
     return (
-      <CampaignReuse
+      <StorytellingReuse
+        sectionId={sectionId}
+        variant={variant}
+        editorialVariant="craftProcess"
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        media={media}
+        openingRegion="about-process"
+        includeProcessSteps
+      />
+    );
+  }
+  if (variant === "contactChannels" || variant === "contactDirectory") {
+    return (
+      <ContactChannelsReuse
+        sectionId={sectionId}
+        variant={variant}
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        mode={variant === "contactDirectory" ? "directory" : "channels"}
+      />
+    );
+  }
+  if (variant === "locationDirectory" || variant === "locationAppointments") {
+    const renderedVariant = "locationDirectory";
+    return (
+      <LocationReuse
+        sectionId={sectionId}
+        variant={renderedVariant}
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        contextRegion={renderedVariant}
+        reclassifiedFrom={variant === "locationAppointments" ? variant : undefined}
+      />
+    );
+  }
+  if (variant === "faqDisclosure" || variant === "faqTopicGuide") {
+    return (
+      <FAQReuse
+        sectionId={sectionId}
+        variant="faqDisclosure"
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        mode="disclosure"
+        reclassifiedFrom={variant === "faqTopicGuide" ? variant : undefined}
+      />
+    );
+  }
+  if (variant === "serviceDetails") {
+    return (
+      <ServiceDetailsReuse
         sectionId={sectionId}
         variant={variant}
         document={document}
@@ -570,28 +1322,98 @@ function ContentSupportReading({
       />
     );
   }
-  const blocks = payload.blocks;
+  if (variant === "policyReading") {
+    return (
+      <PolicyReadingReuse
+        sectionId={sectionId}
+        variant={variant}
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+      />
+    );
+  }
+  if (variant === "genericReading") {
+    return (
+      <GenericReadingReuse
+        sectionId={sectionId}
+        variant={variant}
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+      />
+    );
+  }
+  if (variant === "genericEditorial") {
+    return (
+      <StorytellingReuse
+        sectionId={sectionId}
+        variant={variant}
+        editorialVariant="brandStory"
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        media={media}
+        openingRegion="generic-editorial"
+      />
+    );
+  }
+  if (variant === "campaignStory" && payload.story) {
+    return (
+      <CampaignStoryReuse
+        sectionId={sectionId}
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        media={media}
+        action={resolvedCampaignAction(document, context)}
+      />
+    );
+  }
+  if (
+    variant === "campaignEditorial" ||
+    variant === "campaignImageLed" ||
+    variant === "campaignStory"
+  ) {
+    const effectiveVariant =
+      variant === "campaignImageLed" && media ? "campaignImageLed" : "campaignEditorial";
+    return (
+      <CampaignReuse
+        sectionId={sectionId}
+        variant={effectiveVariant}
+        document={document}
+        context={context}
+        props={props}
+        surface={surface}
+        media={media}
+        action={resolvedCampaignAction(document, context)}
+        requestedVariant={effectiveVariant === variant ? undefined : variant}
+      />
+    );
+  }
   return (
-    <section
-      {...contentResponsiveAttributes(variant)}
+    <div
+      {...contentSupportSectionAttributes({
+        sectionId,
+        variant,
+        document,
+        context,
+        props,
+        surface,
+      })}
       aria-labelledby={`${sectionId}-heading`}
-      className={styles.section}
-      data-component="contentSupport"
-      data-evidence-id={document.evidence.authorityId}
-      data-page-family={payload.familyId}
-      data-render-target={context.renderTarget ?? "preview"}
-      data-responsive-layout="governed-content-support"
-      data-reading-width={props.readingWidth}
-      data-surface={surface}
-      data-text-alignment={props.textAlignment}
-      data-variant={variant}
+      className={`${styles.section} ${styles.genericReading}`}
     >
       <div className={styles.reading}>
         <h1 id={`${sectionId}-heading`}>{text(payload.title, context)}</h1>
         {payload.introduction ? (
           <p className={styles.introduction}>{text(payload.introduction, context)}</p>
         ) : null}
-        {blocks.map((block) => {
+        {payload.blocks.map((block) => {
           switch (block.kind) {
             case "paragraph":
               return (
@@ -602,7 +1424,7 @@ function ContentSupportReading({
               );
             case "contact-channel":
               return (
-                <article className={styles.card} key={block.id}>
+                <article className={`${styles.card} ${styles.contactCard}`} key={block.id}>
                   <h2>{text(block.label, context)}</h2>
                   {block.channel === "email" ? (
                     <a href={`mailto:${block.value}`}>{block.value}</a>
@@ -613,7 +1435,7 @@ function ContentSupportReading({
               );
             case "location":
               return (
-                <article className={styles.card} key={block.id}>
+                <article className={`${styles.card} ${styles.locationCard}`} key={block.id}>
                   <h2>{text(block.name, context)}</h2>
                   <address>
                     {block.addressLines.map((line) => (
@@ -649,7 +1471,7 @@ function ContentSupportReading({
           }
         })}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -689,7 +1511,12 @@ export const contentSupportBridgeDefinitions = {
     defaultProps: contentSupportBridgeDefaults.contentSupport.props,
     editorFields: {},
     protectedFields: {
-      readOnlyPaths: ["content.factDocumentId", "bindings.supportFacts", "assets.*.provenance"],
+      readOnlyPaths: [
+        "content.factDocumentId",
+        "bindings.supportFacts",
+        "bindings.campaignAction",
+        "assets.*.provenance",
+      ],
     },
     validateContext: ({
       sectionId,

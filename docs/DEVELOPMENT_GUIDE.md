@@ -103,9 +103,9 @@ active-path/compiler rationalisation, P10B-16P-06 canonical search query/results
 P10B-17 responsive/accessibility/performance closure, P10B-18A commercial-authority audit, and
 P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-direction upgrade,
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
-quality upgrade, and P10B-18B-04 PDP quality upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent
-P10B-18B, P10B-18, and P10B remain **Partial**. P10B-18B-05 is next;
-P10B-18C remains **Planned**.
+quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
+upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
+P10B-18 and P10B remain **Partial**. P10B-18C is the exact next task and remains **Planned**;
 P10B-16P-05B remains **Planned** after P10B-18C.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
@@ -156,7 +156,8 @@ the existing compact frame complete-store reachable, and refines shared-frame co
 claiming later page-family or P10B-18C closure. Accepted P10B-18B-06 adds only bounded shared
 asset-composition authority; accepted P10B-18B-02 closes bounded homepage/editorial/campaign
 quality, accepted P10B-18B-03 closes bounded collection/search/card quality, accepted P10B-18B-04
-closes bounded PDP quality, and P10B-18B-05 is the next focused product task.
+closes bounded PDP quality, and accepted P10B-18B-05 closes bounded content/support/utility quality
+and completes parent P10B-18B. P10B-18C is the exact next product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -296,11 +297,10 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and
-P10B-18B-01, P10B-18B-06 and P10B-18B-04 are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and
-P10B remain Partial; P10B-18B-05 is next, P10B-18C remains Planned, and P10B-16P-05B remains
-Planned after P10B-18C. Their ownership
-remains disjoint: P10B-05 owns
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and all accepted
+P10B-18B-01/06/02/03/04/05 packages are Baseline; P10B-16P-02 is Baseline. Parent P10B-18B is
+Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the exact next task, and
+P10B-16P-05B remains Planned after P10B-18C. Their ownership remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
 its `BrandSystem` authority.
@@ -567,4 +567,16 @@ The candidate keeps the four P10B-11 profiles and the single dynamic PDP rendere
 disabled proof route still executes the normal plan, snapshot, catalogue adapter, canonical resolver
 and renderer. It does not call providers, Vesko, generation endpoints or publication. The product
 owner accepted this package as Baseline on 19 August 2026. Parent P10B-18B/P10B-18/P10B remain
-Partial and P10B-18B-05 is next.
+Partial at that checkpoint, with P10B-18B-05 as its historical handoff. P10B-18B-05 was
+subsequently accepted on 20 August 2026.
+
+### P10B-18B-05 accepted validation scope
+
+For the uncommitted P10B-18B-05 candidate, use the focused P10B-12/P10B-13 unit and browser suites,
+the dedicated `p10b-18b-05-content-support-utilities-quality` unit/Playwright matrices, focused fact,
+asset, lifecycle and frozen P10B-18A tests, then typecheck, targeted ESLint/Prettier, docs validation,
+Webpack and storefront budgets. Do not run complete Vitest, commit, push or open a PR before the
+mandatory product-owner checkpoint. That checkpoint was accepted on 20 August 2026; complete
+one-worker Vitest ran exactly once, its three retained findings were corrected through focused
+reruns, and the listed retained browser/lifecycle/compiler regressions are green. Utility runtime
+state is test-only transient input and must not be serialized into a storefront fixture.
