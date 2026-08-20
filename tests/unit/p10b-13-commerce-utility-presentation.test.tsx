@@ -341,6 +341,33 @@ describe("P10B-13 commerce utility presentation", () => {
     expect(within(unavailable).queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("uses checkout-specific copy when checkout runtime is unavailable", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    const checkoutPage = pageFor("commerce-utility-checkout");
+    const snapshot = applyCommercialSharedFrame(
+      {
+        ...fixture.planningInput.draft,
+        pages: [...fixture.planningInput.draft.pages, checkoutPage],
+      },
+      "commerce-utility",
+    );
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: fixture.aggregate.catalogue,
+      snapshot,
+    });
+    render(<>{renderStorefrontPage(checkoutPage, context)}</>);
+    const unavailable = screen.getByRole("status");
+    expect(
+      within(unavailable).getByRole("heading", { name: "Continue to checkout" }),
+    ).toBeVisible();
+    expect(within(unavailable).getByText("Checkout information is unavailable.")).toBeVisible();
+    expect(unavailable).not.toHaveTextContent("Cart information is unavailable.");
+    expect(within(unavailable).queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("keeps the cart route meaningful while its transient runtime state is unavailable or loading", () => {
     const fixture = createP905aFreshMerchantFixture("modernTechnical");
     const cartPage = pageFor("commerce-utility-cart");

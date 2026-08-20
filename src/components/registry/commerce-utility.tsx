@@ -378,11 +378,15 @@ function UtilityUnavailablePresentation({
         ? copy.checkout
         : text(content.heading, context);
   const body =
-    variant === "cart" || variant === "checkoutBoundary"
+    variant === "cart"
       ? context.activeLocale === "fi"
         ? "Ostoskorin tietoja ei ole saatavilla."
         : "Cart information is unavailable."
-      : text(content.body, context);
+      : variant === "checkoutBoundary"
+        ? context.activeLocale === "fi"
+          ? "Kassan tietoja ei ole saatavilla."
+          : "Checkout information is unavailable."
+        : text(content.body, context);
   return (
     <section
       {...utilityResponsiveAttributes(variant)}
