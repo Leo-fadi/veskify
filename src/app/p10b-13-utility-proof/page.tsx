@@ -29,7 +29,13 @@ const familyFor = (state: string) =>
 export default async function P10B13UtilityProofPage({
   searchParams,
 }: {
-  searchParams: Promise<{ profile?: string }>;
+  searchParams: Promise<{
+    profile?: string;
+    scenario?: string;
+    locale?: string;
+    capabilities?: string;
+    handler?: string;
+  }>;
 }) {
   const query = await searchParams;
   const parsed = commercialUtilityProfileIdSchema.safeParse(query.profile);
@@ -83,7 +89,11 @@ export default async function P10B13UtilityProofPage({
   return (
     <P10B13UtilityProofClient
       catalogue={fixture.aggregate.catalogue}
+      activeLocale={query.locale === "fi" ? "fi" : "en"}
+      actionCapabilities={query.capabilities === "none" ? "none" : "supported"}
+      handlerAuthority={query.handler === "absent" ? "absent" : "present"}
       profile={profile.profile!}
+      scenario={query.scenario}
       snapshot={snapshot}
       utilityPageId={utilityPage.id}
     />

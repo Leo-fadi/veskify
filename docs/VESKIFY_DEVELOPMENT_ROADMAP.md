@@ -64,9 +64,9 @@ P10B-18A accepted ceiling evidence and the frozen conditional package plan are r
 The original locked P10B-01 through P10B-18 sequence remains intact.
 P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 are a mandatory sequential convergence package
 between P10B-16 and P10B-17; P10B-16P-05B is the final historical-cleanup gate after P10B-18C. A
-slice does not renumber or independently complete the parent phase. Accepted P10B-18B-03 and
-accepted P10B-18B-04 are the current bounded collection/search/product-card and PDP baselines;
-P10B-18B-05 is the next focused product task.
+slice does not renumber or independently complete the parent phase. Accepted P10B-18B-03,
+P10B-18B-04 and P10B-18B-05 are the current bounded collection/search/product-card, PDP and
+content/support/utility baselines; parent P10B-18B is Baseline/complete and P10B-18C is exact next.
 
 The current P10B-16P-04 Aurum acceptance composition remains production-disabled and retained
 through P10B-18C for deterministic replay and evidence. P10B-16P-05A removes active P10B-16L runtime
@@ -132,7 +132,7 @@ or production performance.
 | P10B-18B-02 — Homepage / editorial / campaign quality upgrade       | Upgrade existing homepage profiles and hero/editorial/campaign consumers into intentional rich and sparse page progression with stronger hierarchy and merchandising rhythm.                                                      | **Baseline** | Accepted P10B-18B-01 and P10B-18B-06                            | Homepage profile, component and evaluation owners        | Accepted same-strata topology/concentration accounting; rich/sparse retained review; exact persistence; protected commerce/media and lifecycle preservation                                            | Collection/search/card, PDP, content/utility redesign, new page graph/renderer, or P10B-18C acceptance                   |
 | P10B-18B-03 — Collection / search / product-card quality upgrade    | Strengthen collection and search composition, product-card hierarchy and merchandising density through the existing registered authorities.                                                                                       | **Baseline** | Accepted P10B-18B-02                                            | Collection/search, product-card and evaluation owners    | Accepted same-strata structural accounting; 21-capture retained review; protected commerce/media, canonical search and lifecycle preservation                                                          | PDP, content/utility redesign, new commerce model, or P10B-18C acceptance                                                |
 | P10B-18B-04 — PDP quality upgrade                                   | Strengthen the existing PDP opening hierarchy, gallery, option/purchase composition and related merchandising without replacing canonical commerce or page authority.                                                             | **Baseline** | Accepted P10B-18B-03                                            | PDP profile, commerce presentation and evaluation owners | Accepted same-strata structural accounting; 20-capture four-width review; protected variants/options/media and lifecycle preservation                                                                  | Collection/search, content/utility redesign, commerce writes, or P10B-18C acceptance                                     |
-| P10B-18B-05 — Content / support / utilities quality upgrade         | Strengthen existing content, support and utility compositions without adding a second content, cart, error or page authority.                                                                                                     | **Planned**  | Accepted P10B-18B-04                                            | Content/support/utility and evaluation owners            | Profile-specific browser review, lifecycle preservation and protected commerce/navigation evidence                                                                                                     | PDP redesign, operational cart ownership, or P10B-18C acceptance                                                         |
+| P10B-18B-05 — Content / support / utilities quality upgrade         | Strengthen existing content, support and utility compositions without adding a second content, cart, error or page authority.                                                                                                     | **Baseline** | Accepted P10B-18B-04                                            | Content/support/utility and evaluation owners            | Profile-specific browser review, lifecycle preservation and protected commerce/navigation evidence                                                                                                     | PDP redesign, operational cart ownership, or P10B-18C acceptance                                                         |
 | P10B-18C — 100+ commercial quality and diversity gate               | Run final deterministic breadth/quality/diversity analysis and fingerprint-stratified retained human acceptance on the integrated P10B-18B authority.                                                                             | **Planned**  | Accepted and integrated P10B-18B packages                       | Product owner, generation, QA                            | 100+ complete bounded configurations; protected-state and duplicate/near-duplicate gates; representative four-width retained human review                                                              | Treating P10B-18A evidence or registry/configuration counts alone as final quality acceptance                            |
 | P10B-16P-05B — Final historical acceptance cleanup                  | Remove or archive remaining P10B-16L, P9/Lumo, and P04 acceptance scaffolding only after quality/scale evidence no longer depends on it.                                                                                          | **Planned**  | P10B-18C and P10B-16P-05A                                       | Generation architecture and evidence                     | Consumer search; migration/evidence retention; focused architecture and replay regressions                                                                                                             | Early deletion of migration fixtures, historical evidence, or P10B-18 visual fixtures                                    |
 
@@ -149,9 +149,9 @@ freezes the audit baseline; accepted P10B-18B-01 closes only the Design DNA/shar
 accepted P10B-18B-06 closes only bounded asset-composition authority; accepted P10B-18B-02 closes
 only bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes only bounded
 collection/search/product-card quality; accepted P10B-18B-04 closes only bounded PDP quality.
-P10B-18B-05 is next, followed by the remaining
-P10B-18B packages, P10B-18C final quality/scale acceptance and then P10B-16P-05B
-historical cleanup.
+Accepted P10B-18B-05 closes only bounded content/support/utility quality and completes parent
+P10B-18B. P10B-18C final quality/scale acceptance is next, followed by P10B-16P-05B historical
+cleanup.
 
 ## 4. P10C — Storefront Studio Editing Experience v1
 
@@ -210,3 +210,11 @@ select frame
 | Task | Outcome                                                                                                                                                         | Status      | Dependency | Owner                               | Required evidence                                                                               | Non-goal                                     |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- | ----------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | P12  | Close authentication, tenancy isolation, security, observability, performance, backup/recovery, deployment, incident response, and controlled pilot operations. | **Blocked** | P11-10     | Veskify + Vesko platform/operations | Security and load evidence; recovery exercise; production monitoring; controlled pilot evidence | New design-system, editor, or commerce scope |
+
+### P10B-18B-05 accepted Baseline (20 August 2026)
+
+The accepted package completes focused content/support and utility implementation,
+truthful profile reclassification, transient runtime-state proof and a 30-capture EN/FI visual
+matrix. The product owner accepted the mandatory checkpoint on 20 August 2026. P10B-18B-05 and the
+completed P10B-18B parent are Baseline; P10B-18 and P10B remain Partial. P10B-18C is the exact next
+task after this package merges.

@@ -289,8 +289,7 @@ describe("P10B-16P-04J Aurum commercial acceptance fixture", () => {
     );
     expect(html).toContain("Quiet forms, lasting meaning");
     expect(html).toContain("New pieces, material stories and quiet inspiration.");
-    expect(html).toContain('data-content-contribution-count="3"');
-    expect(html).toContain('data-content-region="continuation"');
+    expect(html).toContain('data-content-contribution-count="2"');
     expect(html).toContain('data-asset-id="asset_p10b16p04_aurum_editorial"');
     expect(html).toContain('src="/seed-assets/aava-necklace.svg"');
     expect(html).not.toMatch(

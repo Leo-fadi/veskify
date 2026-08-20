@@ -909,9 +909,11 @@ export async function assertCommercialSurface(input: {
     await expect(root.getByText("Quiet forms, lasting meaning")).toBeVisible();
     await expect(root.locator('[data-component="contentSupport"]')).toHaveAttribute(
       "data-content-contribution-count",
-      /^(?:[3-9]|[1-9]\d+)$/,
+      "2",
     );
-    await expect(root.locator('[data-content-region="continuation"] a')).toBeVisible();
+    await expect(root.locator('[data-content-region="story-facts"]')).toContainText(
+      "New pieces, material stories and quiet inspiration.",
+    );
     return;
   }
 

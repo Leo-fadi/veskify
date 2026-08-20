@@ -59,10 +59,9 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
-P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02 and P10B-18B-03
-are Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial; P10B-18C remains Planned.
-P10B-18B-04 is Baseline and P10B-18B-05 is the next
-focused product task, and P10B-16P-05B remains Planned after P10B-18C. The accepted audit baseline
+P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A and P10B-18B-01/06/02/03/04/05 are
+Baseline. Parent P10B-18B is Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the
+exact next task, and P10B-16P-05B remains Planned after P10B-18C. The accepted audit baseline
 and bounded source-authority packages are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
@@ -807,10 +806,9 @@ keep distinct approved facts where their reading structure is shared.
 - **Status:** **Planned**. This cleanup cannot start before P10B-18C and cannot weaken P10B-16P-04,
   P10B-18A, P10B-18B or P10B-18C evidence.
 
-P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted
-P10B-18B-02, accepted P10B-18B-03 and accepted P10B-18B-04 are Baseline. Parent
-P10B-18B, P10B-18 and P10B remain Partial; P10B-18B-05 is next, P10B-18C remains Planned,
-and P10B-16P-05B remains Planned after P10B-18C.
+P10B-17, accepted P10B-18A and accepted P10B-18B-01/06/02/03/04/05 are Baseline. Parent P10B-18B
+is Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the exact next task, and
+P10B-16P-05B remains Planned after P10B-18C.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -975,7 +973,7 @@ P10B-02…13 minimum accepted capability
   → P10B-18B-02 homepage/editorial/campaign quality (Baseline / accepted)
   → P10B-18B-03 collection/search/product-card quality (Baseline / accepted)
   → P10B-18B-04 PDP quality (Baseline / accepted)
-  → P10B-18B-05 content/support/utilities quality (next)
+  → P10B-18B-05 content/support/utilities quality (Baseline / accepted)
   → P10B-18C 100+ commercial quality and diversity gate
   → P10B-16P-05B final historical acceptance cleanup
 ```
@@ -1008,11 +1006,11 @@ PR.
 ## 17. Locked handoff
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A, and
-accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02 and accepted P10B-18B-03 are Baseline under the disjoint ownership constraints
-in section 15. P10B-16P-02 is Baseline. Parent P10B-18B, P10B-18 and P10B remain Partial;
-P10B-18B-04 is Baseline, P10B-18B-05 is next, P10B-18C remains Planned, and P10B-16P-05B remains Planned after P10B-18C. No
-later implementation task is complete merely because this architecture or an earlier bounded
-P10B-18 package is accepted.
+accepted P10B-18B-01/06/02/03/04/05 are Baseline under the disjoint ownership constraints in
+section 15. P10B-16P-02 is Baseline. Parent P10B-18B is Baseline/complete; P10B-18 and P10B remain
+Partial. P10B-18C is the exact next task, and P10B-16P-05B remains Planned after P10B-18C. No later
+implementation task is complete merely because this architecture or an earlier bounded P10B-18
+package is accepted.
 
 ## 18. P10B-18B-06 accepted asset-composition authority
 
@@ -1069,7 +1067,8 @@ Status is **Baseline**, accepted by the product owner on 18 August 2026 for boun
 search-results and canonical card quality only. Same-strata evidence contains 39 normalized
 topologies, 53/72 repeated memberships and a largest cluster of seven; 21 retained captures cover
 all four profiles, all five card anatomies and zero/one/multiple search states. Parent P10B-18B,
-P10B-18 and P10B remain Partial. P10B-18B-04 is Baseline; P10B-18B-05 is next and P10B-18C remains Planned.
+P10B-18 and P10B remained Partial at that checkpoint. Its historical handoff was P10B-18B-04,
+followed by P10B-18B-05.
 
 ## 20. P10B-18B-04 accepted PDP quality architecture
 
@@ -1086,5 +1085,17 @@ No product truth, resolver semantics, product-media selection, relationship memb
 identity or profile ID/version is replaced. This bounded acceptance does not change the parent
 phase status.
 
-The product owner accepted this bounded package as **Baseline** on 19 August 2026. Parent
-P10B-18B/P10B-18/P10B remain Partial and P10B-18B-05 is next.
+The product owner accepted this bounded package as **Baseline** on 19 August 2026. Its historical
+handoff was P10B-18B-05, subsequently accepted on 20 August 2026.
+
+### P10B-18B-05 accepted consumption boundary
+
+The accepted Baseline keeps content/support facts, approved placements, navigation and
+utility runtime in their existing authorities. Content rendering now consumes profile-specific
+anatomy only where exact evidence exists, otherwise using registered compatibility aliasing or
+truthful reclassification. Campaign media requires exact purpose affinity and retained P10B-18B-06
+art direction; campaign actions require an exact approved label/navigation pair. Utility states use
+one component family with state-specific DOM composition, and action rendering requires both a
+runtime capability and executable handler. Runtime cart/query/error/loading state is never written
+to canonical snapshots or history. P10B-18B-05 and the completed P10B-18B parent are Baseline;
+P10B-18 and P10B remain Partial and P10B-18C is next.

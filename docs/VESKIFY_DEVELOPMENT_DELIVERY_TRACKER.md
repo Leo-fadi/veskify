@@ -74,7 +74,7 @@ required evidence are accepted.
 | ☑    | P10B-18B-02  | Homepage / editorial / campaign quality upgrade      | **Baseline** | Homepage profile/component owners        | Accepted P10B-18B-01 and P10B-18B-06      | Accepted intentional rich/sparse progression, exact transition authority, stronger hierarchy/rhythm, same-strata accounting, retained review and lifecycle preservation                     |
 | ☑    | P10B-18B-03  | Collection / search / product-card quality upgrade   | **Baseline** | Collection/search/product-card owners    | Accepted P10B-18B-02                      | Accepted cardinality/facet hierarchy, four distinct profile purposes, five canonical card anatomies, executable search truth, same-72 accounting and 21-capture retained review             |
 | ☑    | P10B-18B-04  | PDP quality upgrade                                  | **Baseline** | PDP profile/commerce presentation owners | Accepted P10B-18B-03                      | Accepted 19 August 2026: stronger PDP opening, gallery, option/purchase and related-merchandising hierarchy with protected variant/price/media and retained four-width evidence             |
-| ☐    | P10B-18B-05  | Content / support / utilities quality upgrade        | **Planned**  | Content/support/utility owners           | Accepted P10B-18B-04                      | Stronger registered content, support and utility compositions with lifecycle, navigation and protected-commerce preservation                                                                |
+| ☑    | P10B-18B-05  | Content / support / utilities quality upgrade        | **Baseline** | Content/support/utility owners           | Accepted P10B-18B-04                      | Stronger registered content, support and utility compositions with lifecycle, navigation and protected-commerce preservation                                                                |
 | ☐    | P10B-18C     | 100+ commercial quality and diversity gate           | **Planned**  | Product owner, generation, QA            | Accepted and integrated P10B-18B packages | 100+ complete configurations, protected-state/diversity gates and fingerprint-stratified four-width retained human review                                                                   |
 | ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Planned**  | Generation architecture/evidence         | P10B-16P-05A and P10B-18C                 | Consumer-proven removal/archival of remaining historical scaffolding with migration and evidence retention                                                                                  |
 
@@ -182,19 +182,18 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A,
-accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02 and accepted P10B-18B-03 are **Baseline**. P10B-16P-02
-is **Baseline**. Parent
-P10B-18B, P10B-18, and P10B remain **Partial**; P10B-18C remains **Planned**. P10B-16P-04
-acceptance evidence is retained
+P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A and
+accepted P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03, P10B-18B-04 and P10B-18B-05 are
+**Baseline**. P10B-16P-02 is **Baseline**. Parent P10B-18B is **Baseline** / complete; P10B-18 and
+P10B remain **Partial**; P10B-18C remains **Planned**. P10B-16P-04 acceptance evidence is retained
 in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18B-05 is the
-next focused product task after accepted P10B-18B-04.
+P10B-16P-05B follows P10B-18C as the final consumer-verified historical cleanup. P10B-18C is the
+exact next product task after accepted and completed P10B-18B.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -700,10 +699,9 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   evidence dependency; final removal preserves historical records and all valid snapshots/artifacts.
 - **Non-goal:** Deleting P10B-18 visual fixtures or compatibility data before their removal gate.
 
-P10B-17, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted P10B-18B-02,
-accepted P10B-18B-03 and accepted P10B-18B-04 are Baseline. Parent P10B-18B, P10B-18 and P10B
-remain Partial; P10B-18B-05 is next, P10B-18C remains Planned, and
-P10B-16P-05B remains Planned after P10B-18C.
+P10B-17, accepted P10B-18A and accepted P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03,
+P10B-18B-04 and P10B-18B-05 are Baseline. Parent P10B-18B is Baseline/complete; P10B-18 and P10B
+remain Partial. P10B-18C is the exact next task, and P10B-16P-05B remains Planned after P10B-18C.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
@@ -770,7 +768,8 @@ P10B-16P-05B remains Planned after P10B-18C.
 
 - **Outcome:** Implement the accepted coherent improvements to current Design DNA, compatibility,
   profiles, component consumers, asset-role selection and evaluation authority.
-- **Status:** **Partial**. P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03 and P10B-18B-04 are Baseline; P10B-18B-05 remains incomplete.
+- **Status:** **Baseline** / complete. P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03,
+  P10B-18B-04 and P10B-18B-05 are Baseline.
 - **Depends on:** Accepted P10B-18A and its frozen package order/ownership.
 - **Done when:** Every implemented package has focused positive/fail-closed evidence and the
   integrated authority produces improved multi-surface output against the frozen P10B-18A
@@ -876,8 +875,8 @@ P10B-16P-05B remains Planned after P10B-18C.
 - **Boundaries:** No content/support/utility redesign, new commerce authority, product-type-name
   matching, provider call, Vesko call, generated media or real publication. This does not accept
   complete-store commercial visual quality or P10B-18C designer-grade/100+ quality.
-- **Next:** P10B-18B-05 — Content / Support / Utilities Quality Upgrade. P10B-18C remains Planned;
-  P10B-16P-05B remains after P10B-18C.
+- **Historical handoff:** P10B-18B-05 — Content / Support / Utilities Quality Upgrade, subsequently
+  accepted on 20 August 2026. P10B-18C is now the exact next task; P10B-16P-05B remains after it.
 
 #### P10B-18C — 100+ commercial quality and diversity gate
 
@@ -1120,3 +1119,17 @@ P10B-16P-05B remains Planned after P10B-18C.
 - **Done when:** The stated outcome and required evidence are accepted.
 - **Required evidence:** Security, load, recovery, telemetry, and controlled-pilot evidence.
 - **Non-goal:** New design, editor, advanced-media, or commerce scope.
+
+### P10B-18B-05 accepted Baseline (20 August 2026)
+
+The accepted package preserves one `StorefrontSnapshot`, one `PageBlueprint`, one
+fact/asset/navigation authority, the existing `contentSupport` and `commerceUtility` families and
+transient utility runtime projection. Focused evidence is 31/31 final unit tests, 78/78 retained
+P10B-12/13 browser tests, 70/70 focused authority/lifecycle tests, 2/2 dedicated matrix tests with 30
+captures, and the unchanged 72/72 frozen compilation strata. The product owner accepted the exact
+checkpoint on 20 August 2026. P10B-18B-05 and the completed P10B-18B parent are Baseline;
+P10B-18/P10B remain Partial and P10B-18C is the exact next task. The mandated complete one-worker
+Vitest ran exactly once: 2,925 tests passed, three retained assertions failed and one live-gated test
+was skipped. The three findings were corrected through focused authority/test updates, all affected
+focused reruns are green, and the final retained browser/lifecycle/compiler regressions are green.
+PR review, CI and merge remain.

@@ -29,6 +29,7 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
+import { type StorefrontRenderContext } from "@/components/registry/contract";
 import { aurumNordicSeed } from "@/data/seed";
 import { createIdleUrlBriefWorkflow, urlBriefWorkflowSchema } from "@/domain/onboarding";
 import {
@@ -609,6 +610,41 @@ function completeSiteMapWithApprovedAbout(workflow: ReturnType<typeof approvedWo
   });
 }
 
+function withCampaignContinuationCollectionPath(
+  context: StorefrontRenderContext,
+): StorefrontRenderContext {
+  const collectionPage = pageModelSchema.parse({
+    id: "collection-rings",
+    type: "collection",
+    slug: "/collections/rings",
+    title: localized("Rings", "Sormukset"),
+    seo: {
+      title: localized("Rings", "Sormukset"),
+      metaDescription: localized("Rings collection", "Sormusvalikoima"),
+    },
+    sections: [],
+  });
+  return {
+    ...context,
+    pages: [...context.pages, collectionPage],
+    pagePaths: {
+      ...context.pagePaths,
+      [collectionPage.id]: "/collections/rings",
+    },
+    navigation: {
+      ...context.navigation,
+      primary: [
+        ...context.navigation.primary,
+        {
+          id: "campaign-collections",
+          label: localized("Collections", "Kokoelmat"),
+          target: { type: "page", pageId: collectionPage.id },
+        },
+      ],
+    },
+  };
+}
+
 describe("P10B-12 content and support page families", () => {
   it("registers bounded, structurally distinct profiles for every required family", () => {
     const profiles = listCommercialContentSupportProfiles();
@@ -699,6 +735,66 @@ describe("P10B-12 content and support page families", () => {
     expect(campaign.result.page.sections[0]?.content).toEqual({
       factDocumentId: campaign.document.id,
     });
+  });
+
+  it("omits fallback-only campaign image-led media blocks when no approved campaign media is available", () => {
+    const campaign = materialized("campaign-editorial");
+    const campaignHtml = renderToStaticMarkup(
+      renderStorefrontPage(campaign.result.page, campaign.context),
+    );
+    expect(campaign.result.page.sections[0]?.variant).toBe("campaignImageLed");
+    expect(campaignHtml).not.toContain('data-content-region="campaign-media"');
+  });
+
+  it("renders no campaign continuation region for image-led campaign variant without dedicated continuation contract", () => {
+    const campaign = materialized("campaign-editorial");
+    const withoutTarget = renderToStaticMarkup(
+      renderStorefrontPage(campaign.result.page, campaign.context),
+    );
+    expect(withoutTarget).not.toContain('data-content-region="continuation"');
+    expect(withoutTarget).toContain('data-component="homepagePromotion"');
+    expect(withoutTarget).toContain('data-region="actions"');
+
+    const withTarget = renderToStaticMarkup(
+      renderStorefrontPage(
+        campaign.result.page,
+        withCampaignContinuationCollectionPath(campaign.context),
+      ),
+    );
+    expect(withTarget).not.toContain('data-content-region="continuation"');
+    expect(withTarget).not.toContain('href="/collections/rings"');
+  });
+
+  it("reclassifies unsupported location-appointments pages to location-directory composition", () => {
+    const locations = materialized("store-locations");
+    const section = structuredClone(locations.result.page.sections[0]);
+    if (!section) {
+      throw new Error("The store-locations fixture requires one content section.");
+    }
+    section.variant = "locationAppointments";
+    const page = pageModelSchema.parse({
+      ...locations.result.page,
+      sections: [section],
+    });
+    const html = renderToStaticMarkup(renderStorefrontPage(page, locations.context));
+    expect(html).toContain('data-content-region="locationDirectory"');
+    expect(html).not.toContain('data-content-region="location-appointments"');
+  });
+
+  it("reclassifies FAQ topic-guide pages to disclosure composition without topic-guide authority", () => {
+    const faq = materialized("faq");
+    const section = structuredClone(faq.result.page.sections[0]);
+    if (!section) {
+      throw new Error("The FAQ fixture requires one content section.");
+    }
+    section.variant = "faqTopicGuide";
+    const page = pageModelSchema.parse({
+      ...faq.result.page,
+      sections: [section],
+    });
+    const html = renderToStaticMarkup(renderStorefrontPage(page, faq.context));
+    expect(html).toContain('data-content-region="faq-disclosure"');
+    expect(html).not.toContain('data-content-region="faq-topic-guide"');
   });
 
   it("consumes registered reading-width and alignment props in the shared content renderer", () => {

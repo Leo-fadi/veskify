@@ -67,7 +67,11 @@ test("profiles retain distinct compositions and only display bounded approved co
     const root = page.locator(`[data-p10b-12-content-support-profile="${profileId}"]`);
     fingerprints.add((await root.getAttribute("data-structural-fingerprint"))!);
     await expect(root).not.toContainText("unapproved caller fact");
-    await expect(root).toContainText(/approved/i);
+    await expect(root).toHaveAttribute(
+      "data-fact-document-fingerprint",
+      /content-support-facts-v1_/,
+    );
+    await expect(root.locator('[data-component="contentSupport"]')).not.toBeEmpty();
   }
   expect(fingerprints.size).toBe(profiles.length);
 });

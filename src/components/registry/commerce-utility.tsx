@@ -35,6 +35,9 @@ const labels = (context: StorefrontRenderContext) =>
         retry: "Yritä uudelleen",
         loading: "Ladataan",
         cart: "Ostoskori",
+        searchTerm: "Hakusana",
+        activeFilters: "Aktiiviset suodattimet",
+        notFoundCode: "Sivua ei löytynyt",
         decreaseQuantity: "Vähennä määrää",
         increaseQuantity: "Lisää määrää",
       }
@@ -51,6 +54,9 @@ const labels = (context: StorefrontRenderContext) =>
         retry: "Try again",
         loading: "Loading",
         cart: "Cart",
+        searchTerm: "Search term",
+        activeFilters: "Active filters",
+        notFoundCode: "Page not found",
         decreaseQuantity: "Decrease quantity",
         increaseQuantity: "Increase quantity",
       };
@@ -132,13 +138,19 @@ function UtilityAction({
   );
 }
 
-function ContinueShopping({ context }: { context: StorefrontRenderContext }) {
+function ContinueShopping({
+  context,
+  tone = "primary",
+}: {
+  context: StorefrontRenderContext;
+  tone?: "primary" | "secondary";
+}) {
   return (
     <UtilityAction
       action="continue-shopping"
       context={context}
       label={labels(context).continueShopping}
-      tone="primary"
+      tone={tone}
     />
   );
 }
@@ -158,12 +170,17 @@ function CartPresentation({
     return (
       <section
         {...utilityResponsiveAttributes(variant)}
-        className={styles.state}
+        className={`${styles.state} ${styles.unavailable}`}
         data-utility-state="unavailable"
         role="status"
       >
-        <h1>{copy.cart}</h1>
-        <p>
+        <div className={styles.stateIdentity} data-state-region="identity">
+          <span className={styles.stateMarker} aria-hidden="true">
+            —
+          </span>
+          <h1>{copy.cart}</h1>
+        </div>
+        <p data-state-region="explanation">
           {context.activeLocale === "fi"
             ? "Ostoskorin tietoja ei ole saatavilla."
             : "Cart information is unavailable."}
@@ -180,12 +197,17 @@ function CartPresentation({
     return (
       <section
         {...utilityResponsiveAttributes(variant)}
-        className={styles.state}
+        className={`${styles.state} ${styles.unavailable}`}
         data-utility-state="unavailable"
         role="status"
       >
-        <h1>{copy.cart}</h1>
-        <p>
+        <div className={styles.stateIdentity} data-state-region="identity">
+          <span className={styles.stateMarker} aria-hidden="true">
+            —
+          </span>
+          <h1>{copy.cart}</h1>
+        </div>
+        <p data-state-region="explanation">
           {context.activeLocale === "fi"
             ? "Ostoskorin tietoja ei ole saatavilla."
             : "Cart information is unavailable."}
@@ -199,12 +221,21 @@ function CartPresentation({
         {...utilityResponsiveAttributes(variant)}
         aria-atomic="true"
         aria-live="polite"
-        className={styles.empty}
+        className={`${styles.empty} ${styles.cartEmpty}`}
         data-utility-state="cart-empty"
       >
-        <h1>{copy.cart}</h1>
-        <p>{context.activeLocale === "fi" ? "Ostoskorisi on tyhjä." : "Your cart is empty."}</p>
-        <ContinueShopping context={context} />
+        <div className={styles.stateIdentity} data-state-region="identity">
+          <span className={styles.cartGlyph} aria-hidden="true">
+            0
+          </span>
+          <h1>{copy.cart}</h1>
+        </div>
+        <p data-state-region="explanation">
+          {context.activeLocale === "fi" ? "Ostoskorisi on tyhjä." : "Your cart is empty."}
+        </p>
+        <div className={styles.actions} data-state-region="actions">
+          <ContinueShopping context={context} />
+        </div>
       </section>
     );
   }
@@ -330,85 +361,303 @@ function CartPresentation({
   );
 }
 
-function StatePresentation({
+function UtilityUnavailablePresentation({
   content,
   context,
   variant,
 }: {
   content: z.infer<typeof commerceUtilityContentSchema>;
   context: StorefrontRenderContext;
-  variant: Exclude<(typeof variants)[number], "cart"> | "cart";
+  variant: (typeof variants)[number];
 }) {
-  const runtime = context.commerceUtilityRuntime;
-  if (!runtime) {
-    return (
-      <section
-        {...utilityResponsiveAttributes(variant)}
-        className={styles.state}
-        data-utility-state="unavailable"
-        role="status"
-      >
-        <h1>{text(content.heading, context)}</h1>
-        <p>{text(content.body, context)}</p>
-      </section>
-    );
-  }
   const copy = labels(context);
+  const heading =
+    variant === "cart"
+      ? copy.cart
+      : variant === "checkoutBoundary"
+        ? copy.checkout
+        : text(content.heading, context);
   const body =
-    runtime.kind === "no-results"
-      ? runtime.query
-        ? `${text(content.body, context)} “${runtime.query}”`
-        : text(content.body, context)
-      : runtime.kind === "empty" || runtime.kind === "error" || runtime.kind === "loading"
-        ? text(runtime.message, context)
-        : runtime.kind === "checkout"
-          ? text(runtime.boundaryLabel, context)
-          : text(content.body, context);
-  const isCheckout = runtime.kind === "checkout";
+    variant === "cart"
+      ? context.activeLocale === "fi"
+        ? "Ostoskorin tietoja ei ole saatavilla."
+        : "Cart information is unavailable."
+      : variant === "checkoutBoundary"
+        ? context.activeLocale === "fi"
+          ? "Kassan tietoja ei ole saatavilla."
+          : "Checkout information is unavailable."
+        : text(content.body, context);
   return (
     <section
       {...utilityResponsiveAttributes(variant)}
-      aria-atomic={runtime.kind === "error" || runtime.kind === "loading" ? "true" : undefined}
-      aria-busy={runtime.kind === "loading" ? "true" : undefined}
-      aria-live={
-        runtime.kind === "error" ? "assertive" : runtime.kind === "loading" ? "polite" : undefined
-      }
-      className={styles.state}
-      data-utility-state={runtime.kind}
-      role={runtime.kind === "error" ? "alert" : runtime.kind === "loading" ? "status" : undefined}
+      className={`${styles.state} ${styles.unavailable}`}
+      data-utility-state="unavailable"
+      role="status"
     >
-      <h1>{runtime.kind === "loading" ? copy.loading : text(content.heading, context)}</h1>
-      <p>{body}</p>
-      {runtime.kind === "no-results" && runtime.activeFilters.length ? (
-        <p className={styles.filters}>
-          {runtime.activeFilters.map((filter) => text(filter, context)).join(" · ")}
+      <div className={styles.stateIdentity} data-state-region="identity">
+        <span className={styles.stateMarker} aria-hidden="true">
+          —
+        </span>
+        <h1>{heading}</h1>
+      </div>
+      <p data-state-region="explanation">{body}</p>
+    </section>
+  );
+}
+
+function NoResultsPresentation({
+  content,
+  context,
+  runtime,
+}: {
+  content: z.infer<typeof commerceUtilityContentSchema>;
+  context: StorefrontRenderContext;
+  runtime: {
+    kind: "no-results";
+    query: string;
+    activeFilters: z.infer<typeof localizedTextSchema>[];
+  };
+}) {
+  const copy = labels(context);
+  const canClearSearch = Boolean(runtime.query && supports(context, "clear-search"));
+  const canClearFilters = Boolean(
+    runtime.activeFilters.length && supports(context, "clear-filters"),
+  );
+  const hasPrimaryRecovery = canClearSearch || canClearFilters;
+  return (
+    <section
+      {...utilityResponsiveAttributes("noResults")}
+      aria-live="polite"
+      className={`${styles.state} ${styles.noResults}`}
+      data-utility-state="no-results"
+      role="status"
+    >
+      <header className={styles.noResultsIdentity} data-state-region="identity">
+        <span className={styles.searchGlyph} aria-hidden="true">
+          0
+        </span>
+        <div>
+          <h1>{text(content.heading, context)}</h1>
+          <p>{text(content.body, context)}</p>
+        </div>
+      </header>
+      {runtime.query ? (
+        <p className={styles.query} data-state-region="query">
+          <span>{copy.searchTerm}</span>
+          <strong>“{runtime.query}”</strong>
         </p>
       ) : null}
-      <div className={styles.actions}>
-        {isCheckout ? (
+      {runtime.activeFilters.length ? (
+        <div className={styles.filterRegion} data-state-region="filters">
+          <span>{copy.activeFilters}</span>
+          <ul className={styles.filters}>
+            {runtime.activeFilters.map((filter, index) => (
+              <li key={`${text(filter, context)}-${index}`}>{text(filter, context)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <div className={styles.actions} data-state-region="actions">
+        {canClearSearch ? (
           <UtilityAction
-            action="continue-checkout"
-            label={copy.checkout}
+            action="clear-search"
+            label={copy.clearSearch}
             context={context}
-            checkoutUrl={runtime.checkoutUrl}
+            tone="primary"
           />
         ) : null}
-        {runtime.kind === "no-results" ? (
-          <>
-            <UtilityAction action="clear-search" label={copy.clearSearch} context={context} />
-            <UtilityAction action="clear-filters" label={copy.clearFilters} context={context} />
-          </>
+        {canClearFilters ? (
+          <UtilityAction
+            action="clear-filters"
+            label={copy.clearFilters}
+            context={context}
+            tone={canClearSearch ? "secondary" : "primary"}
+          />
         ) : null}
-        {runtime.kind === "error" && runtime.recoverable ? (
-          <UtilityAction action="retry" label={copy.retry} context={context} />
-        ) : null}
-        {runtime.kind === "not-found" ? (
-          <UtilityAction action="return-home" label={copy.returnHome} context={context} />
-        ) : null}
-        {runtime.kind !== "checkout" && runtime.kind !== "loading" ? (
-          <ContinueShopping context={context} />
-        ) : null}
+        <ContinueShopping context={context} tone={hasPrimaryRecovery ? "secondary" : "primary"} />
       </div>
+    </section>
+  );
+}
+
+function CheckoutBoundaryPresentation({
+  content,
+  context,
+  runtime,
+}: {
+  content: z.infer<typeof commerceUtilityContentSchema>;
+  context: StorefrontRenderContext;
+  runtime: {
+    kind: "checkout";
+    boundaryLabel: z.infer<typeof localizedTextSchema>;
+    checkoutUrl?: string;
+  };
+}) {
+  const copy = labels(context);
+  return (
+    <section
+      {...utilityResponsiveAttributes("checkoutBoundary")}
+      className={`${styles.state} ${styles.checkout}`}
+      data-utility-state="checkout"
+    >
+      <div className={styles.checkoutIdentity} data-state-region="identity">
+        <span className={styles.checkoutStep} aria-hidden="true">
+          01
+        </span>
+        <h1>{text(content.heading, context)}</h1>
+      </div>
+      <p data-state-region="boundary">{text(runtime.boundaryLabel, context)}</p>
+      <div className={styles.actions} data-state-region="actions">
+        <UtilityAction
+          action="continue-checkout"
+          label={copy.checkout}
+          context={context}
+          checkoutUrl={runtime.checkoutUrl}
+          tone="primary"
+        />
+        <ContinueShopping context={context} tone="secondary" />
+      </div>
+    </section>
+  );
+}
+
+function EmptyStatePresentation({
+  content,
+  context,
+  runtime,
+}: {
+  content: z.infer<typeof commerceUtilityContentSchema>;
+  context: StorefrontRenderContext;
+  runtime: {
+    kind: "empty";
+    message: z.infer<typeof localizedTextSchema>;
+  };
+}) {
+  return (
+    <section
+      {...utilityResponsiveAttributes("emptyState")}
+      className={`${styles.state} ${styles.emptyState}`}
+      data-utility-state="empty"
+    >
+      <div className={styles.emptyIdentity} data-state-region="identity">
+        <span className={styles.emptyGlyph} aria-hidden="true">
+          ○
+        </span>
+        <h1>{text(content.heading, context)}</h1>
+      </div>
+      <p data-state-region="explanation">{text(runtime.message, context)}</p>
+      <div className={styles.actions} data-state-region="actions">
+        <UtilityAction
+          action="continue-shopping"
+          context={context}
+          label={labels(context).continueShopping}
+          tone="primary"
+        />
+      </div>
+    </section>
+  );
+}
+
+function RecoverableErrorPresentation({
+  content,
+  context,
+  runtime,
+}: {
+  content: z.infer<typeof commerceUtilityContentSchema>;
+  context: StorefrontRenderContext;
+  runtime: {
+    kind: "error";
+    message: z.infer<typeof localizedTextSchema>;
+    recoverable: boolean;
+  };
+}) {
+  const copy = labels(context);
+  const hasRetry = runtime.recoverable && supports(context, "retry");
+  return (
+    <section
+      {...utilityResponsiveAttributes("recoverableError")}
+      aria-atomic="true"
+      className={`${styles.state} ${styles.recoverableError}`}
+      data-utility-state="error"
+      role="alert"
+      aria-live="assertive"
+    >
+      <div className={styles.errorIdentity} data-state-region="identity">
+        <span className={styles.errorGlyph} aria-hidden="true">
+          !
+        </span>
+        <h1>{text(content.heading, context)}</h1>
+      </div>
+      <p data-state-region="explanation">{text(runtime.message, context)}</p>
+      <div className={styles.actions} data-state-region="actions">
+        {hasRetry ? (
+          <UtilityAction action="retry" label={copy.retry} context={context} tone="primary" />
+        ) : null}
+        <ContinueShopping context={context} tone={hasRetry ? "secondary" : "primary"} />
+      </div>
+    </section>
+  );
+}
+
+function NotFoundPresentation({
+  content,
+  context,
+}: {
+  content: z.infer<typeof commerceUtilityContentSchema>;
+  context: StorefrontRenderContext;
+}) {
+  const copy = labels(context);
+  return (
+    <section
+      {...utilityResponsiveAttributes("notFound")}
+      className={`${styles.state} ${styles.notFound}`}
+      data-utility-state="not-found"
+    >
+      <div className={styles.notFoundIdentity} data-state-region="identity">
+        <span className={styles.notFoundCode} aria-label={copy.notFoundCode}>
+          404
+        </span>
+        <h1>{text(content.heading, context)}</h1>
+      </div>
+      <p data-state-region="explanation">{text(content.body, context)}</p>
+      <div className={styles.actions} data-state-region="actions">
+        <UtilityAction
+          action="return-home"
+          label={copy.returnHome}
+          context={context}
+          tone="primary"
+        />
+      </div>
+    </section>
+  );
+}
+
+function LoadingPresentation({
+  context,
+  runtime,
+}: {
+  context: StorefrontRenderContext;
+  runtime: {
+    kind: "loading";
+    message: z.infer<typeof localizedTextSchema>;
+  };
+}) {
+  const copy = labels(context);
+  return (
+    <section
+      {...utilityResponsiveAttributes("loading")}
+      aria-atomic="true"
+      aria-busy="true"
+      aria-live="polite"
+      className={`${styles.state} ${styles.loading}`}
+      data-utility-state="loading"
+      role="status"
+    >
+      <div className={styles.loadingIdentity} data-state-region="identity">
+        <span className={styles.loadingIndicator} aria-hidden="true" />
+        <h1>{copy.loading}</h1>
+      </div>
+      <p data-state-region="explanation">{text(runtime.message, context)}</p>
     </section>
   );
 }
@@ -449,8 +698,36 @@ export const commerceUtilityDefinition = defineComponent({
   renderer: ({ content, props, context, variant }) =>
     variant === "cart" && context.commerceUtilityRuntime?.kind !== "loading" ? (
       <CartPresentation context={context} placement={props.summaryPlacement} variant={variant} />
+    ) : context.commerceUtilityRuntime?.kind === "loading" ? (
+      <LoadingPresentation context={context} runtime={context.commerceUtilityRuntime} />
+    ) : context.commerceUtilityRuntime?.kind === "checkout" ? (
+      <CheckoutBoundaryPresentation
+        content={content}
+        context={context}
+        runtime={context.commerceUtilityRuntime}
+      />
+    ) : context.commerceUtilityRuntime?.kind === "no-results" ? (
+      <NoResultsPresentation
+        content={content}
+        context={context}
+        runtime={context.commerceUtilityRuntime}
+      />
+    ) : context.commerceUtilityRuntime?.kind === "empty" ? (
+      <EmptyStatePresentation
+        content={content}
+        context={context}
+        runtime={context.commerceUtilityRuntime}
+      />
+    ) : context.commerceUtilityRuntime?.kind === "error" ? (
+      <RecoverableErrorPresentation
+        content={content}
+        context={context}
+        runtime={context.commerceUtilityRuntime}
+      />
+    ) : context.commerceUtilityRuntime?.kind === "not-found" ? (
+      <NotFoundPresentation content={content} context={context} />
     ) : (
-      <StatePresentation content={content} context={context} variant={variant} />
+      <UtilityUnavailablePresentation content={content} context={context} variant={variant} />
     ),
 });
 

@@ -81,3 +81,14 @@ merchandising loading role, and responsive layout remains governed by the select
 Runtime utility state remains read-only and non-persistent; no cart, checkout, search, product,
 snapshot, renderer, or media authority was added or mutated. P10B-18 remains the customer-facing
 utility-quality and scale gate, while operational commerce remains Vesko/P11-owned.
+
+## P10B-18B-05 accepted quality Baseline
+
+The existing single `commerceUtility` family now has purposeful DOM anatomy for populated, empty
+and unavailable cart, checkout boundary, query/filter no-results, generic empty, recoverable error,
+not-found and loading. Actions require both the matching transient runtime capability and executable
+handler, with at most one visually dominant action. Loading remains a polite busy status; errors use
+assertive alert semantics; unavailable/unrecoverable states fail closed. No checkout fields,
+recommendations or operational cart/error engine were added. Persisted utility design survives the
+canonical lifecycle while cart/query/error/loading payloads remain outside snapshots and history.
+The product owner accepted this bounded utility-quality Baseline on 20 August 2026.

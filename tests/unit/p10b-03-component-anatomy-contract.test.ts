@@ -510,6 +510,10 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       "campaignLedDiscovery",
       "denseSearch",
     ]);
+    const contentSupportAliases: ReadonlyMap<string, string> = new Map([
+      ["locationAppointments", "locationDirectory"],
+      ["faqTopicGuide", "faqDisclosure"],
+    ]);
     for (const definition of veskifyComponentDefinitionsV2) {
       const anatomy = definition.commercialAnatomy;
       expect(anatomy, definition.type).toBeDefined();
@@ -544,13 +548,33 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
                 variant.materialDifferences.length === 0,
           ),
         ).toBe(true);
-      } else if (["commerceUtility", "contentSupport"].includes(definition.type)) {
+      } else if (definition.type === "commerceUtility") {
         expect(
           entry?.variants.every(
             (variant) =>
               variant.structuralClassification === "meaningfulStructuralVariant" &&
               variant.materialDifferences.length >= 1,
           ),
+        ).toBe(true);
+      } else if (definition.type === "contentSupport") {
+        expect(
+          entry?.variants.every((variant) => {
+            const aliasOf = contentSupportAliases.get(variant.id);
+            if (!aliasOf) {
+              return (
+                variant.structuralClassification === "meaningfulStructuralVariant" &&
+                variant.materialDifferences.length >= 1
+              );
+            }
+            const anatomyVariant = anatomy?.variants.find(
+              ({ variantId }) => variantId === variant.id,
+            );
+            return (
+              variant.structuralClassification === "compatibilityAlias" &&
+              variant.materialDifferences.length === 0 &&
+              anatomyVariant?.aliasOf === aliasOf
+            );
+          }),
         ).toBe(true);
       } else if (!promotedCommercialDefinitions.has(definition.type)) {
         expect(
