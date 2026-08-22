@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 19 August 2026, accepted P10B-18B-04 PDP quality upgrade                 |
+| Verified baseline         | 22 August 2026, accepted P10B-18C commercial quality/diversity gate      |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-18C | 22 August 2026 | P10B-18C accepted implementation and evidence | Accept the deterministic 9 x 14 complete-store matrix, 126/126 replay and protected-state result, 54 material topologies, deterministic 28-store selector, final 280-entry four-width EN/FI review and canonical lifecycle as the current commercial-quality baseline; preserve first-run failures and frozen P10B-18A/P10B-18B evidence while leaving live-AI acceptance to P10B-18D. |
 | 1.3.0 P10B-18B-04 | 19 August 2026 | P10B-18B-04 accepted implementation | Add bounded exact-product PDP matching, four purposeful compositions, stronger purchase/configuration hierarchy, bounded canonical galleries, resolver-safe failure behavior and cardinality-aware related merchandising; retain protected variants/options/prices/media, canonical lifecycle/publication authority and 20 reviewed captures without accepting content/utility or complete-storefront commercial quality. |
 | 1.3.0 P10B-18B-03 | 18 August 2026 | P10B-18B-03 accepted implementation | Strengthen the four existing collection/search profiles and five canonical card anatomies with bounded cardinality, useful facet/filter hierarchy, proportional orientation/grid composition, distinct executable comparison/dense search, truthful semantic discovery causality and synchronized provider-facing canonical-search capability; retain protected commerce/media, lifecycle and publication authority and 21 reviewed captures without accepting complete-storefront quality. |
 | 1.3.0 P10B-18B-02 | 18 August 2026 | P10B-18B-02 accepted implementation | Strengthen the six existing homepage profiles and shared hero/editorial/campaign/proof renderer with explicit transition authority, truthful story/catalogue semantic causality, asset-aware rich/sparse progression and observable hierarchy; retain 72-case structural accounting and 14 reviewed captures while preserving protected commerce/media, snapshot/lifecycle and publication authority and leaving later page-family and P10B-18C quality gates incomplete. |
@@ -107,9 +108,9 @@ P10B-18B-06 asset-composition/art-direction upgrade, accepted P10B-18B-02
 homepage/editorial/campaign quality upgrade, accepted P10B-18B-03 collection/search/product-card
 quality upgrade, accepted P10B-18B-04 PDP quality upgrade and accepted P10B-18B-05
 content/support/utility quality upgrade are Baseline. P10B-16P-02 is Baseline; parent P10B-18B is
-Baseline/complete. P10B-18 and P10B remain Partial. P10B-18C is the exact next task and its 100+
-quality/diversity acceptance remains Planned. P10B-16P-05B final historical cleanup remains Planned
-after P10B-18C. The current
+Baseline/complete. P10B-18C is Baseline. P10B-18 and P10B remain Partial because P10B-18D live-AI
+commercial storefront acceptance is the exact next task. P10B-16P-05B final historical cleanup
+remains blocked until P10B-18D is accepted. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -249,7 +250,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds coordinated constraint packages and diversity control; P10B-16P-01 converges dynamic commerce routes; P10B-16P-02 adds strict transient Design Intent plus deterministic exact compilation and one canonical materialization; P10B-16P-03 connects that authority to normal Studio; P10B-16P-04 proves separately authorized real OpenAI A/B/C proposals plus the C accept/undo/redo/save/reload/preview lifecycle; P10B-16P-05A makes that semantic route and one coordinator/resolver/decision/executor chain the sole active initial-generation authority; P10B-16P-06 supplies standalone canonical transient search query/results authority; P10B-17 closes bounded responsive, accessibility, media-loading, layout-stability and renderer-performance evidence across current registered families; accepted P10B-18A freezes a 72-case deterministic and 18-store/108-capture human-reviewed diagnosis of the commercial ceiling; accepted P10B-18B-01 adds two material Design DNA density outcomes per direction, truthful semantic dependency reporting, complete-store compact-frame reachability, and focused shared-frame refinement; accepted P10B-18B-06 adds bounded shared purpose-affine asset selection, explicit reuse, paired responsive-source/crop execution, approved-logo frame consumption and material art-direction causality; accepted P10B-18B-02 adds explicit homepage transition authority, truthful story/catalogue profile causality and richer/sparser observable hierarchy across the existing six profiles; accepted P10B-18B-03 adds bounded collection cardinality/facet hierarchy, distinct collection/search purposes, five strengthened canonical card anatomies and executable comparison/dense search truth; accepted P10B-18B-04 adds bounded exact-product PDP matching, four purposeful compositions, bounded galleries and cardinality-aware related merchandising; and accepted P10B-18B-05 adds truthful content/support/utility anatomy, campaign authority and transient runtime-state handling. Parent P10B-18B is Baseline/complete; P10B-18 and P10B remain Partial, and P10B-18C designer-grade/100+ quality-scale acceptance remains incomplete. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-17 and the P10B-16P convergence sequence establish the single bounded complete-store authority. Accepted P10B-18A freezes the 72-case ceiling diagnosis; completed P10B-18B adds the six bounded source/consumer quality packages; accepted P10B-18C proves 126/126 deterministic complete-store compiles and replays, protected commerce/media, 54 material topologies, one deterministic 28-store selector and a hash-bound 280-entry four-width EN/FI review with no primary visual FAIL. P10B-18D live-AI commercial storefront acceptance remains outstanding, so P10B-18 and P10B remain Partial. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -923,8 +924,8 @@ upgrade; accepted P10B-18B-06 closes bounded asset-composition authority; accept
 closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes bounded
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
-Baseline/complete; the P10B-18C repeated quality-and-scale gate is the exact next task and remains
-Planned.
+Baseline/complete; P10B-18C is Baseline. P10B-18D is the exact next task, and P10B-16P-05B remains
+blocked until P10B-18D.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -1218,7 +1219,7 @@ P10B-16L and the legacy whole-storefront selector are Deprecated compatibility-o
 authorities for prompted complete-store generation. P10B-16P-05A removes their active runtime,
 routes, provider selector, and executable-intent product-path consumers after proving equivalent V2
 safety coverage and no normal-path dependency. Historical evidence and required neutral
-migration/regression fixtures remain until the P10B-16P-05B cleanup gate after P10B-18C. At this
+migration/regression fixtures remain until the P10B-16P-05B cleanup gate after P10B-18D. At this
 acceptance boundary, search presentation remained registered while execution failed closed;
 P10B-16P-06 later supplies the standalone runtime adapter. See
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
@@ -1259,8 +1260,8 @@ contracts remain unchanged.
 P10B-16P-05A removes the active P10B-16L executable-intent route/provider/runtime and isolates P9/Lumo
 live generation as Deprecated historical, production-disabled evidence. Proven publication and
 migration fixtures remain where they have current consumers. The P10B-16P-04 Aurum acceptance
-composition remains production-disabled and retained through P10B-18C for deterministic A/B/C
-replay and acceptance evidence. P10B-16P-05B is Planned after P10B-18C for consumer-verified final
+composition remains production-disabled and retained through P10B-18D for deterministic A/B/C
+replay and acceptance evidence. P10B-16P-05B is blocked until P10B-18D for consumer-verified final
 historical cleanup. P10B-16P-06 subsequently closes the standalone canonical search query/results
 adapter, P10B-17 closes responsive/accessibility/performance execution, and the accepted P10B-18A
 audit freezes the commercial-authority ceiling. Accepted P10B-18B-01 subsequently closes its
@@ -1268,8 +1269,8 @@ Design DNA/shared-frame package, accepted P10B-18B-06 closes bounded asset-compo
 accepted P10B-18B-02 closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03
 closes bounded collection/search/product-card quality; and accepted P10B-18B-04 closes bounded PDP
 quality; accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
-Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the exact next task, and
-P10B-16P-05B remains Planned after P10B-18C.
+Baseline/complete; P10B-18C is Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
+task, and P10B-16P-05B remains blocked until P10B-18D.
 
 ### 10.24 P10B-16P-06 canonical search query/results adapter
 
@@ -1304,8 +1305,8 @@ package; accepted P10B-18B-06 closes bounded asset-composition authority; accept
 closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes bounded
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
-Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the exact next task, and
-P10B-16P-05B remains Planned after P10B-18C.
+Baseline/complete; P10B-18C is Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
+task, and P10B-16P-05B remains blocked until P10B-18D.
 
 ### 10.25 P10B-17 responsive, accessibility and performance closure
 
@@ -1343,9 +1344,9 @@ commerce/media, and freeze six conditional improvement packages. P10B-18B is now
 complete**:
 P10B-18B-01 and P10B-18B-06 are **Baseline**, accepted on 17 August 2026, P10B-18B-02 and
 P10B-18B-03 are **Baseline**, accepted on 18 August 2026, and P10B-18B-04 is **Baseline**, accepted
-on 19 August 2026. P10B-18B-05 is **Baseline**, accepted on 20 August 2026. P10B-18C is the exact
-next task and is **Planned** to run the final 100+ quality/diversity gate after the accepted P10B-18B
-packages integrate. Acceptance of P10B-18B-06
+on 19 August 2026. P10B-18B-05 is **Baseline**, accepted on 20 August 2026. P10B-18C is **Baseline**,
+accepted on 22 August 2026 after the final 126-case and 280-capture quality/diversity gate. P10B-18D
+is the exact next task. Acceptance of P10B-18B-06
 proves only its bounded asset selection, reuse, responsive source/crop, logo-consumer and
 art-direction authority. Acceptance of P10B-18B-02 proves only bounded homepage, editorial and
 campaign profile/renderer quality, not parent P10B-18B/P10B-18, later page families or
@@ -1412,9 +1413,9 @@ combinations, not manually authored templates.
 
 ### 10.27 Commercial acceptance
 
-Parent P10B-18 and P10B remain Partial until P10B-18C completes this gate. P10B-16P-05B remains
-Planned after P10B-18C so historical acceptance scaffolding is retained while any audit, replay,
-migration or final quality evidence still consumes it.
+Parent P10B-18 and P10B remain Partial until P10B-18D completes fresh live-AI acceptance.
+P10B-16P-05B remains blocked until P10B-18D so historical acceptance scaffolding is retained while
+any audit, replay, migration or final quality evidence still consumes it.
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -1557,9 +1558,8 @@ The binding sequence is:
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
    through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline; P10B-16P-02 is
    Baseline; accepted P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
-   Baseline/complete. P10B-18 and P10B remain Partial. P10B-18C is the exact next task and remains
-   Planned, and
-   P10B-16P-05B remains Planned after P10B-18C. Deliver complete commercially credible storefronts
+   Baseline/complete. P10B-18C is Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact
+   next task and remains Planned, and P10B-16P-05B remains blocked until P10B-18D. Deliver complete commercially credible storefronts
    with bounded material diversity through registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
    scoped AI editing, unified history, save, preview, and publish.
@@ -1633,8 +1633,8 @@ Version 1.3.0 does not claim:
   P10B-18 repeated commercial quality/scale, Vesko staging, production authentication, publication,
   or production readiness;
 - that P10B-16P-05A supplies the missing search query/results adapter, production authentication,
-  P10B-17/P10B-18 closure, or final historical-evidence cleanup; P10B-16P-05B remains Planned after
-  P10B-18C;
+  P10B-17/P10B-18 closure, or final historical-evidence cleanup; P10B-16P-05B remains blocked until
+  P10B-18D;
 - that P10B-16P-06 provides a Vesko search endpoint, AI/semantic/vector/fuzzy search, typo
   correction, recommendations, personalization, analytics, persisted customer search state, or
   P10B-17/P10B-18 closure;
@@ -1869,3 +1869,12 @@ canonical while cart, query, error and loading payloads remain transient. This i
 implementation/evidence. The product owner accepted the checkpoint on 20 August 2026. P10B-18B-05
 and the completed P10B-18B parent are Baseline; P10B-18 and P10B remain Partial, accepted P10B-18B
 denominators remain unchanged, and P10B-18C is the exact next task.
+
+### P10B-18C accepted authority Baseline (22 August 2026)
+
+The accepted deterministic gate compiles and replays all 126 exact complete-store cases, preserves
+protected commerce/media and zero fabrication, records 54 normalized material topologies, and binds
+a stable 28-store selector to a final 280-entry four-width EN/FI review with zero primary FAIL. The
+overall human verdict is **PASS WITH MINOR LIMITATION**. This adds no second snapshot, page graph,
+renderer, commerce model, provider path or production evaluation system. P10B-18D live-AI
+commercial storefront acceptance is the exact next task; P10B-16P-05B remains blocked until then.

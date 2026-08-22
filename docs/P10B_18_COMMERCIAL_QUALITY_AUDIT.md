@@ -1,13 +1,14 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A and P10B-18B-01/06/02/03/04/05 Baseline; parent P10B-18B Baseline/complete; P10B-18/P10B Partial
+**Status:** P10B-18A, P10B-18B and P10B-18C Baseline; P10B-18/P10B Partial pending P10B-18D
 
-**Authority date:** 20 August 2026
+**Authority date:** 22 August 2026
 
-**Branch:** `codex/p10b-18b-05-content-support-utilities-quality`
+**Branch:** `codex/p10b-18c-100-plus-commercial-quality-diversity-gate`
 
 **Baseline:** P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
-Baseline/complete; P10B-18 and P10B are Partial; P10B-18C is the exact next task
+Baseline/complete; P10B-18C is Baseline; P10B-18 and P10B are Partial; P10B-18D is the exact next
+task and P10B-16P-05B remains blocked behind it
 
 ## 1. Purpose and boundaries
 
@@ -1976,3 +1977,163 @@ pages; every storefront client-chunk budget passed, including content/utility at
 MB raw and 417.04 KB of 450 KB gzip. Provider, Vesko, generation-endpoint, external-media and real
 publication calls remain zero. P10B-18B-05 and P10B-18B remain Baseline/complete; P10B-18 and
 P10B remain Partial, and P10B-18C is the exact next task after this accepted package merges.
+
+## 22. P10B-18C accepted 100+ commercial quality and diversity gate
+
+**Status on 22 August 2026:** **Baseline** under the product owner's authorized completion path.
+The final integrated verdict is **PASS WITH MINOR LIMITATION**. P10B-18A and every accepted
+P10B-18B denominator above remain historical and unchanged. P10B-18 and P10B remain Partial because
+P10B-18D live-AI commercial storefront acceptance is now the exact next task. P10B-16P-05B remains
+blocked until that live-AI gate is accepted.
+
+### 22.1 Matrix and authority contract
+
+The deterministic matrix is exactly nine retained catalogue/evidence shapes by fourteen current
+semantic-intent strata, or 126 complete storefront cases. It uses stable case identity
+`<shape>--<semantic-stratum>`, the current semantic schema, one compiler/materializer path, one
+`StorefrontSnapshot`, the existing page/profile/frame/component authorities and read-only canonical
+commerce. No random seed, raw registry Cartesian product, second model, provider call, Vesko call or
+real publication participates.
+
+| Final Stage A result                                             | Exact value |
+| ---------------------------------------------------------------- | ----------: |
+| Complete compile/materialization                                 |     126/126 |
+| Deterministic replay                                             |     126/126 |
+| Compiled-decision fingerprints                                   |         126 |
+| Consumed-authority lineages                                      |          98 |
+| Normalized material topologies                                   |          54 |
+| Direction-label-free topologies                                  |          54 |
+| Repeated topology clusters                                       |          34 |
+| Repeated-case membership                                         |     106/126 |
+| Largest cluster                                                  |          14 |
+| Singleton topologies                                             |          20 |
+| Protected commerce mutations                                     |           0 |
+| Protected media mutations                                        |           0 |
+| Placeholders / promised-but-unrendered / missing facts or assets |   0 / 0 / 0 |
+| External provider / Vesko / real publication calls               |   0 / 0 / 0 |
+
+Direction cases are Modern Technical 45, Premium Editorial 45 and Minimal/Warm 36. Material
+topology counts are Modern 24, Premium 15 and Minimal/Warm 15. Frame distribution is centered
+minimal 27, commerce utility 9, compact technical 36 and editorial masthead 54. Six non-colour
+Design DNA outcomes remain materially consumed. The unchanged frozen P10B-18A subset passes 72/72
+with 39 topologies, 53/72 repeated membership, largest cluster seven, 19 singletons and 72 consumed
+authority records.
+
+### 22.2 Preserved first-run and correction evidence
+
+The evidence ledger preserves failures rather than rewriting them as storefront passes:
+
+- Stage A first exposed a selector-only failure where one overlapping Modern case silently filled
+  both comparison and configurable tablet witness slots. Stable case-ID tie-breaking and distinct
+  required slots corrected the selector without changing the 126 cases, topology or thresholds.
+- Stage B accessibility, viewport sequencing, clean-capture production-server composition, P04
+  token/acknowledgement, request attribution, active-capture lifecycle, filename, fixture and image
+  settlement probes each retained their exact test-development failures before bounded harness-only
+  correction.
+- Historical Root Class D non-`_rsc` request aborts and Root Class E presentation-image cancellation
+  remain unexplained, non-reproduced production-harness incidents. They were not broadened into an
+  expected classification. Exact approved `_rsc` navigation and post-ready prefetch cancellation
+  contracts remain separately retained and bounded.
+- One complete run stopped after five captures with APFS `ENOSPC`; the retained classification is
+  capture-harness execution environment, not storefront quality. Full-run 20 GiB storage authority
+  remains unchanged; the final authority-bound delta used its separately measured 4 GiB reserve.
+- The first complete visual review failed 26 FI captures containing customer-visible audit/test
+  fixture prose. After that correction, a later complete 280-capture machine pass still failed the
+  human gate on four FI home captures containing stale jewellery-catalogue identity for workspace
+  furniture. Both FAIL ledgers and screenshots remain retained.
+- The final synthetic fixture correction changed only two production-disabled case snapshots,
+  preserved canonical prices, availability, options, memberships and media, and introduced no
+  production storefront or semantic/compiler/materializer change.
+
+The bounded production correction outside the acceptance harness is the canonical product-card
+mobile title/action geometry found by the retained Premium witness. The Karvonen acceptance fixture
+also gained explicit truthful EN/FI customer-facing values through a fixture-scoped completeness
+gate. Shared locale fallback, production commerce/media authority and acceptance thresholds remain
+unchanged.
+
+### 22.3 Semantic causality and duplicate verdict
+
+| Semantic control             | Classification      | Owning material authority                                      | Verdict                                                                      |
+| ---------------------------- | ------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Commercial posture           | `material-direct`   | Direction package and exact non-colour Design DNA              | Fixed-context witness changes consumed and rendered authority                |
+| Density                      | `material-compound` | Exact spacing/DNA density and bounded layout parameters        | Smallest current-schema compound witness changes material topology           |
+| Navigation posture           | `material-compound` | Registered shared frame                                        | Smallest compatible witness changes frame/topology                           |
+| Story/catalogue balance      | `material-compound` | Homepage profile and ordered composition                       | Smallest compound witness changes homepage authority                         |
+| Discovery posture            | `material-compound` | Collection/search profile, archetype and card anatomy          | Smallest compound witness changes discovery topology                         |
+| Configurable-product posture | `material-compound` | PDP profile and dynamic product archetype mapping              | Smallest compound witness changes PDP authority                              |
+| Mobile hierarchy             | `material-compound` | Registered frame/profile responsive transformations            | Smallest compound witness changes responsive material authority              |
+| Image prominence             | `material-compound` | Design DNA media posture plus approved placement/art direction | Asset-rich witness changes authority; asset-poor paths substitute truthfully |
+
+One cluster exceeds 10%: fourteen Minimal product-first/catalogue-efficient cases across seven
+compatible shapes resolve to the same restrained registered outcome. The cluster is explicit, was
+selected for human witnesses, and reflects truthful compatibility concentration rather than a
+fingerprint-only diversity claim. The 34 repeated clusters and distance-one near witnesses remain
+reported; none hides a semantic control advertised as independently material. Cross-direction and
+same-direction retained witnesses show coherent Premium editorial/campaign, Modern comparison/
+configuration/dense, and Minimal product/story/catalogue alternatives after removing copy, colour
+and merchant identity.
+
+### 22.4 Deterministic human selector and browser evidence
+
+The stable selector retains 28 stores, including fourteen search cases, twelve content/utility cases
+and six distinct tablet witnesses. The selected case IDs are:
+
+- Premium: `aurum-approved-presentation-image-rich--premium-campaign-image-led`,
+  `aurum-approved-presentation-image-rich--premium-editorial-alternative`,
+  `aurum-approved-presentation-image-rich--premium-high-consideration`,
+  `aurum-approved-presentation-image-rich--premium-product-restrained`,
+  `canonical-product-media-rich-presentation-asset-poor--premium-campaign-image-led`,
+  `image-evidence-poor--premium-campaign-image-led`,
+  `medium-mixed-jewellery--premium-campaign-image-led`,
+  `mixed-jewellery-watch--premium-campaign-image-led`, and
+  `mixed-jewellery-watch--premium-editorial-alternative`.
+- Modern: all five Aurum Modern strata,
+  `canonical-product-media-rich-presentation-asset-poor--modern-catalogue-dense`,
+  `configurable-product-heavy-medium--modern-balanced-utility`,
+  `configurable-product-heavy-medium--modern-comparison`,
+  `medium-mixed-jewellery--modern-balanced-utility`,
+  `medium-mixed-jewellery--modern-catalogue-dense`,
+  `medium-mixed-jewellery--modern-simple-heavy`, and
+  `neutral-true-high-consideration--modern-balanced-utility`.
+- Minimal/Warm: all four Aurum Minimal strata,
+  `medium-mixed-jewellery--minimal-catalogue-efficient`,
+  `neutral-true-high-consideration--minimal-product-first`, and
+  `simple-product-heavy-small--minimal-story-airy`.
+
+The final canonical manifest contains 280 hash-bound captures: 122 at 375 px, 18 at 768 px, 18 at
+1024 px and 122 at 1440 px; 166 are EN and 114 FI; 232 use saved-draft preview and 48 use the
+production-disabled proof renderer. Geometry, accessibility, clean-capture, route, request/runtime,
+image-settlement, screenshot-write and manifest-persistence gates pass with zero blocking runtime
+failure. Every successful capture reaches `planned` -> `navigation-started` -> `response-received`
+-> `storefront-ready` -> `capture-started` -> `screenshot-written` -> `manifest-persisted` ->
+`capture-complete`.
+
+The final fixture correction was eligible for authority-and-hash-bound delta review: two changed
+case IDs affected twelve captures, 268 baseline captures remained byte-, route-, locale-, viewport-,
+snapshot-, consumed-authority- and topology-identical, and all baseline screenshot hashes matched.
+All twelve regenerated captures passed fresh machine and human review. The complete final 280-entry
+review has zero unreviewed captures, zero primary FAIL and the overall verdict **PASS WITH MINOR
+LIMITATION**. Retained limitations are generous whitespace below some short desktop utility proofs
+and aggressive wrapping of some long titles in dense four-card desktop layouts.
+
+### 22.5 Lifecycle, validation boundary and handoff
+
+Representative Premium, Modern, Minimal, configurable-product and content/support-rich cases retain
+proposal -> Accept -> Undo -> Redo -> Save -> reload -> Preview -> deterministic publication
+compilation without real publication. Utility/search runtime remains transient. The focused Stage C
+unit/integration matrix passed 103/103 across twelve files. Retained P10B-18B-01/06/02/03/04/05,
+P10B-18A, P10B-17, P10B-16P-03 and mocked P10B-16P-04 browser/lifecycle suites are green after one
+test-only canonical-route selector correction.
+
+The mandated complete one-worker Vitest run executed exactly once: 237/244 files and 3022/3034
+tests passed, one test was skipped, and eleven assertions in seven files failed. Five lifecycle
+assertions correctly exposed omitted current-evidence input in the new test, two config assertions
+were invoked without the required bounded process token, and four retained tests exceeded their
+30-second limit after five hours of accumulated single-worker load. The bounded lifecycle/token
+rerun passed 7/7 across three files after the test-only evidence correction; the four timeout files
+passed 44/44 in a fresh quiet worker. No production behavior or acceptance threshold changed.
+
+Complete-store commercial quality is accepted for this deterministic integrated authority. This is
+not live-provider acceptance, Vesko staging, production authentication or real publication. The
+exact next task is **P10B-18D - Live AI Commercial Storefront Acceptance**. Historical cleanup
+P10B-16P-05B must not begin until P10B-18D is accepted.

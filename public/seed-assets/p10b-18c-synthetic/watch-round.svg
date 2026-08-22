@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+  <title id="title">Round dial watch</title>
+  <desc id="desc">A neutral fictional wristwatch with a round dial.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8e0df"/><stop offset="1" stop-color="#9eb0ae"/></linearGradient></defs>
+  <rect width="900" height="900" fill="url(#bg)"/>
+  <rect x="374" y="70" width="152" height="760" rx="70" fill="#493c34"/>
+  <circle cx="450" cy="450" r="225" fill="#d6c4a2" stroke="#2c3535" stroke-width="28"/>
+  <circle cx="450" cy="450" r="180" fill="#f5f1e7"/>
+  <g stroke="#3d4948" stroke-width="10"><path d="M450 290v32M450 578v32M290 450h32M578 450h32"/></g>
+  <path d="M450 450 450 348M450 450l83 55" stroke="#273130" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="450" cy="450" r="16" fill="#b36a43"/>
+</svg>

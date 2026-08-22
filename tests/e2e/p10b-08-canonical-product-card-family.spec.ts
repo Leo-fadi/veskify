@@ -1,4 +1,4 @@
-import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+import { expect, test, type FrameLocator, type Locator, type Page } from "@playwright/test";
 import { expectNoStorefrontHorizontalClipping } from "./storefront-geometry";
 
 const demoToken = "p10a-04c-deterministic-browser-token";
@@ -64,6 +64,107 @@ async function selectPage(page: Page, frame: FrameLocator, pageId: string) {
   await page.getByLabel(/Storefront page|Kauppasivuston sivu/).selectOption(pageId);
   await expect(frame.locator(`[data-card-context]`).first()).toBeVisible();
 }
+
+async function expectNoTitleActionIntersection(cards: Locator) {
+  const evidence = await cards.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const card = node as HTMLElement;
+      const heading = card.querySelector<HTMLElement>('[data-card-region="heading"]');
+      const action = card.querySelector<HTMLElement>('[data-card-region="actions"]');
+      const button = action?.querySelector<HTMLElement>("button");
+      if (!heading || !action || !button) {
+        return { complete: false };
+      }
+      const headingRect = heading.getBoundingClientRect();
+      const actionRect = action.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      return {
+        complete: true,
+        intersects:
+          headingRect.left < actionRect.right - 0.5 &&
+          headingRect.right > actionRect.left + 0.5 &&
+          headingRect.top < actionRect.bottom - 0.5 &&
+          headingRect.bottom > actionRect.top + 0.5,
+        touchHeight: buttonRect.height,
+        actionHeight: actionRect.height,
+        horizontalOverflow: card.scrollWidth - card.clientWidth,
+      };
+    }),
+  );
+  expect(evidence.length).toBeGreaterThan(0);
+  expect(evidence.every(({ complete }) => complete)).toBe(true);
+  expect(evidence.every((item) => !item.intersects)).toBe(true);
+  expect(evidence.every((item) => (item.touchHeight ?? 0) >= 44)).toBe(true);
+  expect(evidence.every((item) => (item.actionHeight ?? 0) <= 72)).toBe(true);
+  expect(evidence.every((item) => (item.horizontalOverflow ?? 0) <= 1)).toBe(true);
+}
+
+test("image-first cards keep long EN and FI titles separate from usable actions", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  expect(await page.evaluate(() => window.innerWidth)).toBeGreaterThanOrEqual(1024);
+  const frame = await generate(page, directions[0].instruction);
+  await expect(frame.locator("body")).toBeVisible();
+
+  const setStableViewport = async (width: number) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.waitForFunction((expectedWidth) => window.innerWidth === expectedWidth, width);
+    await frame.locator("body").evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
+    expect(await page.evaluate(() => window.innerWidth)).toBe(width);
+  };
+
+  const cases = [
+    {
+      pageId: "page_lumo_home",
+      context: "homepageMerchandising",
+      title: "A deliberately long northern-light jewellery title for everyday wear",
+    },
+    {
+      pageId: "page_lumo_collection",
+      context: "collectionResults",
+      title: "Poikkeuksellisen pitkä suomalainen korutuotteen nimi turvalliseen rivittymiseen",
+    },
+  ] as const;
+
+  let inspectedPageCount = 0;
+  for (const current of cases) {
+    await setStableViewport(1440);
+    await selectPage(page, frame, current.pageId);
+    await expect(page.getByLabel(/Storefront page|Kauppasivuston sivu/)).toHaveValue(
+      current.pageId,
+    );
+    await expect(frame.locator("body")).toBeVisible();
+    const cards = frame.locator(
+      `[data-card-anatomy="imageFirst"][data-card-context="${current.context}"]`,
+    );
+    await expect(cards.first()).toBeVisible();
+    await cards
+      .first()
+      .locator('[data-card-region="heading"] button')
+      .evaluate((button, title) => {
+        button.textContent = title;
+      }, current.title);
+
+    const inspectedWidths: number[] = [];
+    for (const width of [375, 768, 1024, 1440]) {
+      await setStableViewport(width);
+      await expectNoTitleActionIntersection(cards);
+      inspectedWidths.push(width);
+    }
+    expect(inspectedWidths).toEqual([375, 768, 1024, 1440]);
+    const action = cards.first().locator('[data-card-region="actions"] button');
+    await action.focus();
+    await expect(action).toBeFocused();
+    inspectedPageCount += 1;
+  }
+  expect(inspectedPageCount).toBe(cases.length);
+});
 
 test("five canonical anatomies remain one protected renderer across commercial contexts", async ({
   page,

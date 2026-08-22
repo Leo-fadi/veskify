@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Modular desk side view</title>
+  <desc id="desc">A neutral fictional modular desk illustration from the side.</desc>
+  <defs>
+    <linearGradient id="bg" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e5e8e3"/>
+      <stop offset="1" stop-color="#bdc7bd"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <ellipse cx="615" cy="741" rx="365" ry="38" fill="#31423d" opacity=".16"/>
+  <path d="M240 350 865 260l105 68-630 96z" fill="#b97d4b"/>
+  <path d="m340 424 630-96v55l-630 99z" fill="#97633e"/>
+  <path d="m371 477 48-7v257l-48 9zM890 398l48-7v282l-48 9z" fill="#343c3a"/>
+  <path d="m420 523 470-71v22l-470 73z" fill="#4b5552"/>
+  <rect x="620" y="432" width="176" height="34" rx="14" transform="rotate(-9 620 432)" fill="#29302e"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+  <title id="title">Square dial watch</title>
+  <desc id="desc">A neutral fictional wristwatch with a square dial.</desc>
+  <defs><linearGradient id="bg" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#ead8c5"/><stop offset="1" stop-color="#c1a684"/></linearGradient></defs>
+  <rect width="900" height="900" fill="url(#bg)"/>
+  <rect x="385" y="55" width="130" height="790" rx="45" fill="#273536"/>
+  <rect x="226" y="226" width="448" height="448" rx="95" fill="#b8c1bc" stroke="#253334" stroke-width="26"/>
+  <rect x="278" y="278" width="344" height="344" rx="60" fill="#f0eee6"/>
+  <g fill="#4d5b5a"><rect x="438" y="303" width="24" height="42" rx="8"/><rect x="438" y="555" width="24" height="42" rx="8"/><rect x="303" y="438" width="42" height="24" rx="8"/><rect x="555" y="438" width="42" height="24" rx="8"/></g>
+  <path d="M450 450 510 375M450 450l-72 39" stroke="#273334" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="450" cy="450" r="15" fill="#bd7651"/>
+</svg>

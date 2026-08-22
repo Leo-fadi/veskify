@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+  <title id="title">Multi-dial watch</title>
+  <desc id="desc">A neutral fictional wristwatch with a layered multi-dial face.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#b9b8ae"/><stop offset="1" stop-color="#e2ddd0"/></linearGradient></defs>
+  <rect width="900" height="900" fill="url(#bg)"/>
+  <rect x="382" y="48" width="136" height="804" rx="62" fill="#7a503c"/>
+  <circle cx="450" cy="450" r="230" fill="#303b3d" stroke="#9b8062" stroke-width="24"/>
+  <circle cx="450" cy="450" r="186" fill="#e8e3d8"/>
+  <circle cx="390" cy="418" r="47" fill="#c1cbc7" stroke="#344243" stroke-width="8"/>
+  <circle cx="510" cy="418" r="47" fill="#c1cbc7" stroke="#344243" stroke-width="8"/>
+  <circle cx="450" cy="525" r="47" fill="#c1cbc7" stroke="#344243" stroke-width="8"/>
+  <path d="M450 450 450 328M450 450l76 52" stroke="#263233" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="450" cy="450" r="15" fill="#a95d3c"/>
+</svg>
