@@ -155,7 +155,9 @@ export function isP10B16P04RealStudioAcceptanceConfigured(
   environment: AcceptanceEnvironment = process.env,
 ): boolean {
   return (
-    environment.NODE_ENV !== "production" &&
+    (environment.NODE_ENV !== "production" ||
+      (environment.P10B18C_PRODUCTION_CAPTURE === "1" &&
+        environment.VESKIFY_P10B_16P_04_MOCK_TRANSPORT === "1")) &&
     environment.VESKIFY_RUNTIME_MODE === "integrated" &&
     environment.VESKIFY_AI_PROVIDER === "openai" &&
     environment[P10B_16P_04_LOCAL_ACCEPTANCE_FLAG] === "1"

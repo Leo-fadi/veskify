@@ -219,6 +219,42 @@ describe("P10B-08 canonical product-card family", () => {
     expect(css).not.toContain("color: #111");
   });
 
+  it("keeps the mobile image-first action in flow before long EN and FI titles", () => {
+    const css = readFileSync("src/components/storefront/canonical-product-card.module.css", "utf8");
+    expect(css).toMatch(
+      /data-responsive-transformations~="imageFirstReorder"\] \.imageFirstStage\s*\{[^}]*max-height:\s*none[^}]*aspect-ratio:\s*auto/s,
+    );
+    expect(css).toMatch(
+      /data-responsive-transformations~="imageFirstReorder"\] \.imageFirstAction\s*\{[^}]*position:\s*static/s,
+    );
+
+    for (const [activeLocale, longTitle] of [
+      ["en", "A deliberately long northern-light jewellery title for everyday wear"],
+      ["fi", "Poikkeuksellisen pitkä suomalainen korutuotteen nimi turvalliseen rivittymiseen"],
+    ] as const) {
+      const longTitleProduct = {
+        ...product,
+        title: { ...product.title, [activeLocale]: longTitle },
+      };
+      const rendered = render(
+        <CanonicalProductCard
+          locale={{ activeLocale, primaryLocale: activeLocale }}
+          mediaPlaceholder="Unavailable"
+          onNavigateProduct={() => undefined}
+          request={{ ...request("imageFirst"), product: longTitleProduct }}
+          resolvedAsset={{ id: source.assetId, url: "/watch.jpg", decorative: false }}
+        />,
+      );
+      expect(rendered.container.querySelector('[data-card-region="heading"]')).toHaveTextContent(
+        longTitle,
+      );
+      expect(
+        rendered.container.querySelector('[data-card-region="actions"] button'),
+      ).toHaveTextContent(activeLocale === "fi" ? "Näytä tuote" : "View product");
+      rendered.unmount();
+    }
+  });
+
   it("formats fallback prices with the active storefront locale", () => {
     const fallbackProduct = {
       ...product,

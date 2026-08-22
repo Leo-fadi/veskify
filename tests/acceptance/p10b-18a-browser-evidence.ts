@@ -4,13 +4,20 @@ import { tmpdir } from "node:os";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import type { ProjectAggregate } from "@/services/storage";
+import { canonicalP10BEvidenceFilename } from "../helpers/p10b-evidence-filename";
 
 export const p10b18aWidths = [375, 1440] as const;
 export type P10B18AWidth = (typeof p10b18aWidths)[number] | 768 | 1024;
 export type P10B18ASurface = "home" | "collection" | "search" | "product-detail";
 export type P10B18ALocale = "en" | "fi";
 export type P10B18ARuntimeAuthority = "p03-standalone" | "p04-integrated-mock";
-const P04_ACCEPTANCE_HEADER = "x-veskify-p10b-16p-04-acceptance-token";
+export type P10B18ACaptureLifecycleTransition = Readonly<{
+  state: "navigation-started" | "response-received" | "storefront-ready" | "capture-started";
+  expectedUrl: string;
+  actualUrl: string;
+  httpStatus: number | null;
+}>;
+export const P10B18A_P04_ACCEPTANCE_HEADER = "x-veskify-p10b-16p-04-acceptance-token" as const;
 
 export type P10B18ARequestLedger = {
   external: string[];
@@ -199,14 +206,38 @@ function safeRuntimeError(value: string): string {
     .slice(0, 500);
 }
 
-export async function installP10B18AOfflineAuthority(page: Page): Promise<P10B18ARequestLedger> {
-  const standaloneOrigin = new URL(p10b18aOrigin("p03-standalone")).origin;
-  const p04Origin = new URL(p10b18aOrigin("p04-integrated-mock")).origin;
-  const allowedOrigins = new Set([standaloneOrigin, p04Origin]);
-  const acceptanceToken = requiredEnvironment("P10B18A_P04_ACCEPTANCE_TOKEN");
+export function requireP10B18AP04AcceptanceToken(override?: string): string {
+  const acceptanceToken = override ?? requiredEnvironment("P10B18A_P04_ACCEPTANCE_TOKEN");
   if (Buffer.byteLength(acceptanceToken) < 32) {
     throw new Error("P10B-18A requires a P04 acceptance token of at least 32 bytes.");
   }
+  return acceptanceToken;
+}
+
+export function composeP10B18AP04RequestHeaders(input: {
+  requestHeaders: Readonly<Record<string, string>>;
+  requestUrl: string;
+  p04Origin: string;
+  acceptanceToken: string;
+}): Record<string, string> {
+  const requestHeaders = { ...input.requestHeaders };
+  delete requestHeaders[P10B18A_P04_ACCEPTANCE_HEADER];
+  return new URL(input.requestUrl).origin === new URL(input.p04Origin).origin
+    ? {
+        ...requestHeaders,
+        [P10B18A_P04_ACCEPTANCE_HEADER]: requireP10B18AP04AcceptanceToken(input.acceptanceToken),
+      }
+    : requestHeaders;
+}
+
+export async function installP10B18AOfflineAuthority(
+  page: Page,
+  options: Readonly<{ p04AcceptanceToken?: string }> = {},
+): Promise<P10B18ARequestLedger> {
+  const standaloneOrigin = new URL(p10b18aOrigin("p03-standalone")).origin;
+  const p04Origin = new URL(p10b18aOrigin("p04-integrated-mock")).origin;
+  const allowedOrigins = new Set([standaloneOrigin, p04Origin]);
+  const acceptanceToken = requireP10B18AP04AcceptanceToken(options.p04AcceptanceToken);
   const ledger: P10B18ARequestLedger = {
     external: [],
     provider: [],
@@ -257,13 +288,13 @@ export async function installP10B18AOfflineAuthority(page: Page): Promise<P10B18
       await route.abort("blockedbyclient");
       return;
     }
-    const requestHeaders = { ...route.request().headers() };
-    delete requestHeaders[P04_ACCEPTANCE_HEADER];
     await route.continue({
-      headers:
-        url.origin === p04Origin
-          ? { ...requestHeaders, [P04_ACCEPTANCE_HEADER]: acceptanceToken }
-          : requestHeaders,
+      headers: composeP10B18AP04RequestHeaders({
+        requestHeaders: route.request().headers(),
+        requestUrl: url.toString(),
+        p04Origin,
+        acceptanceToken,
+      }),
     });
   });
   return ledger;
@@ -294,15 +325,46 @@ async function navigate(
     route: string;
     runtimeAuthority: P10B18ARuntimeAuthority;
   }>,
+  onLifecycle?: (transition: P10B18ACaptureLifecycleTransition) => Promise<void>,
 ): Promise<Locator> {
   const url = projectRoute(routeAuthority);
+  await onLifecycle?.({
+    state: "navigation-started",
+    expectedUrl: url,
+    actualUrl: page.url(),
+    httpStatus: null,
+  });
   const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await onLifecycle?.({
+    state: "response-received",
+    expectedUrl: url,
+    actualUrl: page.url(),
+    httpStatus: response?.status() ?? null,
+  });
   if (!response?.ok() || page.url() !== url) {
     throw new Error(
       `P10B-18A preview navigation failed for ${routeAuthority.route} (${response?.status() ?? "none"}).`,
     );
   }
   const root = page.locator(".project-preview__storefront");
+  await page.waitForFunction(
+    () => {
+      if (document.querySelector(".project-preview__storefront")) return true;
+      return Array.from(document.querySelectorAll("h1,h2,h3,h4,h5,h6")).some(
+        (heading) =>
+          heading.textContent?.replace(/\s+/gu, " ").trim() === "This page couldn’t load" &&
+          (heading as HTMLElement).getClientRects().length > 0,
+      );
+    },
+    undefined,
+    { timeout: 120_000 },
+  );
+  const runtimeBoundary = page
+    .getByRole("heading", { name: "This page couldn’t load", exact: true })
+    .first();
+  if (await runtimeBoundary.isVisible().catch(() => false)) {
+    throw new Error('P10B-18A preview rendered the visible "This page couldn’t load" boundary.');
+  }
   await root.waitFor({ state: "visible", timeout: 120_000 });
   await page.waitForFunction(
     () =>
@@ -317,6 +379,12 @@ async function navigate(
         requestAnimationFrame(() => requestAnimationFrame(() => resolveValue())),
       ),
   );
+  await onLifecycle?.({
+    state: "storefront-ready",
+    expectedUrl: url,
+    actualUrl: page.url(),
+    httpStatus: response.status(),
+  });
   return root;
 }
 
@@ -669,17 +737,6 @@ function pngDimensions(image: Buffer): Readonly<{ width: number; height: number 
   return { width: image.readUInt32BE(16), height: image.readUInt32BE(20) };
 }
 
-function safeName(value: string): string {
-  const normalized = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, "-")
-    .replace(/^-|-$/gu, "");
-  if (!normalized) throw new Error("P10B-18A evidence filename is empty.");
-  if (normalized.length <= 150) return normalized;
-  const suffix = createHash("sha256").update(normalized).digest("hex").slice(0, 12);
-  return `${normalized.slice(0, 137)}-${suffix}`;
-}
-
 const p10b18aEvidenceScreenshotStyle = `
   /* Next development chrome is outside the storefront and is excluded only
      from retained audit images. Runtime errors remain independently fatal. */
@@ -797,6 +854,9 @@ export async function captureP10B18AEvidence({
   route,
   width,
   profileOrArchetype,
+  beforeScreenshot,
+  onLifecycle,
+  canonicalFilename,
 }: {
   page: Page;
   store: P10B18AStoreManifestEntry;
@@ -804,14 +864,21 @@ export async function captureP10B18AEvidence({
   route: string;
   width: P10B18AWidth;
   profileOrArchetype: string;
+  beforeScreenshot?: (capturePage: Page) => Promise<void>;
+  onLifecycle?: (transition: P10B18ACaptureLifecycleTransition) => Promise<void>;
+  canonicalFilename?: string;
 }): Promise<P10B18AEvidenceEntry> {
   await page.setViewportSize({ width, height: width === 375 ? 900 : 1_000 });
-  const root = await navigate(page, {
-    locale: store.locale,
-    projectId: store.projectId,
-    route,
-    runtimeAuthority: store.runtimeAuthority,
-  });
+  const root = await navigate(
+    page,
+    {
+      locale: store.locale,
+      projectId: store.projectId,
+      route,
+      runtimeAuthority: store.runtimeAuthority,
+    },
+    onLifecycle,
+  );
   await waitForImages(root);
   const authority = await renderedAuthority(root);
   if (!authority.connected) throw new Error(`${store.caseId}:${surface} detached before capture.`);
@@ -831,12 +898,26 @@ export async function captureP10B18AEvidence({
     throw new Error(`${store.caseId}:${surface} did not render ${store.frame}.`);
   }
 
-  const filename = `${safeName(
-    [store.caseId, store.directionId, store.shapeId, surface, `${width}px`].join("-"),
-  )}.png`;
+  const filename =
+    canonicalFilename ??
+    canonicalP10BEvidenceFilename(
+      `${[store.caseId, store.directionId, store.shapeId, surface, `${width}px`].join("-")}.png`,
+    );
   const directory = p10b18aEvidenceDirectory();
   await mkdir(directory, { recursive: true });
+  await beforeScreenshot?.(page);
   await assertDevelopmentChromeIsOutsideStorefront(root);
+  await onLifecycle?.({
+    state: "capture-started",
+    expectedUrl: projectRoute({
+      locale: store.locale,
+      projectId: store.projectId,
+      route,
+      runtimeAuthority: store.runtimeAuthority,
+    }),
+    actualUrl: page.url(),
+    httpStatus: null,
+  });
   const image = await root.screenshot({
     animations: "disabled",
     caret: "hide",

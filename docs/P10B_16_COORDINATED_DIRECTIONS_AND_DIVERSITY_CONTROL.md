@@ -185,3 +185,20 @@ This successor evidence addresses only the P10B-18B-01 density, frame, mobile-hi
 commercial-posture integration boundary. Narrative, collection merchandising, PDP, content/utility,
 and asset/art-direction consumers remain owned by later P10B-18B packages. The 17 captures are
 focused review evidence and do not satisfy the P10B-18C 100+ quality/diversity gate.
+
+## P10B-18C integrated diversity acceptance
+
+P10B-18C accepts the current direction authority without changing the P10B-16 registry or
+normalization semantics. The exact nine-shape by fourteen-stratum matrix produces 45 Modern, 45
+Premium and 36 Minimal/Warm cases; all 126 compile and replay. The result contains 54 normalized
+material topologies and 54 direction-label-free topologies: 24 Modern, 15 Premium and 15
+Minimal/Warm. There are 34 repeated clusters, 106 repeated members, a largest truthful compatibility
+cluster of 14 and 20 singletons.
+
+All eight provider-visible material bundles have explicit causality: commercial posture is direct;
+density, navigation, story/catalogue balance, discovery, configurable-product posture, mobile
+hierarchy and image prominence are compound through their existing owners. The deterministic
+28-store selector retains cross-direction, same-direction, sparse/rich, nearest/strongest and six
+distinct tablet witnesses. The final 280-entry human review is PASS WITH MINOR LIMITATION with no
+primary FAIL. P10B-18C therefore closes deterministic integrated diversity, while P10B-18D owns
+fresh live-AI commercial acceptance.
