@@ -1,9 +1,126 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import type {
-  P10B16P04CommercialEvidenceWidth,
-  P10B16P04EvidenceIdentity,
-  P10B16P04SafeSelection,
-} from "./p10b-16p-04-visual-evidence";
+
+export type P10B16P04CommercialEvidenceWidth = 375 | 768 | 1024 | 1440;
+
+type P10B16P04SafeDynamicArchetype = Readonly<{
+  archetypeId: string;
+  profileId: string;
+  component: "dynamicCollectionCommerce" | "dynamicProductDetail";
+  variant: string;
+  anatomyId: string | null;
+}>;
+
+export type P10B16P04SafeSelection = Readonly<{
+  directionId: string;
+  designDnaNonColour: Readonly<{
+    typography: Readonly<{
+      pairing: string;
+      scale: Readonly<{ posture: string; ratio: number }>;
+      roles: Readonly<{
+        display: Readonly<{ font: string }>;
+        heading: Readonly<{ font: string }>;
+        body: Readonly<{ font: string }>;
+      }>;
+    }>;
+    spacing: Readonly<{
+      scale: string;
+      sectionRhythm: string;
+      pageGutter: string;
+      gridGap: string;
+      cardInset: string;
+    }>;
+    surfaces: Readonly<{
+      posture: string;
+      border: string;
+      radius: string;
+      elevation: string;
+    }>;
+    controls: Readonly<{
+      primaryAction: string;
+      height: string;
+      density: string;
+      shape: string;
+      emphasis: string;
+    }>;
+    density: Readonly<{
+      posture: string;
+      navigation: string;
+      content: string;
+      commerce: string;
+    }>;
+    media: Readonly<{
+      posture: string;
+      ratio: string;
+      crop: string;
+      overlay: string;
+      prominence: string;
+    }>;
+  }>;
+  sharedFrame: Readonly<{ profileId: string }>;
+  profiles: Readonly<{
+    homepage: string;
+    collection: string;
+    search: string;
+    productDetail: string;
+  }>;
+  homepageProductCount: number;
+  dynamicCommerce: Readonly<{
+    collectionArchetypeId: string;
+    searchArchetypeId: string;
+    standardSimpleArchetypeId: string;
+    configurableArchetypeId: string;
+    highConsiderationArchetypeId: string;
+    genericFallbackArchetypeId: string;
+    productTypeMappings: readonly Readonly<{
+      productTypeId: string;
+      archetypeId: string;
+    }>[];
+    selectedArchetypes: Readonly<{
+      collection: P10B16P04SafeDynamicArchetype;
+      standardSimple: P10B16P04SafeDynamicArchetype;
+      configurable: P10B16P04SafeDynamicArchetype;
+      highConsideration: P10B16P04SafeDynamicArchetype;
+    }>;
+  }>;
+  narrative: Readonly<{ homepageRoleSequence: readonly string[] }>;
+  componentChoices: readonly Readonly<{
+    pageKey: string;
+    slotId: string;
+    component: string;
+    variant: string;
+    anatomyId: string | null;
+  }>[];
+  pageProfileSelections: readonly Readonly<{
+    pageKey: string;
+    familyId: string;
+    profileId: string;
+    narrativeRoles: readonly string[];
+  }>[];
+  productCardAnatomyIds: readonly string[];
+  postures: Readonly<{
+    narrative: string;
+    merchandising: string;
+    informationDensity: string;
+    artDirection: string;
+    responsive: string;
+    spacingDensity: string;
+    surfaceDepth: string;
+  }>;
+  responsiveArtDirection: Readonly<{
+    responsiveMode: string;
+    responsiveCapabilityKeys: readonly string[];
+    artDirectionCapabilityKeys: readonly string[];
+    approvedAssetRoleKeys: readonly string[];
+  }>;
+  semanticResolution: Readonly<{
+    initialCandidateCount: number;
+    finalCandidateCount: number;
+    acceptedSemanticPaths: readonly string[];
+    substitutedSemanticPaths: readonly string[];
+  }>;
+  staticContentSupportSelections: readonly string[];
+  utilityPresentationSelections: readonly string[];
+}>;
 
 export type SafeSelection = P10B16P04SafeSelection;
 
@@ -16,7 +133,7 @@ export type CommercialSurface = Readonly<{
     | "about"
     | "cart-empty"
     | "cart-populated";
-  kind: P10B16P04EvidenceIdentity["representativeContext"]["kind"];
+  kind: "home" | "collection" | "product" | "content" | "utility" | "search" | "frame";
   route: string;
   contextId: string;
   profile: (selection: SafeSelection) => string;

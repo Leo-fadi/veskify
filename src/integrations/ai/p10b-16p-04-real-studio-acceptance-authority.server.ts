@@ -50,10 +50,6 @@ export const P10B_16P_04_LOCAL_ACCEPTANCE_NAMESPACE =
 export const P10B_16P_04_PROVIDER_CALL_BUDGET = 3 as const;
 export const P10B_16P_04_MOCK_MODEL_ID = "mocked-p10b-16p-04-design-intent-v2" as const;
 export const P10B_16P_04_MOCK_FAILURE_HEADER = "x-veskify-p10b-16p-04-mock-failure" as const;
-export const P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT =
-  "VESKIFY_P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT" as const;
-export const P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT_2 =
-  "VESKIFY_P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT_2" as const;
 
 type AcceptanceEnvironment = Readonly<Record<string, string | undefined>>;
 type HeaderAuthority = Pick<Headers, "get">;
@@ -155,9 +151,7 @@ export function isP10B16P04RealStudioAcceptanceConfigured(
   environment: AcceptanceEnvironment = process.env,
 ): boolean {
   return (
-    (environment.NODE_ENV !== "production" ||
-      (environment.P10B18C_PRODUCTION_CAPTURE === "1" &&
-        environment.VESKIFY_P10B_16P_04_MOCK_TRANSPORT === "1")) &&
+    environment.NODE_ENV !== "production" &&
     environment.VESKIFY_RUNTIME_MODE === "integrated" &&
     environment.VESKIFY_AI_PROVIDER === "openai" &&
     environment[P10B_16P_04_LOCAL_ACCEPTANCE_FLAG] === "1"
@@ -198,32 +192,6 @@ function assertAcceptanceRequest(request: Request, environment: AcceptanceEnviro
   }
 }
 
-function configuredPriorRejectedStructuralFingerprints(
-  environment: AcceptanceEnvironment,
-): readonly string[] {
-  const first = environment[P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT];
-  const second = environment[P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT_2];
-  if (second !== undefined && first === undefined) {
-    throw new ServerWholeStorefrontAuthorityError("invalid");
-  }
-  const fingerprints = [first, second].flatMap((fingerprint) =>
-    fingerprint === undefined ? [] : [fingerprint],
-  );
-  for (const fingerprint of fingerprints) {
-    if (
-      fingerprint.length > 240 ||
-      fingerprint.trim() !== fingerprint ||
-      !/^semantic-structure-v1_[1-9]\d*_[0-9a-f]{64}$/u.test(fingerprint)
-    ) {
-      throw new ServerWholeStorefrontAuthorityError("invalid");
-    }
-  }
-  if (new Set(fingerprints).size !== fingerprints.length) {
-    throw new ServerWholeStorefrontAuthorityError("invalid");
-  }
-  return fingerprints;
-}
-
 export function createP10B16P04ServerPromptedStorefrontStudioAuthority({
   environment = process.env,
 }: {
@@ -255,12 +223,9 @@ export function createP10B16P04ServerPromptedStorefrontStudioAuthority({
         authorization: context.authorization,
         loadCurrentAuthority: async () => {
           const authority = await loadExactCurrentAuthority();
-          const retainedRejectedFingerprints =
-            configuredPriorRejectedStructuralFingerprints(environment);
-          const recentRejectedStructuralFingerprints = [
-            ...retainedRejectedFingerprints,
-            ...acceptanceState().cases.map(({ structuralFingerprint }) => structuralFingerprint),
-          ].filter((value, index, values) => values.indexOf(value) === index);
+          const recentRejectedStructuralFingerprints = acceptanceState()
+            .cases.map(({ structuralFingerprint }) => structuralFingerprint)
+            .filter((value, index, values) => values.indexOf(value) === index);
           return {
             ...authority,
             requestInput: {

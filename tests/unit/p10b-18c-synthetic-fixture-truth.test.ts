@@ -2,10 +2,6 @@
 
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { canonicalValueFingerprint } from "@/domain/storefront";
-import {
-  P10B18C_STAGE_B_FINAL_SYNTHETIC_MERCHANT_TRUTH_FAILURE,
-  P10B18C_STAGE_B_SYNTHETIC_FIXTURE_HUMAN_FAILURE,
-} from "../fixtures/p10b-18c-neutral-synthetic-truth-correction";
 import { createP10b18aShapeAuthorities } from "../helpers/p10b-18a-commercial-authority";
 import {
   assertP10b18cFixtureCustomerTruth,
@@ -112,23 +108,6 @@ function neutralCustomerValues(authority: P10b18cShapeAuthority): string[] {
 }
 
 describe("P10B-18C bounded neutral-synthetic fixture customer truth", () => {
-  it("preserves the failed 280-capture human review as typed first-run evidence", () => {
-    expect(P10B18C_STAGE_B_SYNTHETIC_FIXTURE_HUMAN_FAILURE).toMatchObject({
-      classification: "P10B-18C Stage B human FAIL — synthetic fixture customer-truth defects",
-      captureCount: 280,
-      contactSheetCount: 37,
-      affectedFinnishCaptureCount: 26,
-      affectedCaseIds: exactCaseIds,
-    });
-    expect(P10B18C_STAGE_B_FINAL_SYNTHETIC_MERCHANT_TRUTH_FAILURE).toMatchObject({
-      classification: "P10B-18C Stage B human FAIL — stale synthetic merchant/catalogue identity",
-      captureCount: 280,
-      affectedCaptureCount: 4,
-      affectedCaseIds: neutralCaseIds,
-      affectedCaptureSequenceIndexes: [95, 98, 101, 104],
-    });
-  });
-
   it("derives corrected authority without mutating frozen P10B-18A authority", () => {
     const frozenBefore = createP10b18aShapeAuthorities(affectedShapeIds);
     const frozenFingerprintBefore = canonicalValueFingerprint(frozenBefore);

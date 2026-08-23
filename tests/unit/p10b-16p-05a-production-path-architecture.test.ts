@@ -47,6 +47,20 @@ describe("P10B-16P-05A active production-path architecture", () => {
     expect(route).toContain('await import("./p9-05b-composition.server")');
   });
 
+  it("keeps local acceptance fail closed in production and out of browser authority", () => {
+    const authority = source(
+      "src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts",
+    );
+    const browserClients = [
+      source("src/app/projects/[projectId]/editor/project-editor-client.tsx"),
+      source("src/integrations/ai/whole-storefront-runtime-client.ts"),
+    ].join("\n");
+
+    expect(authority).toContain('environment.NODE_ENV !== "production" &&');
+    expect(authority).not.toContain('environment.NODE_ENV !== "production" ||');
+    expect(browserClients).not.toContain("VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE_TOKEN");
+  });
+
   it("keeps the retained registered follow-up transport explicitly tagged", () => {
     const contract = source("src/application/ai-storefront-generation/contract.ts");
     const client = source("src/integrations/ai/whole-storefront-runtime-client.ts");

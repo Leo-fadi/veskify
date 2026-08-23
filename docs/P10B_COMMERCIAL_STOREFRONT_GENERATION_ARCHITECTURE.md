@@ -1,14 +1,14 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
 **Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
-P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, and accepted
-P10B-18B-06, accepted P10B-18B-02/03/04/05, parent P10B-18B and accepted P10B-18C are
-**Baseline**; P10B-18 and P10B remain **Partial**; P10B-18D is **Planned** and P10B-16P-05B is
-blocked behind it.
+P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, accepted
+P10B-18B-06, accepted P10B-18B-02/03/04/05 and parent P10B-18B are **Baseline**. P10B-18C and
+P10B-16P-05B are **Baseline**; P10B-18 and P10B remain **Partial**; P10B-18D is the exact next task,
+followed by P10B-19 PRE and planned P10B-19A through P10B-19J.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 22 August 2026, accepted P10B-18C commercial quality/diversity gate
+**Baseline:** 23 August 2026, accepted P10B-16P-05B cleanup after P10B-18C
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -61,8 +61,8 @@ P10B-16P-02 is Baseline. P10B-16P-03 is Baseline under
 P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, P10B-18B-01/06/02/03/04/05, parent
-P10B-18B and P10B-18C are Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
-task, and P10B-16P-05B remains blocked behind it. The accepted audit baseline
+P10B-18B are Baseline. P10B-18C and P10B-16P-05B are **Baseline**. P10B-18 and P10B remain
+Partial, and P10B-18D is the exact next task. The accepted audit baseline
 and bounded source-authority packages are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
@@ -376,8 +376,9 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
 P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06 and accepted
-P10B-18B-02/03/04/05, parent P10B-18B and P10B-18C are **Baseline**. P10B-18 and P10B are
-**Partial**; P10B-18D is **Planned** and P10B-16P-05B is **Blocked**.
+P10B-18B-02/03/04/05 and parent P10B-18B are **Baseline**. P10B-18C and P10B-16P-05B are
+**Baseline**. P10B-18 and P10B are **Partial**; P10B-18D is the exact next task, followed by
+P10B-19 PRE and planned P10B-19A through P10B-19J.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -386,7 +387,7 @@ The P10B-16P-01 → P10B-16P-02A → P10B-16P-02B → P10B-16P-03 → P10B-16P-0
 P10B-16P-05A → P10B-16P-06 package is a mandatory sequential convergence between P10B-16 and
 P10B-17. It
 supplements the locked P10B-01 through P10B-18 inventory without renumbering or weakening those
-tasks. P10B-16P-05B is a final historical-cleanup slice after P10B-18D, not a phase-closure
+tasks. P10B-16P-05B is the accepted cleanup slice between P10B-18C and P10B-18D, not a phase-closure
 shortcut.
 
 | Task                                                                | Locked outcome                                                                                                                                                                                                                | Dependency                                                           |
@@ -426,8 +427,10 @@ shortcut.
 | P10B-18B-04 — PDP quality upgrade                                   | Strengthen existing PDP profiles, opening hierarchy, gallery, options/purchase presentation and related merchandising without a new commerce or renderer authority.                                                           | Accepted P10B-18B-03                                                 |
 | P10B-18B-05 — Content / support / utilities quality upgrade         | Strengthen existing content, support and utility profiles and consumers without a second page, cart, error or content authority.                                                                                              | Accepted P10B-18B-04                                                 |
 | P10B-18C — 100+ commercial quality and diversity gate               | Run the final deterministic breadth/diversity analysis and fingerprint-stratified retained human acceptance on integrated P10B-18B authority.                                                                                 | Accepted and integrated P10B-18B packages                            |
-| P10B-18D — Live AI commercial storefront acceptance                 | Prove freshly authorized live-AI complete-store generation against the final integrated authority with exact lineage, protected truth, lifecycle and human review.                                                            | Accepted P10B-18C                                                    |
-| P10B-16P-05B — Final historical acceptance cleanup                  | Remove or archive retained P10B-16L/P9/P04 acceptance scaffolding only after accepted live-AI evidence no longer depends on it.                                                                                               | P10B-16P-05A and P10B-18D                                            |
+| P10B-16P-05B — Major repository and historical-authority cleanup    | Remove unconsumed one-time acceptance infrastructure while preserving active generation, migration, durable quality and one lean live-AI seam.                                                                                | P10B-16P-05A and accepted P10B-18C                                   |
+| P10B-18D — Live AI commercial storefront acceptance                 | Prove freshly authorized live-AI complete-store generation against the final integrated authority with exact lineage, protected truth, lifecycle and human review.                                                            | P10B-16P-05B and accepted P10B-18C                                   |
+| P10B-19 PRE — Structural Design Intelligence Architecture Lock      | Lock structural design intelligence ownership and the P10B-19A-J sequence before implementation.                                                                                                                              | Accepted P10B-18D                                                    |
+| P10B-19A-J — Structural Design Intelligence implementation sequence | Deliver the ten planned packages after the architecture lock.                                                                                                                                                                 | Accepted P10B-19 PRE                                                 |
 
 ## 14. Concrete completion contract by task
 
@@ -769,8 +772,7 @@ keep distinct approved facts where their reading structure is shared.
 - Remove active P10B-16L routes/providers/runtime and isolate P9/Lumo live generation as Deprecated
   historical production-disabled evidence. Retain only proven publication/migration/regression
   fixtures and historical records with current consumers.
-- Retain the production-disabled P10B-16P-04 Aurum composition and A/B/C deterministic replay
-  through P10B-18D. It injects into the canonical handler and never becomes normal provider
+- Retain one lean token-protected production-disabled P10B-16P-04 mock/live composition for P10B-18D. It injects into the canonical handler and never becomes normal provider
   selection.
 - **Status:** **Baseline**. Behavior-preserving architecture, replay, lifecycle, dynamic-route,
   migration, publication-separation, and protected commerce/media evidence pass with zero provider,
@@ -799,17 +801,22 @@ keep distinct approved facts where their reading structure is shared.
   calls. This is standalone catalogue search only: no Vesko search integration, AI/semantic/vector/
   fuzzy search, typo correction, recommendations, personalization, or analytics is claimed.
 
-### P10B-16P-05B — Final historical acceptance cleanup
+### P10B-16P-05B — Major repository and historical-authority cleanup
 
-- After accepted P10B-18D, search every retained P10B-16L, P9/Lumo, and P04 acceptance artifact for active,
-  migration, publication, replay, and evidence consumers.
-- Remove or archive only unconsumed scaffolding while retaining historical documentation and every
-  fixture/decoder required by valid snapshots, compiled publications, or accepted evidence.
-- **Status:** **Blocked**. This cleanup cannot start before P10B-18D and cannot weaken P10B-16P-04,
-  P10B-18A, P10B-18B, P10B-18C or P10B-18D evidence.
+- **Status:** **Baseline**.
+- A complete consumer graph retained the normal proposal route, semantic provider boundary,
+  compatibility resolver, exact compiler/coordinator, sole executor/materializer, P03 lifecycle,
+  governed P9 follow-up, migration/publication identities and durable 126/72 quality regressions.
+- One-time P10B-18C production capture, storage, request/image diagnostics, selector/manifest and
+  hash-bound review assembly are removed. Accepted metrics remain durable in the quality audit and
+  merged PR history.
+- P04 is reduced to one token-protected non-production mock/live seam for P10B-18D. Production
+  configuration and inspection always fail closed.
+- Merchant rendering, semantic selection, `StorefrontSnapshot`, PageBlueprint, commerce, media,
+  search and publication behavior are unchanged.
 
-P10B-17, accepted P10B-18A, completed P10B-18B and accepted P10B-18C are Baseline. Parent P10B-18
-and P10B remain Partial. P10B-18D is the exact next task, and P10B-16P-05B is blocked behind it.
+P10B-18 and P10B remain Partial. P10B-18D is the exact next task, followed by P10B-19 PRE and
+planned P10B-19A through P10B-19J.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -990,8 +997,10 @@ P10B-02…13 minimum accepted capability
   → P10B-18B-04 PDP quality (Baseline / accepted)
   → P10B-18B-05 content/support/utilities quality (Baseline / accepted)
   → P10B-18C 100+ commercial quality and diversity gate
+  → P10B-16P-05B major repository and historical-authority cleanup
   → P10B-18D live AI commercial storefront acceptance
-  → P10B-16P-05B final historical acceptance cleanup
+  → P10B-19 PRE structural design intelligence architecture lock
+  → P10B-19A-J planned implementation sequence
 ```
 
 P10B-02 and P10B-03 were delivered in parallel after P10B-01 with disjoint ownership. P10B-04,
@@ -1024,7 +1033,7 @@ PR.
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A, and
 accepted P10B-18B-01/06/02/03/04/05 are Baseline under the disjoint ownership constraints in
 section 15. P10B-16P-02 is Baseline. Parent P10B-18B and P10B-18C are Baseline; P10B-18 and P10B
-remain Partial. P10B-18D is the exact next task, and P10B-16P-05B remains blocked until P10B-18D.
+remain Partial. P10B-18D is the exact next task, and P10B-16P-05B is Baseline before P10B-18D.
 No later
 implementation task is complete merely because this architecture or an earlier bounded P10B-18
 package is accepted.

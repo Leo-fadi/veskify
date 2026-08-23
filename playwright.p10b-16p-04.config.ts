@@ -9,18 +9,14 @@ const acceptanceToken =
     ? inheritedAcceptanceToken
     : randomBytes(32).toString("hex");
 const baseURL = `http://localhost:${port}`;
-const evidenceDirectory = resolve(
-  process.env.P10B16P04_ACCEPTANCE_EVIDENCE_DIR ??
-    "/private/tmp/veskify-p10b-16p-04-mocked-commercial",
-);
+
 process.env.P10B16P04_PLAYWRIGHT_ACCEPTANCE_TOKEN = acceptanceToken;
 process.env.P10B16P04_PLAYWRIGHT_ORIGIN = baseURL;
 
 export default defineConfig({
-  // Keep this separately authorized acceptance preflight outside the normal E2E testDir.
   testDir: "./tests/acceptance",
   testMatch: "p10b-16p-04-commercial-fidelity.spec.ts",
-  outputDir: resolve(evidenceDirectory, "playwright"),
+  outputDir: resolve("test-results/p10b-16p-04-mocked"),
   reporter: [["line"]],
   workers: 1,
   fullyParallel: false,
@@ -35,8 +31,7 @@ export default defineConfig({
       VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE: "1",
       VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE_TOKEN: acceptanceToken,
       VESKIFY_P10B_16P_04_MOCK_TRANSPORT: "1",
-      // Real strict V2 output exceeded the shared 30-second default during the acceptance gate.
-      // Keep this isolated acceptance composition bounded at the supported maximum.
+      VESKIFY_OPENAI_MODEL: "gpt-5.6-sol",
       VESKIFY_OPENAI_TIMEOUT_MS: "120000",
     },
     reuseExistingServer: false,

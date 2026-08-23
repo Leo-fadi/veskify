@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 22 August 2026, accepted P10B-18C commercial quality/diversity gate      |
+| Verified baseline         | 23 August 2026, accepted P10B-16P-05B repository/historical cleanup      |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-16P-05B | 23 August 2026 | P10B-16P-05B accepted cleanup | Remove consumer-proven one-time acceptance infrastructure, restore unconditional production fail-closed P04 authority, retain one lean token-protected mock/live P10B-18D seam, and preserve active generation, migration, deterministic quality and protected commerce/media without changing storefront output. |
 | 1.3.0 P10B-18C | 22 August 2026 | P10B-18C accepted implementation and evidence | Accept the deterministic 9 x 14 complete-store matrix, 126/126 replay and protected-state result, 54 material topologies, deterministic 28-store selector, final 280-entry four-width EN/FI review and canonical lifecycle as the current commercial-quality baseline; preserve first-run failures and frozen P10B-18A/P10B-18B evidence while leaving live-AI acceptance to P10B-18D. |
 | 1.3.0 P10B-18B-04 | 19 August 2026 | P10B-18B-04 accepted implementation | Add bounded exact-product PDP matching, four purposeful compositions, stronger purchase/configuration hierarchy, bounded canonical galleries, resolver-safe failure behavior and cardinality-aware related merchandising; retain protected variants/options/prices/media, canonical lifecycle/publication authority and 20 reviewed captures without accepting content/utility or complete-storefront commercial quality. |
 | 1.3.0 P10B-18B-03 | 18 August 2026 | P10B-18B-03 accepted implementation | Strengthen the four existing collection/search profiles and five canonical card anatomies with bounded cardinality, useful facet/filter hierarchy, proportional orientation/grid composition, distinct executable comparison/dense search, truthful semantic discovery causality and synchronized provider-facing canonical-search capability; retain protected commerce/media, lifecycle and publication authority and 21 reviewed captures without accepting complete-storefront quality. |
@@ -1219,8 +1220,9 @@ P10B-16L and the legacy whole-storefront selector are Deprecated compatibility-o
 authorities for prompted complete-store generation. P10B-16P-05A removes their active runtime,
 routes, provider selector, and executable-intent product-path consumers after proving equivalent V2
 safety coverage and no normal-path dependency. Historical evidence and required neutral
-migration/regression fixtures remain until the P10B-16P-05B cleanup gate after P10B-18D. At this
-acceptance boundary, search presentation remained registered while execution failed closed;
+migration/regression fixtures were consumer-classified by P10B-16P-05B after accepted P10B-18C;
+only current migration consumers and durable regressions remain. At the P10B-16P-04 acceptance
+boundary, search presentation remained registered while execution failed closed;
 P10B-16P-06 later supplies the standalone runtime adapter. See
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 
@@ -1260,9 +1262,9 @@ contracts remain unchanged.
 P10B-16P-05A removes the active P10B-16L executable-intent route/provider/runtime and isolates P9/Lumo
 live generation as Deprecated historical, production-disabled evidence. Proven publication and
 migration fixtures remain where they have current consumers. The P10B-16P-04 Aurum acceptance
-composition remains production-disabled and retained through P10B-18D for deterministic A/B/C
-replay and acceptance evidence. P10B-16P-05B is blocked until P10B-18D for consumer-verified final
-historical cleanup. P10B-16P-06 subsequently closes the standalone canonical search query/results
+composition remains production-disabled as the lean mock/live seam retained for P10B-18D.
+P10B-16P-05B is Baseline after its consumer-verified historical cleanup following accepted
+P10B-18C. P10B-16P-06 subsequently closes the standalone canonical search query/results
 adapter, P10B-17 closes responsive/accessibility/performance execution, and the accepted P10B-18A
 audit freezes the commercial-authority ceiling. Accepted P10B-18B-01 subsequently closes its
 Design DNA/shared-frame package, accepted P10B-18B-06 closes bounded asset-composition authority,
@@ -1270,7 +1272,7 @@ accepted P10B-18B-02 closes bounded homepage/editorial/campaign quality; accepte
 closes bounded collection/search/product-card quality; and accepted P10B-18B-04 closes bounded PDP
 quality; accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C is Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
-task, and P10B-16P-05B remains blocked until P10B-18D.
+task, and P10B-16P-05B is Baseline before P10B-18D.
 
 ### 10.24 P10B-16P-06 canonical search query/results adapter
 
@@ -1306,7 +1308,7 @@ closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes 
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C is Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
-task, and P10B-16P-05B remains blocked until P10B-18D.
+task, and P10B-16P-05B is Baseline before P10B-18D.
 
 ### 10.25 P10B-17 responsive, accessibility and performance closure
 
@@ -1414,7 +1416,7 @@ combinations, not manually authored templates.
 ### 10.27 Commercial acceptance
 
 Parent P10B-18 and P10B remain Partial until P10B-18D completes fresh live-AI acceptance.
-P10B-16P-05B remains blocked until P10B-18D so historical acceptance scaffolding is retained while
+P10B-16P-05B is Baseline before P10B-18D so historical acceptance scaffolding is retained while
 any audit, replay, migration or final quality evidence still consumes it.
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
@@ -1559,7 +1561,7 @@ The binding sequence is:
    through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline; P10B-16P-02 is
    Baseline; accepted P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
    Baseline/complete. P10B-18C is Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact
-   next task and remains Planned, and P10B-16P-05B remains blocked until P10B-18D. Deliver complete commercially credible storefronts
+   next task and remains Planned, and P10B-16P-05B is Baseline before P10B-18D. Deliver complete commercially credible storefronts
    with bounded material diversity through registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
    scoped AI editing, unified history, save, preview, and publish.
@@ -1633,8 +1635,8 @@ Version 1.3.0 does not claim:
   P10B-18 repeated commercial quality/scale, Vesko staging, production authentication, publication,
   or production readiness;
 - that P10B-16P-05A supplies the missing search query/results adapter, production authentication,
-  P10B-17/P10B-18 closure, or final historical-evidence cleanup; P10B-16P-05B remains blocked until
-  P10B-18D;
+  P10B-17/P10B-18 closure, or final historical-evidence cleanup; accepted P10B-16P-05B supplies the
+  bounded cleanup before P10B-18D without closing P10B;
 - that P10B-16P-06 provides a Vesko search endpoint, AI/semantic/vector/fuzzy search, typo
   correction, recommendations, personalization, analytics, persisted customer search state, or
   P10B-17/P10B-18 closure;
@@ -1876,5 +1878,22 @@ The accepted deterministic gate compiles and replays all 126 exact complete-stor
 protected commerce/media and zero fabrication, records 54 normalized material topologies, and binds
 a stable 28-store selector to a final 280-entry four-width EN/FI review with zero primary FAIL. The
 overall human verdict is **PASS WITH MINOR LIMITATION**. This adds no second snapshot, page graph,
-renderer, commerce model, provider path or production evaluation system. P10B-18D live-AI
-commercial storefront acceptance is the exact next task; P10B-16P-05B remains blocked until then.
+renderer, commerce model, provider path or production evaluation system. P10B-16P-05B subsequently
+completed the consumer-proven cleanup and is Baseline. P10B-18D live-AI commercial storefront
+acceptance is the exact next task.
+
+
+### 10.29 P10B-16P-05B major repository and historical-authority cleanup
+
+P10B-16P-05B is Baseline. It removes the one-time P10B-18C production-capture application,
+superseded P9R acceptance runners and duplicated historical narratives after a consumer graph across
+imports, routes, environment authority, scripts, CI, migrations and publication readers.
+
+The normal semantic initial-generation path, P03 mocked Studio lifecycle, governed tagged P9
+follow-up, stable migration/publication identities, 126-case/frozen-72 quality gates and protected
+commerce/media remain. P04 is one lean token-protected, production-disabled mock/live seam for
+P10B-18D and is unconditionally unavailable in production. No provider, Vesko or real publication
+call occurred; merchant rendering, snapshots and generation selection are unchanged.
+
+P10B remains Partial. The locked order is P10B-18D, then P10B-19 PRE, then P10B-19A through
+P10B-19J.

@@ -1,13 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { karvonenSeed } from "@/data/seed";
 import {
   KarvonenFixtureLocaleAuthorityError,
   assertKarvonenFixtureCustomerLocaleCompleteness,
 } from "@/data/seed/karvonen-fixture-locale-gate";
 import { localizedTextSchema, resolveLocalizedText } from "@/domain/shared";
-import { p10b18cCorrectionPass1Evidence } from "../fixtures/p10b-18c-correction-pass-1";
 
-const originalCleanCapture = process.env.P10B18C_CLEAN_CAPTURE;
 const provisionalMarker =
   /verify (?:exact|live)|requires verification|not captured|reference configuration|exact specifications|natural or laboratory/i;
 const customerInternalTerm = /\b(?:demo|audit|test|fixture|deterministic|verification|internal)\b/i;
@@ -36,13 +34,7 @@ function localizedCustomerRecords(value: unknown): { en: string; fi: string }[] 
   return Object.values(record).flatMap(localizedCustomerRecords);
 }
 
-afterEach(() => {
-  if (originalCleanCapture === undefined) delete process.env.P10B18C_CLEAN_CAPTURE;
-  else process.env.P10B18C_CLEAN_CAPTURE = originalCleanCapture;
-  vi.resetModules();
-});
-
-describe("P10B-18C bounded correction pass 1", () => {
+describe("Karvonen fixture customer locale authority", () => {
   it("keeps provisional diagnostics out of all Karvonen customer-display fields", () => {
     const customerDisplayAuthority = {
       project: {
@@ -190,26 +182,5 @@ describe("P10B-18C bounded correction pass 1", () => {
         )
         .every(({ availabilityLabel }) => availabilityLabel === undefined),
     ).toBe(true);
-  });
-
-  it("retains typed non-rendering diagnostics for the failed first-run evidence", () => {
-    expect(p10b18cCorrectionPass1Evidence.failures).toHaveLength(3);
-    expect(
-      p10b18cCorrectionPass1Evidence.failures.every(
-        ({ customerDisplayEligible }) => customerDisplayEligible === false,
-      ),
-    ).toBe(true);
-    expect(p10b18cCorrectionPass1Evidence.failures.map(({ code }) => code)).toEqual([
-      "mobile-product-card-content-overlap",
-      "fi-visible-verification-prose",
-      "nextjs-development-indicator-capture-contamination",
-    ]);
-  });
-
-  it("keeps repository Next configuration independent from clean-capture mode", async () => {
-    process.env.P10B18C_CLEAN_CAPTURE = "1";
-    vi.resetModules();
-    const cleanConfig = (await import("../../next.config")).default;
-    expect(cleanConfig.devIndicators).toBeUndefined();
   });
 });
