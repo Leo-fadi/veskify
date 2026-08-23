@@ -152,39 +152,54 @@ Across every successful proposal, Reject, Accept, Undo, Redo, Save, reload, and 
 - no commerce write, cart mutation, Vesko call, publication, or provider retry occurred; and
 - search presentation remained registered while runtime execution stayed explicitly fail closed.
 
-## 7. Legacy bridge disposition
+## 7. P10B-16P-05B cleanup disposition
 
-P10B-16L is **Deprecated — compatibility-only acceptance infrastructure**. It remains temporarily
-for historical evidence, migration regressions, safety comparison, and consumer analysis. It is not
-the normal prompted Studio path and must not guide new provider work.
+The P10B-16P-05B consumer graph confirmed that the normal proposal route, semantic provider
+contract, compatibility resolver, exact compiler, executor/materializer and
+`StorefrontSnapshot` lifecycle do not depend on P10B-16L initial generation or on the retired
+P10B-18C production-capture application.
 
-The older whole-storefront `selectionId` initial-generation path is likewise compatibility-only for
-prompted complete-store generation. Valid page, section, and follow-up editing consumers are not
-deprecated by this decision.
+The accepted disposition is:
 
-Removal requires all of the following:
+- active P10B-16L initial-generation authority remains removed;
+- stable persisted identities and focused migration/publication compatibility remain;
+- P9/Lumo initial generation is not a normal fallback;
+- the separately tagged governed P9 follow-up operation remains active because it has current
+  Studio and publication consumers;
+- one-time Prompt A/B/C screenshot and manifest machinery is removed; and
+- the accepted 16-call P10B-16P-04 ledger remains durable historical evidence in this document and
+  merged Git/PR history.
 
-1. this P10B-16P-04 acceptance remains merged and green;
-2. V2 regressions preserve the bridge's valid safety controls;
-3. a consumer search proves no active production-path dependency; and
-4. a dedicated cleanup task is authorized.
+## 8. Lean live-AI acceptance seam retained for P10B-18D
 
-No legacy bridge is removed in P10B-16P-04.
+P10B-18D uses the existing, production-disabled path rather than a new provider or lifecycle:
 
-## 8. Evidence level and non-claims
+- `playwright.p10b-16p-04.live.config.ts` authorizes the live runner;
+- `tests/acceptance/p10b-16p-04-commercial-fidelity.spec.ts` exercises ordinary merchant prompt,
+  proposal review, Reject, Accept, Undo/Redo, Save, reload and Preview;
+- `src/app/api/ai/whole-storefront-proposals/route.ts` remains the canonical route;
+- `src/app/api/ai/whole-storefront-proposals/p10b-16p-04-composition.server.ts` injects the
+  acceptance authority into that canonical handler;
+- `src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts` owns token,
+  same-origin, call-budget and safe telemetry authority; and
+- `src/data/demo/p10b-16p-04-commercial-acceptance.ts` supplies the production-disabled Aurum
+  current project/catalogue/evidence authority.
 
-P10B-16P-04 has contract/schema, deterministic unit, integration, browser/E2E, real-provider, and
-retained human visual-review evidence for its stated local normal-Studio acceptance outcome.
-P10B-16P-04 is therefore **Baseline**.
+The live runner requires explicit `VESKIFY_P10B_16P_04_LIVE_ACCEPTANCE=1`,
+`VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE=1`, integrated runtime mode, the OpenAI provider selector,
+the exact server-side acceptance token, mock transport disabled, model `gpt-5.6-sol`, a
+120-second timeout, zero SDK retry, zero application retry and no fallback. The mocked runner sets
+the same authority with mock transport enabled and makes no external provider call.
 
-This evidence does not claim:
+Production always fails closed before route/page/inspection authority, regardless of unrelated
+environment values. The token is server/test-process authority and is not serialized into evidence
+or shipped in normal browser code.
 
-- executable search;
-- automatic or successful publication;
-- broad P10C editing controls;
-- P10B-17 phase-wide responsive, accessibility, or performance closure;
-- P10B-18 repeated 100+ storefront commercial quality/scale closure;
-- Vesko staging or production integration; or
-- production readiness.
+## 9. Evidence level and current handoff
 
-P10B remains **Partial**. P10B-17 and P10B-18 remain **Planned**.
+P10B-16P-04 remains Baseline historical real-provider evidence. P10B-16P-05B adds zero-call
+configuration, fail-closed, mocked lifecycle and consumer-graph proof without changing the accepted
+provider result or storefront output.
+
+P10B-18C and P10B-16P-05B are Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
+task, followed by P10B-19 PRE and then planned P10B-19A through P10B-19J.

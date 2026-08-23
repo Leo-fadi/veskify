@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
-import type { P10B16P04SafeSelection } from "./p10b-16p-04-visual-evidence";
+import type { P10B16P04SafeSelection } from "./p10b-16p-04-commercial-fidelity-assertions";
 
 export const p10b17ProjectId = "project_p10b16p04_aurum_commercial_acceptance";
 export const p10b17EditorUrl = `/projects/${p10b17ProjectId}/editor`;

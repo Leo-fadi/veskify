@@ -105,8 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C is **Baseline**. P10B-18 and P10B remain **Partial**; P10B-18D is the exact next task and
-remains **Planned**. P10B-16P-05B remains blocked until P10B-18D is accepted.
+P10B-18C and P10B-16P-05B are **Baseline**. P10B-18 and P10B remain **Partial**; P10B-18D is the exact next task and remains **Planned**. P10B-16P-05B is Baseline; P10B-18D remains the exact next task.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -131,9 +130,7 @@ the prompted compiler to one coordinator/resolver/exact-decision/executor chain 
 materialization boundary. The active P10B-16L executable-intent routes/providers/runtime are
 removed; its historical evidence and required neutral migration/safety fixtures remain Deprecated
 compatibility-only. P9/Lumo live generation is isolated historical/deprecated authority, while its
-proven publication/migration fixtures remain. The P10B-16P-04 acceptance composition remains
-production-disabled through P10B-18D. P10B-16P-05B owns final consumer-verified cleanup after
-P10B-18D.
+proven publication/migration fixtures remain. The P10B-16P-04 acceptance composition is now the lean production-disabled mock/live seam retained for P10B-18D. P10B-16P-05B has completed consumer-verified cleanup.
 
 P10B-16P-06 keeps the selected `/search` presentation in `StorefrontSnapshot` while deriving query,
 filters, sort, page, result IDs, and result count transiently through one provider-neutral search
@@ -301,7 +298,7 @@ fingerprint-stratified subset passes retained human review at 375, 768, 1024, an
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and all accepted
 P10B-18B-01/06/02/03/04/05 packages and P10B-18C are Baseline; P10B-16P-02 is Baseline. Parent
 P10B-18B is Baseline/complete; P10B-18 and P10B remain Partial. P10B-18D is the exact next task, and
-P10B-16P-05B remains blocked behind it. Their ownership remains disjoint: P10B-05 owns
+P10B-16P-05B is Baseline before it. Their ownership remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
 its `BrandSystem` authority.
@@ -582,12 +579,21 @@ one-worker Vitest ran exactly once, its three retained findings were corrected t
 reruns, and the listed retained browser/lifecycle/compiler regressions are green. Utility runtime
 state is test-only transient input and must not be serialized into a storefront fixture.
 
-### P10B-18C accepted validation scope
+### P10B-18C durable validation scope after P10B-16P-05B
 
 Use the exact 126-case deterministic matrix and replay, frozen 72-case regression, protected
-commerce/media and semantic-causality reports before browser evidence. Browser evidence uses the
-stable 28-store selector, production capture servers, strict request/clean-capture/accessibility/
-geometry gates, active-capture lifecycle and a complete 280-entry hash manifest. A delta Stage B is
-valid only when every unchanged capture is authority- and byte-identical and all captures for every
-changed case are regenerated. The accepted final review is PASS WITH MINOR LIMITATION with zero
-primary FAIL. Provider and Vesko calls and real publication remain prohibited in P10B-18C.
+commerce/media, semantic-causality, topology and duplicate reports as the durable machine gate.
+Use the retained P10B-18A and P10B-17 browser suites for representative complete-store,
+responsive, accessibility and performance regression. The accepted historical 280-capture result
+remains in the quality audit and merged PR history; do not recreate its retired production-capture
+application during normal development.
+
+### P10B-16P-05B current cleanup boundary
+
+The repository keeps one normal initial-generation provider/compiler/materializer path, the P03
+mocked Studio lifecycle, one lean P04 mock/live acceptance seam for P10B-18D, governed P9 follow-up,
+and focused migration/publication compatibility. Normal production cannot enable local P04
+acceptance. No removed P10B-18C capture configuration is part of active tooling or CI.
+
+P10B-18C and P10B-16P-05B are Baseline. P10B-18D is the exact next task. P10B-19 PRE follows it,
+and P10B-19A through P10B-19J remain Planned. P10B remains Partial.

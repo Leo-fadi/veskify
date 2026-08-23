@@ -12,19 +12,12 @@ import {
 import {
   P10B18C_MATRIX_CONTRACT_VERSION,
   buildP10b18cMatrix,
-  evaluateP10b18cSelectors,
   p10b18cClusterMetrics,
   p10b18cDuplicateAnalysis,
-  p10b18cOriginalSelectorFailureEvidence,
   p10b18cSemanticCausality,
   p10b18cSemanticStrata,
   p10b18cSerializableCase,
   replayP10b18cCase,
-  selectP10b18cContentUtilityStores,
-  selectP10b18cHumanStores,
-  selectP10b18cSearchStores,
-  selectP10b18cTabletStores,
-  P10b18cSelectorError,
 } from "../helpers/p10b-18c-commercial-quality";
 
 const matrix = buildP10b18cMatrix();
@@ -32,18 +25,6 @@ const replays = matrix.cases.map(replayP10b18cCase);
 const metrics = p10b18cClusterMetrics(matrix.cases);
 const duplicates = p10b18cDuplicateAnalysis(matrix.cases);
 const causality = p10b18cSemanticCausality(matrix.cases);
-const selectorEvaluation =
-  matrix.cases.length === 126
-    ? evaluateP10b18cSelectors(matrix.cases)
-    : {
-        ok: false as const,
-        selected: [],
-        search: [],
-        contentUtility: [],
-        tablet: [],
-        failures: [],
-      };
-const selected = selectorEvaluation.selected;
 
 function frozen72() {
   const outcomes = createP10b18aShapeAuthorities().flatMap((authority) =>
@@ -152,20 +133,7 @@ function writeMachineEvidence() {
     frozen72: frozen,
     duplicateAnalysis: duplicates,
     semanticCausality: causality,
-    selectorFailureLedger: [p10b18cOriginalSelectorFailureEvidence, ...selectorEvaluation.failures],
-    selector: {
-      ok: selectorEvaluation.ok,
-      count: selected.length,
-      stores: selected.map(({ store, reasons }) => ({
-        caseId: store.compiled.caseId,
-        reasons,
-      })),
-      searchCases: selectorEvaluation.search.map(({ store }) => store.compiled.caseId),
-      contentUtilityCases: selectorEvaluation.contentUtility.map(
-        ({ store }) => store.compiled.caseId,
-      ),
-      tabletCases: selectorEvaluation.tablet.map(({ store }) => store.compiled.caseId),
-    },
+
     cases: matrix.cases.map(p10b18cSerializableCase),
     runtimeLedger: {
       providerCalls: 0,
@@ -274,55 +242,5 @@ describe("P10B-18C 100+ commercial quality and diversity gate", () => {
           verdict.length > 0,
       ),
     ).toBe(true);
-  });
-
-  it("selects exactly 28 stores and the exact retained browser subsets deterministically", () => {
-    const replayedSelection = selectP10b18cHumanStores(matrix.cases);
-    expect(selected).toHaveLength(28);
-    expect(replayedSelection.map(({ store }) => store.compiled.caseId)).toEqual(
-      selected.map(({ store }) => store.compiled.caseId),
-    );
-    expect(selectP10b18cSearchStores(selected)).toHaveLength(14);
-    expect(selectP10b18cContentUtilityStores(selected)).toHaveLength(12);
-    expect(selectP10b18cTabletStores(selected)).toHaveLength(6);
-    expect(new Set(selected.map(({ store }) => store.directionId))).toEqual(
-      new Set(["premiumEditorial", "modernTechnical", "warmApproachable"]),
-    );
-  });
-
-  it("keeps overlapping Modern comparison/configurable coverage in distinct tablet slots", () => {
-    const first = selectP10b18cTabletStores(selected);
-    const second = selectP10b18cTabletStores(selectP10b18cHumanStores(matrix.cases));
-    expect(first.map(({ store }) => store.compiled.caseId)).toEqual(
-      second.map(({ store }) => store.compiled.caseId),
-    );
-    expect(new Set(first.map(({ store }) => store.compiled.caseId)).size).toBe(6);
-    const comparison = first.find(({ store }) => store.compiled.stratum.id === "modern-comparison");
-    const configurable = first.find(
-      ({ store }) =>
-        store.directionId === "modernTechnical" &&
-        store.compiled.authority.id.includes("configurable-product-heavy"),
-    );
-    expect(comparison).toBeDefined();
-    expect(configurable).toBeDefined();
-    expect(comparison?.store.compiled.caseId).not.toBe(configurable?.store.compiled.caseId);
-
-    const overlappingModern = matrix.cases.find(
-      ({ compiled, directionId }) =>
-        directionId === "modernTechnical" &&
-        compiled.stratum.id === "modern-comparison" &&
-        compiled.authority.id.includes("configurable-product-heavy"),
-    );
-    if (!overlappingModern) throw new Error("Missing overlapping Modern regression authority.");
-    const impossible = selected
-      .filter(({ store }) => store.directionId !== "modernTechnical")
-      .concat({ store: overlappingModern, reasons: ["overlap-regression"] });
-    try {
-      selectP10b18cTabletStores(impossible);
-      throw new Error("Missing distinct candidates did not fail closed.");
-    } catch (error) {
-      expect(error).toBeInstanceOf(P10b18cSelectorError);
-      expect((error as P10b18cSelectorError).evidence.code).toBe("missing-distinct-tablet-witness");
-    }
   });
 });

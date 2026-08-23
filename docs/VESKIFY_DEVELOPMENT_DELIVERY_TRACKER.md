@@ -76,8 +76,10 @@ required evidence are accepted.
 | ☑    | P10B-18B-04  | PDP quality upgrade                                  | **Baseline** | PDP profile/commerce presentation owners | Accepted P10B-18B-03                      | Accepted 19 August 2026: stronger PDP opening, gallery, option/purchase and related-merchandising hierarchy with protected variant/price/media and retained four-width evidence             |
 | ☑    | P10B-18B-05  | Content / support / utilities quality upgrade        | **Baseline** | Content/support/utility owners           | Accepted P10B-18B-04                      | Stronger registered content, support and utility compositions with lifecycle, navigation and protected-commerce preservation                                                                |
 | ☑    | P10B-18C     | 100+ commercial quality and diversity gate           | **Baseline** | Product owner, generation, QA            | Accepted and integrated P10B-18B packages | 126/126 complete/replay, protected-state/diversity/causality gates, 28 stores and final 280-entry four-width EN/FI review                                                                   |
-| ☐    | P10B-18D     | Live AI commercial storefront acceptance             | **Planned**  | Product owner, provider, generation, QA  | Accepted P10B-18C                         | Fresh bounded live-provider complete-store evidence, exact lineage, protected truth, lifecycle and retained human acceptance                                                                |
-| ☐    | P10B-16P-05B | Final historical acceptance cleanup                  | **Blocked**  | Generation architecture/evidence         | P10B-16P-05A and P10B-18D                 | Consumer-proven removal/archival only after accepted live-AI evidence no longer needs historical scaffolding                                                                                |
+| ☑    | P10B-16P-05B | Major repository and historical-authority cleanup    | **Baseline** | Generation architecture/evidence         | P10B-16P-05A and accepted P10B-18C        | Consumer graph; one active generation chain; lean P10B-18D seam; production fail-closed; durable lifecycle, migration and quality regressions                                               |
+| ☐    | P10B-18D     | Live AI commercial storefront acceptance             | **Planned**  | Product owner, provider, generation, QA  | P10B-16P-05B and accepted P10B-18C        | Fresh bounded live-provider complete-store evidence, exact lineage, protected truth, lifecycle and retained human acceptance                                                                |
+| ☐    | P10B-19 PRE  | Structural Design Intelligence Architecture Lock     | **Planned**  | Product owner and architecture           | Accepted P10B-18D                         | Lock structural-intelligence ownership and the P10B-19A-J sequence before implementation                                                                                                    |
+| ☐    | P10B-19A-J   | Structural Design Intelligence implementation        | **Planned**  | Planned task owners                      | Accepted P10B-19 PRE                      | Ten package-specific implementation and acceptance tasks                                                                                                                                    |
 
 ## P10C checklist
 
@@ -185,16 +187,16 @@ The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A and
 accepted P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03, P10B-18B-04 and P10B-18B-05 are
-**Baseline**. P10B-16P-02, parent P10B-18B and P10B-18C are **Baseline**; P10B-18 and P10B remain
-**Partial**; P10B-18D remains **Planned**. P10B-16P-04 acceptance evidence is retained
+**Baseline**. P10B-16P-02, parent P10B-18B, P10B-18C and P10B-16P-05B are **Baseline**; P10B-18 and
+P10B remain **Partial**; P10B-18D is **Planned / exact next**. P10B-16P-04 acceptance evidence is retained
 in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-18D is the exact next product task. P10B-16P-05B remains blocked until its fresh live-AI
-acceptance proves historical evidence consumers can be removed safely.
+P10B-16P-05B follows accepted P10B-18C and is now Baseline. P10B-18D is the exact next product task,
+followed by P10B-19 PRE and planned P10B-19A through P10B-19J.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -690,19 +692,20 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   search, typo correction, recommendations, personalization, analytics, commerce writes, a second
   search/page graph, or a duplicate collection/product-card renderer.
 
-#### P10B-16P-05B — Final historical acceptance cleanup
+#### P10B-16P-05B — Major repository and historical-authority cleanup
 
-- **Outcome:** Remove or archive remaining P10B-16L, P9/Lumo, and P04 acceptance scaffolding only
-  after current quality/scale evidence no longer consumes it.
-- **Status:** **Blocked** until accepted P10B-18D.
-- **Depends on:** P10B-16P-05A and P10B-18D.
-- **Done when:** Consumer search proves no active, migration, publication, replay, or retained
-  evidence dependency; final removal preserves historical records and all valid snapshots/artifacts.
-- **Non-goal:** Deleting P10B-18 visual fixtures or compatibility data before their removal gate.
+- **Status:** **Baseline**.
+- **Depends on:** P10B-16P-05A and accepted P10B-18C.
+- **Outcome:** Consumer-proven removal/consolidation of one-time acceptance infrastructure while
+  retaining the active generation path, P03 lifecycle, one lean P04 mock/live P10B-18D seam,
+  governed P9 follow-up, stable migration/publication identities and durable 126/72 quality gates.
+- **Security:** P04 acceptance is unavailable in production; tokens remain server/test-process
+  authority; mock and live transports remain explicit and cannot silently substitute.
+- **Non-goal:** Storefront output, generation semantics, P10B-18D execution, P10B-19 implementation,
+  commerce/media changes or migration breakage.
 
-P10B-17, accepted P10B-18A and accepted P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03,
-P10B-18B-04, P10B-18B-05 and P10B-18C are Baseline. Parent P10B-18B is Baseline/complete; P10B-18
-and P10B remain Partial. P10B-18D is the exact next task, and P10B-16P-05B remains blocked behind it.
+P10B-18C and P10B-16P-05B are Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
+task, followed by P10B-19 PRE and planned P10B-19A through P10B-19J.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
@@ -1155,5 +1158,5 @@ All 126 cases compile and replay, the frozen 72 remains 39 topologies / 53 repea
 largest seven / 19 singletons, protected commerce/media and external activity are zero, and the
 expanded matrix contains 54 normalized topologies. The deterministic selector retains 28 stores and
 the final complete manifest binds 280 captures across 375/768/1024/1440 and EN/FI. The final human
-verdict is **PASS WITH MINOR LIMITATION** with zero primary FAIL. P10B-18D is next; historical
-cleanup remains blocked.
+verdict is **PASS WITH MINOR LIMITATION** with zero primary FAIL. P10B-16P-05B subsequently removed
+the one-time capture platform while retaining the bounded quality gate; P10B-18D is the exact next task.

@@ -39,7 +39,6 @@ const activeMarkdownFiles = [
   "docs/P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md",
   "docs/P10B_15_BOUNDED_STOREFRONT_SYNTHESIS_AND_NARRATIVE_ENGINE.md",
   "docs/P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md",
-  "docs/P10B_16_REAL_PROVIDER_SYNTHESIS_ACCEPTANCE.md",
   "docs/P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md",
   "docs/P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md",
   "docs/P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md",
@@ -129,11 +128,11 @@ requireText("README.md", [
   "The overall product is **Partial**. Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B Commercial Storefront Generation System\nv1 is **Partial / active**",
-  "accepted P10B-18C 100+ commercial quality and diversity gate are Baseline",
+  "P10B-16P-05B repository/historical-authority cleanup are Baseline",
   "Parent P10B-18B is\nBaseline/complete",
   "P10B-18D is the exact next task",
   "Canonical `/search` execution is Baseline",
-  "P10B-16P-05B remains blocked until P10B-18D",
+  "P10B-19 PRE follows P10B-18D",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -160,25 +159,28 @@ requireText("docs/VESKIFY_SDD.md", [
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
   "P10B-18C is Baseline",
+  "P10B-16P-05B is Baseline",
   "parent P10B-18B is\nBaseline/complete",
   "P10B-18D is the exact next task",
   "### 10.25 P10B-17 responsive, accessibility and performance closure",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
   "### 10.23 P10B-16P-05A active production-path and compiler rationalisation",
-  "The cumulative P10B-16P-04 ledger is 16 real calls",
+  "### 10.29 P10B-16P-05B major repository and historical-authority cleanup",
 ]);
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "parent P10B-18B and P10B-18C are Baseline",
-  "P10B-18D is exact next",
-  "P10B-16P-05B is blocked until P10B-18D",
+  "accepted P10B-18C and P10B-16P-05B are **Baseline**",
+  "P10B-18D is **Planned / exact next**",
+  "P10B-19 PRE follows P10B-18D",
   "P10A owns internal governed initial/follow-up execution",
   "1 — Grammar",
   "2 — Parallel foundations",
   "5 — Early complete store",
-  "7 — Closure",
+  "7 — Deterministic closure",
+  "8 — Historical cleanup",
+  "9 — Live and intelligence",
   "The minimum pilot editor requires",
   "Full P10C exit requires",
   "P11-00 — Vesko OpenAPI audit",
@@ -195,7 +197,7 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "P10A_PHASE_CLOSURE.md",
   "100+ commercial quality and diversity gate",
   "Live AI commercial storefront acceptance",
-  "Final historical acceptance cleanup",
+  "Major repository and historical-authority cleanup",
 ]);
 
 requireText("docs/P10A_PHASE_CLOSURE.md", [
@@ -206,9 +208,9 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "P10B-18C are\n**Baseline**",
+  "P10B-16P-05B are **Baseline**",
   "P10B-18D is the exact next task",
-  "P10B-16P-05B is\nblocked behind it",
+  "P10B-19 PRE structural design intelligence architecture lock",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -226,8 +228,9 @@ requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
 requireText("docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md", [
   "P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline",
   "P10B-18C is Baseline",
+  "P10B-16P-05B are Baseline",
   "P10B-18D is the exact next",
-  "P10B-16P-05B remains\nblocked until that live-AI gate is accepted",
+  "P10B-19 PRE follows P10B-18D",
   "### 15.3 Accepted product-owner checkpoint crosswalk",
 ]);
 
@@ -277,11 +280,11 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-18C is **Baseline**",
+  "P10B-18C and P10B-16P-05B are **Baseline**",
   "parent P10B-18B is **Baseline / complete**",
   "P10B-18 and P10B remain **Partial**",
   "P10B-18D is the exact next task",
-  "P10B-16P-05B remains blocked until P10B-18D is accepted",
+  "P10B-19 PRE follows it",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -294,7 +297,7 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "P10B-18B-05 closes bounded content/support/utility quality",
   "Parent P10B-18B is\n**Baseline / complete**; P10B-18C is **Baseline**",
   "P10B-18D is\nthe exact next task",
-  "P10B-16P-05B remains blocked until P10B-18D is accepted",
+  "P10B-16P-05B is Baseline",
 ]);
 
 requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
@@ -308,13 +311,14 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "## P10B-18B-03 accepted bounded collection/search/card-quality evidence",
   "## P10B-18B-04 accepted evidence",
   "### P10B-18B-05 accepted evidence Baseline",
-  "### P10B-18C accepted deterministic commercial-quality evidence",
+  "### P10B-18C durable deterministic commercial-quality evidence",
+  "### P10B-16P-05B repository and historical-authority cleanup",
   "P10B-18D is the exact next",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 41) {
-  failures.push("Delivery tracker must contain exactly forty-one completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 42) {
+  failures.push("Delivery tracker must contain exactly forty-two completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -380,13 +384,15 @@ if (
   !/^\| ☑\s+\| P10B-18B-04\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18B-05\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18C\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-18D\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Blocked\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19 PRE\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19A-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, and P10B-18C Baseline; keep P10B-18 Partial; keep P10B-18D Planned; and keep P10B-16P-05B Blocked",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, and P10B-18C Baseline; keep P10B-18 Partial; and keep P10B-18D/P10B-19 Planned",
   );
 }
 
@@ -402,8 +408,9 @@ requireText("docs/P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md", [
   "**Status:** Baseline",
   "The complete P10B-16P-04 investigation and acceptance ledger contains **16 real OpenAI calls**",
   "Cumulative retries and fallbacks were\nzero. No Vesko call or publication occurred.",
-  "P10B-16L is **Deprecated — compatibility-only acceptance infrastructure**",
-  "P10B remains **Partial**. P10B-17 and P10B-18 remain **Planned**.",
+  "## 7. P10B-16P-05B cleanup disposition",
+  "## 8. Lean live-AI acceptance seam retained for P10B-18D",
+  "Production always fails closed",
 ]);
 
 requireText("docs/P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md", [

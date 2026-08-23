@@ -17,7 +17,7 @@ import {
   assertSelectedModernTechnicalAuthority,
   assertSelectedPremiumAuthority,
 } from "./p10b-16p-04-commercial-fidelity-assertions";
-import type { P10B16P04SafeSelection } from "./p10b-16p-04-visual-evidence";
+import type { P10B16P04SafeSelection } from "./p10b-16p-04-commercial-fidelity-assertions";
 import {
   captureP10B17Evidence,
   expectP10B17Offline,

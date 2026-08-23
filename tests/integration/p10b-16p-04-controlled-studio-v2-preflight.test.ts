@@ -13,7 +13,6 @@ import {
 import {
   PROMPTED_STOREFRONT_STUDIO_CONTRACT_VERSION,
   PROMPTED_STOREFRONT_STUDIO_OPERATION,
-  promptedStorefrontStudioGenerationRequestSchema,
   promptedStorefrontStudioGenerationResponseSchema,
 } from "@/application/prompted-storefront-studio";
 import { promptedStorefrontPromptFingerprint } from "@/application/prompted-storefront-design-intent";
@@ -30,7 +29,6 @@ import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import {
   configuredP10B16P04AcceptanceToken,
   createP10B16P04AcceptanceInspectionHandler,
-  createP10B16P04ServerPromptedStorefrontStudioAuthority,
   inspectP10B16P04RealStudioAcceptance,
   isP10B16P04RealStudioAcceptanceConfigured,
   loadP10B16P04CurrentEvidenceReferences,
@@ -43,8 +41,6 @@ import {
   P10B_16P_04_MOCK_TRANSPORT_FLAG,
   P10B_16P_04_MOCK_FAILURE_HEADER,
   P10B_16P_04_PROVIDER_CALL_BUDGET,
-  P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT,
-  P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT_2,
   resetP10B16P04RealStudioAcceptanceStateForTests,
 } from "@/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server";
 import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
@@ -107,114 +103,6 @@ function request({
 
 describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
   beforeEach(() => resetP10B16P04RealStudioAcceptanceStateForTests());
-
-  it("injects retained rejected structures into server-owned diversity authority", async () => {
-    const promptAStructuralFingerprint =
-      "semantic-structure-v1_501_57087ca71a72bf77f44fb2e4cd6375e08ab328ba08059bac4e3ae48974485050";
-    const promptBStructuralFingerprint =
-      "semantic-structure-v1_513_1448f2125e97be6cfa7f5d5d0a4d9fdc7511751f77932458491900f0ca7e3246";
-    const injectedEnvironment = {
-      ...environment,
-      [P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT]: promptAStructuralFingerprint,
-      [P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT_2]: promptBStructuralFingerprint,
-    };
-    const submitted = request({ merchantPrompt: technicalPrompt });
-    const parsed = promptedStorefrontStudioGenerationRequestSchema.parse(
-      await submitted.clone().json(),
-    );
-    const authority = createP10B16P04ServerPromptedStorefrontStudioAuthority({
-      environment: injectedEnvironment,
-    });
-    const context = await authority.resolve(parsed, submitted);
-    const current = await context.loadCurrentAuthority();
-
-    expect(current.requestInput.priorDiversityEvidence).toEqual({
-      recentAcceptedStructuralFingerprints: [],
-      recentRejectedStructuralFingerprints: [
-        promptAStructuralFingerprint,
-        promptBStructuralFingerprint,
-      ],
-      recentlyUsedPostureKeys: [],
-      merchantAvoidancePreferenceKeys: [],
-    });
-    expect(inspectP10B16P04RealStudioAcceptance(injectedEnvironment)).toMatchObject({
-      providerCallCount: 0,
-      retryCount: 0,
-      status: "ready",
-      cases: [],
-    });
-  });
-
-  it.each([
-    "semantic-structure-v1_0_57087ca71a72bf77f44fb2e4cd6375e08ab328ba08059bac4e3ae48974485050",
-    "semantic-structure-v1_501_NOT-A-CANONICAL-HASH",
-    `semantic-structure-v1_501_${"a".repeat(220)}`,
-  ])("fails closed for invalid retained diversity authority: %s", async (fingerprint) => {
-    const invalidEnvironment = {
-      ...environment,
-      [P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT]: fingerprint,
-    };
-    const submitted = request({ merchantPrompt: technicalPrompt });
-    const parsed = promptedStorefrontStudioGenerationRequestSchema.parse(
-      await submitted.clone().json(),
-    );
-    const authority = createP10B16P04ServerPromptedStorefrontStudioAuthority({
-      environment: invalidEnvironment,
-    });
-    const context = await authority.resolve(parsed, submitted);
-
-    await expect(context.loadCurrentAuthority()).rejects.toMatchObject({ code: "invalid" });
-    expect(inspectP10B16P04RealStudioAcceptance(invalidEnvironment)).toMatchObject({
-      providerCallCount: 0,
-      retryCount: 0,
-      status: "ready",
-      cases: [],
-    });
-  });
-
-  it.each([
-    {
-      label: "second fingerprint without the first",
-      first: undefined,
-      second:
-        "semantic-structure-v1_513_1448f2125e97be6cfa7f5d5d0a4d9fdc7511751f77932458491900f0ca7e3246",
-    },
-    {
-      label: "invalid second fingerprint",
-      first:
-        "semantic-structure-v1_501_57087ca71a72bf77f44fb2e4cd6375e08ab328ba08059bac4e3ae48974485050",
-      second: "not-a-structural-fingerprint",
-    },
-    {
-      label: "duplicate retained fingerprints",
-      first:
-        "semantic-structure-v1_501_57087ca71a72bf77f44fb2e4cd6375e08ab328ba08059bac4e3ae48974485050",
-      second:
-        "semantic-structure-v1_501_57087ca71a72bf77f44fb2e4cd6375e08ab328ba08059bac4e3ae48974485050",
-    },
-  ])("fails closed for $label", async ({ first, second }) => {
-    const invalidEnvironment = {
-      ...environment,
-      ...(first ? { [P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT]: first } : {}),
-      [P10B_16P_04_PRIOR_REJECTED_STRUCTURAL_FINGERPRINT_2]: second,
-    };
-    const submitted = request({ merchantPrompt: minimalPrompt });
-    const parsed = promptedStorefrontStudioGenerationRequestSchema.parse(
-      await submitted.clone().json(),
-    );
-    const authority = createP10B16P04ServerPromptedStorefrontStudioAuthority({
-      environment: invalidEnvironment,
-    });
-    const context = await authority.resolve(parsed, submitted);
-
-    await expect(context.loadCurrentAuthority()).rejects.toMatchObject({ code: "invalid" });
-    expect(inspectP10B16P04RealStudioAcceptance(invalidEnvironment)).toMatchObject({
-      providerCallCount: 0,
-      retryCount: 0,
-      status: "ready",
-      cases: [],
-    });
-  });
 
   it("uses the compact normal route once, compiles one protected proposal, and rejects atomically", async () => {
     const fixture = createP10B16P04RawAurumCommercialFixture();
@@ -807,22 +695,7 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       isP10B16P04RealStudioAcceptanceConfigured({
         ...environment,
         NODE_ENV: "production",
-        P10B18C_PRODUCTION_CAPTURE: "1",
-      }),
-    ).toBe(true);
-    expect(
-      isP10B16P04RealStudioAcceptanceConfigured({
-        ...environment,
-        NODE_ENV: "production",
-        P10B18C_PRODUCTION_CAPTURE: "1",
-        [P10B_16P_04_MOCK_TRANSPORT_FLAG]: "0",
-      }),
-    ).toBe(false);
-    expect(
-      isP10B16P04RealStudioAcceptanceConfigured({
-        ...environment,
-        NODE_ENV: "production",
-        P10B18C_PRODUCTION_CAPTURE: "0",
+        REMOVED_CAPTURE_ESCAPE: "1",
       }),
     ).toBe(false);
     expect(
@@ -877,5 +750,13 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
       new Request(`${origin}/api/demo/p10b-16p-04`, { headers: authorizedHeaders }),
     );
     expect(response.status).toBe(200);
+    const productionInspect = createP10B16P04AcceptanceInspectionHandler({
+      environment: { ...environment, NODE_ENV: "production", REMOVED_CAPTURE_ESCAPE: "1" },
+    });
+    expect(
+      productionInspect(
+        new Request(`${origin}/api/demo/p10b-16p-04`, { headers: authorizedHeaders }),
+      ).status,
+    ).toBe(404);
   });
 });

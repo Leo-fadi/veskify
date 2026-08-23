@@ -168,8 +168,7 @@ initial-generation path.
 P10B-16P-05A removes the active P10B-16L executable-intent routes/providers/runtime and makes
 P9/Lumo live generation isolated Deprecated historical, production-disabled authority. Required
 neutral migration/publication fixtures and historical evidence remain; P10B-16P-05B owns final
-consumer-verified cleanup after P10B-18C. The P10B-16P-04 acceptance composition remains
-production-disabled through P10B-18C.
+consumer-verified cleanup after P10B-18C. The P10B-16P-04 acceptance composition is the lean production-disabled mock/live seam retained for P10B-18D.
 
 ### 4.4 Persistence and publication
 
@@ -310,7 +309,7 @@ authority. Accepted P10B-18B-02 closes bounded homepage/editorial/campaign quali
 P10B-18B-03 closes bounded collection/search/product-card quality. P10B-18B-04 closes bounded PDP
 quality, and P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 **Baseline / complete**; P10B-18C is **Baseline**. P10B-18 and P10B remain **Partial**. P10B-18D is
-the exact next task, and P10B-16P-05B remains blocked until P10B-18D is accepted. P10A does not require another
+the exact next task, and P10B-16P-05B is Baseline; P10B-18D remains the exact next task. P10A does not require another
 registry, proposal model, recipe engine, component system, provider, publish command, or merchant
 editor integration.
 
@@ -421,18 +420,18 @@ not merely untested.
 
 ## 11. Documentation, naming, status, and duplication drift
 
-| Drift                                                                               | Current repository truth                                                                                                                | v1.3.0 action                                                                                                                                            |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| README and roadmap call Phase 9 active                                              | `P9_CLOSEOUT_RECORD.md` records the explicit post-PR-#134 closeout; later P10A work is merged.                                          | Replace active-Phase-9 narrative while retaining the evidence limitations and historical records.                                                        |
-| Earlier roadmap called P10A planned after Phase 9                                   | All required P10A gates are merged; P10B-18A, completed P10B-18B and P10B-18C are accepted Baselines while P10B-18/P10B remain Partial. | Keep P10A closed, P10B active/Partial, P10B-18D next, P10B-16P-05B blocked until P10B-18D, and historical records point-in-time.                         |
-| Earlier SDD verified baseline was `4a96a5a`                                         | Current closure baseline is `3d36f54`; significant authority landed afterward.                                                          | Keep the closure baseline current and preserve older hashes only in revision history.                                                                    |
-| SDD says deterministic discovery was the only adapter in P7-01                      | A bounded public server adapter exists, but merchant runtime wiring is incomplete.                                                      | Separate adapter implementation from merchant reachability and production service status.                                                                |
-| `StorefrontDesignSystemV1` and executable profiles both describe recipes/directions | PageBlueprint profiles execute; direction material still supplies active planner context.                                               | Name the direction material as transitional bounded selection data and remove duplicated recipe authority through an explicit migration.                 |
-| Legacy V1 registry and V2 registry coexist                                          | V1 is still the generic Puck/snapshot bridge; V2 is the capability authority; native dynamic/home components bypass or bridge it.       | Mark the V1 bridge **Deprecated** only where a tested V2 migration path exists; do not delete active compatibility prematurely.                          |
-| P10A-04B document records 19 blockers and six commercial gaps                       | Current test expectation is 16 blockers, 25 metadata gaps, one migration item, zero commercial gaps.                                    | Treat the report output as current and the task document as historical baseline.                                                                         |
-| “Same renderer everywhere” is stated broadly                                        | Shared/native bridges largely preserve implementation identity, but conformance still reports target/ownership drift.                   | Scope parity claims per component and require zero relevant blocking defects before global wording.                                                      |
-| Merchant-facing names include historical P9/P10 labels and Veskify proof routes     | Normal UI says Storefront Studio; active P10B-16L routes are removed and P9/Lumo live generation is isolated historical evidence.       | Keep historical evidence names internal; standardize merchant language only in product surfaces and finish consumer-verified cleanup under P10B-16P-05B. |
-| Authentication/tenancy appear implemented in contract prose                         | They are deterministic/standalone authorities; no production identity system exists.                                                    | Use **Partial** for contracts/adapters and **Blocked** for real environment operation.                                                                   |
+| Drift                                                                               | Current repository truth                                                                                                                              | v1.3.0 action                                                                                                                                            |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| README and roadmap call Phase 9 active                                              | `P9_CLOSEOUT_RECORD.md` records the explicit post-PR-#134 closeout; later P10A work is merged.                                                        | Replace active-Phase-9 narrative while retaining the evidence limitations and historical records.                                                        |
+| Earlier roadmap called P10A planned after Phase 9                                   | All required P10A gates are merged; P10B-18A, completed P10B-18B, P10B-18C and P10B-16P-05B are accepted Baselines while P10B-18/P10B remain Partial. | Keep P10A closed, P10B active/Partial, P10B-18D next after the cleanup, P10B-19 PRE after P10B-18D, and historical records point-in-time.                |
+| Earlier SDD verified baseline was `4a96a5a`                                         | Current closure baseline is `3d36f54`; significant authority landed afterward.                                                                        | Keep the closure baseline current and preserve older hashes only in revision history.                                                                    |
+| SDD says deterministic discovery was the only adapter in P7-01                      | A bounded public server adapter exists, but merchant runtime wiring is incomplete.                                                                    | Separate adapter implementation from merchant reachability and production service status.                                                                |
+| `StorefrontDesignSystemV1` and executable profiles both describe recipes/directions | PageBlueprint profiles execute; direction material still supplies active planner context.                                                             | Name the direction material as transitional bounded selection data and remove duplicated recipe authority through an explicit migration.                 |
+| Legacy V1 registry and V2 registry coexist                                          | V1 is still the generic Puck/snapshot bridge; V2 is the capability authority; native dynamic/home components bypass or bridge it.                     | Mark the V1 bridge **Deprecated** only where a tested V2 migration path exists; do not delete active compatibility prematurely.                          |
+| P10A-04B document records 19 blockers and six commercial gaps                       | Current test expectation is 16 blockers, 25 metadata gaps, one migration item, zero commercial gaps.                                                  | Treat the report output as current and the task document as historical baseline.                                                                         |
+| “Same renderer everywhere” is stated broadly                                        | Shared/native bridges largely preserve implementation identity, but conformance still reports target/ownership drift.                                 | Scope parity claims per component and require zero relevant blocking defects before global wording.                                                      |
+| Merchant-facing names include historical P9/P10 labels and Veskify proof routes     | Normal UI says Storefront Studio; active P10B-16L routes are removed and P9/Lumo live generation is isolated historical evidence.                     | Keep historical evidence names internal; standardize merchant language only in product surfaces and finish consumer-verified cleanup under P10B-16P-05B. |
+| Authentication/tenancy appear implemented in contract prose                         | They are deterministic/standalone authorities; no production identity system exists.                                                                  | Use **Partial** for contracts/adapters and **Blocked** for real environment operation.                                                                   |
 
 ## 12. Decisions preserved by the v1.3.0 synchronization
 
@@ -466,8 +465,8 @@ The later synchronization must make or preserve these decisions explicitly:
     evidence.
 12. Preserve the locked P10B commercial storefront-generation architecture and 18-task sequence;
     record P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06 and accepted
-    P10B-18A, completed P10B-18B and P10B-18C as Baseline; leave P10B-18/P10B Partial, make
-    P10B-18D next, and retain P10B-16P-05B as blocked until accepted live-AI evidence exists.
+    P10B-18A, completed P10B-18B, P10B-18C and P10B-16P-05B as Baseline; leave P10B-18/P10B
+    Partial, make P10B-18D next, and place P10B-19 PRE after P10B-18D.
 13. Clarify current onboarding: deterministic local project creation is reachable; URL discovery,
     exact approved-brief runtime correlation, and existing Vesko catalogue creation are not one
     complete merchant journey.
@@ -485,8 +484,8 @@ The later synchronization must make or preserve these decisions explicitly:
 This synchronization preserves accepted package history and current runtime/evidence truth. Its
 validation made no external-provider, Vesko, real-publication, staging, or production request and
 did not read environment secrets. P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent
-P10B-18B and P10B-18C are Baseline, while P10B-18 remains Partial. P10B-18D is the exact next task,
-and P10B-16P-05B remains blocked until it is accepted. Historical documentation remains historical.
+P10B-18B, P10B-18C and P10B-16P-05B are Baseline, while P10B-18 remains Partial. P10B-18D is the
+exact next task, followed by P10B-19 PRE. Historical documentation remains historical.
 
 ## P10B-18B-06 accepted bounded-authority synchronization
 
@@ -561,13 +560,21 @@ protected-state and frozen-matrix evidence exist. The product owner accepted the
 August 2026; P10B-18B-05 and completed P10B-18B are Baseline, P10B-18/P10B remain Partial, accepted
 history is unchanged and P10B-18C is next.
 
-## P10B-18C accepted current-state synchronization
+## P10B-18C and P10B-16P-05B current-state synchronization
 
-P10B-18C is Baseline as of 22 August 2026. Its production-disabled matrix and browser harness reuse
-one current compiler/materializer/snapshot/render path and add no merchant-reachable evaluation
-system. Stage A is 126/126 compile and replay with 54 normalized topologies, zero protected
-commerce/media mutation and a frozen 72 result of 39 topologies / 53 repeated memberships / largest
-seven / 19 singletons. Stage B binds 28 stores and 280 hash-valid captures; the final complete human
-review has no primary FAIL and is PASS WITH MINOR LIMITATION. The gate proves deterministic
-commercial credibility, not live-AI behavior, Vesko staging, authentication, operations or real
-publication. P10B-18D is next.
+P10B-18C is Baseline as of 22 August 2026. Its accepted durable result is 126/126 compile and
+replay, 54 normalized topologies, protected commerce/media, and a historical 280-entry human review
+with zero primary FAIL.
+
+P10B-16P-05B is Baseline as of 23 August 2026. The normal generation route, semantic provider,
+compatibility resolver, deterministic compiler/coordinator, sole executor/materializer and
+`StorefrontSnapshot` lifecycle remain unchanged. P03 remains the normal zero-provider Studio
+regression. P04 is reduced to one token-protected production-disabled mock/live seam for P10B-18D.
+Governed P9 follow-up and actual migration/publication identities remain; obsolete initial
+generation and one-time production capture do not.
+
+Normal production cannot configure or reach P04 acceptance. No acceptance token is client or
+persisted evidence authority. Provider, Vesko and real-publication calls for cleanup are zero.
+
+P10B-18D is the exact next task. P10B-19 PRE follows it; P10B-19A through P10B-19J remain Planned.
+P10B remains Partial.
