@@ -806,6 +806,28 @@ describe("P10B-16P-04 controlled Studio V2 mocked preflight", () => {
     expect(
       isP10B16P04RealStudioAcceptanceConfigured({
         ...environment,
+        NODE_ENV: "production",
+        P10B18C_PRODUCTION_CAPTURE: "1",
+      }),
+    ).toBe(true);
+    expect(
+      isP10B16P04RealStudioAcceptanceConfigured({
+        ...environment,
+        NODE_ENV: "production",
+        P10B18C_PRODUCTION_CAPTURE: "1",
+        [P10B_16P_04_MOCK_TRANSPORT_FLAG]: "0",
+      }),
+    ).toBe(false);
+    expect(
+      isP10B16P04RealStudioAcceptanceConfigured({
+        ...environment,
+        NODE_ENV: "production",
+        P10B18C_PRODUCTION_CAPTURE: "0",
+      }),
+    ).toBe(false);
+    expect(
+      isP10B16P04RealStudioAcceptanceConfigured({
+        ...environment,
         VESKIFY_RUNTIME_MODE: "standalone",
       }),
     ).toBe(false);

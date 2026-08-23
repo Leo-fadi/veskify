@@ -13,8 +13,8 @@ and shared-frame quality upgrade, accepted P10B-18B-06 bounded asset-composition
 upgrade, accepted P10B-18B-02 homepage/editorial/campaign quality upgrade, accepted P10B-18B-03
 collection/search/product-card quality upgrade, accepted P10B-18B-04 PDP quality upgrade, and
 accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Parent P10B-18B is
-Baseline/complete; P10B-18 and P10B remain Partial. P10B-18C is the exact next task and remains
-Planned.
+Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate are Baseline.
+P10B-18 and P10B remain Partial. P10B-18D is the exact next task and remains Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -30,8 +30,7 @@ three final materially different Prompt A/B/C proposals, clean A/B rejection, an
 Accept/Undo/Redo/Save/reload/Preview with zero publication and unchanged protected commerce/media.
 P10B-16P-02 and both of its slices are Baseline. Canonical `/search` execution is Baseline through
 one provider-neutral transient query/results adapter across draft, proposal, saved/history and
-published routes. P10B-16L is Deprecated compatibility-only infrastructure, and P10B-16P-05B
-remains Planned after P10B-18C.
+published routes. P10B-16L is Deprecated compatibility-only infrastructure. P10B-16P-05B remains blocked until P10B-18D.
 
 ## Product boundary
 
@@ -97,9 +96,9 @@ strengthened canonical card anatomies, and executable comparison/dense search. A
 adds bounded exact-product PDP matching, stronger purchase/configuration hierarchy, bounded
 canonical galleries and cardinality-aware related merchandising. Accepted P10B-18B-05 adds
 truthful content/support/utility anatomy, exact campaign media/action authority, transient utility
-runtime state and 30 retained captures. Parent P10B-18B is complete; P10B-18C remains Planned for
-the 100+ quality/diversity gate. P10B Commercial Storefront Generation System v1 therefore remains
-Partial.
+runtime state and 30 retained captures. Parent P10B-18B and P10B-18C are Baseline; P10B-18D remains
+Planned for fresh live-AI commercial storefront acceptance. P10B Commercial Storefront Generation
+System v1 therefore remains Partial.
 
 Its target is:
 
@@ -197,10 +196,9 @@ Historical phase records retain their original evidence meaning. Superseded expo
 
 ## Non-claim
 
-This repository does not claim completion of P10B-18B beyond its accepted bounded packages,
-complete-storefront commercial visual quality, P10B-18C designer-grade commercial
-quality/100+ scale acceptance, merchant-complete Storefront Studio editing, complete Vesko
-integration, Vesko staging acceptance, production readiness, or production operation.
+This repository does not claim P10B-18D fresh live-AI commercial storefront acceptance,
+merchant-complete Storefront Studio editing, complete Vesko integration, Vesko staging acceptance,
+production readiness, or production operation.
 
 P10B-18B-04 is **Baseline**, accepted by the product owner on 19 August 2026. It retains one
 canonical PDP renderer and resolver while adding bounded exact-product context matching, stronger
@@ -211,6 +209,7 @@ P10B-18B-05 was the historical handoff.
 P10B-18B-05 is **Baseline**, accepted by the product owner on 20 August 2026. It strengthens the
 existing content/support and utility families without a second model or renderer, preserves
 protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
-Partial; P10B-18C is the exact next task.
+Partial. At that checkpoint, P10B-18C was the exact next task; it is now Baseline and P10B-18D is
+next.
 
 Owner: Vesko Oy

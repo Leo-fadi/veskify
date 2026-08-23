@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Modular desk cable tray detail</title>
+  <desc id="desc">A neutral fictional detail illustration of a modular desk cable tray.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f3735"/>
+      <stop offset="1" stop-color="#59645f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <path d="M80 160h1040v190H80z" fill="#c58a55"/>
+  <path d="M80 350h1040v55H80z" fill="#9d6841"/>
+  <path d="M270 438h660v160c0 48-38 86-86 86H356c-48 0-86-38-86-86z" fill="#1f2624"/>
+  <path d="M324 484h552v54H324z" fill="#4c5753"/>
+  <circle cx="391" cy="511" r="13" fill="#d1b07f"/>
+  <circle cx="809" cy="511" r="13" fill="#d1b07f"/>
+  <path d="M465 538v108M735 538v108" stroke="#78847e" stroke-width="15"/>
+</svg>

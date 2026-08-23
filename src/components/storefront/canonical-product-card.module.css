@@ -350,6 +350,8 @@
 
   .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage {
     overflow: visible;
+    max-height: none;
+    aspect-ratio: auto;
   }
 
   .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage .media,
@@ -368,11 +370,6 @@
   .card[data-responsive-transformations~="editorialStack"] .editorialStage {
     max-height: 19rem;
     aspect-ratio: 5 / 4;
-  }
-
-  .card[data-responsive-transformations~="imageFirstReorder"] .imageFirstStage {
-    max-height: 24rem;
-    aspect-ratio: 4 / 5;
   }
 
   .card[data-responsive-transformations~="editorialStack"] .media img,

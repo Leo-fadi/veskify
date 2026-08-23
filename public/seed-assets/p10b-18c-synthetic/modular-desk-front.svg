@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Modular desk front view</title>
+  <desc id="desc">A neutral fictional modular desk illustration.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2eadf"/>
+      <stop offset="1" stop-color="#d8c3a8"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b98555"/>
+      <stop offset="1" stop-color="#d6a978"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <ellipse cx="600" cy="742" rx="435" ry="44" fill="#594738" opacity=".18"/>
+  <rect x="165" y="315" width="870" height="92" rx="18" fill="url(#top)"/>
+  <rect x="195" y="407" width="56" height="315" rx="12" fill="#3c4140"/>
+  <rect x="949" y="407" width="56" height="315" rx="12" fill="#3c4140"/>
+  <rect x="251" y="448" width="698" height="22" rx="11" fill="#4d5351"/>
+  <rect x="468" y="432" width="264" height="40" rx="15" fill="#2c302f"/>
+  <circle cx="600" cy="452" r="8" fill="#d9b27f"/>
+  <path d="M205 353h790" stroke="#f1d4ae" stroke-width="5" opacity=".65"/>
+</svg>

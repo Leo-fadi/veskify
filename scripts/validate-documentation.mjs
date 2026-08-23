@@ -129,11 +129,11 @@ requireText("README.md", [
   "The overall product is **Partial**. Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B Commercial Storefront Generation System\nv1 is **Partial / active**",
-  "accepted P10B-18B-05 content/support/utility quality upgrade are Baseline",
-  "Parent P10B-18B is\nBaseline/complete; P10B-18 and P10B remain Partial",
-  "P10B-18C is the exact next task",
+  "accepted P10B-18C 100+ commercial quality and diversity gate are Baseline",
+  "Parent P10B-18B is\nBaseline/complete",
+  "P10B-18D is the exact next task",
   "Canonical `/search` execution is Baseline",
-  "P10B-16P-05B\nremains Planned after P10B-18C",
+  "P10B-16P-05B remains blocked until P10B-18D",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -159,9 +159,9 @@ requireText("docs/VESKIFY_SDD.md", [
   "There is no Vesko staging or production evidence",
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
-  "accepted P10B-18B-05\ncontent/support/utility quality upgrade are Baseline",
+  "P10B-18C is Baseline",
   "parent P10B-18B is\nBaseline/complete",
-  "P10B-18C is the exact next task",
+  "P10B-18D is the exact next task",
   "### 10.25 P10B-17 responsive, accessibility and performance closure",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
@@ -171,10 +171,9 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "P10B-18B-05 are the current bounded collection/search/product-card, PDP and\ncontent/support/utility baselines",
-  "parent P10B-18B is Baseline/complete",
-  "P10B-18C is exact next",
-  "P10B-16P-05B is the final historical-cleanup gate after P10B-18C",
+  "parent P10B-18B and P10B-18C are Baseline",
+  "P10B-18D is exact next",
+  "P10B-16P-05B is blocked until P10B-18D",
   "P10A owns internal governed initial/follow-up execution",
   "1 — Grammar",
   "2 — Parallel foundations",
@@ -194,10 +193,9 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "| ☑",
   "P11-00",
   "P10A_PHASE_CLOSURE.md",
-  "P10B-18B-04 and P10B-18B-05 are\n**Baseline**",
-  "Parent P10B-18B is **Baseline** / complete",
-  "P10B-18C is the\nexact next product task after accepted and completed P10B-18B",
-  "P10B-16P-05B follows P10B-18C",
+  "100+ commercial quality and diversity gate",
+  "Live AI commercial storefront acceptance",
+  "Final historical acceptance cleanup",
 ]);
 
 requireText("docs/P10A_PHASE_CLOSURE.md", [
@@ -208,9 +206,9 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "P10B-18B-05 accepted consumption boundary",
-  "Parent P10B-18B\nis Baseline/complete",
-  "P10B-18C is the exact next task",
+  "P10B-18C are\n**Baseline**",
+  "P10B-18D is the exact next task",
+  "P10B-16P-05B is\nblocked behind it",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -226,10 +224,10 @@ requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
 ]);
 
 requireText("docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md", [
-  "P10B-18A and P10B-18B-01/06/02/03/04/05 Baseline",
-  "parent P10B-18B Baseline/complete",
-  "P10B-18C is the exact next task",
-  "P10B-16P-05B remains Planned after P10B-18C",
+  "P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline",
+  "P10B-18C is Baseline",
+  "P10B-18D is the exact next",
+  "P10B-16P-05B remains\nblocked until that live-AI gate is accepted",
   "### 15.3 Accepted product-owner checkpoint crosswalk",
 ]);
 
@@ -279,11 +277,11 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-18B-05 content/support/utility quality\nupgrade are **Baseline**",
+  "P10B-18C is **Baseline**",
   "parent P10B-18B is **Baseline / complete**",
   "P10B-18 and P10B remain **Partial**",
-  "P10B-18C is the exact next task",
-  "P10B-16P-05B remains **Planned** after P10B-18C",
+  "P10B-18D is the exact next task",
+  "P10B-16P-05B remains blocked until P10B-18D is accepted",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -294,9 +292,9 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "P10B-18B-01 is **Baseline**, accepted on 17 August 2026",
   "P10B-18B-06 is **Baseline**, accepted on 17 August 2026",
   "P10B-18B-05 closes bounded content/support/utility quality",
-  "Parent P10B-18B is\n**Baseline / complete**; P10B-18 and P10B remain **Partial**",
-  "P10B-18C is the exact next task",
-  "P10B-16P-05B remains Planned after P10B-18C",
+  "Parent P10B-18B is\n**Baseline / complete**; P10B-18C is **Baseline**",
+  "P10B-18D is\nthe exact next task",
+  "P10B-16P-05B remains blocked until P10B-18D is accepted",
 ]);
 
 requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
@@ -310,11 +308,13 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "## P10B-18B-03 accepted bounded collection/search/card-quality evidence",
   "## P10B-18B-04 accepted evidence",
   "### P10B-18B-05 accepted evidence Baseline",
+  "### P10B-18C accepted deterministic commercial-quality evidence",
+  "P10B-18D is the exact next",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 39) {
-  failures.push("Delivery tracker must contain exactly thirty-nine completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 41) {
+  failures.push("Delivery tracker must contain exactly forty-one completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -372,19 +372,21 @@ if (
   !/^\| ☑\s+\| P10B-17\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-18\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-18B\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-18B\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18B-01\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18B-06\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18B-02\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18B-03\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18B-04\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-18C\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-18B-05\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-18C\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-18D\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Blocked\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03, and P10B-18B-04 Baseline; keep parent P10B-18B and P10B-18 Partial; and keep P10B-18C and P10B-16P-05B Planned",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, and P10B-18C Baseline; keep P10B-18 Partial; keep P10B-18D Planned; and keep P10B-16P-05B Blocked",
   );
 }
 

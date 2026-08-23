@@ -336,30 +336,42 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   );
 
   await selectOption(pageSelector, "archetype_pdp_standard");
-  await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Lumoava Yölento, korvakorut",
-  });
+  const standardProductOption = page.locator(
+    '#dynamic-commerce-representative-route option[data-route="/products/product-karvonen-02"]',
+  );
+  await expect(standardProductOption).toHaveCount(1);
+  const standardProductValue = await standardProductOption.getAttribute("value");
+  if (!standardProductValue) throw new Error("The standard representative product is unavailable.");
+  await page.locator("#dynamic-commerce-representative-route").selectOption(standardProductValue);
   await expect(page.getByTestId("representative-route-path")).toHaveText(
     "/products/product-karvonen-02",
   );
   await expect(
     proposalCanvas.getByRole("heading", {
-      name: "Lumoava Yölento, korvakorut",
+      name: "Lumoava Yölento earrings",
       exact: true,
     }),
   ).toBeVisible();
   await expect(proposalCanvas.locator("[data-option-group-count]")).toHaveCount(0);
 
   await selectOption(pageSelector, "archetype_pdp_high_consideration");
-  await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Festive Feeniks Lux Oval timanttisormus",
-  });
+  const highConsiderationProductOption = page.locator(
+    '#dynamic-commerce-representative-route option[data-route="/products/product-karvonen-06"]',
+  );
+  await expect(highConsiderationProductOption).toHaveCount(1);
+  const highConsiderationProductValue = await highConsiderationProductOption.getAttribute("value");
+  if (!highConsiderationProductValue) {
+    throw new Error("The high-consideration representative product is unavailable.");
+  }
+  await page
+    .locator("#dynamic-commerce-representative-route")
+    .selectOption(highConsiderationProductValue);
   await expect(page.getByTestId("representative-route-path")).toHaveText(
     "/products/product-karvonen-06",
   );
   await expect(
     proposalCanvas.getByRole("heading", {
-      name: "Festive Feeniks Lux Oval timanttisormus",
+      name: "Festive Feeniks Lux Oval diamond ring",
       exact: true,
     }),
   ).toBeVisible();

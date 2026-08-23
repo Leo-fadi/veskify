@@ -8,11 +8,91 @@ import {
 import { brandSystemSchema } from "@/domain/design-system";
 import { projectSchema } from "@/domain/project";
 import { storefrontSnapshotSchema } from "@/domain/storefront";
+import { assertKarvonenFixtureCustomerLocaleCompleteness } from "./karvonen-fixture-locale-gate";
 import { KARVONEN_PROJECT_ID } from "./identifiers";
 import type { Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 
-const fi = (value: string) => ({ fi: value });
+const karvonenEnglishByFinnish: Readonly<Record<string, string>> = {
+  "Guldviva Myrskyluodon Maija sormus": "Guldviva Myrskyluodon Maija ring",
+  "Säädettävä hopeasormus, jonka aaltoileva muoto on saanut inspiraationsa meriajokkaasta.":
+    "An adjustable silver ring whose wave-like form is inspired by seagrass.",
+  "Vaihtelee mallin mukaan": "Availability varies by model",
+  "Guldviva Myrskyluodon Maija -sormus": "Guldviva Myrskyluodon Maija ring",
+  "Guldviva-sormuksen yksityiskohta": "Guldviva ring detail",
+  "Guldviva-sormus": "Guldviva ring",
+  "Koko 15,5–17": "Size 15.5–17",
+  "Koko 17–18,5": "Size 17–18.5",
+  "Koko 18,5–21": "Size 18.5–21",
+  "Lumoava Yölento, korvakorut": "Lumoava Yölento earrings",
+  "Näyttävät kullatusta hopeasta valmistetut korvakorut, koko 18 × 59 mm.":
+    "Statement earrings made from gold-plated silver, size 18 × 59 mm.",
+  "Lumoava Yölento -korvakorut": "Lumoava Yölento earrings",
+  "Kohinoor Bellis timanttiriipus": "Kohinoor Bellis diamond pendant",
+  "18K valkokultainen riipus, jossa on 12 timanttia sinisen 5 mm akvamariinin ympärillä; ketju sisältyy hintaan.":
+    "An 18K white-gold pendant with 12 diamonds surrounding a blue 5 mm aquamarine; the chain is included.",
+  "Kohinoor Bellis -timanttiriipus": "Kohinoor Bellis diamond pendant",
+  "Lumoava Säde, kalvosinnapit": "Lumoava Säde cufflinks",
+  "Hopeiset 22 × 10 mm kalvosinnapit, joissa valon ja pinnan muotoilu muodostaa sädemäisen peilauksen.":
+    "Silver 22 × 10 mm cufflinks whose sculpted light and surface create a ray-like reflection.",
+  "Lumoava Säde -kalvosinnapit": "Lumoava Säde cufflinks",
+  "Lupaus korvakorut, koukku": "Lupaus hook earrings",
+  "Kotimaiset koukkukorvakorut 100-prosenttisesti kierrätetystä 925-hopeasta; koko 3 × 12 mm.":
+    "Finnish-made hook earrings in 100% recycled 925 silver; size 3 × 12 mm.",
+  "Lupaus-korvakorut": "Lupaus earrings",
+  "Lupaus-korvakorujen yksityiskohta": "Lupaus earring detail",
+  "Festive Feeniks Lux Oval timanttisormus": "Festive Feeniks Lux Oval diamond ring",
+  "Luontoaiheinen Feeniks-malliston ovaalitimanttisormus, jossa keskikiveä täydentää köynnösmäinen sivukivikoristelu.":
+    "A nature-inspired oval diamond ring from the Feeniks collection, with vine-like side stones framing the centre stone.",
+  "Festive Feeniks Lux Oval -timanttisormus": "Festive Feeniks Lux Oval diamond ring",
+  "Festive Feeniks -sormuksen yksityiskohta": "Festive Feeniks ring detail",
+  "Metalli / karaatit": "Metal / karats",
+  Timanttilaatu: "Diamond type",
+  Luonnontimantti: "Natural diamond",
+  Laboratoriotimantti: "Laboratory-grown diamond",
+  "14K": "14K",
+  "18K": "18K",
+  "Festive Aura timanttisormus": "Festive Aura diamond ring",
+  "Festive Aura -timanttisormus.": "Festive Aura diamond ring.",
+  "Hinta ei ole saatavilla toimitetussa tuoteluettelossa.":
+    "Price is unavailable in the supplied product catalogue.",
+  "Festive Aura -timanttisormus": "Festive Aura diamond ring",
+  "Festive Aura -sormuksen yksityiskohta": "Festive Aura ring detail",
+  "Festive Pihka timanttisormus": "Festive Pihka diamond ring",
+  "Havupuiden kuoresta ja pihkasta inspiraationsa saanut leveä monikivinen timanttisormus.":
+    "A wide multi-stone diamond ring inspired by conifer bark and resin.",
+  "Festive Pihka -timanttisormus": "Festive Pihka diamond ring",
+  "Festive Pihka -sormuksen yksityiskohta": "Festive Pihka ring detail",
+  "Festive Pihka Siro timanttisormus": "Festive Pihka Siro diamond ring",
+  "Pihka-malliston sirompi monikivinen timanttisormus, jonka muotoilu on saanut inspiraationsa havupuiden kuoresta ja pihkasta.":
+    "A slimmer multi-stone diamond ring from the Pihka collection, inspired by conifer bark and resin.",
+  "Festive Pihka Siro -timanttisormus": "Festive Pihka Siro diamond ring",
+  "Festive Pihka Siro -sormuksen yksityiskohta": "Festive Pihka Siro ring detail",
+  "Lumoava Eden kultasormus": "Lumoava Eden gold ring",
+  "Kotimaisen Lumoavan naisellinen ja näyttävä Eden-malliston kultasormus.":
+    "A feminine statement gold ring from Finnish Lumoava's Eden collection.",
+  "Lumoava Eden -kultasormus": "Lumoava Eden gold ring",
+  "Myrskyluodon Maija": "Myrskyluodon Maija",
+  "Myrskyluodon Maija -malliston korut.": "Jewellery from the Myrskyluodon Maija collection.",
+  Yölento: "Yölento",
+  "Yölento-malliston korut.": "Jewellery from the Yölento collection.",
+  Bellis: "Bellis",
+  "Bellis-malliston korut.": "Jewellery from the Bellis collection.",
+  Säde: "Säde",
+  "Säde-malliston korut.": "Jewellery from the Säde collection.",
+  "Lupaus-korut": "Lupaus jewellery",
+  "Lupaus-malliston korut.": "Jewellery from the Lupaus collection.",
+  Feeniks: "Feeniks",
+  "Feeniks-malliston korut.": "Jewellery from the Feeniks collection.",
+  Aura: "Aura",
+  "Aura-malliston korut.": "Jewellery from the Aura collection.",
+  Pihka: "Pihka",
+  "Pihka-malliston korut.": "Jewellery from the Pihka collection.",
+  Eden: "Eden",
+  "Eden-malliston korut.": "Jewellery from the Eden collection.",
+};
+
+const fi = (value: string) => ({ en: karvonenEnglishByFinnish[value] ?? "", fi: value });
 const localized = (en: string, fi: string) => ({ en, fi });
 const price = (amount: number) => ({ amount, currency: "EUR" as const });
 const image = (id: string, path: string, alt: string) => ({
@@ -59,26 +139,15 @@ const products = [
       image("asset_karvonen_01_alt_02", "product-01/alt-02.jpg", "Guldviva-sormus"),
     ],
     productType: "Hopeasormukset",
-    attributes: { material: "hopea", colour: "hopea", sizeRange: "15,5–17; 17–18,5; 18,5–21" },
+    attributes: {
+      material: "silver",
+      colour: "silver",
+      ringSizes: ["15,5–17", "17–18,5", "18,5–21"],
+    },
     variants: [
-      variant(
-        "variant_karvonen_01_01",
-        "Koko 15,5–17",
-        { size: "15,5–17", availability: "Varastossa" },
-        129,
-      ),
-      variant(
-        "variant_karvonen_01_02",
-        "Koko 17–18,5",
-        { size: "17–18,5", availability: "Tilapäisesti loppunut" },
-        129,
-      ),
-      variant(
-        "variant_karvonen_01_03",
-        "Koko 18,5–21",
-        { size: "18,5–21", availability: "Varastossa" },
-        129,
-      ),
+      variant("variant_karvonen_01_01", "Koko 15,5–17", { ringSize: "15,5–17" }, 129),
+      variant("variant_karvonen_01_02", "Koko 17–18,5", { ringSize: "17–18,5" }, 129),
+      variant("variant_karvonen_01_03", "Koko 18,5–21", { ringSize: "18,5–21" }, 129),
     ],
   },
   {
@@ -91,7 +160,7 @@ const products = [
     category: "Hopeakorvakorut",
     images: [image("asset_karvonen_02_main", "product-02/main.jpg", "Lumoava Yölento -korvakorut")],
     productType: "Hopeakorvakorut",
-    attributes: { material: "kullattu hopea", colour: "kulta", size: "18 × 59 mm" },
+    attributes: { material: "silver", colour: "yellow" },
     variants: [],
   },
   {
@@ -107,11 +176,7 @@ const products = [
       image("asset_karvonen_03_main", "product-03/main.jpg", "Kohinoor Bellis -timanttiriipus"),
     ],
     productType: "Naisten kultakaulakorut",
-    attributes: {
-      material: "18K valkokulta",
-      colour: "valkokulta / sininen",
-      stone: "Akvamariini 5 mm; timantit 4×0,02 + 8×0,01 H SI",
-    },
+    attributes: { material: "gold", karat: "18K", metalColour: "white" },
     variants: [],
   },
   {
@@ -126,7 +191,7 @@ const products = [
     category: "Kalvosinnapit",
     images: [image("asset_karvonen_04_main", "product-04/main.jpg", "Lumoava Säde -kalvosinnapit")],
     productType: "Kalvosinnapit",
-    attributes: { material: "hopea", colour: "hopea", size: "22 × 10 mm" },
+    attributes: { material: "silver", colour: "silver" },
     variants: [],
   },
   {
@@ -147,7 +212,7 @@ const products = [
       image("asset_karvonen_05_alt_02", "product-05/alt-02.jpg", "Lupaus-korvakorut"),
     ],
     productType: "Hopeakorvakorut",
-    attributes: { material: "kierrätetty 925 hopea", colour: "hopea", size: "3 × 12 mm" },
+    attributes: { material: "silver", colour: "silver", fineness: "925" },
     variants: [],
   },
   {
@@ -159,7 +224,6 @@ const products = [
     price: price(2680),
     brand: "Festive",
     category: "Timanttisormukset",
-    availabilityLabel: fi("Not captured — verify live"),
     images: [
       image(
         "asset_karvonen_06_main",
@@ -173,13 +237,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: {
-      material: "Kulta; exact Karvonen metal variants require verification",
-      colour:
-        "Valkokulta / keltakulta / punakulta options reported by Festive; verify Karvonen options",
-      stone:
-        "Ovaalihiottu timantti with smaller side diamonds; exact Karvonen carat/quality selection requires verification",
-    },
+    attributes: { material: "gold" },
     variants: [],
     orderOptions: [
       selection("option_karvonen_06_metal", "Metalli / karaatit", ["14K", "18K"]),
@@ -192,9 +250,7 @@ const products = [
   {
     id: "product_karvonen_07",
     title: fi("Festive Aura timanttisormus"),
-    description: fi(
-      "Festive-brändin timanttisormus. Tarkka mallinimi, timanttipaino, materiaali ja hinta tulee kopioida Karvosen tuotesivulta.",
-    ),
+    description: fi("Festive Aura -timanttisormus."),
     priceUnavailableReason: fi("Hinta ei ole saatavilla toimitetussa tuoteluettelossa."),
     brand: "Festive",
     category: "Timanttisormukset",
@@ -207,7 +263,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: { stone: "Timantti; exact specifications not captured" },
+    attributes: {},
     variants: [],
   },
   {
@@ -220,7 +276,6 @@ const products = [
     price: price(2290),
     brand: "Festive",
     category: "Timanttisormukset",
-    availabilityLabel: fi("Valmistetaan/tilataan valitussa koossa; verify exact Karvonen wording"),
     images: [
       image("asset_karvonen_08_main", "product-08/main.jpg", "Festive Pihka -timanttisormus"),
       image(
@@ -230,11 +285,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: {
-      material: "Kulta; reference configuration includes 14K/18K",
-      colour: "Exact Karvonen metal-colour configuration requires verification",
-      stone: "6 timanttia, yhteispaino noin 0,08 ct; natural or laboratory-diamond configurations",
-    },
+    attributes: { material: "gold" },
     variants: [],
     orderOptions: [
       selection("option_karvonen_08_metal", "Metalli / karaatit", ["14K", "18K"]),
@@ -254,7 +305,6 @@ const products = [
     price: price(1690),
     brand: "Festive",
     category: "Timanttisormukset",
-    availabilityLabel: fi("Valmistetaan/tilataan valitussa koossa; verify exact Karvonen wording"),
     images: [
       image("asset_karvonen_09_main", "product-09/main.jpg", "Festive Pihka Siro -timanttisormus"),
       image(
@@ -264,11 +314,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: {
-      material: "Kulta; reference configuration includes 14K/18K",
-      colour: "Exact Karvonen metal-colour configuration requires verification",
-      stone: "3 timanttia, yhteispaino noin 0,05 ct; natural or laboratory-diamond configurations",
-    },
+    attributes: { material: "gold" },
     variants: [],
     orderOptions: [
       selection("option_karvonen_09_metal", "Metalli / karaatit", ["14K", "18K"]),
@@ -286,10 +332,9 @@ const products = [
     price: price(2024),
     brand: "Lumoava",
     category: "Kultasormukset",
-    availabilityLabel: fi("Tilaustuote / tilattavissa; verify exact Karvonen wording"),
     images: [image("asset_karvonen_10_main", "product-10/main.jpg", "Lumoava Eden -kultasormus")],
     productType: "Kultasormukset",
-    attributes: { material: "Keltakulta", colour: "Kulta" },
+    attributes: { material: "gold", metalColour: "yellow" },
     variants: [],
   },
 ] as const;
@@ -482,7 +527,7 @@ const homePage = {
           "Delivery · Returns · Privacy",
           "Toimitus · Palautukset · Tietosuoja",
         ),
-        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+        copyright: localized("© 2026 Karvonen", "© 2026 Karvonen"),
       },
       props: { showPolicies: true },
     },
@@ -549,7 +594,7 @@ const collectionPage = {
           "Delivery · Returns · Privacy",
           "Toimitus · Palautukset · Tietosuoja",
         ),
-        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+        copyright: localized("© 2026 Karvonen", "© 2026 Karvonen"),
       },
       props: { showPolicies: true },
     },
@@ -627,7 +672,7 @@ const productPage = {
           "Delivery · Returns · Privacy",
           "Toimitus · Palautukset · Tietosuoja",
         ),
-        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+        copyright: localized("© 2026 Karvonen", "© 2026 Karvonen"),
       },
       props: { showPolicies: true },
     },
@@ -699,6 +744,18 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value;
 }
 
+const karvonenEnabledCustomerLocales = ["fi", "en"] as const;
+
+assertKarvonenFixtureCustomerLocaleCompleteness({
+  fixtureId: KARVONEN_PROJECT_ID,
+  enabledLocales: karvonenEnabledCustomerLocales,
+  customerFacingAuthority: {
+    catalogue: { products, collections },
+    pages: [homePage, collectionPage, productPage],
+    navigation,
+  },
+});
+
 const parsedSeed = seedBundleSchema.parse({
   project: {
     id: KARVONEN_PROJECT_ID,
@@ -706,10 +763,10 @@ const parsedSeed = seedBundleSchema.parse({
     mode: "salesDemo",
     industry: "jewellery",
     primaryLocale: "fi",
-    enabledLocales: ["fi", "en"],
+    enabledLocales: [...karvonenEnabledCustomerLocales],
     businessProfile: {
       name: "Karvonen",
-      description: "Karvosen korujen demo-katalogi.",
+      description: "Tiivis valikoima sormuksia ja rannekelloja.",
       audience: "Korujen ostajat.",
       market: "Finland",
       sourceReferences: [],
