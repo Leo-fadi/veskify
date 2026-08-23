@@ -393,7 +393,7 @@ describe("P9-04 availability, options, variants and media projection adapter", (
       "variant_aava_45",
       "variant_aava_50",
     ]);
-    expect(karvonen.optionGroups.map((group) => group.label.fi)).toContain("Size");
+    expect(karvonen.optionGroups.map((group) => group.label.fi)).toContain("Ring Size");
     expect(karvonen.optionGroups.map((group) => group.label.fi)).not.toContain("Availability");
     expect(aurumNordicSeed.catalogue).toEqual(aurumBefore);
     expect(karvonenSeed.catalogue).toEqual(karvonenBefore);

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { copyFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { P10B18CCaptureResumeExpectation } from "./p10b-18c-active-capture-evidence";
 import {
   assertP10B18CStageBFreeSpace,
@@ -12,6 +12,25 @@ import {
 } from "./p10b-18c-free-space-preflight";
 
 export const P10B18C_DELTA_STAGE_B_AUDIT_FILENAME = "p10b-18c-delta-stage-b-integrity-audit.json";
+
+export const P10B18C_RENDERER_AUTHORITY_PATHS = [
+  "src",
+  "public",
+  "next.config.ts",
+  "package.json",
+  "pnpm-lock.yaml",
+  "playwright.p10b-18a.config.ts",
+  "playwright.p10b-18c.config.ts",
+  "tests/acceptance/p10b-18a-browser-evidence.ts",
+  "tests/acceptance/p10b-18c-100-plus-commercial-quality-diversity-gate.spec.ts",
+  "tests/helpers/p10b-18c-active-capture-evidence.ts",
+  "tests/helpers/p10b-18c-commercial-quality.ts",
+  "tests/helpers/p10b-18c-presentation-image-evidence.ts",
+  "tests/helpers/p10b-18c-request-ledger.ts",
+  "tests/helpers/p10b-evidence-filename.ts",
+] as const;
+
+const acceptedReviewVerdicts = new Set(["PASS", "PASS WITH MINOR LIMITATION", "FAIL"]);
 
 type DeltaCapture = Readonly<{
   filename: string;
@@ -113,6 +132,42 @@ function sha256(value: Uint8Array): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+async function rendererAuthorityFiles(path: string): Promise<string[]> {
+  const metadata = await stat(path);
+  if (metadata.isFile()) return [path];
+  if (!metadata.isDirectory()) fail(`renderer authority path ${path} is not a file or directory`);
+  const entries = await readdir(path, { withFileTypes: true });
+  const files = await Promise.all(
+    entries
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((entry) => rendererAuthorityFiles(join(path, entry.name))),
+  );
+  return files.flat();
+}
+
+export async function p10b18cRendererAuthorityFingerprint(
+  repositoryRoot = process.cwd(),
+  authorityPaths: readonly string[] = P10B18C_RENDERER_AUTHORITY_PATHS,
+): Promise<string> {
+  const root = resolve(repositoryRoot);
+  const files = (
+    await Promise.all(authorityPaths.map((path) => rendererAuthorityFiles(resolve(root, path))))
+  )
+    .flat()
+    .sort((left, right) => relative(root, left).localeCompare(relative(root, right)));
+  const hash = createHash("sha256");
+  for (const file of files) {
+    const path = relative(root, file);
+    if (path.startsWith("..") || isAbsolute(path))
+      fail(`renderer authority path ${file} escapes root`);
+    hash.update(path);
+    hash.update("\0");
+    hash.update(await readFile(file));
+    hash.update("\0");
+  }
+  return `p10b18c-renderer-authority-v1_${hash.digest("hex")}`;
+}
+
 function completedReviewCount(review: Record<string, unknown>, expected: number): number {
   const coverage = recordValue(review.reviewCoverage);
   if (coverage !== null) {
@@ -137,6 +192,46 @@ function completedReviewCount(review: Record<string, unknown>, expected: number)
     fail("baseline human review does not cover the complete manifest");
   }
   return expected;
+}
+
+function boundReviewVerdicts(
+  review: Record<string, unknown>,
+  manifestSha256: string,
+  captures: readonly DeltaCapture[],
+): ReadonlyMap<string, string> {
+  if (review.manifestSha256 !== manifestSha256) {
+    fail("baseline human review is not bound to the exact manifest digest");
+  }
+  if (!Array.isArray(review.captureReviews) || review.captureReviews.length !== captures.length) {
+    fail("baseline human review lacks complete per-capture bindings");
+  }
+  const captureByFilename = new Map(captures.map((capture) => [capture.filename, capture]));
+  const verdicts = new Map<string, string>();
+  review.captureReviews.forEach((value, index) => {
+    const record = recordValue(value);
+    if (record === null) fail(`baseline human review captureReviews.${index} is malformed`);
+    const filename = stringValue(
+      record,
+      "filename",
+      `baseline human review captureReviews.${index}`,
+    );
+    const screenshotSha256 = stringValue(
+      record,
+      "screenshotSha256",
+      `baseline human review captureReviews.${index}`,
+    );
+    const verdict = stringValue(record, "verdict", `baseline human review captureReviews.${index}`);
+    if (!acceptedReviewVerdicts.has(verdict)) {
+      fail(`baseline human review captureReviews.${index}.verdict is unsupported`);
+    }
+    if (verdicts.has(filename)) fail(`duplicate baseline human review filename ${filename}`);
+    const capture = captureByFilename.get(filename);
+    if (capture === undefined || capture.screenshotSha256 !== screenshotSha256) {
+      fail(`baseline human review binding mismatch for ${filename}`);
+    }
+    verdicts.set(filename, verdict);
+  });
+  return verdicts;
 }
 
 function assertCaptureIdentity(
@@ -168,6 +263,7 @@ export async function prepareP10B18CDeltaStageB(
     baselineHumanReviewPath: string;
     evidenceDirectory: string;
     capturePlan: readonly P10B18CCaptureResumeExpectation[];
+    currentRendererAuthorityFingerprint: string;
     storageRoots: P10B18CStageBStorageRoot[];
     storageProbe?: P10B18CStageBFilesystemProbe;
   }>,
@@ -196,8 +292,17 @@ export async function prepareP10B18CDeltaStageB(
   if (manifest.captureCount !== input.capturePlan.length) {
     fail("baseline manifest declared capture count is stale");
   }
+  const baselineRendererAuthorityFingerprint = stringValue(
+    manifest,
+    "rendererAuthorityFingerprint",
+    "baseline manifest",
+  );
+  if (baselineRendererAuthorityFingerprint !== input.currentRendererAuthorityFingerprint) {
+    fail("renderer or capture authority changed; a complete Stage B rerun is required");
+  }
   const reviewedCaptureCount = completedReviewCount(review, captureValues.length);
   const baselineCaptures = captureValues.map(captureValue);
+  const reviewVerdicts = boundReviewVerdicts(review, sha256(manifestBytes), baselineCaptures);
   const byFilename = new Map<string, DeltaCapture>();
   baselineCaptures.forEach((capture) => {
     if (byFilename.has(capture.filename)) fail(`duplicate baseline filename ${capture.filename}`);
@@ -251,6 +356,10 @@ export async function prepareP10B18CDeltaStageB(
       continue;
     }
     const destination = safeEvidencePath(evidenceDirectory, capture.filename);
+    const humanVerdict = reviewVerdicts.get(capture.filename);
+    if (humanVerdict === "FAIL") {
+      fail(`baseline capture ${capture.filename} has a blocking human verdict`);
+    }
     carriedCapturesByFilename.set(capture.filename, capture);
     copyPlan.push({ source, destination });
     entries.push({
@@ -261,6 +370,7 @@ export async function prepareP10B18CDeltaStageB(
       snapshotFingerprint: capture.snapshotFingerprint,
       consumedAuthorityFingerprint: capture.consumedAuthorityFingerprint,
       normalizedTopologyFingerprint: capture.normalizedTopologyFingerprint,
+      humanVerdict,
     });
   }
 
@@ -297,9 +407,11 @@ export async function prepareP10B18CDeltaStageB(
       humanReviewPath: resolve(input.baselineHumanReviewPath),
       humanReviewSha256: sha256(reviewBytes),
       reviewedCaptureCount,
+      rendererAuthorityFingerprint: baselineRendererAuthorityFingerprint,
     },
     current: {
       evidenceDirectory,
+      rendererAuthorityFingerprint: input.currentRendererAuthorityFingerprint,
       plannedCaptureCount: input.capturePlan.length,
       changedCaseIds: changedCaseIdList,
       carriedCaptureCount: carriedCapturesByFilename.size,

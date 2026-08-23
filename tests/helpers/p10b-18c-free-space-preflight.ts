@@ -38,7 +38,7 @@ export interface P10B18CStageBStorageEvidenceEntry {
 
 export interface P10B18CStageBStoragePreflightEvidence {
   authority: typeof P10B18C_STAGE_B_STORAGE_AUTHORITY;
-  phase: "full-stage-b-prebuild" | "delta-stage-b-precapture";
+  phase: "full-stage-b-prebuild" | "full-stage-b-precapture" | "delta-stage-b-precapture";
   requiredBytes: number;
   entries: P10B18CStageBStorageEvidenceEntry[];
   passed: boolean;
@@ -193,7 +193,9 @@ export class P10B18CStageBFreeSpacePreflightError extends Error {
     const boundary =
       evidence.phase === "delta-stage-b-precapture"
         ? "before delta capture"
-        : "before build, server startup, or capture";
+        : evidence.phase === "full-stage-b-precapture"
+          ? "before full capture"
+          : "before build, server startup, or capture";
     super(
       `P10B-18C Stage B free-space preflight failed ${boundary}: ${failures || "no storage roots were provided"}`,
     );

@@ -5,7 +5,10 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { prepareP10B18CDeltaStageB } from "../helpers/p10b-18c-delta-stage-b";
+import {
+  p10b18cRendererAuthorityFingerprint,
+  prepareP10B18CDeltaStageB,
+} from "../helpers/p10b-18c-delta-stage-b";
 
 function stringContainingMatcher(value: string): unknown {
   const matcher: unknown = expect.stringContaining(value);
@@ -21,6 +24,8 @@ import {
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
+
+const rendererAuthorityFingerprint = "renderer-authority-stable";
 
 function expectation(
   caseId: string,
@@ -115,16 +120,27 @@ async function fixture() {
     capture("case-unchanged-3", "unchanged-3.png", unchangedImage, "snapshot-unchanged-3"),
     capture("case-changed", "changed.png", changedImage, "snapshot-before"),
   ];
+  const manifest = JSON.stringify({
+    captureCount: 4,
+    rendererAuthorityFingerprint,
+    captures,
+  });
   await Promise.all([
     writeFile(resolve(baselineDirectory, "unchanged.png"), unchangedImage),
     writeFile(resolve(baselineDirectory, "unchanged-2.png"), unchangedImage),
     writeFile(resolve(baselineDirectory, "unchanged-3.png"), unchangedImage),
     writeFile(resolve(baselineDirectory, "changed.png"), changedImage),
-    writeFile(manifestPath, JSON.stringify({ captureCount: 4, captures })),
+    writeFile(manifestPath, manifest),
     writeFile(
       reviewPath,
       JSON.stringify({
         result: "FAIL",
+        manifestSha256: sha256(manifest),
+        captureReviews: captures.map(({ filename, screenshotSha256, caseId }) => ({
+          filename,
+          screenshotSha256,
+          verdict: caseId === "case-changed" ? "FAIL" : "PASS",
+        })),
         reviewCoverage: {
           totalCaptureCount: 4,
           exactHashBoundPriorVerdictCount: 3,
@@ -151,6 +167,7 @@ describe("P10B-18C delta Stage B integrity", () => {
       baselineHumanReviewPath: reviewPath,
       evidenceDirectory,
       capturePlan,
+      currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
       storageRoots,
       storageProbe,
     });
@@ -178,6 +195,7 @@ describe("P10B-18C delta Stage B integrity", () => {
         baselineHumanReviewPath: reviewPath,
         evidenceDirectory,
         capturePlan,
+        currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
         storageRoots,
         storageProbe,
       }),
@@ -198,6 +216,7 @@ describe("P10B-18C delta Stage B integrity", () => {
         baselineHumanReviewPath: reviewPath,
         evidenceDirectory,
         capturePlan: changedIdentity,
+        currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
         storageRoots,
         storageProbe,
       }),
@@ -224,6 +243,7 @@ describe("P10B-18C delta Stage B integrity", () => {
         baselineHumanReviewPath: reviewPath,
         evidenceDirectory,
         capturePlan,
+        currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
         storageRoots,
         storageProbe,
       }),
@@ -238,6 +258,7 @@ describe("P10B-18C delta Stage B integrity", () => {
         baselineHumanReviewPath: reviewPath,
         evidenceDirectory,
         capturePlan,
+        currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
         storageRoots,
         storageProbe: (requestedPath) => ({
           filesystemPath: requestedPath,
@@ -252,5 +273,67 @@ describe("P10B-18C delta Stage B integrity", () => {
         passed: false,
       },
     });
+  });
+
+  it("fails closed when renderer or capture authority differs from the baseline", async () => {
+    const { capturePlan } = await fixture();
+    await expect(
+      prepareP10B18CDeltaStageB({
+        baselineManifestPath: manifestPath,
+        baselineHumanReviewPath: reviewPath,
+        evidenceDirectory,
+        capturePlan,
+        currentRendererAuthorityFingerprint: "renderer-authority-changed",
+        storageRoots,
+        storageProbe,
+      }),
+    ).rejects.toMatchObject({ reason: stringContainingMatcher("complete Stage B rerun") });
+  });
+
+  it("fails closed when the review digest or a capture verdict binding is unrelated", async () => {
+    const { captures, capturePlan } = await fixture();
+    await writeFile(
+      reviewPath,
+      JSON.stringify({
+        result: "PASS",
+        manifestSha256: sha256("unrelated manifest"),
+        captureReviews: captures.map(({ filename, screenshotSha256 }) => ({
+          filename,
+          screenshotSha256,
+          verdict: "PASS",
+        })),
+        reviewedCaptureCount: 4,
+      }),
+    );
+    await expect(
+      prepareP10B18CDeltaStageB({
+        baselineManifestPath: manifestPath,
+        baselineHumanReviewPath: reviewPath,
+        evidenceDirectory,
+        capturePlan,
+        currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
+        storageRoots,
+        storageProbe,
+      }),
+    ).rejects.toMatchObject({ reason: stringContainingMatcher("exact manifest digest") });
+  });
+
+  it("retains deterministic renderer fingerprints and changes them with source bytes", async () => {
+    const rendererRoot = resolve(baselineDirectory, "renderer");
+    await writeFile(rendererRoot, "renderer-v1");
+    const first = await p10b18cRendererAuthorityFingerprint(baselineDirectory, ["renderer"]);
+    const replay = await p10b18cRendererAuthorityFingerprint(baselineDirectory, ["renderer"]);
+    await writeFile(rendererRoot, "renderer-v2");
+    const changed = await p10b18cRendererAuthorityFingerprint(baselineDirectory, ["renderer"]);
+    expect(replay).toBe(first);
+    expect(changed).not.toBe(first);
+  });
+
+  it("resolves the canonical repository renderer-authority paths deterministically", async () => {
+    const first = await p10b18cRendererAuthorityFingerprint();
+    const replay = await p10b18cRendererAuthorityFingerprint();
+
+    expect(first).toMatch(/^p10b18c-renderer-authority-v1_[a-f0-9]{64}$/);
+    expect(replay).toBe(first);
   });
 });

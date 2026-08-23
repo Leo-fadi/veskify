@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { P10B18C_PLAYWRIGHT_ACCEPTANCE_TOKEN_ENV } from "../helpers/p10b-18c-production-server-composition";
+
+const testAcceptanceToken = "p10b-18c-clean-capture-test-token-0001";
 
 describe("P10B-18C clean-capture server environment", () => {
   it("composes isolated clean-capture environments without mutating P10B-18A or global state", async () => {
     const originalCleanCapture = process.env.P10B18C_CLEAN_CAPTURE;
+    const originalAcceptanceToken = process.env[P10B18C_PLAYWRIGHT_ACCEPTANCE_TOKEN_ENV];
     delete process.env.P10B18C_CLEAN_CAPTURE;
+    process.env[P10B18C_PLAYWRIGHT_ACCEPTANCE_TOKEN_ENV] = testAcceptanceToken;
+    vi.resetModules();
 
     try {
       const inheritedConfig = (await import("../../playwright.p10b-18a.config")).default;
@@ -18,6 +24,7 @@ describe("P10B-18C clean-capture server environment", () => {
         true,
       );
       expect(process.env.P10B18C_CLEAN_CAPTURE).toBeUndefined();
+      expect(process.env[P10B18C_PLAYWRIGHT_ACCEPTANCE_TOKEN_ENV]).toBe(testAcceptanceToken);
 
       const cleanConfig = (await import("../../playwright.p10b-18c.config")).default;
       const cleanServers = Array.isArray(cleanConfig.webServer)
@@ -55,14 +62,20 @@ describe("P10B-18C clean-capture server environment", () => {
         ({ env }) => env?.VESKIFY_RUNTIME_MODE === "integrated",
       );
       expect(cleanIntegrated?.env?.VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE_TOKEN).toBe(
-        process.env.P10B16P04_PLAYWRIGHT_ACCEPTANCE_TOKEN,
+        testAcceptanceToken,
       );
       expect(inheritedIntegrated?.env?.VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE_TOKEN).not.toBe(
-        process.env.P10B16P04_PLAYWRIGHT_ACCEPTANCE_TOKEN,
+        testAcceptanceToken,
       );
     } finally {
       if (originalCleanCapture === undefined) delete process.env.P10B18C_CLEAN_CAPTURE;
       else process.env.P10B18C_CLEAN_CAPTURE = originalCleanCapture;
+      if (originalAcceptanceToken === undefined) {
+        delete process.env[P10B18C_PLAYWRIGHT_ACCEPTANCE_TOKEN_ENV];
+      } else {
+        process.env[P10B18C_PLAYWRIGHT_ACCEPTANCE_TOKEN_ENV] = originalAcceptanceToken;
+      }
+      vi.resetModules();
     }
   });
 });

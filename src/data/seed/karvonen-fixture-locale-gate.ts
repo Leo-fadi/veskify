@@ -8,6 +8,39 @@ type KarvonenFixtureLocaleGateInput = Readonly<{
   customerFacingAuthority: Readonly<Record<string, unknown>>;
 }>;
 
+const primitiveAttributeLocaleAuthority: Readonly<
+  Record<string, Readonly<Record<string, Readonly<Record<KarvonenFixtureLocale, string>>>>>
+> = {
+  material: {
+    gold: { en: "Gold", fi: "Kulta" },
+    silver: { en: "Silver", fi: "Hopea" },
+  },
+  colour: {
+    silver: { en: "Silver", fi: "Hopea" },
+    yellow: { en: "Yellow", fi: "Keltainen" },
+  },
+  metalColour: {
+    white: { en: "White gold", fi: "Valkokulta" },
+    yellow: { en: "Yellow gold", fi: "Keltakulta" },
+  },
+  fineness: {
+    "925": { en: "925", fi: "925" },
+  },
+  karat: {
+    "18K": { en: "18K", fi: "18K" },
+  },
+  ringSizes: {
+    "15,5–17": { en: "15.5–17", fi: "15,5–17" },
+    "17–18,5": { en: "17–18.5", fi: "17–18,5" },
+    "18,5–21": { en: "18.5–21", fi: "18,5–21" },
+  },
+  ringSize: {
+    "15,5–17": { en: "15.5–17", fi: "15,5–17" },
+    "17–18,5": { en: "17–18.5", fi: "17–18,5" },
+    "18,5–21": { en: "18.5–21", fi: "18,5–21" },
+  },
+};
+
 export class KarvonenFixtureLocaleAuthorityError extends Error {
   readonly code = "missing-enabled-customer-locale" as const;
 
@@ -52,7 +85,16 @@ function assertCompleteValue(
     );
     return;
   }
-  if (!isRecord(value)) return;
+  if (!isRecord(value)) {
+    const attribute = path.match(/\.attributes\.([A-Za-z0-9_-]+)(?:\[\d+\])?$/)?.[1];
+    if (attribute === undefined) return;
+    const localizedValue = primitiveAttributeLocaleAuthority[attribute]?.[String(value)];
+    for (const locale of enabledLocales) {
+      if (localizedValue?.[locale].trim().length) continue;
+      throw new KarvonenFixtureLocaleAuthorityError(path, locale);
+    }
+    return;
+  }
 
   if (isLocalizedCustomerValue(value)) {
     for (const locale of enabledLocales) {

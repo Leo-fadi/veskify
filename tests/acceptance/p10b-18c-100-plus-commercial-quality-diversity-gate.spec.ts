@@ -41,10 +41,14 @@ import {
   type P10B18CCaptureResumeExpectation,
 } from "../helpers/p10b-18c-active-capture-evidence";
 import {
+  p10b18cRendererAuthorityFingerprint,
   prepareP10B18CDeltaStageB,
   type P10B18CDeltaStageBResult,
 } from "../helpers/p10b-18c-delta-stage-b";
-import { p10b18cStageBStorageRootsFromEnvironment } from "../helpers/p10b-18c-free-space-preflight";
+import {
+  assertP10B18CStageBFreeSpace,
+  p10b18cStageBStorageRootsFromEnvironment,
+} from "../helpers/p10b-18c-free-space-preflight";
 import { canonicalP10BEvidenceFilename } from "../helpers/p10b-evidence-filename";
 import {
   p10b18cPresentationImageAuthorities,
@@ -1127,6 +1131,15 @@ test("retains the deterministic 28-store, 280-capture commercial quality review"
   browserName,
 }, testInfo: TestInfo) => {
   test.skip(browserName !== "chromium", "P10B-18C retains one deterministic Chromium review.");
+  const preCaptureStorageEvidence = assertP10B18CStageBFreeSpace({
+    roots: p10b18cStageBStorageRootsFromEnvironment(p10b18aEvidenceDirectory()),
+    phase: "full-stage-b-precapture",
+  });
+  await writeFile(
+    resolve(p10b18aEvidenceDirectory(), "p10b-18c-full-stage-b-precapture-storage-evidence.json"),
+    `${JSON.stringify(preCaptureStorageEvidence, null, 2)}\n`,
+    "utf8",
+  );
   const matrix = buildP10b18cMatrix();
   expect(matrix.cases).toHaveLength(126);
   expect(matrix.failures).toEqual([]);
@@ -1146,6 +1159,7 @@ test("retains the deterministic 28-store, 280-capture commercial quality review"
     tabletStores,
   });
   expect(capturePlan).toHaveLength(280);
+  const rendererAuthorityFingerprint = await p10b18cRendererAuthorityFingerprint();
   const diagnostics = new P10B18CActiveCaptureEvidence(p10b18aEvidenceDirectory());
   const deltaBaselineManifestPath = process.env.P10B18C_DELTA_BASELINE_MANIFEST;
   const deltaBaselineHumanReviewPath = process.env.P10B18C_DELTA_BASELINE_HUMAN_REVIEW;
@@ -1167,6 +1181,7 @@ test("retains the deterministic 28-store, 280-capture commercial quality review"
       baselineHumanReviewPath: deltaBaselineHumanReviewPath,
       evidenceDirectory: p10b18aEvidenceDirectory(),
       capturePlan,
+      currentRendererAuthorityFingerprint: rendererAuthorityFingerprint,
       storageRoots: p10b18cStageBStorageRootsFromEnvironment(p10b18aEvidenceDirectory()),
     });
   }
@@ -1566,6 +1581,7 @@ test("retains the deterministic 28-store, 280-capture commercial quality review"
       transientUtilities:
         "accepted P10B-12/P10B-13 production-disabled proof routes; runtime state is deliberately not injected into StorefrontSnapshot",
     },
+    rendererAuthorityFingerprint,
     selectionAlgorithm:
       "deterministic material-authority set cover, cluster medoids, same-direction alternatives, near-duplicate witnesses, outliers, rich/sparse authority and stable case-ID tie-break",
     selectedStoreCount: selected.length,
@@ -1594,6 +1610,7 @@ test("retains the deterministic 28-store, 280-capture commercial quality review"
     expandedMatrixMetrics: p10b18cClusterMetrics(matrix.cases),
     duplicateAnalysis: p10b18cDuplicateAnalysis(matrix.cases),
     semanticCausality: causality,
+    preCaptureStorageEvidence,
     storage,
     captures: [...captures].sort((left, right) => left.filename.localeCompare(right.filename)),
     requestErrorLedger: ledger,

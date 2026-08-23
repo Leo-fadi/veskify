@@ -85,6 +85,20 @@ describe("P10B-18C Stage B free-space preflight", () => {
     expect(first.entries.every((entry) => entry.sufficient)).toBe(true);
   });
 
+  it("applies the unchanged full-run reserve at the post-build pre-capture boundary", () => {
+    const evidence = evaluateP10B18CStageBFreeSpace({
+      roots,
+      phase: "full-stage-b-precapture",
+      probe: probeWithAvailableBytes(P10B18C_STAGE_B_MINIMUM_AVAILABLE_BYTES),
+    });
+
+    expect(evidence).toMatchObject({
+      phase: "full-stage-b-precapture",
+      requiredBytes: P10B18C_STAGE_B_MINIMUM_AVAILABLE_BYTES,
+      passed: true,
+    });
+  });
+
   it("identifies the gate as acceptance-harness authority only", () => {
     const evidence = evaluateP10B18CStageBFreeSpace({
       roots,

@@ -139,26 +139,15 @@ const products = [
       image("asset_karvonen_01_alt_02", "product-01/alt-02.jpg", "Guldviva-sormus"),
     ],
     productType: "Hopeasormukset",
-    attributes: { material: "hopea", colour: "hopea", sizeRange: "15,5–17; 17–18,5; 18,5–21" },
+    attributes: {
+      material: "silver",
+      colour: "silver",
+      ringSizes: ["15,5–17", "17–18,5", "18,5–21"],
+    },
     variants: [
-      variant(
-        "variant_karvonen_01_01",
-        "Koko 15,5–17",
-        { size: "15,5–17", availability: "Varastossa" },
-        129,
-      ),
-      variant(
-        "variant_karvonen_01_02",
-        "Koko 17–18,5",
-        { size: "17–18,5", availability: "Tilapäisesti loppunut" },
-        129,
-      ),
-      variant(
-        "variant_karvonen_01_03",
-        "Koko 18,5–21",
-        { size: "18,5–21", availability: "Varastossa" },
-        129,
-      ),
+      variant("variant_karvonen_01_01", "Koko 15,5–17", { ringSize: "15,5–17" }, 129),
+      variant("variant_karvonen_01_02", "Koko 17–18,5", { ringSize: "17–18,5" }, 129),
+      variant("variant_karvonen_01_03", "Koko 18,5–21", { ringSize: "18,5–21" }, 129),
     ],
   },
   {
@@ -171,7 +160,7 @@ const products = [
     category: "Hopeakorvakorut",
     images: [image("asset_karvonen_02_main", "product-02/main.jpg", "Lumoava Yölento -korvakorut")],
     productType: "Hopeakorvakorut",
-    attributes: { material: "kullattu hopea", colour: "kulta", size: "18 × 59 mm" },
+    attributes: { material: "silver", colour: "yellow" },
     variants: [],
   },
   {
@@ -187,11 +176,7 @@ const products = [
       image("asset_karvonen_03_main", "product-03/main.jpg", "Kohinoor Bellis -timanttiriipus"),
     ],
     productType: "Naisten kultakaulakorut",
-    attributes: {
-      material: "18K valkokulta",
-      colour: "valkokulta / sininen",
-      stone: "Akvamariini 5 mm; timantit 4×0,02 + 8×0,01 H SI",
-    },
+    attributes: { material: "gold", karat: "18K", metalColour: "white" },
     variants: [],
   },
   {
@@ -206,7 +191,7 @@ const products = [
     category: "Kalvosinnapit",
     images: [image("asset_karvonen_04_main", "product-04/main.jpg", "Lumoava Säde -kalvosinnapit")],
     productType: "Kalvosinnapit",
-    attributes: { material: "hopea", colour: "hopea", size: "22 × 10 mm" },
+    attributes: { material: "silver", colour: "silver" },
     variants: [],
   },
   {
@@ -227,7 +212,7 @@ const products = [
       image("asset_karvonen_05_alt_02", "product-05/alt-02.jpg", "Lupaus-korvakorut"),
     ],
     productType: "Hopeakorvakorut",
-    attributes: { material: "kierrätetty 925 hopea", colour: "hopea", size: "3 × 12 mm" },
+    attributes: { material: "silver", colour: "silver", fineness: "925" },
     variants: [],
   },
   {
@@ -252,7 +237,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: { material: "Kulta" },
+    attributes: { material: "gold" },
     variants: [],
     orderOptions: [
       selection("option_karvonen_06_metal", "Metalli / karaatit", ["14K", "18K"]),
@@ -300,7 +285,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: { material: "Kulta" },
+    attributes: { material: "gold" },
     variants: [],
     orderOptions: [
       selection("option_karvonen_08_metal", "Metalli / karaatit", ["14K", "18K"]),
@@ -329,7 +314,7 @@ const products = [
       ),
     ],
     productType: "Timanttisormukset",
-    attributes: { material: "Kulta" },
+    attributes: { material: "gold" },
     variants: [],
     orderOptions: [
       selection("option_karvonen_09_metal", "Metalli / karaatit", ["14K", "18K"]),
@@ -349,7 +334,7 @@ const products = [
     category: "Kultasormukset",
     images: [image("asset_karvonen_10_main", "product-10/main.jpg", "Lumoava Eden -kultasormus")],
     productType: "Kultasormukset",
-    attributes: { material: "Keltakulta", colour: "Kulta" },
+    attributes: { material: "gold", metalColour: "yellow" },
     variants: [],
   },
 ] as const;
@@ -542,7 +527,7 @@ const homePage = {
           "Delivery · Returns · Privacy",
           "Toimitus · Palautukset · Tietosuoja",
         ),
-        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+        copyright: localized("© 2026 Karvonen", "© 2026 Karvonen"),
       },
       props: { showPolicies: true },
     },
@@ -609,7 +594,7 @@ const collectionPage = {
           "Delivery · Returns · Privacy",
           "Toimitus · Palautukset · Tietosuoja",
         ),
-        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+        copyright: localized("© 2026 Karvonen", "© 2026 Karvonen"),
       },
       props: { showPolicies: true },
     },
@@ -687,7 +672,7 @@ const productPage = {
           "Delivery · Returns · Privacy",
           "Toimitus · Palautukset · Tietosuoja",
         ),
-        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+        copyright: localized("© 2026 Karvonen", "© 2026 Karvonen"),
       },
       props: { showPolicies: true },
     },
@@ -781,7 +766,7 @@ const parsedSeed = seedBundleSchema.parse({
     enabledLocales: [...karvonenEnabledCustomerLocales],
     businessProfile: {
       name: "Karvonen",
-      description: "Karvosen korujen demo-katalogi.",
+      description: "Tiivis valikoima sormuksia ja rannekelloja.",
       audience: "Korujen ostajat.",
       market: "Finland",
       sourceReferences: [],

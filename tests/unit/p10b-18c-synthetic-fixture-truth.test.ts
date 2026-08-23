@@ -170,8 +170,9 @@ describe("P10B-18C bounded neutral-synthetic fixture customer truth", () => {
         const variantKeys = authority.catalogue.products[0]?.variants.flatMap(({ attributes }) =>
           Object.keys(attributes),
         );
-        expect(variantKeys).toContain("koko");
-        expect(variantKeys).toContain("saatavuus");
+        expect(variantKeys).toEqual(["ringSize", "ringSize", "ringSize"]);
+        expect(variantKeys).not.toContain("koko");
+        expect(variantKeys).not.toContain("saatavuus");
         expect(variantKeys).not.toContain("Size");
         expect(variantKeys).not.toContain("size");
         expect(variantKeys).not.toContain("Availability");

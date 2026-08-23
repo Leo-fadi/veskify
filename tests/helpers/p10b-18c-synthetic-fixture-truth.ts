@@ -865,7 +865,9 @@ function correctedCustomerCopy(
     if (
       value === "Karvosen korujen demo-katalogi." ||
       value === "Karvonen jewellery demo catalogue." ||
-      value === "Karvonen jewellery demo catalog."
+      value === "Karvonen jewellery demo catalog." ||
+      value === "Tiivis valikoima sormuksia ja rannekelloja." ||
+      value === "A concise selection of rings and wristwatches."
     ) {
       return locale === "fi" || (locale === null && /Karvosen/.test(value))
         ? replacement.fi
