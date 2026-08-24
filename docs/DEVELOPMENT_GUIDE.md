@@ -155,7 +155,7 @@ asset-composition authority; accepted P10B-18B-02 closes bounded homepage/editor
 quality, accepted P10B-18B-03 closes bounded collection/search/card quality, accepted P10B-18B-04
 closes bounded PDP quality, and accepted P10B-18B-05 closes bounded content/support/utility quality
 and completes parent P10B-18B. Accepted P10B-18C closes deterministic integrated quality/diversity;
-P10B-18D is the exact next product task.
+P10B-18D completed as a rejected-quality diagnostic, and P10B-19 PRE is the exact next product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -297,8 +297,9 @@ fingerprint-stratified subset passes retained human review at 375, 768, 1024, an
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and all accepted
 P10B-18B-01/06/02/03/04/05 packages and P10B-18C are Baseline; P10B-16P-02 is Baseline. Parent
-P10B-18B is Baseline/complete; P10B-18 and P10B remain Partial. P10B-18D is the exact next task, and
-P10B-16P-05B is Baseline before it. Their ownership remains disjoint: P10B-05 owns
+P10B-18B is Baseline/complete; P10B-16P-05B is Baseline; P10B-18D is a rejected-quality diagnostic
+Baseline. P10B-18 and P10B remain Partial, and P10B-19 PRE is the exact next task. Their ownership
+remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
 its `BrandSystem` authority.

@@ -55,8 +55,9 @@ P10B is **Partial / active**. P10B-01 through P10B-17, P10B-16P-01 through P10B-
 P10B-16P-06, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, accepted
 P10B-18B-02, and accepted P10B-18B-03 are Baseline.
 P10B-16P-02, completed P10B-18B, accepted P10B-18C and P10B-16P-05B are **Baseline**; P10B-18 and
-P10B remain **Partial**. P10B-18D is **Planned / exact next**, P10B-19 PRE follows P10B-18D, and
-P10B-19A through P10B-19J remain **Planned**.
+P10B remain **Partial**. P10B-18D is a **Baseline diagnostic with live commercial quality
+rejected**. P10B-19 PRE is **Planned / exact next**, and P10B-19A through P10B-19J remain
+**Planned**.
 P10B-16P-04
 acceptance evidence is retained in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
@@ -68,7 +69,8 @@ P10B-16P-05A plus P10B-16P-06 remain the sequential convergence package between 
 P10B-17; P10B-16P-05B is the accepted consumer-verified cleanup. A slice does not renumber or
 independently complete the parent phase. Accepted P10B-18B-03,
 P10B-18B-04 and P10B-18B-05 are the current bounded collection/search/product-card, PDP and
-content/support/utility baselines; parent P10B-18B and P10B-18C are Baseline, and P10B-18D is exact next.
+content/support/utility baselines; parent P10B-18B and P10B-18C are Baseline. P10B-18D is a
+completed rejected-quality diagnostic, and P10B-19 PRE is exact next.
 
 The P10B-16P-04 Aurum composition is now the single lean, token-protected, production-disabled
 mock/live seam retained for P10B-18D. P10B-16P-05A removed active P10B-16L initial generation;
@@ -238,4 +240,5 @@ commerce/media and zero placeholders/fabrication, reports 54 normalized material
 truthful largest compatibility cluster of 14, and selects 28 deterministic stores for a final
 280-entry four-width EN/FI review. The final review is **PASS WITH MINOR LIMITATION** with zero
 primary FAIL. P10B-16P-05B subsequently completed the consumer-proven historical-authority cleanup
-and is Baseline. P10B-18D is the exact next task.
+and is Baseline. P10B-18D completed as a rejected-quality diagnostic; P10B-19 PRE is the exact next
+task.

@@ -188,15 +188,16 @@ The binding details and minimum coverage are in
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A and
 accepted P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03, P10B-18B-04 and P10B-18B-05 are
 **Baseline**. P10B-16P-02, parent P10B-18B, P10B-18C and P10B-16P-05B are **Baseline**; P10B-18 and
-P10B remain **Partial**; P10B-18D is **Planned / exact next**. P10B-16P-04 acceptance evidence is retained
-in
+P10B remain **Partial**; P10B-18D is a **Baseline diagnostic with live commercial quality
+rejected**. P10B-19 PRE is **Planned / exact next**. P10B-16P-04 acceptance evidence is retained in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 sequence is a mandatory convergence package
 between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through
 P10B-18 plan.
-P10B-16P-05B follows accepted P10B-18C and is now Baseline. P10B-18D is the exact next product task,
-followed by P10B-19 PRE and planned P10B-19A through P10B-19J.
+P10B-16P-05B follows accepted P10B-18C and is now Baseline. P10B-18D completed as a rejected-quality
+diagnostic. P10B-19 PRE is the exact next product task, followed by planned P10B-19A through
+P10B-19J.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -704,8 +705,9 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 - **Non-goal:** Storefront output, generation semantics, P10B-18D execution, P10B-19 implementation,
   commerce/media changes or migration breakage.
 
-P10B-18C and P10B-16P-05B are Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
-task, followed by P10B-19 PRE and planned P10B-19A through P10B-19J.
+P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
+quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is the exact next task, followed by
+planned P10B-19A through P10B-19J.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
@@ -1165,4 +1167,5 @@ largest seven / 19 singletons, protected commerce/media and external activity ar
 expanded matrix contains 54 normalized topologies. The deterministic selector retains 28 stores and
 the final complete manifest binds 280 captures across 375/768/1024/1440 and EN/FI. The final human
 verdict is **PASS WITH MINOR LIMITATION** with zero primary FAIL. P10B-16P-05B subsequently removed
-the one-time capture platform while retaining the bounded quality gate; P10B-18D is the exact next task.
+the one-time capture platform while retaining the bounded quality gate. P10B-18D subsequently
+completed as a rejected-quality diagnostic; P10B-19 PRE is the exact next task.
