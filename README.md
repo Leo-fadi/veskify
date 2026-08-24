@@ -15,8 +15,8 @@ collection/search/product-card quality upgrade, accepted P10B-18B-04 PDP quality
 accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Parent P10B-18B is
 Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate and
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
-P10B-18D is the exact next task, P10B-19 PRE follows P10B-18D, and P10B-19A through P10B-19J remain
-Planned.
+P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is the exact
+next task, and P10B-19A through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -101,8 +101,8 @@ adds bounded exact-product PDP matching, stronger purchase/configuration hierarc
 canonical galleries and cardinality-aware related merchandising. Accepted P10B-18B-05 adds
 truthful content/support/utility anatomy, exact campaign media/action authority, transient utility
 runtime state and 30 retained captures. Parent P10B-18B, P10B-18C and P10B-16P-05B are Baseline;
-P10B-18D remains Planned for fresh live-AI commercial storefront acceptance. P10B Commercial
-Storefront Generation System v1 therefore remains Partial through P10B-18D and P10B-19.
+P10B-18D is a completed diagnostic whose live commercial quality was rejected. P10B Commercial
+Storefront Generation System v1 therefore remains Partial through P10B-19.
 
 Its target is:
 
@@ -200,9 +200,9 @@ Historical phase records retain their original evidence meaning. Superseded expo
 
 ## Non-claim
 
-This repository does not claim P10B-18D fresh live-AI commercial storefront acceptance, P10B-19
-structural design intelligence, merchant-complete Storefront Studio editing, complete Vesko
-integration, Vesko staging acceptance, production readiness, or production operation.
+This repository does not claim accepted live-AI commercial storefront quality, P10B-19 structural
+design intelligence, merchant-complete Storefront Studio editing, complete Vesko integration,
+Vesko staging acceptance, production readiness, or production operation.
 
 P10B-18B-04 is **Baseline**, accepted by the product owner on 19 August 2026. It retains one
 canonical PDP renderer and resolver while adding bounded exact-product context matching, stronger
@@ -214,6 +214,7 @@ P10B-18B-05 is **Baseline**, accepted by the product owner on 20 August 2026. It
 existing content/support and utility families without a second model or renderer, preserves
 protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
 Partial. At that checkpoint, P10B-18C was the exact next task; P10B-18C and P10B-16P-05B are now
-Baseline, and P10B-18D is the exact next task.
+Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected, and P10B-19
+PRE is the exact next task.
 
 Owner: Vesko Oy

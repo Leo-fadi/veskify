@@ -3,12 +3,13 @@
 **Status:** Binding architecture. P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and
 P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, accepted
 P10B-18B-06, accepted P10B-18B-02/03/04/05 and parent P10B-18B are **Baseline**. P10B-18C and
-P10B-16P-05B are **Baseline**; P10B-18 and P10B remain **Partial**; P10B-18D is the exact next task,
-followed by P10B-19 PRE and planned P10B-19A through P10B-19J.
+P10B-16P-05B are **Baseline**; P10B-18D is a **Baseline diagnostic with live commercial quality
+rejected**; P10B-18 and P10B remain **Partial**; P10B-19 PRE is the exact next task, followed by
+planned P10B-19A through P10B-19J.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 23 August 2026, accepted P10B-16P-05B cleanup after P10B-18C
+**Baseline:** 24 August 2026, completed P10B-18D diagnostic after P10B-16P-05B cleanup
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -62,7 +63,8 @@ P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, P10B-18B-01/06/02/03/04/05, parent
 P10B-18B are Baseline. P10B-18C and P10B-16P-05B are **Baseline**. P10B-18 and P10B remain
-Partial, and P10B-18D is the exact next task. The accepted audit baseline
+Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected, and P10B-19 PRE
+is the exact next task. The accepted audit baseline
 and bounded source-authority packages are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
@@ -377,8 +379,9 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are **Baseline**.
 P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06 and accepted
 P10B-18B-02/03/04/05 and parent P10B-18B are **Baseline**. P10B-18C and P10B-16P-05B are
-**Baseline**. P10B-18 and P10B are **Partial**; P10B-18D is the exact next task, followed by
-P10B-19 PRE and planned P10B-19A through P10B-19J.
+**Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18
+and P10B are **Partial**; P10B-19 PRE is the exact next task, followed by planned P10B-19A through
+P10B-19J.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -815,8 +818,8 @@ keep distinct approved facts where their reading structure is shared.
 - Merchant rendering, semantic selection, `StorefrontSnapshot`, PageBlueprint, commerce, media,
   search and publication behavior are unchanged.
 
-P10B-18 and P10B remain Partial. P10B-18D is the exact next task, followed by P10B-19 PRE and
-planned P10B-19A through P10B-19J.
+P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-18 and P10B remain
+Partial. P10B-19 PRE is the exact next task, followed by planned P10B-19A through P10B-19J.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -835,8 +838,8 @@ planned P10B-19A through P10B-19J.
 
 ### P10B-18 — Commercial quality and scale gate
 
-- **Status:** **Partial**. P10B-18A, completed P10B-18B and P10B-18C are Baseline; P10B-18D
-  live-AI acceptance remains Planned.
+- **Status:** **Partial**. P10B-18A, completed P10B-18B and P10B-18C are Baseline. P10B-18D is a
+  Baseline diagnostic with live commercial quality rejected; P10B-19 PRE is the exact next task.
 - Deterministically generate at least 100 complete bounded storefront configurations across
   representative catalogue, evidence, asset, locale, page-set, and direction contexts.
 - Prove valid complete snapshots, protected-commerce parity, no exact duplicates, thresholded
@@ -934,12 +937,26 @@ planned P10B-19A through P10B-19J.
 
 ### P10B-18D — Live AI commercial storefront acceptance
 
-- **Status:** **Planned** and exact next task.
-- Use freshly authorized bounded provider execution against the accepted post-18B authority; bind
-  exact semantic/compiler/materializer lineage, protected commerce/media and the complete canonical
-  lifecycle to retained human commercial review.
-- Do not add a second provider, compiler, materializer, snapshot, page graph or renderer, and do not
-  call Vesko or perform real publication as part of the acceptance.
+- **Status:** **Baseline diagnostic / live commercial quality rejected**. Completed 24 August 2026.
+- Six bounded calls exercised the normal semantic-provider, strict-validation, deterministic
+  compiler/coordinator, exact decision, sole materializer and proposal-lifecycle path with zero
+  retry, zero fallback, protected commerce/media unchanged and no publication.
+- Only Concepts 3, 4 and 5 passed prompt fidelity. Concepts 2 and 6 resolved to the same exact
+  snapshot, structural fingerprint, normalized topology, direction, frame and principal page
+  authority despite materially different merchant prompts.
+- Concept 1 shows that merchant-wide dark foundations are not executable through the current
+  semantic vocabulary. Concept 6 shows that bold asymmetry is not represented adequately.
+- Different safe intent and compiled-decision fingerprints establish different request lineage,
+  but do not expose field-level provider intent. Provider interpretation therefore remains
+  indeterminate. The earliest proven concentration is the resolver/compatibility funnel and finite
+  PageBlueprint, Visual Recipe, Design DNA and frame authority.
+- Concept 6 blank-media evidence is owned primarily by the acceptance image-settlement seam, with
+  lazy-image renderer consumption as a secondary owner; canonical media did not mutate. Its
+  post-save reload timeout is primarily acceptance/test-seam continuity, not a proven persistence
+  or Preview-runtime defect.
+- P10B-19 PRE is the exact next task. It must lock structural storefront families, PageBlueprint
+  v2, Visual Recipe v2, multi-concept generation and screenshot-based refinement while preserving
+  one provider boundary, compiler/coordinator, materializer and StorefrontSnapshot lifecycle.
 
 ## 15. Dependency and parallelization graph
 
@@ -1032,8 +1049,9 @@ PR.
 
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted P10B-18A, and
 accepted P10B-18B-01/06/02/03/04/05 are Baseline under the disjoint ownership constraints in
-section 15. P10B-16P-02 is Baseline. Parent P10B-18B and P10B-18C are Baseline; P10B-18 and P10B
-remain Partial. P10B-18D is the exact next task, and P10B-16P-05B is Baseline before P10B-18D.
+section 15. P10B-16P-02 is Baseline. Parent P10B-18B and P10B-18C are Baseline; P10B-18D is a
+Baseline diagnostic with live commercial quality rejected; P10B-18 and P10B remain Partial.
+P10B-19 PRE is the exact next task.
 No later
 implementation task is complete merely because this architecture or an earlier bounded P10B-18
 package is accepted.

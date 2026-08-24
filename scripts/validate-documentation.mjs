@@ -130,9 +130,9 @@ requireText("README.md", [
   "P10B Commercial Storefront Generation System\nv1 is **Partial / active**",
   "P10B-16P-05B repository/historical-authority cleanup are Baseline",
   "Parent P10B-18B is\nBaseline/complete",
-  "P10B-18D is the exact next task",
+  "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "Canonical `/search` execution is Baseline",
-  "P10B-19 PRE follows P10B-18D",
+  "P10B-19 PRE is the exact\nnext task",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -158,10 +158,11 @@ requireText("docs/VESKIFY_SDD.md", [
   "There is no Vesko staging or production evidence",
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
-  "P10B-18C is Baseline",
+  "P10B-18C and P10B-16P-05B are Baseline",
   "P10B-16P-05B is Baseline",
   "parent P10B-18B is\nBaseline/complete",
-  "P10B-18D is the exact next task",
+  "P10B-18D diagnostic baseline; live quality rejected",
+  "P10B-19 PRE = exact next",
   "### 10.25 P10B-17 responsive, accessibility and performance closure",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
@@ -172,8 +173,8 @@ requireText("docs/VESKIFY_SDD.md", [
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
   "accepted P10B-18C and P10B-16P-05B are **Baseline**",
-  "P10B-18D is **Planned / exact next**",
-  "P10B-19 PRE follows P10B-18D",
+  "P10B-18D is complete only as a diagnostic baseline",
+  "P10B-19 PRE is the exact next task",
   "P10A owns internal governed initial/follow-up execution",
   "1 — Grammar",
   "2 — Parallel foundations",
@@ -209,7 +210,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
   "P10B-16P-05B are **Baseline**",
-  "P10B-18D is the exact next task",
+  "P10B-18D is a **Baseline diagnostic with live commercial quality",
   "P10B-19 PRE structural design intelligence architecture lock",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
@@ -229,8 +230,8 @@ requireText("docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md", [
   "P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline",
   "P10B-18C is Baseline",
   "P10B-16P-05B are Baseline",
-  "P10B-18D is the exact next",
-  "P10B-19 PRE follows P10B-18D",
+  "P10B-18D is `Baseline diagnostic / live commercial quality rejected`",
+  "P10B-19 PRE is the exact next task",
   "### 15.3 Accepted product-owner checkpoint crosswalk",
 ]);
 
@@ -283,8 +284,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-18C and P10B-16P-05B are **Baseline**",
   "parent P10B-18B is **Baseline / complete**",
   "P10B-18 and P10B remain **Partial**",
-  "P10B-18D is the exact next task",
-  "P10B-19 PRE follows it",
+  "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
+  "P10B-19 PRE is the exact next task",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -295,8 +296,8 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "P10B-18B-01 is **Baseline**, accepted on 17 August 2026",
   "P10B-18B-06 is **Baseline**, accepted on 17 August 2026",
   "P10B-18B-05 closes bounded content/support/utility quality",
-  "Parent P10B-18B is\n**Baseline / complete**; P10B-18C is **Baseline**",
-  "P10B-18D is\nthe exact next task",
+  "Parent P10B-18B is\n**Baseline / complete**; P10B-18C and P10B-16P-05B are **Baseline**",
+  "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "P10B-16P-05B is Baseline",
 ]);
 
@@ -313,12 +314,12 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "### P10B-18B-05 accepted evidence Baseline",
   "### P10B-18C durable deterministic commercial-quality evidence",
   "### P10B-16P-05B repository and historical-authority cleanup",
-  "P10B-18D is the exact next",
+  "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 42) {
-  failures.push("Delivery tracker must contain exactly forty-two completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 43) {
+  failures.push("Delivery tracker must contain exactly forty-three completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -385,14 +386,16 @@ if (
   !/^\| ☑\s+\| P10B-18B-05\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-18C\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-18D\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19 PRE\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-18D\s+\|[^\n]*\| \*\*Baseline diagnostic \/ quality rejected\*\*/m.test(
+    tracker,
+  ) ||
+  !/^\| ☐\s+\| P10B-19 PRE\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19A-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, and P10B-18C Baseline; keep P10B-18 Partial; and keep P10B-18D/P10B-19 Planned",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, and P10B-18C Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18 Partial; and keep P10B-19 Planned",
   );
 }
 

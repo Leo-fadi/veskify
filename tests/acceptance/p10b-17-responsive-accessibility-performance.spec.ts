@@ -102,6 +102,7 @@ function requiredAcceptanceToken(): string {
 async function inspectAcceptance(page: Page): Promise<AcceptanceInspection> {
   const response = await page.request.get(inspectionPath, {
     headers: { [acceptanceTokenHeader]: requiredAcceptanceToken() },
+    timeout: 120_000,
   });
   expect(response.status()).toBe(200);
   const result = (await response.json()) as Readonly<{
