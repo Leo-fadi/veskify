@@ -1,8 +1,8 @@
 # Veskify Capability Evidence Ledger
 
-**Audit date:** 23 August 2026
+**Audit date:** 24 August 2026
 
-**Repository baseline:** accepted P10B-18C plus P10B-16P-05B cleanup
+**Repository baseline:** completed P10B-18D diagnostic after P10B-16P-05B cleanup
 
 **Phase status:** P10A **Baseline / closed**; P10B Commercial Storefront Generation System v1
 **Partial / active phase**
@@ -12,8 +12,8 @@
 P10B-18B-02 and P10B-18B-03 **Baseline / accepted 18 August 2026**; P10B-18B-04
 **Baseline / accepted 19 August 2026**; P10B-18B-05 **Baseline / accepted 20 August 2026**.
 P10B-18B **Baseline / complete** and P10B-18 **Partial**; P10B-18C and P10B-16P-05B are
-**Baseline**. P10B-18D is the exact next task; P10B-19 PRE and P10B-19A through P10B-19J remain
-**Planned**.
+**Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**;
+P10B-19 PRE is exact next and P10B-19A through P10B-19J remain **Planned**.
 
 **Companion analysis:** [Veskify Current-State Truth Audit](./VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
 
@@ -283,5 +283,23 @@ browser protection.
 | Quality                   | 126/72 machine gates and representative responsive/a11y/performance browsers retained                                       |
 | External activity         | Zero provider calls, zero Vesko calls, zero real publications                                                               |
 
-P10B-18C and P10B-16P-05B are Baseline. P10B-18D is the exact next task, followed by P10B-19 PRE
-and planned P10B-19A through P10B-19J. P10B remains Partial.
+P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
+quality rejected. P10B-19 PRE is the exact next task, followed by planned P10B-19A through
+P10B-19J. P10B remains Partial.
+
+### P10B-18D live diagnostic evidence
+
+| Capability or claim                               | Evidence                                                                                                                  | Verdict                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Bounded live-provider transport                   | Six calls, one per locked prompt, same `gpt-5.6-sol` model, 120-second timeout, zero retries and zero fallback            | Proven for the diagnostic                  |
+| Strict intent, compile and single materialization | Safe allowlisted records for retained calls; Concept 1 recovery proves the core stages but its detailed record is partial | Proven with disclosed Concept 1 limitation |
+| Protected commerce and media                      | Before/after evidence remained equal for complete records; no mutation was retained                                       | Proven                                     |
+| Proposal Reject/raw restoration                   | Complete for Concepts 2-4; partial or unavailable for Concepts 1 and 5                                                    | Partially proven across matrix             |
+| Full Accept/Undo/Redo/Save/reload/Preview         | Concept 6 passed Accept, Undo, Redo and Save; reload and complete Preview failed                                          | Not proven end to end                      |
+| Six-concept prompt fidelity                       | Concepts 3, 4 and 5 passed; Concepts 1, 2 and 6 failed                                                                    | Rejected, 3/6                              |
+| Cross-prompt structural diversity                 | Concepts 2 and 6 share the exact snapshot, structural fingerprint, topology, direction, frame and principal authority     | Rejected                                   |
+| Live commercial quality                           | Product-owner evidence decision                                                                                           | Rejected                                   |
+
+The safe repository record intentionally excludes screenshots, raw provider responses, credentials
+and tokens. Historical external evidence limitations are retained rather than reconstructed. The
+diagnostic is a Baseline input to P10B-19 PRE, not a live-quality capability claim.

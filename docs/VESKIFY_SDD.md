@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 23 August 2026, accepted P10B-16P-05B repository/historical cleanup      |
+| Verified baseline         | 24 August 2026, P10B-18D diagnostic complete; live commercial quality rejected |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-18D | 24 August 2026 | P10B-18D diagnostic baseline; live quality rejected | Accept the bounded six-call live-AI experiment and safe evidence while rejecting current commercial quality; record exact Concept 2/6 authority collapse, prompt-fidelity failures, evidence limitations and P10B-19 PRE as the next architecture lock without changing production behavior, provider contracts, retry/fallback policy, commerce/media authority or thresholds. |
 | 1.3.0 P10B-16P-05B | 23 August 2026 | P10B-16P-05B accepted cleanup | Remove consumer-proven one-time acceptance infrastructure, restore unconditional production fail-closed P04 authority, retain one lean token-protected mock/live P10B-18D seam, and preserve active generation, migration, deterministic quality and protected commerce/media without changing storefront output. |
 | 1.3.0 P10B-18C | 22 August 2026 | P10B-18C accepted implementation and evidence | Accept the deterministic 9 x 14 complete-store matrix, 126/126 replay and protected-state result, 54 material topologies, deterministic 28-store selector, final 280-entry four-width EN/FI review and canonical lifecycle as the current commercial-quality baseline; preserve first-run failures and frozen P10B-18A/P10B-18B evidence while leaving live-AI acceptance to P10B-18D. |
 | 1.3.0 P10B-18B-04 | 19 August 2026 | P10B-18B-04 accepted implementation | Add bounded exact-product PDP matching, four purposeful compositions, stronger purchase/configuration hierarchy, bounded canonical galleries, resolver-safe failure behavior and cardinality-aware related merchandising; retain protected variants/options/prices/media, canonical lifecycle/publication authority and 20 reviewed captures without accepting content/utility or complete-storefront commercial quality. |
@@ -1895,5 +1896,25 @@ commerce/media remain. P04 is one lean token-protected, production-disabled mock
 P10B-18D and is unconditionally unavailable in production. No provider, Vesko or real publication
 call occurred; merchant rendering, snapshots and generation selection are unchanged.
 
-P10B remains Partial. The locked order is P10B-18D, then P10B-19 PRE, then P10B-19A through
-P10B-19J.
+P10B remains Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected. The
+locked order is P10B-19 PRE next, then P10B-19A through P10B-19J.
+
+### 10.30 P10B-18D live-AI diagnostic baseline
+
+P10B-18D completed six authorized calls through the controlled provider-to-proposal path with the
+same model, one locked prompt per call, a 120-second bounded timeout, zero retries, zero fallback
+and no publication. The experiment and safe evidence are accepted; live commercial quality is
+rejected.
+
+Three concepts met prompt fidelity. Concepts 2 and 6 resolved to the exact same candidate snapshot,
+structural fingerprint, normalized topology, direction, frame and principal authority. Concept 1
+did not realize its dark gallery-luxury direction. Concept 6 did not realize Finnish bold
+asymmetry, showed blank mobile media regions in retained evidence and did not complete post-save
+reload plus seven-surface Preview proof. Missing evidence remains missing and is not reconstructed.
+
+The safe record proves a concentration in current semantic expressiveness, exact compatibility
+resolution and finite PageBlueprint/Visual Recipe/Design DNA/frame authority. It does not prove
+that the provider emitted identical field-level intent. No canonical AI, compiler,
+StorefrontSnapshot, commerce, media, proposal or publication contract changes in this diagnostic.
+`P10B-18D = Baseline diagnostic / live commercial quality rejected`; `P10B-18 = Partial`;
+`P10B = Partial`; `P10B-19 PRE = exact next`; P10B-19A through P10B-19J remain Planned.

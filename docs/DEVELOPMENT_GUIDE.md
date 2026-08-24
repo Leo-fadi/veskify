@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C and P10B-16P-05B are **Baseline**. P10B-18 and P10B remain **Partial**; P10B-18D is the exact next task and remains **Planned**. P10B-16P-05B is Baseline; P10B-18D remains the exact next task.
+P10B-18C and P10B-16P-05B are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**; P10B-19 PRE is the exact next task.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -595,5 +595,23 @@ mocked Studio lifecycle, one lean P04 mock/live acceptance seam for P10B-18D, go
 and focused migration/publication compatibility. Normal production cannot enable local P04
 acceptance. No removed P10B-18C capture configuration is part of active tooling or CI.
 
-P10B-18C and P10B-16P-05B are Baseline. P10B-18D is the exact next task. P10B-19 PRE follows it,
-and P10B-19A through P10B-19J remain Planned. P10B remains Partial.
+P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
+quality rejected. P10B-19 PRE is the exact next task, and P10B-19A through P10B-19J remain Planned.
+P10B remains Partial.
+
+### P10B-18D diagnostic handoff
+
+Do not treat the P10B-18D six-call experiment as an accepted live-generation quality baseline. The
+provider-to-proposal mechanics ran under a strict bounded call policy, but only Concepts 3, 4 and 5
+met prompt fidelity. Concepts 2 and 6 collapsed to the same exact StorefrontSnapshot and structural
+authority; dark merchant-wide foundations and bold asymmetry remain underexpressed.
+
+Do not retry, repair or special-case those generated concepts. Use retained zero-call deterministic
+and mocked regressions for maintenance. Do not place raw provider output, acceptance tokens,
+credentials or live screenshots in the repository. Any future real-call activity requires its own
+explicit task authority.
+
+The next task is `P10B-19 PRE - Structural Design Intelligence Architecture Lock`. It will define,
+not implement, authority for structural storefront families, PageBlueprint v2, Visual Recipe v2,
+multi-concept generation and screenshot-based refinement. P10B-19A through P10B-19J remain
+Planned; P10B remains Partial.

@@ -1,10 +1,11 @@
 # Veskify Current-State Truth Audit
 
-**Audit date:** 19 August 2026
+**Audit date:** 24 August 2026
 
-**Repository baseline:** current `origin/main` plus accepted P10B-18B-04 delivery
+**Repository baseline:** current `origin/main` plus completed P10B-18D live diagnostic
 
-**Scope:** code-grounded current-truth record synchronized after P10B-18B-04 bounded acceptance
+**Scope:** code-grounded current-truth record synchronized after P10B-18D evidence acceptance and
+live commercial-quality rejection
 
 ## 1. Audit contract
 
@@ -576,5 +577,31 @@ generation and one-time production capture do not.
 Normal production cannot configure or reach P04 acceptance. No acceptance token is client or
 persisted evidence authority. Provider, Vesko and real-publication calls for cleanup are zero.
 
-P10B-18D is the exact next task. P10B-19 PRE follows it; P10B-19A through P10B-19J remain Planned.
-P10B remains Partial.
+P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is the exact
+next task; P10B-19A through P10B-19J remain Planned. P10B remains Partial.
+
+## P10B-18D current-state truth
+
+The live provider path is technically proven under a bounded six-call diagnostic, but live
+commercial quality is not accepted. Concepts 3, 4 and 5 met prompt fidelity; Concepts 1, 2 and 6
+did not. Concepts 2 and 6 produced the same exact snapshot, structural fingerprint and normalized
+topology despite materially different prompts. The current system is strongest where existing
+authority already expresses technical/configurable commerce, warm editorial storytelling and
+restrained product-first layouts. It does not yet express merchant-wide dark foundations, bold
+campaign identity, material asymmetry or sufficiently distinct cross-page structure strongly
+enough.
+
+Evidence truth remains bounded: Concept 1 has partial detailed safe/lifecycle evidence; Concept 4
+lacks two expired candidate cart captures; Concept 5 lacks explicit Reject proof; Concept 6 proves
+through Save but not reload and full Preview. These are not silently promoted to complete results.
+No live provider call is authorized after the six-call matrix.
+
+The duplicate collapse is first proven at semantic resolution/compatibility and the finite
+PageBlueprint/Visual Recipe/Design DNA/frame inventory. Provider interpretation is indeterminate.
+Concept 6 media evidence is primarily an image-settlement/test-seam issue with a secondary
+lazy-image consumer owner; canonical media did not change. Its reload timeout is primarily a
+development acceptance-seam continuity failure, not a proven saved-state or Preview defect.
+
+Current status is `P10B-18D = Baseline diagnostic / live commercial quality rejected`,
+`P10B-18 = Partial`, `P10B = Partial`, and `P10B-19 PRE = exact next`. P10B-19A through P10B-19J
+remain Planned.

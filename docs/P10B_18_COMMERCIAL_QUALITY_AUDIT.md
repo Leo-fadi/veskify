@@ -1,14 +1,14 @@
 # P10B-18 Commercial Quality Audit
 
-**Status:** P10B-18A, P10B-18B, P10B-18C and P10B-16P-05B Baseline; P10B-18/P10B Partial pending P10B-18D and P10B-19
+**Status:** P10B-18A, P10B-18B and P10B-18C Baseline; P10B-18D Baseline diagnostic with live commercial quality rejected; P10B-18/P10B Partial pending P10B-19
 
-**Authority date:** 22 August 2026
+**Authority date:** 24 August 2026
 
-**Branch:** `codex/p10b-18c-100-plus-commercial-quality-diversity-gate`
+**Branch:** `codex/p10b-18d-live-ai-commercial-acceptance`
 
 **Baseline:** P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
-Baseline/complete; P10B-18C is Baseline; P10B-18 and P10B are Partial; P10B-18D is the exact next
-task; P10B-16P-05B is Baseline before it
+Baseline/complete; P10B-18C is Baseline; P10B-18D is a Baseline diagnostic with live commercial
+quality rejected; P10B-18 and P10B are Partial; P10B-19 PRE is the exact next task
 
 ## 1. Purpose and boundaries
 
@@ -2027,5 +2027,73 @@ not remain.
 
 ### 22.4 Current status
 
-P10B-18C and P10B-16P-05B are Baseline. P10B-18 and P10B remain Partial. P10B-18D is the exact next
-task. P10B-19 PRE follows P10B-18D; P10B-19A through P10B-19J remain Planned.
+P10B-18C and P10B-16P-05B are Baseline. P10B-18 and P10B remain Partial. P10B-18D is a Baseline
+diagnostic with live commercial quality rejected. P10B-19 PRE is the exact next task; P10B-19A
+through P10B-19J remain Planned.
+
+## 23. P10B-18D live-AI diagnostic baseline
+
+### 23.1 Decision and execution boundary
+
+The product owner accepted the P10B-18D experiment and its retained evidence but rejected current
+live commercial quality. This is a diagnostic baseline, not commercial-quality acceptance and not
+permission to manufacture a passing result.
+
+The locked experiment used six fresh OpenAI calls with the same `gpt-5.6-sol` model, a 120-second
+bounded provider timeout, zero SDK retries, zero application retries, zero fallback, zero
+publication and zero Vesko calls. No replacement or repair calls were made. The run retained 94
+safe screenshots outside the repository; no raw provider response, token, credential or screenshot
+is committed.
+
+| Concept                             | Retained result                                                                                                    | Evidence completeness                                                                            | Prompt-fidelity verdict                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| 1 - dark gallery luxury             | Generated, strictly validated, compiled and materialized once; 18 visual captures retained                         | Detailed safe call record and explicit Reject proof are partial                                  | FAIL                                                                               |
+| 2 - bold youthful campaign          | Complete safe evidence and exact Reject/raw-draft restoration                                                      | Complete                                                                                         | FAIL as an accepted commercial concept because it collapses exactly with Concept 6 |
+| 3 - technical configurable commerce | Complete safe evidence and exact Reject/raw-draft restoration                                                      | Complete                                                                                         | PASS                                                                               |
+| 4 - warm Nordic story               | Complete generation record, retained visual evidence and exact Reject/raw-draft restoration                        | Two cart captures are unavailable after the process-local candidate expired                      | PASS                                                                               |
+| 5 - restrained product-first        | Complete generation record, safe evidence and 14 visual captures                                                   | Explicit Reject proof is unavailable after the superseded runner lost proposal-review continuity | PASS                                                                               |
+| 6 - Finnish bold asymmetric         | Complete provider, validation, compilation and single-materialization evidence; Accept, Undo, Redo and Save passed | Reload and complete seven-surface Preview proof failed                                           | FAIL                                                                               |
+
+Only Concepts 3, 4 and 5 passed prompt fidelity. The required threshold of four commercially
+accepted concepts, including the Finnish prompt, was not met.
+
+### 23.2 Exact collapse and failure ownership
+
+Concepts 2 and 6 had different locked prompts and different retained semantic-intent and
+compiled-decision fingerprints. Those safe fingerprints include request lineage and summary
+material and therefore do not prove that every executable semantic field differed. Their exact
+resolved output was nevertheless identical:
+
+- snapshot fingerprint:
+  `v1_49057_6341652a04f591a034f13fa060d0b4b4e8b831364792af884b755f8b83fa98eb`;
+- structural fingerprint:
+  `semantic-structure-v1_481_c0f23b1c1f1c1389236e47359b03bc100144106377d28be6a86cd30f49dc16b1`;
+- direction/frame: `premiumEditorial` / `editorial-masthead`;
+- page profiles: `homepage-campaign-led`, `collection-campaign-led-discovery`,
+  `collection-dense-search` and `pdp-high-consideration`; and
+- the same accepted and substituted semantic-authority paths after compatibility resolution
+  narrowed 255 candidates to one.
+
+The earliest proven duplicate owner is the semantic resolver/compatibility funnel combined with
+the finite structural, PageBlueprint, Design DNA and frame inventory. The current semantic
+vocabulary also cannot execute merchant-wide dark foundations, material asymmetry or a prompt-owned
+visual recipe. Provider interpretation remains indeterminate because the retained safe evidence
+does not contain field-level raw provider output. P10B-19 PRE must not assume that the provider
+produced identical intent.
+
+| Failure                                           | Primary architectural owner                                                                       | Evidence-bounded conclusion                                                                                                                                                                                                                                                        |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Concept 1 misses dark gallery luxury              | Semantic-contract and Visual Recipe expressiveness                                                | The executable semantic contract has commerce, density, hierarchy and image-prominence axes but no merchant-wide dark-foundation or asymmetry axis. Compatibility and finite DNA/frame/Blueprint inventory are secondary concentration owners; provider interpretation is unknown. |
+| Concepts 2 and 6 become exact duplicates          | Resolver/compatibility concentration                                                              | Distinct request lineage reached one identical exact authority. Contract expressiveness and structural inventory are contributing constraints.                                                                                                                                     |
+| Concept 6 blank mobile media regions              | Acceptance image-settlement seam, with renderer/lazy-image consumer behavior as a secondary owner | Protected canonical media remained unchanged and no failed HTTP response was retained. The runner did not prove visible-image decode settlement before capture. This does not erase the observed commercial-quality failure.                                                       |
+| Concept 4 candidate could not be reopened         | Process-local proposal authority                                                                  | The route correctly failed closed after its originating process ended. No evidence was reconstructed from a fingerprint. This is a P10B-19 PRE proposal-persistence observation.                                                                                                   |
+| Concept 6 post-save reload and Preview incomplete | Development acceptance/test seam continuity                                                       | Accept, Undo, Redo and Save passed; reload timed out while the runner constrained development HMR continuity. Project persistence, saved-snapshot hydration and Preview runtime are not proven defective, but this run does not prove them complete.                               |
+
+### 23.3 Binding handoff
+
+P10B-18D is `Baseline diagnostic / live commercial quality rejected`. P10B-18 remains `Partial`;
+P10B remains `Partial`. The exact next task is
+`P10B-19 PRE - Structural Design Intelligence Architecture Lock`, followed by planned P10B-19A
+through P10B-19J. P10B-19 PRE must lock structural storefront families, PageBlueprint v2, Visual
+Recipe v2, multi-concept generation and screenshot-based refinement before implementation; those
+capabilities are not introduced by P10B-18D.
