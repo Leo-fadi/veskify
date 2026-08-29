@@ -27,6 +27,7 @@ const activeMarkdownFiles = [
   "docs/P10A_PHASE_CLOSURE.md",
   "docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md",
   "docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md",
+  "docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md",
   "docs/P10B_02_PARAMETRIC_BRAND_SYSTEM.md",
   "docs/P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md",
   "docs/P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md",
@@ -235,6 +236,15 @@ requireText("docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md", [
   "P10B-18D is `Baseline diagnostic / live commercial quality rejected`",
   "P10B-19 PRE is Baseline. P10B-19A is the exact next task",
   "### 15.3 Accepted product-owner checkpoint crosswalk",
+]);
+
+requireText("docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md", [
+  "# P10B-19 Structural Design Intelligence Architecture",
+  "**Status:** Baseline - accepted architecture lock",
+  "A candidate definition is not a registered family",
+  "**Total child tasks:** 73",
+  "## 21. Acceptance criteria",
+  "Production implementation begins only with P10B-19A after this task merges",
 ]);
 
 requireText("docs/P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md", [
