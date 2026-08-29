@@ -22,6 +22,8 @@ const activeMarkdownFiles = [
   "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
   "docs/DEVELOPMENT_GUIDE.md",
+  "docs/CODEX_TASK_TEMPLATE.md",
+  ".github/pull_request_template.md",
   "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
   "docs/P10A_PHASE_CLOSURE.md",
@@ -133,7 +135,10 @@ requireText("README.md", [
   "Parent P10B-18B is\nBaseline/complete",
   "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "Canonical `/search` execution is Baseline",
-  "P10B-19 PRE is Baseline;\nP10B-19A is the exact next task",
+  "P10B-19 PRE is Baseline",
+  "DEVX-01A is the contract-driven sprint and independent-verification protocol Baseline",
+  "DEVX-01B is the exact next engineering task",
+  "P10B-19A remains the next product-development sprint\nafter DEVX-01",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -145,6 +150,8 @@ requireText("AGENTS.md", [
   "**Version:** 1.3.0",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+  "### 8.4 Contract-driven sprint protocol",
+  "Commit\nand push only after an independent verifier `PASS`",
 ]);
 
 requireText("docs/VESKIFY_SDD.md", [
@@ -174,6 +181,9 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
+  "DEVX-01A is Baseline. DEVX-01B is the exact next engineering task",
+  "### 1.1 DEVX-01 engineering-enablement sprint",
+  "### 1.2 P10B-19A planned child sequence",
   "accepted P10B-18C and P10B-16P-05B are **Baseline**",
   "P10B-18D is complete only as a diagnostic baseline",
   "P10B-19 PRE is Baseline",
@@ -298,9 +308,35 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-18 and P10B remain **Partial**",
   "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
   "P10B-19 PRE is Baseline. P10B-19A is the exact next task",
+  "### Contract-driven sprint authority",
+  "### Verification policy",
+  "### P10B-19A planned micro-pull-request map",
+  "### DEVX-01 engineering-enablement sprint",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
+]);
+
+requireText("docs/CODEX_TASK_TEMPLATE.md", [
+  "docs/governance/task-contract.template.v1.json",
+  "## Immutable contract identity",
+  "## Implementation approach decision",
+  "## Scope budget",
+  "Commit and push only after verifier `PASS`",
+]);
+
+requireText(".github/pull_request_template.md", [
+  "## Immutable task contract",
+  "## Independent verifier",
+  "Exactly one automatic Codex GitHub review",
+  "No rebase or force-push",
+]);
+
+requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
+  "DEVX-01A - Sprint contract and independent verification protocol",
+  "DEVX-01B - Mechanical contract and verifier-verdict enforcement",
+  "P10B-19A is the next product-development sprint after DEVX-01",
+  "#### P10B-19A planned micro-pull-request map",
 ]);
 
 requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [

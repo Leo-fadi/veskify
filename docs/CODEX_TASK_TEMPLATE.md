@@ -2,9 +2,35 @@
 
 Use this template for every Veskify implementation task.
 
+Before implementation, instantiate and lock
+`docs/governance/task-contract.template.v1.json` against
+`docs/governance/task-contract.schema.v1.json`. The locked contract must be present on the task's
+base commit or supplied by the sprint coordinator as immutable authority. The implementation branch
+must not edit its own contract.
+
 ## Task title
 
 [Outcome-based capability]
+
+## Immutable contract identity
+
+- Sprint ID:
+- Task ID:
+- Contract path:
+- Contract schema version:
+- Base commit containing the locked contract:
+- Contract fingerprint: populated by DEVX-01B tooling when available
+- Merge-order position:
+- Dependency tasks and merge SHAs:
+
+## Implementation approach decision
+
+- Selected repository-native approach:
+- Canonical authority extended:
+- Named current consumer:
+- Rejected convenient shortcut:
+- Expected failure behavior:
+- Unresolved architecture conflicts, or `None`:
 
 ## Merchant objective
 
@@ -42,6 +68,24 @@ Use this template for every Veskify implementation task.
 ### Do not modify
 
 - ...
+
+### Allowed paths
+
+- ...
+
+### Forbidden paths
+
+- ...
+
+## Scope budget
+
+- One canonical concern or meaningful visual family:
+- Target maximum net production lines: 1,000
+- Target maximum production files: 8
+- Hard-stop net production lines: 1,500
+- Hard-stop production files: 12
+- Explicitly allowlisted generated-file exclusions:
+- Product-owner hard-limit exception, or `None`:
 
 ## In scope
 
@@ -84,7 +128,11 @@ Use this template for every Veskify implementation task.
 
 ## Acceptance criteria
 
-- Given ..., when ..., then ...
+Each criterion requires a stable ID, verification class, evidence and fail-closed behavior.
+
+| ID    | Requirement                   | Verification class | Required evidence | Failure behavior |
+| ----- | ----------------------------- | ------------------ | ----------------- | ---------------- |
+| AC-01 | Given ..., when ..., then ... | positive behavior  | ...               | FAIL             |
 
 ## Evidence traceability
 
@@ -139,7 +187,12 @@ status Partial/Missing until the required artifact exists.
 
 ## Review and delivery
 
-- Commit and push to the existing branch/PR.
+- Complete implementer-focused validation.
+- Provide the immutable contract, repository authority, complete diff and evidence to an independent verifier.
+- Do not let the verifier modify implementation files.
+- Commit and push only after verifier `PASS`.
+- Do not create a PR for verifier `FAIL` or `BLOCKED` work.
+- Commit and push to the existing branch/PR after verifier `PASS`.
 - Allow exactly one automatic Codex review.
 - Fix every finding once in one focused pass.
 - Do not request another review.

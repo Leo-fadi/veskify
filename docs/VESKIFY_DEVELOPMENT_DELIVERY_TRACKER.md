@@ -18,6 +18,15 @@ required evidence are accepted.
 
 ## Overall phase checklist
 
+- [ ] DEVX-01 - Contract-driven development and CI execution enablement
+  - [x] DEVX-01A - Sprint contract and independent verification protocol
+  - [ ] DEVX-01B - Mechanical contract and verifier-verdict enforcement (**exact next engineering task**)
+  - [ ] DEVX-01C - CI timings, obsolete-run cancellation and Next build caching
+  - [ ] DEVX-01D - Parallel static, Vitest and production-build jobs
+  - [ ] DEVX-01E - Playwright timing inventory and balanced execution groups
+  - [ ] DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator
+  - [ ] DEVX-01G - Two-run performance acceptance and workflow closure
+
 | Done | Task | Outcome                                                | Status                | Owner                                | Dependency                                | Required evidence                                                                                        |
 | ---- | ---- | ------------------------------------------------------ | --------------------- | ------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | ☑    | P10A | Grounded orchestration and publishing closure          | **Baseline / closed** | Veskify orchestration and publishing | Phase 9 handoff                           | Controlled-provider where eligible; deterministic; integration; browser/E2E; retained publication review |
@@ -113,6 +122,40 @@ required evidence are accepted.
 | ☐    | P11-10 | Pilot readiness                                            | **Blocked**  | Product owner + Veskify/Vesko leads | P11-09                                        | One real pilot with signed evidence and documented limitations        |
 
 ## Task definitions
+
+### DEVX-01 - Contract-driven development and CI execution enablement
+
+DEVX-01 establishes bounded independently verified delivery before changing CI execution. It does
+not alter storefront, generation, commerce, media, persistence, Puck or merchant-visible behavior.
+
+| Task                                                                                 | Outcome                                                                                                                                                      | Status                               | Dependency           | Evidence                                                                            | Non-goal                                      |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | -------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------- |
+| DEVX-01A - Sprint contract and independent verification protocol                     | Establish immutable child-task and verdict schemas, exact roles, architecture-quality decisions, PR budgets, rolling waves and a pre-PR independent verifier | **Baseline**                         | Accepted P10B-19 PRE | JSON schema/template consistency, docs/tooling checks and independent verifier PASS | Executable verifier or CI changes             |
+| DEVX-01B - Mechanical contract and verifier-verdict enforcement                      | Enforce identity, paths, budgets, declarations, criterion coverage and terminal verdicts                                                                     | **Planned / exact next engineering** | DEVX-01A             | Focused positive/fail-closed contract tests                                         | CI parallelization or P10B-19A implementation |
+| DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Record timings and add safe cancellation/cache authority                                                                                                     | **Planned**                          | DEVX-01B             | Two clean timing records and cache/cancellation proof                               | Job sharding                                  |
+| DEVX-01D - Parallel static, Vitest and production-build jobs                         | Separate independent CI jobs behind stable required authority                                                                                                | **Planned**                          | DEVX-01C             | Required-status and failure propagation proof                                       | Playwright sharding                           |
+| DEVX-01E - Playwright timing inventory and balanced execution groups                 | Measure retained browser suites and define balanced groups                                                                                                   | **Planned**                          | DEVX-01D             | Deterministic timing inventory                                                      | Matrix execution                              |
+| DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Run browser groups in parallel with merged evidence and one required result                                                                                  | **Planned**                          | DEVX-01E             | Shard failure and merged-report regressions                                         | Weakening retained suites                     |
+| DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove the bounded workflow and CI improvement over two clean runs                                                                                            | **Planned**                          | DEVX-01F             | Two-run acceptance and closure record                                               | Product behavior change                       |
+
+P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01.
+
+#### P10B-19A planned micro-pull-request map
+
+| Order | Child task                                                                            | Merge eligibility                  |
+| ----: | ------------------------------------------------------------------------------------- | ---------------------------------- |
+|     1 | P10B-19A-01 - Structural family identity, versions, lifecycle states and invariants   | DEVX-01 closed                     |
+|     2 | P10B-19A-02 - Cross-page structural relationship contract                             | A-01 merged                        |
+|     3 | P10B-19A-03 - Required page structures, region graph and PageBlueprint v2 dispatch    | A-02 merged                        |
+|     4 | P10B-19A-04 - Asset-role contract                                                     | Declared A dependency merged       |
+|     5 | P10B-19A-05 - Responsive-rule contract                                                | Declared A dependency merged       |
+|     6 | P10B-19A-06 - Omission, substitution and fallback contract                            | Declared A dependency merged       |
+|     7 | P10B-19A-07 - Inactive family registry and candidate fingerprints                     | A-01 through A-06 authority merged |
+|     8 | P10B-19A-08 - Compatibility, deterministic selection and normalized topology identity | A-07 merged                        |
+|     9 | P10B-19A-09 - v1 read/render/migration/publication compatibility                      | A-08 merged                        |
+|    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     | A-01 through A-09 merged           |
+
+No P10B-19A production authority is implemented by DEVX-01A.
 
 ### P10A — Grounded orchestration and publishing closure
 

@@ -1,0 +1,368 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:veskify:devx:task-contract:1.0.0",
+  "title": "Veskify immutable child-task contract",
+  "description": "Machine-readable authority for one bounded child task. DEVX-01B owns executable enforcement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractState",
+    "sprintId",
+    "taskId",
+    "title",
+    "repository",
+    "branch",
+    "baseCommit",
+    "objective",
+    "expectedOutcome",
+    "dependencies",
+    "mergeOrder",
+    "canonicalAuthorities",
+    "ownedPaths",
+    "allowedPaths",
+    "forbiddenPaths",
+    "noTouchAreas",
+    "scopeBudget",
+    "externalCallPolicy",
+    "implementationApproach",
+    "acceptanceCriteria",
+    "requiredValidation",
+    "requiredEvidence",
+    "productOwnerCheckpoint",
+    "stopConditions",
+    "commitPolicy",
+    "reviewPolicy",
+    "mergePolicy",
+    "nextTask",
+    "fingerprintPolicy"
+  ],
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "const": "1.0.0" },
+    "contractState": { "const": "immutable" },
+    "sprintId": { "$ref": "#/$defs/stableId" },
+    "taskId": { "$ref": "#/$defs/stableId" },
+    "title": { "$ref": "#/$defs/nonEmptyString" },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "canonicalRemote", "baseBranch"],
+      "properties": {
+        "root": { "type": "string", "pattern": "^/" },
+        "canonicalRemote": { "$ref": "#/$defs/nonEmptyString" },
+        "baseBranch": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "branch": { "type": "string", "pattern": "^[A-Za-z0-9._/-]+$" },
+    "baseCommit": { "$ref": "#/$defs/gitCommit" },
+    "objective": { "$ref": "#/$defs/nonEmptyString" },
+    "expectedOutcome": { "$ref": "#/$defs/nonEmptyString" },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["taskId", "requiredState"],
+        "properties": {
+          "taskId": { "$ref": "#/$defs/stableId" },
+          "requiredState": { "enum": ["MERGED", "BASELINE", "ACCEPTED"] },
+          "commit": { "$ref": "#/$defs/gitCommit" }
+        }
+      }
+    },
+    "mergeOrder": { "type": "integer", "minimum": 1 },
+    "canonicalAuthorities": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+    "ownedPaths": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+    "allowedPaths": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+    "forbiddenPaths": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+    "noTouchAreas": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+    "scopeBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetMaxNetProductionLines",
+        "targetMaxProductionFiles",
+        "hardMaxNetProductionLines",
+        "hardMaxProductionFiles",
+        "canonicalConcern",
+        "generatedFileExclusions",
+        "hardLimitException"
+      ],
+      "properties": {
+        "targetMaxNetProductionLines": { "const": 1000 },
+        "targetMaxProductionFiles": { "const": 8 },
+        "hardMaxNetProductionLines": { "const": 1500 },
+        "hardMaxProductionFiles": { "const": 12 },
+        "canonicalConcern": { "$ref": "#/$defs/nonEmptyString" },
+        "generatedFileExclusions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "reason"],
+            "properties": {
+              "path": { "$ref": "#/$defs/nonEmptyString" },
+              "reason": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "hardLimitException": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["approvedBy", "approvalReference", "reason"],
+              "properties": {
+                "approvedBy": { "const": "product-owner" },
+                "approvalReference": { "$ref": "#/$defs/nonEmptyString" },
+                "reason": { "$ref": "#/$defs/nonEmptyString" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "externalCallPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "openAiCallLimit",
+        "veskoCallLimit",
+        "realPublicationAllowed",
+        "externalImageActivityAllowed",
+        "networkPolicy",
+        "allowlistedActivities",
+        "secretFilesAllowed"
+      ],
+      "properties": {
+        "openAiCallLimit": { "type": "integer", "minimum": 0 },
+        "veskoCallLimit": { "type": "integer", "minimum": 0 },
+        "realPublicationAllowed": { "type": "boolean" },
+        "externalImageActivityAllowed": { "type": "boolean" },
+        "networkPolicy": { "enum": ["forbidden", "allowlisted"] },
+        "allowlistedActivities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "secretFilesAllowed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "implementationApproach": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedApproach",
+        "canonicalAuthorityExtended",
+        "namedCurrentConsumers",
+        "rejectedShortcuts",
+        "expectedFailureBehavior",
+        "unresolvedArchitectureConflicts"
+      ],
+      "properties": {
+        "selectedApproach": { "$ref": "#/$defs/nonEmptyString" },
+        "canonicalAuthorityExtended": { "$ref": "#/$defs/nonEmptyString" },
+        "namedCurrentConsumers": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+        "rejectedShortcuts": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+        "expectedFailureBehavior": { "$ref": "#/$defs/nonEmptyString" },
+        "unresolvedArchitectureConflicts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/acceptanceCriterion" }
+    },
+    "requiredValidation": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "command", "purpose", "requiredEvidence"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "command": { "$ref": "#/$defs/nonEmptyString" },
+          "purpose": { "$ref": "#/$defs/nonEmptyString" },
+          "requiredEvidence": { "$ref": "#/$defs/nonEmptyUniqueStrings" }
+        }
+      }
+    },
+    "requiredEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "description", "retention", "sensitiveDataAllowed"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "type": {
+            "enum": [
+              "command",
+              "diff",
+              "test",
+              "browser",
+              "screenshot",
+              "document",
+              "verdict",
+              "product-owner"
+            ]
+          },
+          "description": { "$ref": "#/$defs/nonEmptyString" },
+          "retention": { "enum": ["repository", "pull-request", "temporary", "external-approved"] },
+          "sensitiveDataAllowed": { "const": false }
+        }
+      }
+    },
+    "productOwnerCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "timing", "criteria"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "timing": { "enum": ["not-required", "before-commit", "before-merge"] },
+        "criteria": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "stopConditions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "condition", "action", "owner"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "condition": { "$ref": "#/$defs/nonEmptyString" },
+          "action": { "const": "STOP" },
+          "owner": { "enum": ["sprint-coordinator", "product-owner", "architecture-owner"] }
+        }
+      }
+    },
+    "commitPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commitAfterVerifierPassOnly",
+        "pushBeforeVerifierPassAllowed",
+        "failedWorkPrAllowed"
+      ],
+      "properties": {
+        "commitAfterVerifierPassOnly": { "const": true },
+        "pushBeforeVerifierPassAllowed": { "const": false },
+        "failedWorkPrAllowed": { "const": false }
+      }
+    },
+    "reviewPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independentVerifierRequired",
+        "automaticCodexReviewCount",
+        "consolidatedCorrectionPasses",
+        "secondAutomaticReviewAllowed"
+      ],
+      "properties": {
+        "independentVerifierRequired": { "const": true },
+        "automaticCodexReviewCount": { "const": 1 },
+        "consolidatedCorrectionPasses": { "const": 1 },
+        "secondAutomaticReviewAllowed": { "const": false }
+      }
+    },
+    "mergePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependenciesMergedFirst",
+        "sequential",
+        "greenCiRequired",
+        "explicitMergeAuthorityRequired",
+        "rebaseAllowed",
+        "forcePushAllowed"
+      ],
+      "properties": {
+        "dependenciesMergedFirst": { "const": true },
+        "sequential": { "const": true },
+        "greenCiRequired": { "const": true },
+        "explicitMergeAuthorityRequired": { "const": true },
+        "rebaseAllowed": { "const": false },
+        "forcePushAllowed": { "const": false }
+      }
+    },
+    "nextTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskId", "title", "eligibility"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/stableId" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "eligibility": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "fingerprintPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonicalization", "hashAlgorithm", "domain"],
+      "properties": {
+        "canonicalization": { "const": "RFC8785-JCS" },
+        "hashAlgorithm": { "const": "SHA-256" },
+        "domain": { "const": "veskify-task-contract-v1" }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "stableId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]*$" },
+    "gitCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "nonEmptyUniqueStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "acceptanceCriterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "requirement", "verificationClass", "requiredEvidence", "failureBehavior"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^AC-[0-9]{2,}$" },
+        "requirement": { "$ref": "#/$defs/nonEmptyString" },
+        "verificationClass": {
+          "enum": [
+            "positive-behavior",
+            "negative-fail-closed-behavior",
+            "compatibility",
+            "migration",
+            "canonical-ownership",
+            "scope",
+            "documentation",
+            "visual-product-owner-checkpoint"
+          ]
+        },
+        "requiredEvidence": { "$ref": "#/$defs/nonEmptyUniqueStrings" },
+        "failureBehavior": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}

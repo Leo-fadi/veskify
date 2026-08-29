@@ -197,6 +197,67 @@ Current default worktree roles:
 - Run focused validation once, push, and stop.
 - Do not trigger a second review cycle unless the product owner explicitly requests it.
 
+### 8.4 Contract-driven sprint protocol
+
+`docs/DEVELOPMENT_GUIDE.md` is the canonical narrative authority for sprint contracts,
+implementation roles, independent verification, rolling dependency waves, scope budgets and visual
+checkpoints. Versioned machine contracts live under `docs/governance/`.
+
+For DEVX-01 and every P10B-19 implementation child, use this permanent loop:
+
+```text
+merchant/product requirement
+  -> locked sprint map
+  -> immutable child-task contract
+  -> recorded implementation approach
+  -> implementation and implementer-focused validation
+  -> independent semantic verifier
+  -> verifier PASS
+  -> commit and push
+  -> one pull request
+  -> exactly one automatic Codex GitHub review
+  -> one consolidated correction pass
+  -> required CI
+  -> explicit merge authority
+  -> sequential merge
+  -> synchronize eligible branches from origin/main
+```
+
+The sprint coordinator owns the immutable sprint/dependency map, branch eligibility, worker
+allocation, merge order, sprint state and stop conditions. The implementer owns one task, one
+branch, its architecture decision, implementation and focused evidence, but must not approve its
+own work. The independent verifier receives the locked contract, repository authority, complete
+diff and claimed evidence; it inspects and runs verification without modifying implementation
+files and returns `PASS`, `FAIL` or `BLOCKED`. GitHub review, CI and product-owner acceptance remain
+separate gates.
+
+Before implementation, record the repository-native approach, the canonical authority extended,
+at least one rejected convenient shortcut, expected failure behavior and unresolved architecture
+conflicts. Prefer the lowest-long-term-complexity design that fully satisfies canonical ownership,
+compatibility, fail-closed behavior and migration requirements. Do not add an abstraction without
+a named current consumer, and stop rather than work around binding repository authority.
+
+Default pull-request scope targets are at most 1,000 net production lines and eight production
+files. Hard stops are 1,500 net production lines or 12 production files. Generated-file exclusions
+must be allowlisted in the immutable contract. Crossing a hard stop requires explicit product-owner
+approval in that contract; line count must not split an atomic invariant unsafely. Tests and docs
+needed to prove behavior remain in the same pull request.
+
+The implementer's tests are never the sole proof that the task interpretation is correct. Commit
+and push only after an independent verifier `PASS`. A failed pilot gets at most one consolidated
+correction pass and one verifier rerun unless the product owner authorizes otherwise. Failed or
+blocked work is not pushed merely to obtain review.
+
+A sprint may use at most two independent implementation agents and one independent verifier by
+default. Create a child branch only after its dependencies merge. Parallel work requires disjoint
+ownership or explicit safe shared-file coordination. Synchronize open eligible branches with
+`git fetch origin` followed by `git merge origin/main`; never rebase or force-push.
+
+Merchant-visible P10B-19 children require automated structural, browser, accessibility and focused
+screenshot evidence before the independent verifier and product-owner screenshot checkpoint. The
+product owner judges subjective commercial quality after mechanical failures are removed; they do
+not create captures or perform basic QA.
+
 ## 9. Validation and usage discipline
 
 For normal feature PRs:
