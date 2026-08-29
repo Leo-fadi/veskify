@@ -62,7 +62,9 @@ architecture. P10B-19A begins only after DEVX-01 closes.
 |    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
 
 The ten children preserve the accepted P10B-19 PRE architecture and are independently mergeable
-only in dependency order. They do not authorize implementation during DEVX-01.
+only in dependency order. The product owner explicitly approved this DEVX-01A delivery
+decomposition to supersede the earlier six-child P10B-19A partition; it does not change accepted
+P10B-19 authority or outcomes. The map does not authorize implementation during DEVX-01.
 
 ## 2. P10A — Grounded orchestration and publishing closure
 

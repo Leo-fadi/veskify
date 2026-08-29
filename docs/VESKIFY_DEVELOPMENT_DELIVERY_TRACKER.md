@@ -157,6 +157,10 @@ P10B remains Partial. P10B-19A is the next product-development sprint after DEVX
 
 No P10B-19A production authority is implemented by DEVX-01A.
 
+The immutable DEVX-01A product-owner contract explicitly replaces the earlier six-child P10B-19A
+delivery partition with this ten-child merge map. Structural, PageBlueprint v2, registry,
+compatibility, migration and closure ownership remain exactly as accepted in P10B-19 PRE.
+
 ### P10A — Grounded orchestration and publishing closure
 
 #### P10A-07C-03R — Controlled real-provider acceptance completion

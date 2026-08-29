@@ -360,6 +360,11 @@ acceptance remains primarily in final phase gates rather than every child pull r
 These children preserve the accepted P10B-19 PRE outcome. DEVX-01A implements none of their
 production authority.
 
+The product owner explicitly approved this ten-child delivery decomposition in the immutable
+DEVX-01A contract. It supersedes only P10B-19 PRE's earlier six-child P10B-19A delivery partition;
+it does not change Structural Storefront Family, PageBlueprint v2, registry, compatibility,
+migration or closure ownership in the accepted architecture.
+
 ### DEVX-01 engineering-enablement sprint
 
 | Order | Task                                                                                 | Status after DEVX-01A merge |

@@ -242,7 +242,27 @@
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/nonEmptyString" }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "required": { "const": true } },
+            "required": ["required"]
+          },
+          "then": {
+            "properties": {
+              "timing": { "enum": ["before-commit", "before-merge"] },
+              "criteria": { "minItems": 1 }
+            }
+          },
+          "else": {
+            "properties": {
+              "timing": { "const": "not-required" },
+              "criteria": { "maxItems": 0 }
+            }
+          }
+        }
+      ]
     },
     "stopConditions": {
       "type": "array",
