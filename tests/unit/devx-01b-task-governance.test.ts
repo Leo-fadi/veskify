@@ -604,6 +604,16 @@ describe("DEVX-01B verifier-verdict reconciliation", () => {
     expect(() => validateVerifierVerdict(value)).toThrow(GovernanceError);
   });
 
+  it("rejects a schema-valid verdict evidence record whose type differs from the contract", () => {
+    const value = verdict();
+    value.evidence[0].type = "screenshot";
+    expect(validateVerifierVerdict(value)).toEqual(value);
+    expect(reconcile(value).findings).toContainEqual({
+      code: "evidence-type-mismatch",
+      id: "EVIDENCE-01",
+    });
+  });
+
   it("preserves a valid terminal FAIL", () => {
     const value = verdict();
     value.verdict = "FAIL";

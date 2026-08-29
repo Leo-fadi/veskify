@@ -144,6 +144,18 @@ describe("DEVX-01B complete Git implementation identity", () => {
     expect(third.diffFingerprint).not.toBe(second.diffFingerprint);
   });
 
+  it.each(["--assume-unchanged", "--skip-worktree"])(
+    "rejects the %s index flag before it can hide a tracked worktree change",
+    (flag) => {
+      const { root, baseCommit } = createRepository();
+      run(root, ["update-index", flag, "docs/unstaged.txt"]);
+      write(root, "docs/unstaged.txt", "hidden change\n");
+      expect(() => buildImplementationIdentity(contractFor(root, baseCommit))).toThrowError(
+        expect.objectContaining({ code: "git-index-hidden-change-flag" }),
+      );
+    },
+  );
+
   it("identifies and content-binds a POSIX filename containing a literal backslash", () => {
     const { root, baseCommit } = createRepository();
     const relativePath = String.raw`docs/literal\name.txt`;

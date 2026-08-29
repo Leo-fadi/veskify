@@ -71,6 +71,24 @@ const listIndex = (repositoryRoot) => {
   return result;
 };
 
+const assertNoHiddenTrackedPaths = (repositoryRoot) => {
+  for (const record of nulItems(repositoryRoot, ["ls-files", "-v", "-z"])) {
+    requireCondition(
+      record.length >= 3 && record[1] === " ",
+      "git-index-flag-record",
+      "Git index flag record is malformed.",
+    );
+    const tag = record[0];
+    const relativePath = normalizeRepositoryPath(record.slice(2));
+    if (tag !== tag.toUpperCase() || tag.toUpperCase() === "S") {
+      fail(
+        "git-index-hidden-change-flag",
+        `Tracked path uses an index flag that can hide worktree changes: ${relativePath}`,
+      );
+    }
+  }
+};
+
 const parseNameStatus = (items) => {
   const entries = [];
   for (let index = 0; index < items.length; index += 1) {
@@ -366,6 +384,7 @@ export const buildImplementationIdentity = (contract) => {
   const repositoryRoot = authority.repositoryRoot;
   const baseTree = listTree(repositoryRoot, contract.baseCommit);
   const indexTree = listIndex(repositoryRoot);
+  assertNoHiddenTrackedPaths(repositoryRoot);
   const untrackedPaths = statePaths(repositoryRoot, [
     "ls-files",
     "--others",

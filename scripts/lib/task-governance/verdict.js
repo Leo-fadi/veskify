@@ -57,6 +57,7 @@ export const reconcileVerifierVerdict = (contractRecord, identity, verdict) => {
   }
 
   const contractEvidenceIds = contract.requiredEvidence.map(({ id }) => id).sort();
+  const contractEvidenceById = new Map(contract.requiredEvidence.map((item) => [item.id, item]));
   const evidenceIds = verdict.evidence.map(({ id }) => id);
   if (duplicates(evidenceIds).length > 0) findings.push({ code: "duplicate-evidence" });
   for (const id of contractEvidenceIds) {
@@ -65,8 +66,12 @@ export const reconcileVerifierVerdict = (contractRecord, identity, verdict) => {
     }
   }
   for (const evidence of verdict.evidence) {
-    if (!contractEvidenceIds.includes(evidence.id))
+    const declaration = contractEvidenceById.get(evidence.id);
+    if (!declaration) {
       findings.push({ code: "undeclared-evidence", id: evidence.id });
+    } else if (evidence.type !== declaration.type) {
+      findings.push({ code: "evidence-type-mismatch", id: evidence.id });
+    }
     if (evidence.containsSensitiveData)
       findings.push({ code: "sensitive-evidence", id: evidence.id });
   }
