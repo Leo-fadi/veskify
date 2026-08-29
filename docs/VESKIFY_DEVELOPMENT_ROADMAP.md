@@ -2,7 +2,7 @@
 
 **Version:** 1.3.0
 
-**Baseline:** 24 August 2026, P10B-18D diagnostic complete with live commercial quality rejected
+**Baseline:** 29 August 2026, P10B-19 PRE accepted and DEVX-01A governance protocol established
 
 **Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)
 
@@ -13,6 +13,9 @@
 This roadmap contains only approved delivery order, tasks, ownership, dependencies, evidence, and
 non-goals. Capability truth and architecture live in the SDD. Checkbox progress and detailed exit
 criteria live in the delivery tracker.
+
+**Engineering enablement:** DEVX-01A is Baseline. DEVX-01B is the exact next engineering task.
+P10B-19A remains the next product-development sprint after DEVX-01; P10B remains Partial.
 
 ## 1. Delivery order
 
@@ -27,6 +30,41 @@ criteria live in the delivery tracker.
 
 P10D is deliberately non-blocking for the first commercial storefront, the minimum pilot editor,
 and the Vesko pilot.
+
+### 1.1 DEVX-01 engineering-enablement sprint
+
+| Order | Task                                                                                 | Outcome                                                                                                 | Status                               | Dependency           |
+| ----: | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------- |
+|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Lock immutable child contracts, roles, scope budgets, rolling waves and pre-PR independent verification | **Baseline**                         | Accepted P10B-19 PRE |
+|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Enforce contract identity, paths, budgets, evidence coverage and terminal verdicts                      | **Planned / exact next engineering** | DEVX-01A             |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Establish measured CI timing, cancellation and safe build caching                                       | **Planned**                          | DEVX-01B             |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Split independent CI work behind stable required authority                                              | **Planned**                          | DEVX-01C             |
+|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Measure and balance retained browser groups                                                             | **Planned**                          | DEVX-01D             |
+|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Execute browser groups safely in parallel with one required result                                      | **Planned**                          | DEVX-01E             |
+|     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove stable improvement over two clean runs and close DEVX-01                                          | **Planned**                          | DEVX-01F             |
+
+DEVX-01 changes development execution, not storefront behavior or the accepted P10B-19
+architecture. P10B-19A begins only after DEVX-01 closes.
+
+### 1.2 P10B-19A planned child sequence
+
+| Order | Child task                                                                            |
+| ----: | ------------------------------------------------------------------------------------- |
+|     1 | P10B-19A-01 - Structural family identity, versions, lifecycle states and invariants   |
+|     2 | P10B-19A-02 - Cross-page structural relationship contract                             |
+|     3 | P10B-19A-03 - Required page structures, region graph and PageBlueprint v2 dispatch    |
+|     4 | P10B-19A-04 - Asset-role contract                                                     |
+|     5 | P10B-19A-05 - Responsive-rule contract                                                |
+|     6 | P10B-19A-06 - Omission, substitution and fallback contract                            |
+|     7 | P10B-19A-07 - Inactive family registry and candidate fingerprints                     |
+|     8 | P10B-19A-08 - Compatibility, deterministic selection and normalized topology identity |
+|     9 | P10B-19A-09 - v1 read/render/migration/publication compatibility                      |
+|    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
+
+The ten children preserve the accepted P10B-19 PRE architecture and are independently mergeable
+only in dependency order. The product owner explicitly approved this DEVX-01A delivery
+decomposition to supersede the earlier six-child P10B-19A partition; it does not change accepted
+P10B-19 authority or outcomes. The map does not authorize implementation during DEVX-01.
 
 ## 2. P10A — Grounded orchestration and publishing closure
 

@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:veskify:devx:verifier-verdict:1.0.0",
+  "title": "Veskify independent verifier verdict",
+  "description": "Fail-closed criterion verdict for one immutable child-task contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sprintId",
+    "taskId",
+    "contractFingerprint",
+    "implementationIdentity",
+    "verifierIdentity",
+    "verifierMode",
+    "verdict",
+    "criterionResults",
+    "commandsRun",
+    "evidence",
+    "scopeDrift",
+    "architectureDrift",
+    "forbiddenChanges",
+    "unverifiedClaims",
+    "blockingFindings",
+    "sensitiveDataRetained",
+    "summary"
+  ],
+  "properties": {
+    "$schema": { "type": "string", "minLength": 1 },
+    "schemaVersion": { "const": "1.0.0" },
+    "sprintId": { "$ref": "#/$defs/stableId" },
+    "taskId": { "$ref": "#/$defs/stableId" },
+    "contractFingerprint": {
+      "type": "string",
+      "pattern": "^veskify-task-contract-v1_[0-9a-f]{64}$"
+    },
+    "implementationIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositoryRoot",
+        "branch",
+        "baseCommit",
+        "headCommit",
+        "diffFingerprint",
+        "changedPaths"
+      ],
+      "properties": {
+        "repositoryRoot": { "type": "string", "pattern": "^/" },
+        "branch": { "type": "string", "pattern": "^[A-Za-z0-9._/-]+$" },
+        "baseCommit": { "$ref": "#/$defs/gitCommit" },
+        "headCommit": { "$ref": "#/$defs/gitCommit" },
+        "diffFingerprint": {
+          "type": "string",
+          "pattern": "^veskify-implementation-diff-v1_[0-9a-f]{64}$"
+        },
+        "changedPaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "verifierIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "independentFromImplementer", "implementationWriteAccessUsed"],
+      "properties": {
+        "agentId": { "$ref": "#/$defs/nonEmptyString" },
+        "independentFromImplementer": { "const": true },
+        "implementationWriteAccessUsed": { "const": false }
+      }
+    },
+    "verifierMode": { "enum": ["independent-semantic", "mechanical", "combined"] },
+    "verdict": { "enum": ["PASS", "FAIL", "BLOCKED"] },
+    "criterionResults": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "acceptanceCriterionId",
+          "status",
+          "evidence",
+          "finding",
+          "verificationMethod"
+        ],
+        "properties": {
+          "acceptanceCriterionId": { "type": "string", "pattern": "^AC-[0-9]{2,}$" },
+          "status": { "enum": ["PASS", "FAIL", "BLOCKED"] },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/nonEmptyString" }
+          },
+          "finding": { "$ref": "#/$defs/nonEmptyString" },
+          "verificationMethod": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "commandsRun": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "exitCode", "result", "evidence"],
+        "properties": {
+          "command": { "$ref": "#/$defs/nonEmptyString" },
+          "exitCode": { "type": "integer" },
+          "result": { "enum": ["PASS", "FAIL", "BLOCKED"] },
+          "evidence": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "location", "sha256", "summary", "containsSensitiveData"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "type": {
+            "enum": [
+              "command",
+              "diff",
+              "test",
+              "browser",
+              "screenshot",
+              "document",
+              "product-owner"
+            ]
+          },
+          "location": { "$ref": "#/$defs/nonEmptyString" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "summary": { "$ref": "#/$defs/nonEmptyString" },
+          "containsSensitiveData": { "const": false }
+        }
+      }
+    },
+    "scopeDrift": { "$ref": "#/$defs/driftResult" },
+    "architectureDrift": { "$ref": "#/$defs/driftResult" },
+    "forbiddenChanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detected", "paths", "finding"],
+      "properties": {
+        "detected": { "type": "boolean" },
+        "paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "finding": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "unverifiedClaims": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim", "reason"],
+        "properties": {
+          "claim": { "$ref": "#/$defs/nonEmptyString" },
+          "reason": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "blockingFindings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "finding", "requiredAction"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "severity": { "enum": ["HIGH", "MEDIUM"] },
+          "finding": { "$ref": "#/$defs/nonEmptyString" },
+          "requiredAction": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "sensitiveDataRetained": { "const": false },
+    "summary": { "$ref": "#/$defs/nonEmptyString" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "verdict": { "const": "PASS" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "criterionResults": {
+            "items": { "properties": { "status": { "const": "PASS" } } }
+          },
+          "scopeDrift": {
+            "properties": {
+              "detected": { "const": false },
+              "findings": { "maxItems": 0 }
+            }
+          },
+          "architectureDrift": {
+            "properties": {
+              "detected": { "const": false },
+              "findings": { "maxItems": 0 }
+            }
+          },
+          "forbiddenChanges": {
+            "properties": {
+              "detected": { "const": false },
+              "paths": { "maxItems": 0 }
+            }
+          },
+          "unverifiedClaims": { "maxItems": 0 },
+          "blockingFindings": { "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "stableId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]*$" },
+    "gitCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "driftResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detected", "findings"],
+      "properties": {
+        "detected": { "type": "boolean" },
+        "findings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    }
+  }
+}

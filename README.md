@@ -15,8 +15,10 @@ collection/search/product-card quality upgrade, accepted P10B-18B-04 PDP quality
 accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Parent P10B-18B is
 Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate and
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
-P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline;
-P10B-19A is the exact next task, and P10B-19B through P10B-19J remain Planned.
+P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
+DEVX-01A is the contract-driven sprint and independent-verification protocol Baseline;
+DEVX-01B is the exact next engineering task. P10B-19A remains the next product-development sprint
+after DEVX-01, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -191,6 +193,7 @@ high-risk validation.
 - [P10B commercial storefront generation architecture](docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md)
 - [P10B-18 commercial quality audit](docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md)
 - [Development guide](docs/DEVELOPMENT_GUIDE.md)
+- [Machine-readable development governance contracts](docs/governance/)
 - [Binding repository constitution](AGENTS.md)
 - [Architecture decisions](docs/adr/README.md)
 
@@ -231,4 +234,17 @@ The existing protected architecture remains authoritative: one canonical page gr
 `StorefrontSnapshot`, one component registry, canonical commerce and media, one deterministic
 compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A is the
-exact next task; P10B-19B through P10B-19J remain Planned.
+next product-development sprint after DEVX-01; P10B-19B through P10B-19J remain Planned.
+
+## Contract-driven development baseline
+
+DEVX-01A establishes immutable child-task contracts, recorded architecture decisions, bounded pull
+request budgets, dependency-safe rolling sprints and an independent semantic verifier before
+commit and pull-request creation. The canonical narrative protocol is the
+[development guide](docs/DEVELOPMENT_GUIDE.md); versioned schemas and templates are under
+[`docs/governance`](docs/governance/).
+
+The implementing agent's tests cannot be the sole acceptance evidence. Independent verification,
+the one automatic GitHub Codex review, CI and product-owner visual/commercial approval remain
+separate gates. DEVX-01B is the exact next engineering task and will implement mechanical contract
+and verdict enforcement; DEVX-01A adds no executable verifier or CI change.

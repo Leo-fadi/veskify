@@ -196,6 +196,192 @@ integration readiness, and P12 remains production hardening.
 
 ## 4. Branch and PR strategy
 
+### Contract-driven sprint authority
+
+This guide is the single narrative authority for Veskify sprint contracts and independent
+verification. The versioned machine authorities are:
+
+- `docs/governance/task-contract.schema.v1.json`
+- `docs/governance/task-contract.template.v1.json`
+- `docs/governance/verifier-verdict.schema.v1.json`
+- `docs/governance/verifier-verdict.template.v1.json`
+
+Sprint coordinators lock the dependency/merge-order map and all child-task contracts in the sprint
+baseline before implementation branches are created. Contract instances belong under
+`docs/governance/task-contracts/<sprintId>/` when retained in the repository and must already exist
+on the child's base commit. An implementation branch must not edit its own contract. A material
+contract change requires product-owner authority, a new locked baseline and a newly eligible branch;
+it is never a convenient scope expansion.
+
+DEVX-01B will implement deterministic RFC 8785 JSON Canonicalization Scheme serialization and a
+domain-separated SHA-256 task-contract fingerprint. DEVX-01A defines that identity policy but does
+not add the executable verifier or fingerprint implementation.
+
+### Permanent delivery loop
+
+```text
+merchant/product requirement
+  -> sprint contract
+  -> bounded child-task contract
+  -> implementation approach decision
+  -> implementation
+  -> implementer-focused validation
+  -> independent verifier
+  -> verifier PASS
+  -> commit and push
+  -> one pull request
+  -> exactly one automatic Codex GitHub review
+  -> one consolidated correction pass
+  -> required CI
+  -> explicit merge authority
+  -> sequential merge
+  -> synchronize remaining branches
+  -> next eligible child task
+```
+
+Implementer tests, independent verification, GitHub review, CI and product-owner acceptance are
+five separate authorities. Self-validation may establish implementation evidence but can never be
+the sole proof that the immutable contract was interpreted correctly.
+
+### Roles and authority
+
+| Role                 | Owns                                                                                                                                          | Must not do                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Sprint coordinator   | Immutable sprint map, dependency graph, branch eligibility, worker allocation, merge order, sprint state and stop conditions                  | Silently widen a child contract or create branches before dependencies merge            |
+| Implementer          | One immutable task contract, one branch, approach decision, implementation, focused tests, local evidence and correction of verifier findings | Approve its own task or push failed/blocked work merely to seek review                  |
+| Independent verifier | Locked contract, repository authority, complete diff, claimed evidence, adversarial challenge and criterion-level `PASS`/`FAIL`/`BLOCKED`     | Modify implementation files or turn convenient interpretation into acceptance           |
+| GitHub reviewer      | One post-PR automatic Codex review and actionable code-review findings                                                                        | Replace pre-commit independent verification or initiate a second automatic review cycle |
+| Product owner        | Architecture decisions, material scope changes, merchant-visible checkpoints, commercial acceptance and subjective final rejection            | Perform mechanical QA or manufacture missing implementation evidence                    |
+
+### Architecture-quality decision record
+
+Before implementation begins, the immutable contract records:
+
+1. the selected repository-native approach;
+2. the canonical authority it extends;
+3. at least one rejected convenient shortcut;
+4. expected failure behavior;
+5. unresolved architecture conflicts, or an explicit empty list.
+
+Do not optimize for the quickest passing implementation, the smallest convenient diff, or reuse
+that weakens canonical ownership. Select the lowest-long-term-complexity design that fully meets
+the contract, compatibility, fail-closed, migration and merchant/engineering outcome. Do not add an
+abstraction without a named current consumer. Stop rather than implement a workaround that violates
+the SDD, ADRs, canonical ownership or the locked P10B-19 architecture. These rules prohibit both
+shortcuts and speculative overengineering.
+
+### Pull-request scope budgets
+
+| Budget                              | Default |
+| ----------------------------------- | ------: |
+| Target maximum net production lines |   1,000 |
+| Target maximum production files     |       8 |
+| Hard-stop net production lines      |   1,500 |
+| Hard-stop production files          |      12 |
+
+Each pull request owns one canonical concern or one meaningful visual family. Generated files are
+excluded only when their paths and rationale are allowlisted in the immutable contract. Tests and
+documentation required to prove behavior remain with that behavior. Crossing either hard stop
+requires explicit product-owner approval in the locked contract and otherwise stops the task for
+safe decomposition. File or line count alone must not split one atomic invariant across unsafe
+boundaries.
+
+### Rolling sprint and branch protocol
+
+One parent sprint may deliver seven to ten child pull requests through bounded rolling waves:
+
+1. Lock one dependency and merge-order map before implementation.
+2. Create a branch only after every declared dependency is merged.
+3. Use at most two independent implementers and one independent verifier by default.
+4. Require disjoint ownership or explicit safe shared-file coordination for parallel work.
+5. Branch dependent tasks from updated `origin/main` unless a locked dependency says otherwise.
+6. Synchronize eligible open branches with `git fetch origin` and `git merge origin/main`.
+7. Never rebase or force-push.
+8. Merge sequentially according to the locked dependency order.
+9. Continue automatically only through pre-authorized non-visual children.
+10. Do not claim that dependent pull requests can safely share one stale base.
+
+The coordinator stops the sprint for a product-owner checkpoint, verifier `FAIL` or `BLOCKED`
+requiring material redesign, architecture conflict, dependency failure, scope-budget violation, CI
+failure requiring behavior changes, or unexpected canonical ownership change.
+
+### Verification policy
+
+DEVX-01B owns future mechanical verification of schema validity, task/branch/base identity, changed
+and forbidden paths, file/line budgets, validation and evidence declarations, acceptance-criterion
+coverage, contract/verdict identity and terminal state. DEVX-01A does not implement those checks.
+
+The independent semantic verifier must:
+
+- read the immutable contract first;
+- inspect applicable repository authority and the complete diff;
+- reproduce the smallest sufficient claimed validation;
+- challenge convenient interpretations and implementation-tailored tests;
+- verify negative/fail-closed, compatibility, migration, ownership and scope claims where required;
+- use temporary adversarial tests when useful, then remove them or leave them uncommitted;
+- report unsupported claims without modifying implementation files;
+- return `PASS`, `FAIL` or `BLOCKED` with criterion-level evidence.
+
+Verification fails closed when a criterion is absent, required evidence is missing, forbidden paths
+changed, architecture ownership is unresolved, validation cannot be reproduced, or contract and
+implementation identities differ. Evidence must not contain credentials, tokens, raw provider
+responses, environment values or private merchant data.
+
+Commit and push only after verifier `PASS`. On verifier `FAIL`, make one consolidated correction
+pass and run the verifier once more. Stop with a consolidated diagnosis if the second verdict is
+not `PASS`; do not create an endless correction loop.
+
+### Visual-task policy
+
+Merchant-visible P10B-19 tasks own one meaningful component or page-family concern per pull
+request. Automated structural, browser, accessibility and responsive checks run first. The
+implementer generates a bounded focused screenshot set, the independent verifier passes the
+technical evidence, and the product owner then decides subjective commercial quality before merge.
+
+The product owner is not responsible for creating screenshots, inspecting hundreds of captures,
+discovering broken media or finding basic responsive failures. Full-store, multi-page and live-AI
+acceptance remains primarily in final phase gates rather than every child pull request.
+
+### P10B-19A planned micro-pull-request map
+
+| Order | Child task                                                                            |
+| ----: | ------------------------------------------------------------------------------------- |
+|     1 | P10B-19A-01 - Structural family identity, versions, lifecycle states and invariants   |
+|     2 | P10B-19A-02 - Cross-page structural relationship contract                             |
+|     3 | P10B-19A-03 - Required page structures, region graph and PageBlueprint v2 dispatch    |
+|     4 | P10B-19A-04 - Asset-role contract                                                     |
+|     5 | P10B-19A-05 - Responsive-rule contract                                                |
+|     6 | P10B-19A-06 - Omission, substitution and fallback contract                            |
+|     7 | P10B-19A-07 - Inactive family registry and candidate fingerprints                     |
+|     8 | P10B-19A-08 - Compatibility, deterministic selection and normalized topology identity |
+|     9 | P10B-19A-09 - v1 read/render/migration/publication compatibility                      |
+|    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
+
+These children preserve the accepted P10B-19 PRE outcome. DEVX-01A implements none of their
+production authority.
+
+The product owner explicitly approved this ten-child delivery decomposition in the immutable
+DEVX-01A contract. It supersedes only P10B-19 PRE's earlier six-child P10B-19A delivery partition;
+it does not change Structural Storefront Family, PageBlueprint v2, registry, compatibility,
+migration or closure ownership in the accepted architecture.
+
+### DEVX-01 engineering-enablement sprint
+
+| Order | Task                                                                                 | Status after DEVX-01A merge |
+| ----: | ------------------------------------------------------------------------------------ | --------------------------- |
+|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                    |
+|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Exact next engineering task |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Planned                     |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Planned                     |
+|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Planned                     |
+|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Planned                     |
+|     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned                     |
+
+P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01B is
+the exact next engineering task after DEVX-01A.
+
+### Existing branch and PR rules
+
 - One task equals one branch, one worktree and one PR.
 - Start from the latest approved `origin/main` unless the task names an unmerged dependency.
 - Use outcome-based branch names, for example:

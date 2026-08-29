@@ -1,0 +1,132 @@
+{
+  "$schema": "./task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "SPRINT-EXAMPLE",
+  "taskId": "TASK-EXAMPLE-01",
+  "title": "Replace with the bounded child-task outcome",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/task-example-01",
+  "baseCommit": "0000000000000000000000000000000000000000",
+  "objective": "Replace with the exact bounded objective.",
+  "expectedOutcome": "Replace with the observable merchant or engineering outcome.",
+  "dependencies": [],
+  "mergeOrder": 1,
+  "canonicalAuthorities": ["Replace with the existing authority extended by this task."],
+  "ownedPaths": ["replace/with/owned/path/**"],
+  "allowedPaths": ["replace/with/allowed/path/**"],
+  "forbiddenPaths": ["replace/with/forbidden/path/**"],
+  "noTouchAreas": ["Replace with an adjacent authority that must remain unchanged."],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "Replace with one canonical concern or meaningful visual family.",
+    "generatedFileExclusions": [],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "forbidden",
+    "allowlistedActivities": [],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Replace with the repository-native approach.",
+    "canonicalAuthorityExtended": "Replace with the canonical authority.",
+    "namedCurrentConsumers": ["Replace with at least one current consumer."],
+    "rejectedShortcuts": ["Replace with at least one convenient shortcut that was rejected."],
+    "expectedFailureBehavior": "Replace with the fail-closed or rollback behavior.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Replace with required positive behavior.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "Return FAIL when the behavior cannot be reproduced."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Replace with the bounded scope requirement.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "Return FAIL for forbidden changes or an unapproved budget breach."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "replace-with-focused-validation-command",
+      "purpose": "Replace with the exact claim this command verifies.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "test",
+      "description": "Replace with bounded focused validation evidence.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "diff",
+      "description": "Replace with changed-path and scope-budget evidence.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "A required change would violate canonical ownership or the immutable contract.",
+      "action": "STOP",
+      "owner": "architecture-owner"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "TASK-EXAMPLE-02",
+    "title": "Replace with the exact next task",
+    "eligibility": "Only after this task merges and declared dependencies are satisfied."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}

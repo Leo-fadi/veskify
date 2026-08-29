@@ -1,0 +1,81 @@
+{
+  "$schema": "./verifier-verdict.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "sprintId": "SPRINT-EXAMPLE",
+  "taskId": "TASK-EXAMPLE-01",
+  "contractFingerprint": "veskify-task-contract-v1_0000000000000000000000000000000000000000000000000000000000000000",
+  "implementationIdentity": {
+    "repositoryRoot": "/Users/leo/veskify",
+    "branch": "codex/task-example-01",
+    "baseCommit": "0000000000000000000000000000000000000000",
+    "headCommit": "0000000000000000000000000000000000000000",
+    "diffFingerprint": "veskify-implementation-diff-v1_0000000000000000000000000000000000000000000000000000000000000000",
+    "changedPaths": ["replace/with/changed/path"]
+  },
+  "verifierIdentity": {
+    "agentId": "independent-verifier-example",
+    "independentFromImplementer": true,
+    "implementationWriteAccessUsed": false
+  },
+  "verifierMode": "independent-semantic",
+  "verdict": "PASS",
+  "criterionResults": [
+    {
+      "acceptanceCriterionId": "AC-01",
+      "status": "PASS",
+      "evidence": ["EVIDENCE-01"],
+      "finding": "Required positive behavior was reproduced.",
+      "verificationMethod": "Independent focused validation and diff inspection."
+    },
+    {
+      "acceptanceCriterionId": "AC-02",
+      "status": "PASS",
+      "evidence": ["EVIDENCE-02"],
+      "finding": "Changed paths and scope remain within the immutable contract.",
+      "verificationMethod": "Independent changed-path and diff-budget inspection."
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "replace-with-command",
+      "exitCode": 0,
+      "result": "PASS",
+      "evidence": ["EVIDENCE-01", "EVIDENCE-02"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "test",
+      "location": "replace-with-safe-location",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "summary": "Replace with a bounded safe validation summary.",
+      "containsSensitiveData": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "diff",
+      "location": "replace-with-safe-diff-location",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "summary": "Replace with a bounded safe changed-path summary.",
+      "containsSensitiveData": false
+    }
+  ],
+  "scopeDrift": {
+    "detected": false,
+    "findings": []
+  },
+  "architectureDrift": {
+    "detected": false,
+    "findings": []
+  },
+  "forbiddenChanges": {
+    "detected": false,
+    "paths": [],
+    "finding": "No forbidden changes detected."
+  },
+  "unverifiedClaims": [],
+  "blockingFindings": [],
+  "sensitiveDataRetained": false,
+  "summary": "Template PASS verdict. Replace every placeholder and cover every contract criterion."
+}
