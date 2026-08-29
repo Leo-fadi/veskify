@@ -8,7 +8,8 @@
 
 **Baseline:** P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
 Baseline/complete; P10B-18C is Baseline; P10B-18D is a Baseline diagnostic with live commercial
-quality rejected; P10B-18 and P10B are Partial; P10B-19 PRE is the exact next task
+quality rejected; P10B-18 and P10B are Partial; P10B-19 PRE is Baseline; P10B-19A is the exact next
+task
 
 ## 1. Purpose and boundaries
 
@@ -2028,8 +2029,8 @@ not remain.
 ### 22.4 Current status
 
 P10B-18C and P10B-16P-05B are Baseline. P10B-18 and P10B remain Partial. P10B-18D is a Baseline
-diagnostic with live commercial quality rejected. P10B-19 PRE is the exact next task; P10B-19A
-through P10B-19J remain Planned.
+diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline; P10B-19A is the exact
+next task, and P10B-19B through P10B-19J remain Planned.
 
 ## 23. P10B-18D live-AI diagnostic baseline
 
@@ -2092,8 +2093,23 @@ produced identical intent.
 ### 23.3 Binding handoff
 
 P10B-18D is `Baseline diagnostic / live commercial quality rejected`. P10B-18 remains `Partial`;
-P10B remains `Partial`. The exact next task is
-`P10B-19 PRE - Structural Design Intelligence Architecture Lock`, followed by planned P10B-19A
-through P10B-19J. P10B-19 PRE must lock structural storefront families, PageBlueprint v2, Visual
-Recipe v2, multi-concept generation and screenshot-based refinement before implementation; those
+P10B remains `Partial`. `P10B-19 PRE - Structural Design Intelligence Architecture Lock` is
+Baseline. The exact next task is `P10B-19A - Structural Storefront Family Contract`, followed by
+planned P10B-19B through P10B-19J. The accepted PRE locks structural storefront families,
+PageBlueprint v2, Visual Recipe v2, multi-concept generation and screenshot-based refinement before
+implementation; those
 capabilities are not introduced by P10B-18D.
+
+## P10B-19 PRE architecture handoff closure
+
+The product owner accepted P10B-19 PRE on 29 August 2026. The P10B-18D diagnostic remains unchanged:
+live commercial quality was rejected after 3/6 prompt-fidelity passes and exact Concept 2/6
+authority collapse. Provider interpretation remains indeterminate where retained safe evidence does
+not expose field-level intent.
+
+The accepted architecture assigns the earliest proven failures to explicit future owners:
+Creative Brief vocabulary, deterministic Structural Storefront Family selection, PageBlueprint v2,
+Visual Recipe / Design DNA v2, component anatomy, duplicate prevention, and bounded screenshot
+critique. It does not retroactively make P10B-18D pass and does not alter its evidence limitations.
+
+P10B-19 PRE is Baseline. P10B-19A is the exact next task. P10B-18 and P10B remain Partial.

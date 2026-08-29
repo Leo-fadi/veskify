@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C and P10B-16P-05B are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**; P10B-19 PRE is the exact next task.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**; P10B-19A is the exact next task.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -155,7 +155,8 @@ asset-composition authority; accepted P10B-18B-02 closes bounded homepage/editor
 quality, accepted P10B-18B-03 closes bounded collection/search/card quality, accepted P10B-18B-04
 closes bounded PDP quality, and accepted P10B-18B-05 closes bounded content/support/utility quality
 and completes parent P10B-18B. Accepted P10B-18C closes deterministic integrated quality/diversity;
-P10B-18D completed as a rejected-quality diagnostic, and P10B-19 PRE is the exact next product task.
+P10B-18D completed as a rejected-quality diagnostic, P10B-19 PRE is Baseline, and P10B-19A is the
+exact next product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -298,8 +299,8 @@ fingerprint-stratified subset passes retained human review at 375, 768, 1024, an
 P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A, and all accepted
 P10B-18B-01/06/02/03/04/05 packages and P10B-18C are Baseline; P10B-16P-02 is Baseline. Parent
 P10B-18B is Baseline/complete; P10B-16P-05B is Baseline; P10B-18D is a rejected-quality diagnostic
-Baseline. P10B-18 and P10B remain Partial, and P10B-19 PRE is the exact next task. Their ownership
-remains disjoint: P10B-05 owns
+Baseline. P10B-18 and P10B remain Partial, P10B-19 PRE is Baseline, and P10B-19A is the exact next
+task. Their ownership remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
 its `BrandSystem` authority.
@@ -597,8 +598,8 @@ and focused migration/publication compatibility. Normal production cannot enable
 acceptance. No removed P10B-18C capture configuration is part of active tooling or CI.
 
 P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
-quality rejected. P10B-19 PRE is the exact next task, and P10B-19A through P10B-19J remain Planned.
-P10B remains Partial.
+quality rejected. P10B-19 PRE is Baseline. P10B-19A is the exact next task, and P10B-19B through
+P10B-19J remain Planned. P10B remains Partial.
 
 ### P10B-18D diagnostic handoff
 
@@ -612,7 +613,34 @@ and mocked regressions for maintenance. Do not place raw provider output, accept
 credentials or live screenshots in the repository. Any future real-call activity requires its own
 explicit task authority.
 
-The next task is `P10B-19 PRE - Structural Design Intelligence Architecture Lock`. It will define,
+`P10B-19 PRE - Structural Design Intelligence Architecture Lock` is Baseline. It defines, but does
 not implement, authority for structural storefront families, PageBlueprint v2, Visual Recipe v2,
-multi-concept generation and screenshot-based refinement. P10B-19A through P10B-19J remain
-Planned; P10B remains Partial.
+multi-concept generation and screenshot-based refinement. P10B-19A is the exact next task;
+P10B-19B through P10B-19J remain Planned, and P10B remains Partial.
+
+## Implementing the accepted P10B-19 architecture
+
+P10B-19 PRE is Baseline. P10B-19A is the exact next task. Do not implement later P10B-19 packages
+on an earlier child branch.
+
+P10B-19 implementation must preserve these rules:
+
+- one canonical page graph and one `StorefrontSnapshot`;
+- Structural Storefront Families are registered merchant-neutral composition authority, not themes
+  or another page model;
+- PageBlueprint v2 extends the existing executable page-composition registry;
+- Visual Recipe provider output is transient and non-executable; exact values compile into
+  canonical BrandSystem / Design DNA v2;
+- providers never own component IDs, routes, commerce, assets, persistence, publication, CSS, HTML,
+  or React;
+- exact realization continues through the deterministic compiler/coordinator and sole
+  materializer;
+- Puck remains a controlled projection/editor boundary;
+- v1 snapshots, profiles, Design DNA, history, Preview, and publication remain compatible;
+- one child task owns one contract or one meaningful visual family on one page family;
+- every meaningful visual family receives a bounded product-owner screenshot checkpoint;
+- deterministic mocks are the default, and real provider calls are reserved for explicitly
+  authorized P10B-19J acceptance.
+
+The binding architecture and 73-child plan are in
+`docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md`. P10B remains Partial.

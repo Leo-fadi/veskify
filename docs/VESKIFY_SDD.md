@@ -111,8 +111,8 @@ homepage/editorial/campaign quality upgrade, accepted P10B-18B-03 collection/sea
 quality upgrade, accepted P10B-18B-04 PDP quality upgrade and accepted P10B-18B-05
 content/support/utility quality upgrade are Baseline. P10B-16P-02 is Baseline; parent P10B-18B is
 Baseline/complete. P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
-live commercial quality rejected. P10B-18 and P10B remain Partial pending P10B-19, and P10B-19 PRE
-is the exact next task. The current
+live commercial quality rejected. P10B-18 and P10B remain Partial pending P10B-19. P10B-19 PRE is
+Baseline, and P10B-19A is the exact next task. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -927,7 +927,7 @@ closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes 
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
-live commercial quality rejected, and P10B-19 PRE is the exact next task.
+live commercial quality rejected. P10B-19 PRE is Baseline, and P10B-19A is the exact next task.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -1273,8 +1273,8 @@ accepted P10B-18B-02 closes bounded homepage/editorial/campaign quality; accepte
 closes bounded collection/search/product-card quality; and accepted P10B-18B-04 closes bounded PDP
 quality; accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
-live commercial quality rejected. P10B-18 and P10B remain Partial, and P10B-19 PRE is the exact
-next task.
+live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline, and
+P10B-19A is the exact next task.
 
 ### 10.24 P10B-16P-06 canonical search query/results adapter
 
@@ -1310,8 +1310,8 @@ closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes 
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
-live commercial quality rejected. P10B-18 and P10B remain Partial, and P10B-19 PRE is the exact
-next task.
+live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline, and
+P10B-19A is the exact next task.
 
 ### 10.25 P10B-17 responsive, accessibility and performance closure
 
@@ -1351,7 +1351,8 @@ P10B-18B-01 and P10B-18B-06 are **Baseline**, accepted on 17 August 2026, P10B-1
 P10B-18B-03 are **Baseline**, accepted on 18 August 2026, and P10B-18B-04 is **Baseline**, accepted
 on 19 August 2026. P10B-18B-05 is **Baseline**, accepted on 20 August 2026. P10B-18C is **Baseline**,
 accepted on 22 August 2026 after the final 126-case and 280-capture quality/diversity gate. P10B-18D
-is a Baseline diagnostic with live commercial quality rejected; P10B-19 PRE is the exact next task.
+is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline, and
+P10B-19A is the exact next task.
 Acceptance of P10B-18B-06
 proves only its bounded asset selection, reuse, responsive source/crop, logo-consumer and
 art-direction authority. Acceptance of P10B-18B-02 proves only bounded homepage, editorial and
@@ -1565,8 +1566,8 @@ The binding sequence is:
    through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are Baseline; P10B-16P-02 is
    Baseline; accepted P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
    Baseline/complete. P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic
-   with live commercial quality rejected. P10B-18 and P10B remain Partial; P10B-19 PRE is the exact
-   next task. Deliver complete commercially credible storefronts
+   with live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline,
+   and P10B-19A is the exact next task. Deliver complete commercially credible storefronts
    with bounded material diversity through registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
    scoped AI editing, unified history, save, preview, and publish.
@@ -1885,7 +1886,8 @@ a stable 28-store selector to a final 280-entry four-width EN/FI review with zer
 overall human verdict is **PASS WITH MINOR LIMITATION**. This adds no second snapshot, page graph,
 renderer, commerce model, provider path or production evaluation system. P10B-16P-05B subsequently
 completed the consumer-proven cleanup and is Baseline. P10B-18D live-AI commercial storefront
-diagnostic is complete with live commercial quality rejected; P10B-19 PRE is the exact next task.
+diagnostic is complete with live commercial quality rejected. P10B-19 PRE is Baseline, and P10B-19A
+is the exact next task.
 
 
 ### 10.29 P10B-16P-05B major repository and historical-authority cleanup
@@ -1901,7 +1903,7 @@ P10B-18D and is unconditionally unavailable in production. No provider, Vesko or
 call occurred; merchant rendering, snapshots and generation selection are unchanged.
 
 P10B remains Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected. The
-locked order is P10B-19 PRE next, then P10B-19A through P10B-19J.
+locked order is P10B-19 PRE Baseline, P10B-19A next, then P10B-19B through P10B-19J.
 
 ### 10.30 P10B-18D live-AI diagnostic baseline
 
@@ -1921,4 +1923,38 @@ resolution and finite PageBlueprint/Visual Recipe/Design DNA/frame authority. It
 that the provider emitted identical field-level intent. No canonical AI, compiler,
 StorefrontSnapshot, commerce, media, proposal or publication contract changes in this diagnostic.
 `P10B-18D = Baseline diagnostic / live commercial quality rejected`; `P10B-18 = Partial`;
-`P10B = Partial`; `P10B-19 PRE = exact next`; P10B-19A through P10B-19J remain Planned.
+`P10B = Partial`; `P10B-19 PRE = Baseline`; `P10B-19A = Planned / exact next`; P10B-19B through
+P10B-19J remain Planned.
+
+## P10B-19 structural design intelligence architecture baseline
+
+P10B-19 PRE is Baseline following product-owner acceptance on 29 August 2026. The binding
+architecture is `docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md`.
+
+Future complete-storefront generation separates provider-owned, non-executable interpretation from
+deterministic execution:
+
+```text
+merchant intent and approved references
+-> AI Creative Brief
+-> deterministic Structural Storefront Family assignment
+-> PageBlueprint v2
+-> bounded Visual Recipe preferences
+-> deterministic BrandSystem / Design DNA v2 compilation
+-> exact registered component realization
+-> sole materializer and isolated proposal
+-> bounded screenshot critique and human selection
+-> existing StorefrontSnapshot lifecycle
+```
+
+Structural Storefront Families own merchant-neutral cross-page composition. Visual Recipe intent
+owns merchant-specific visual preferences but remains transient; exact accepted values compile into
+canonical `BrandSystem`. PageBlueprint v2 remains the one executable page-composition contract and
+does not introduce another page graph. Existing v1 snapshots, profiles, Design DNA, saved drafts,
+history, Preview, and publication remain readable without forced regeneration.
+
+One page graph, one `StorefrontSnapshot`, one component registry, canonical Vesko commerce, exact
+approved media lineage, one deterministic compiler/coordinator, one final materializer/executor,
+proposal isolation, Accept/Reject, Undo/Redo, Save, reload, Preview, publication, and the Puck
+adapter boundary remain binding. P10B remains Partial. P10B-19A is the exact next task; P10B-19B
+through P10B-19J remain Planned.
