@@ -16,8 +16,8 @@ accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Paren
 Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate and
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
-DEVX-01A is the contract-driven sprint and independent-verification protocol Baseline;
-DEVX-01B is the exact next engineering task. P10B-19A remains the next product-development sprint
+DEVX-01A and DEVX-01B are the contract-driven sprint and mechanical-verification Baseline;
+DEVX-01C is the exact next engineering task. P10B-19A remains the next product-development sprint
 after DEVX-01, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical

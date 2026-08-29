@@ -136,8 +136,8 @@ requireText("README.md", [
   "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "Canonical `/search` execution is Baseline",
   "P10B-19 PRE is Baseline",
-  "DEVX-01A is the contract-driven sprint and independent-verification protocol Baseline",
-  "DEVX-01B is the exact next engineering task",
+  "DEVX-01A and DEVX-01B are the contract-driven sprint and mechanical-verification Baseline",
+  "DEVX-01C is the exact next engineering task",
   "P10B-19A remains the next product-development sprint\nafter DEVX-01",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
@@ -181,7 +181,7 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "DEVX-01A is Baseline. DEVX-01B is the exact next engineering task",
+  "DEVX-01A and DEVX-01B are Baseline. DEVX-01C is the exact next engineering task",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
