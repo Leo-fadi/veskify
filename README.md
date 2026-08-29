@@ -15,8 +15,8 @@ collection/search/product-card quality upgrade, accepted P10B-18B-04 PDP quality
 accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Parent P10B-18B is
 Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate and
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
-P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is the exact
-next task, and P10B-19A through P10B-19J remain Planned.
+P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline;
+P10B-19A is the exact next task, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -214,7 +214,21 @@ P10B-18B-05 is **Baseline**, accepted by the product owner on 20 August 2026. It
 existing content/support and utility families without a second model or renderer, preserves
 protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
 Partial. At that checkpoint, P10B-18C was the exact next task; P10B-18C and P10B-16P-05B are now
-Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected, and P10B-19
-PRE is the exact next task.
+Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected. P10B-19
+PRE is Baseline, and P10B-19A is the exact next task.
 
 Owner: Vesko Oy
+
+## P10B-19 structural design intelligence baseline
+
+P10B-19 PRE is Baseline. Its accepted architecture separates a non-executable AI Creative Brief,
+merchant-neutral Structural Storefront Families, PageBlueprint v2, merchant-specific Visual Recipe
+preferences compiled into canonical BrandSystem / Design DNA v2, deterministic registered
+component realization, bounded multi-concept generation, one-pass screenshot critique, and durable
+human preference evidence.
+
+The existing protected architecture remains authoritative: one canonical page graph, one
+`StorefrontSnapshot`, one component registry, canonical commerce and media, one deterministic
+compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
+compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A is the
+exact next task; P10B-19B through P10B-19J remain Planned.

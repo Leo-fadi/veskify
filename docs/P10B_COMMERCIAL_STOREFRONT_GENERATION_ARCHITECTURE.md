@@ -4,8 +4,8 @@
 P10B-16P-06 are **Baseline**; P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, accepted
 P10B-18B-06, accepted P10B-18B-02/03/04/05 and parent P10B-18B are **Baseline**. P10B-18C and
 P10B-16P-05B are **Baseline**; P10B-18D is a **Baseline diagnostic with live commercial quality
-rejected**; P10B-18 and P10B remain **Partial**; P10B-19 PRE is the exact next task, followed by
-planned P10B-19A through P10B-19J.
+rejected**; P10B-18 and P10B remain **Partial**; P10B-19 PRE is Baseline. P10B-19A is the exact next
+task, followed by planned P10B-19B through P10B-19J.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
@@ -63,8 +63,8 @@ P10B-16P-04 is Baseline under
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 P10B-16P-05A, P10B-16P-06, P10B-17, accepted P10B-18A, P10B-18B-01/06/02/03/04/05, parent
 P10B-18B are Baseline. P10B-18C and P10B-16P-05B are **Baseline**. P10B-18 and P10B remain
-Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected, and P10B-19 PRE
-is the exact next task. The accepted audit baseline
+Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is
+Baseline, and P10B-19A is the exact next task. The accepted audit baseline
 and bounded source-authority packages are recorded in
 [`P10B_18_COMMERCIAL_QUALITY_AUDIT.md`](P10B_18_COMMERCIAL_QUALITY_AUDIT.md).
 
@@ -380,8 +380,8 @@ P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 are *
 P10B-16P-02, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06 and accepted
 P10B-18B-02/03/04/05 and parent P10B-18B are **Baseline**. P10B-18C and P10B-16P-05B are
 **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18
-and P10B are **Partial**; P10B-19 PRE is the exact next task, followed by planned P10B-19A through
-P10B-19J.
+and P10B are **Partial**; P10B-19 PRE is Baseline. P10B-19A is the exact next task, followed by
+planned P10B-19B through P10B-19J.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -819,7 +819,8 @@ keep distinct approved facts where their reading structure is shared.
   search and publication behavior are unchanged.
 
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-18 and P10B remain
-Partial. P10B-19 PRE is the exact next task, followed by planned P10B-19A through P10B-19J.
+Partial. P10B-19 PRE is Baseline. P10B-19A is the exact next task, followed by planned P10B-19B
+through P10B-19J.
 
 ### P10B-17 — Responsive, accessibility and performance closure
 
@@ -839,7 +840,8 @@ Partial. P10B-19 PRE is the exact next task, followed by planned P10B-19A throug
 ### P10B-18 — Commercial quality and scale gate
 
 - **Status:** **Partial**. P10B-18A, completed P10B-18B and P10B-18C are Baseline. P10B-18D is a
-  Baseline diagnostic with live commercial quality rejected; P10B-19 PRE is the exact next task.
+  Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline, and P10B-19A
+  is the exact next task.
 - Deterministically generate at least 100 complete bounded storefront configurations across
   representative catalogue, evidence, asset, locale, page-set, and direction contexts.
 - Prove valid complete snapshots, protected-commerce parity, no exact duplicates, thresholded
@@ -954,9 +956,10 @@ Partial. P10B-19 PRE is the exact next task, followed by planned P10B-19A throug
   lazy-image renderer consumption as a secondary owner; canonical media did not mutate. Its
   post-save reload timeout is primarily acceptance/test-seam continuity, not a proven persistence
   or Preview-runtime defect.
-- P10B-19 PRE is the exact next task. It must lock structural storefront families, PageBlueprint
-  v2, Visual Recipe v2, multi-concept generation and screenshot-based refinement while preserving
-  one provider boundary, compiler/coordinator, materializer and StorefrontSnapshot lifecycle.
+- P10B-19 PRE is Baseline. Its accepted architecture locks structural storefront families,
+  PageBlueprint v2, Visual Recipe v2, multi-concept generation and screenshot-based refinement
+  while preserving one provider boundary, compiler/coordinator, materializer and StorefrontSnapshot
+  lifecycle. P10B-19A is the exact next task.
 
 ## 15. Dependency and parallelization graph
 
@@ -1051,7 +1054,7 @@ P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, accepted
 accepted P10B-18B-01/06/02/03/04/05 are Baseline under the disjoint ownership constraints in
 section 15. P10B-16P-02 is Baseline. Parent P10B-18B and P10B-18C are Baseline; P10B-18D is a
 Baseline diagnostic with live commercial quality rejected; P10B-18 and P10B remain Partial.
-P10B-19 PRE is the exact next task.
+P10B-19 PRE is Baseline. P10B-19A is the exact next task.
 No later
 implementation task is complete merely because this architecture or an earlier bounded P10B-18
 package is accepted.
@@ -1142,4 +1145,33 @@ art direction; campaign actions require an exact approved label/navigation pair.
 one component family with state-specific DOM composition, and action rendering requires both a
 runtime capability and executable handler. Runtime cart/query/error/loading state is never written
 to canonical snapshots or history. P10B-18B-05 and the completed P10B-18B parent are Baseline;
-P10B-18 and P10B remain Partial and P10B-18C is next.
+P10B-18 and P10B remain Partial. P10B-18C was next at that checkpoint; P10B-19 PRE is now Baseline,
+and P10B-19A is next.
+
+## P10B-19 PRE accepted target architecture
+
+P10B-19 PRE is Baseline. It resolves the architecture owner exposed by P10B-18D without changing
+the current production path in this task.
+
+The accepted target separates:
+
+1. a strict, non-executable AI Creative Brief that preserves merchant meaning and unsupported
+   intent before compatibility resolution;
+2. one of six merchant-neutral Structural Storefront Families that owns complete-store
+   composition;
+3. PageBlueprint v2 skeletons that own bounded per-page region relationships and responsive
+   transformations;
+4. transient Visual Recipe preferences that compile deterministically into canonical BrandSystem /
+   Design DNA v2;
+5. exact registered component, asset, fact, and commerce realization through the existing compiler,
+   coordinator, materializer, proposal, and StorefrontSnapshot lifecycle.
+
+The initial family set is editorial offset, campaign modular, product-first commerce, technical
+comparison, warm narrative, and restrained gallery. Three concepts must differ in family,
+complete-store topology, hierarchy, recipe, component relationships, and responsive posture before
+materialization. A future screenshot critic may return typed diagnostics and one bounded successor
+revision; it cannot return code, CSS, DOM, commerce changes, or direct mutations.
+
+Current semantic intent, coordinated directions, PageBlueprint v1, and Design DNA v1 become
+versioned compatibility/replay authority as v2 is implemented additively. Existing snapshots do not
+require regeneration. P10B-19A is the exact next task.
