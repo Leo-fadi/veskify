@@ -22,8 +22,8 @@ required evidence are accepted.
   - [x] DEVX-01A - Sprint contract and independent verification protocol
   - [x] DEVX-01B - Mechanical contract and verifier-verdict enforcement
   - [x] DEVX-01C - CI timings, obsolete-run cancellation and Next build caching
-  - [ ] DEVX-01D - Parallel static, Vitest and production-build jobs (**exact next engineering task**)
-  - [ ] DEVX-01E - Playwright timing inventory and balanced execution groups
+  - [x] DEVX-01D - Parallel static, Vitest and production-build jobs
+  - [ ] DEVX-01E - Playwright timing inventory and balanced execution groups (**exact next engineering task**)
   - [ ] DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator
   - [ ] DEVX-01G - Two-run performance acceptance and workflow closure
 
