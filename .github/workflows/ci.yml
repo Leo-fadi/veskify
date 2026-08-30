@@ -166,7 +166,37 @@ jobs:
         run: node scripts/ci-timing.mjs run --id playwright-install --output-directory .ci-timings/browser -- pnpm exec playwright install --with-deps chromium
 
       - name: Run complete Playwright regression
+        env:
+          PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY: .ci-playwright-timings
         run: node scripts/ci-timing.mjs run --id playwright-e2e --output-directory .ci-timings/browser -- pnpm test:e2e
+
+      - name: Summarize Playwright suite timings
+        if: always()
+        run: >-
+          node scripts/playwright-ci.mjs summarize
+          --input-directory .ci-playwright-timings
+          --output .ci-evidence/playwright-suite-timing-summary.json
+          --job-status ${{ job.status }}
+
+      - name: Plan future Playwright execution groups
+        if: success()
+        run: >-
+          node scripts/playwright-ci.mjs plan
+          --summary .ci-evidence/playwright-suite-timing-summary.json
+          --output .ci-evidence/playwright-balanced-group-plan.json
+
+      - name: Upload Playwright suite timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-suite-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-playwright-timings
+            .ci-evidence/playwright-suite-timing-summary.json
+            .ci-evidence/playwright-balanced-group-plan.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Summarize browser timings
         if: always()

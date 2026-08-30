@@ -70,7 +70,7 @@ describe("DEVX-01C retained CI authority", () => {
     );
     const expectedE2e =
       "playwright test && playwright test -c playwright.p10a-08c-01.config.ts && playwright test -c playwright.p10a-04c.config.ts && playwright test -c playwright.p10a-08d-02.config.ts && playwright test -c playwright.p10b-08.config.ts && playwright test -c playwright.p10b-09.config.ts && playwright test -c playwright.p10b-11.config.ts && playwright test -c playwright.p10b-13.config.ts && playwright test -c playwright.p10b-16p-03.config.ts && playwright test -c playwright.p10b-16p-06.config.ts && playwright test -c playwright.p10b-17.config.ts && playwright test -c playwright.p10b-18a.config.ts";
-    expect(scripts["test:e2e"]).toBe(expectedE2e);
+    expect(scripts["test:e2e"]).toBe("node scripts/playwright-ci.mjs run-all");
     expect(expectedE2e.split(" && ")).toHaveLength(12);
     expect(workflow).toContain(
       "--id playwright-e2e --output-directory .ci-timings/browser -- pnpm test:e2e",
@@ -86,9 +86,10 @@ describe("DEVX-01C retained CI authority", () => {
       expect(workflow).toContain(`.ci-timings/${profile}`);
       expect(workflow).toContain(`.ci-evidence/${profile}-summary.json`);
     }
-    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(4);
-    expect(count(workflow, "include-hidden-files: true")).toBe(4);
+    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(5);
+    expect(count(workflow, "include-hidden-files: true")).toBe(5);
     expect(count(workflow, "if-no-files-found: warn")).toBe(4);
-    expect(count(workflow, "retention-days: 14")).toBe(4);
+    expect(count(workflow, "if-no-files-found: error")).toBe(1);
+    expect(count(workflow, "retention-days: 14")).toBe(5);
   });
 });

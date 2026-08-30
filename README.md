@@ -17,7 +17,7 @@ Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity g
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel
-CI Baseline; DEVX-01E is the exact next engineering task.
+CI Baseline; DEVX-01E is Baseline; DEVX-01F is the exact next engineering task.
 P10B-19A remains the next product-development sprint
 after DEVX-01, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
@@ -250,11 +250,27 @@ the one automatic GitHub Codex review, CI and product-owner visual/commercial ap
 separate gates. DEVX-01B supplies mechanical contract and verdict enforcement, and DEVX-01C adds
 safe timing evidence, same-PR/ref cancellation and compatible `.next/cache` reuse without changing
 the measured serial `validate` gate. DEVX-01D splits that work into four independent execution
-jobs behind the stable fail-closed `validate` authority. DEVX-01E is the exact next engineering
-task.
+jobs behind the stable fail-closed `validate` authority. DEVX-01E is Baseline; DEVX-01F is the
+exact next engineering task.
 
 CI command timings are written as bounded JSON under profile-specific `.ci-timings` directories,
 summarized under `.ci-evidence`, appended to each execution job's GitHub Step Summary and uploaded
 as four separate 14-day artifacts. These runtime artifacts stay outside Git. The first DEVX-01C
 run provides the serial measurement authority; DEVX-01D parallel timings remain run evidence, not
 the final performance claim. Playwright grouping and sharding remain DEVX-01E and DEVX-01F work.
+
+## DEVX-01E browser timing authority
+
+- DEVX-01A = Baseline
+- DEVX-01B = Baseline
+- DEVX-01C = Baseline
+- DEVX-01D = Baseline
+- DEVX-01E = Baseline
+- DEVX-01F = exact next engineering task
+- P10B-19A = next product-development sprint after DEVX-01
+
+The canonical serial browser command now reads the versioned 12-suite inventory in
+`scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
+serial `browser-regression` job and stops at the first failing suite. Per-suite records contain
+bounded timing/status metadata only; the deterministic 2–6 group plans are advisory inputs for
+DEVX-01F and do not create matrix, shard, or parallel execution authority.

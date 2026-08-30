@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01D are Baseline, DEVX-01E is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01D are Baseline, DEVX-01E is Baseline; DEVX-01F is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -399,18 +399,18 @@ migration or closure ownership in the accepted architecture.
 
 ### DEVX-01 engineering-enablement sprint
 
-| Order | Task                                                                                 | Status after DEVX-01A merge |
-| ----: | ------------------------------------------------------------------------------------ | --------------------------- |
-|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                    |
-|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                    |
-|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Baseline                    |
-|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Baseline                    |
-|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Exact next engineering task |
-|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Planned                     |
-|     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned                     |
+| Order | Task                                                                                 | Status after DEVX-01A merge           |
+| ----: | ------------------------------------------------------------------------------------ | ------------------------------------- |
+|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                              |
+|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                              |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Baseline                              |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Baseline                              |
+|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Baseline                              |
+|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Planned / exact next engineering task |
+|     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned                               |
 
 P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01E is
-the exact next engineering task after DEVX-01D.
+Baseline, and DEVX-01F is the exact next engineering task.
 
 ### CI timing, cancellation and Next cache authority
 
@@ -915,3 +915,34 @@ P10B-19 implementation must preserve these rules:
 
 The binding architecture and 73-child plan are in
 `docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md`. P10B remains Partial.
+
+## DEVX-01E browser timing authority
+
+- DEVX-01A = Baseline
+- DEVX-01B = Baseline
+- DEVX-01C = Baseline
+- DEVX-01D = Baseline
+- DEVX-01E = Baseline
+- DEVX-01F = exact next engineering task
+- P10B-19A = next product-development sprint after DEVX-01
+
+The canonical serial browser command now reads the versioned 12-suite inventory in
+`scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
+serial `browser-regression` job and stops at the first failing suite. Per-suite records contain
+bounded timing/status metadata only; the deterministic 2–6 group plans are advisory inputs for
+DEVX-01F and do not create matrix, shard, or parallel execution authority.
+
+### Playwright CI timing operations
+
+Use `node scripts/playwright-ci.mjs audit` to validate the exact enabled suite inventory without
+launching browsers. `pnpm test:e2e` executes that inventory serially. CI sets
+`PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY`, then runs `summarize` with the browser job status and
+`plan` only after a complete successful run. The summary reports suite duration, median, relative
+share, slowest-first order, and an exact unmeasured suffix after failure. Group planning uses stable
+longest-processing-time assignment with canonical-order/ID tie-breaking for 2–6 future groups.
+
+Timing artifacts never contain command output, environment values, screenshots, traces, test
+reports, tokens, or credentials. Playwright configs retain their own retries, reporters, workers,
+ports, web servers, and output behavior. Future parallel groups must execute on isolated GitHub
+runners because repository-local build output and default ports are not safe shared-runner
+authority.

@@ -143,8 +143,7 @@ requireText("README.md", [
   "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "Canonical `/search` execution is Baseline",
   "P10B-19 PRE is Baseline",
-  "DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel",
-  "DEVX-01E is the exact next engineering task",
+  "DEVX-01E is Baseline; DEVX-01F is the exact next engineering task",
   "P10B-19A remains the next product-development sprint\nafter DEVX-01",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
@@ -188,7 +187,7 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "DEVX-01A through DEVX-01D are Baseline. DEVX-01E is the exact next engineering task",
+  "DEVX-01A through DEVX-01D are Baseline. DEVX-01E is Baseline; DEVX-01F is the exact next engineering task",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
@@ -321,8 +320,7 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "### P10B-19A planned micro-pull-request map",
   "### DEVX-01 engineering-enablement sprint",
   "explicitly approved this ten-child delivery decomposition in the immutable\nDEVX-01A contract",
-  "DEVX-01A through DEVX-01D are Baseline",
-  "DEVX-01E is the exact next engineering task",
+  "DEVX-01E is Baseline; DEVX-01F is the exact next engineering task",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -348,7 +346,8 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "DEVX-01B - Mechanical contract and verifier-verdict enforcement",
   "DEVX-01C - CI timings, obsolete-run cancellation and Next build caching",
   "- [x] DEVX-01D - Parallel static, Vitest and production-build jobs",
-  "- [ ] DEVX-01E - Playwright timing inventory and balanced execution groups (**exact next engineering task**)",
+  "- [x] DEVX-01E - Playwright timing inventory and balanced execution groups",
+  "- [ ] DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator (**exact next engineering task**)",
   "P10B-19A is the next product-development sprint after DEVX-01",
   "#### P10B-19A planned micro-pull-request map",
 ]);
@@ -886,4 +885,81 @@ if (failures.length > 0) {
   process.stdout.write(
     `Documentation validation passed (${activeMarkdownFiles.length} active Markdown files; requirements FR ${definitionCounts.functional}, NFR ${definitionCounts.nonFunctional}, AC ${definitionCounts.acceptance}, dangling 0; synchronized SDD ${hashes[0]}; synchronized tracker ${hashes[1]}; archived v1.2.2 preserved).\n`,
   );
+}
+
+const { readFileSync: readDevx01eStatusFile } = await import("node:fs");
+const devx01eStatusDocuments = [
+  "README.md",
+  "docs/DEVELOPMENT_GUIDE.md",
+  "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+];
+for (const devx01eStatusPath of devx01eStatusDocuments) {
+  const devx01eStatusContent = readDevx01eStatusFile(devx01eStatusPath, "utf8");
+  if (!devx01eStatusContent.includes("DEVX-01E = Baseline")) {
+    throw new Error(`${devx01eStatusPath} must record DEVX-01E as Baseline.`);
+  }
+  if (!devx01eStatusContent.includes("DEVX-01F = exact next engineering task")) {
+    throw new Error(`${devx01eStatusPath} must record DEVX-01F as the exact next task.`);
+  }
+  if (devx01eStatusContent.includes("DEVX-01E = exact next engineering task")) {
+    throw new Error(`${devx01eStatusPath} retains obsolete DEVX-01E status.`);
+  }
+}
+const devx01eTracker = readDevx01eStatusFile(
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+  "utf8",
+);
+for (const devx01eStaleTrackerPattern of [
+  /\[ \] DEVX-01E[^\n]*exact next/iu,
+  /\| DEVX-01E[^\n]*Planned/iu,
+  /DEVX-01E is exact next/iu,
+]) {
+  if (devx01eStaleTrackerPattern.test(devx01eTracker)) {
+    throw new Error(
+      "Delivery tracker retains stale DEVX-01E current-status authority: " +
+        String(devx01eStaleTrackerPattern) +
+        ".",
+    );
+  }
+}
+if (!/\[ \] DEVX-01F[^\n]*exact next engineering task/iu.test(devx01eTracker)) {
+  throw new Error("Delivery tracker must mark DEVX-01F as the exact next engineering task.");
+}
+const devx01eGuide = readDevx01eStatusFile("docs/DEVELOPMENT_GUIDE.md", "utf8");
+for (const devx01eStaleGuidePattern of [
+  /\|\s*5\s*\|\s*DEVX-01E[^\n]*\|\s*Exact next engineering task/iu,
+  /DEVX-01E is\s+the exact next engineering task/iu,
+]) {
+  if (devx01eStaleGuidePattern.test(devx01eGuide)) {
+    throw new Error(
+      "Development guide retains stale DEVX-01E current-status authority: " +
+        String(devx01eStaleGuidePattern) +
+        ".",
+    );
+  }
+}
+for (const devx01eGuideAuthority of [
+  "node scripts/playwright-ci.mjs audit",
+  "PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY",
+  "longest-processing-time",
+]) {
+  if (!devx01eGuide.includes(devx01eGuideAuthority)) {
+    throw new Error(`Development guide is missing DEVX-01E authority: ${devx01eGuideAuthority}.`);
+  }
+}
+for (const [devx01ePlanPath, devx01ePlanPattern] of [
+  [
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    /\|\s*7\s*\|\s*DEVX-01G[^\n]*\|\s*\*\*Planned \/ exact next engineering task\*\*/iu,
+  ],
+  [
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    /\|\s*DEVX-01G[^\n]*\|\s*\*\*Planned \/ exact next engineering task\*\*/iu,
+  ],
+]) {
+  const devx01ePlanContent = readDevx01eStatusFile(devx01ePlanPath, "utf8");
+  if (devx01ePlanPattern.test(devx01ePlanContent)) {
+    throw new Error(`${devx01ePlanPath} incorrectly marks DEVX-01G as exact next.`);
+  }
 }
