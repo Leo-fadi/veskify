@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "playwright-ci-suite-inventory",
+  "suites": [
+    {
+      "id": "default",
+      "order": 1,
+      "label": "Default retained browser regression",
+      "configPath": "playwright.config.ts",
+      "args": ["test"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10a-08c-01",
+      "order": 2,
+      "label": "P10A-08C-01 browser regression",
+      "configPath": "playwright.p10a-08c-01.config.ts",
+      "args": ["test", "-c", "playwright.p10a-08c-01.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10a-04c",
+      "order": 3,
+      "label": "P10A-04C browser regression",
+      "configPath": "playwright.p10a-04c.config.ts",
+      "args": ["test", "-c", "playwright.p10a-04c.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10a-08d-02",
+      "order": 4,
+      "label": "P10A-08D-02 browser regression",
+      "configPath": "playwright.p10a-08d-02.config.ts",
+      "args": ["test", "-c", "playwright.p10a-08d-02.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-08",
+      "order": 5,
+      "label": "P10B-08 browser regression",
+      "configPath": "playwright.p10b-08.config.ts",
+      "args": ["test", "-c", "playwright.p10b-08.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-09",
+      "order": 6,
+      "label": "P10B-09 browser regression",
+      "configPath": "playwright.p10b-09.config.ts",
+      "args": ["test", "-c", "playwright.p10b-09.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-11",
+      "order": 7,
+      "label": "P10B-11 browser regression",
+      "configPath": "playwright.p10b-11.config.ts",
+      "args": ["test", "-c", "playwright.p10b-11.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-13",
+      "order": 8,
+      "label": "P10B-13 browser regression",
+      "configPath": "playwright.p10b-13.config.ts",
+      "args": ["test", "-c", "playwright.p10b-13.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-16p-03",
+      "order": 9,
+      "label": "P10B-16P-03 browser regression",
+      "configPath": "playwright.p10b-16p-03.config.ts",
+      "args": ["test", "-c", "playwright.p10b-16p-03.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-16p-06",
+      "order": 10,
+      "label": "P10B-16P-06 browser regression",
+      "configPath": "playwright.p10b-16p-06.config.ts",
+      "args": ["test", "-c", "playwright.p10b-16p-06.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-17",
+      "order": 11,
+      "label": "P10B-17 browser regression",
+      "configPath": "playwright.p10b-17.config.ts",
+      "args": ["test", "-c", "playwright.p10b-17.config.ts"],
+      "required": true,
+      "enabled": true
+    },
+    {
+      "id": "p10b-18a",
+      "order": 12,
+      "label": "P10B-18A browser regression",
+      "configPath": "playwright.p10b-18a.config.ts",
+      "args": ["test", "-c", "playwright.p10b-18a.config.ts"],
+      "required": true,
+      "enabled": true
+    }
+  ]
+}
