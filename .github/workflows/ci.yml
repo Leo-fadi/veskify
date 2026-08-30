@@ -3,6 +3,10 @@ name: CI
 on:
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -15,15 +19,41 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm format:check
+      - name: Install dependencies
+        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings -- pnpm install --frozen-lockfile
+      - name: Restore Next.js incremental cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-node-24-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-next-${{ hashFiles('next.config.ts', 'postcss.config.mjs', 'tsconfig.json', 'src/**', 'public/**') }}
+          restore-keys: |
+            ${{ runner.os }}-node-24-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-next-
+      - name: Typecheck
+        run: node scripts/ci-timing.mjs run --id typecheck --output-directory .ci-timings -- pnpm typecheck
+      - name: Lint
+        run: node scripts/ci-timing.mjs run --id lint --output-directory .ci-timings -- pnpm lint
+      - name: Check formatting
+        run: node scripts/ci-timing.mjs run --id format-check --output-directory .ci-timings -- pnpm format:check
       - name: Run Vitest without cross-file contention
-        run: pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
+        run: node scripts/ci-timing.mjs run --id vitest --output-directory .ci-timings -- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
       - name: Production build (Webpack)
-        run: pnpm build:webpack
+        run: node scripts/ci-timing.mjs run --id webpack-build --output-directory .ci-timings -- pnpm build:webpack
       - name: Storefront first-load budgets
-        run: pnpm build:check:storefront-budgets
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+        run: node scripts/ci-timing.mjs run --id storefront-budgets --output-directory .ci-timings -- pnpm build:check:storefront-budgets
+      - name: Install Playwright Chromium
+        run: node scripts/ci-timing.mjs run --id playwright-install --output-directory .ci-timings -- pnpm exec playwright install --with-deps chromium
+      - name: Run complete Playwright suite
+        run: node scripts/ci-timing.mjs run --id playwright-e2e --output-directory .ci-timings -- pnpm test:e2e
+      - name: Summarize CI timings
+        if: always()
+        run: node scripts/ci-timing.mjs summarize --input-directory .ci-timings --output .ci-evidence/ci-timing-summary.json --job-status "${{ job.status }}"
+      - name: Upload CI timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-timings
+            .ci-evidence/ci-timing-summary.json
+          if-no-files-found: warn
+          retention-days: 14

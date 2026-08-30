@@ -14,7 +14,7 @@ This roadmap contains only approved delivery order, tasks, ownership, dependenci
 non-goals. Capability truth and architecture live in the SDD. Checkbox progress and detailed exit
 criteria live in the delivery tracker.
 
-**Engineering enablement:** DEVX-01A and DEVX-01B are Baseline. DEVX-01C is the exact next engineering task.
+**Engineering enablement:** DEVX-01A, DEVX-01B and DEVX-01C are Baseline. DEVX-01D is the exact next engineering task.
 P10B-19A remains the next product-development sprint after DEVX-01; P10B remains Partial.
 
 ## 1. Delivery order
@@ -37,8 +37,8 @@ and the Vesko pilot.
 | ----: | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------- |
 |     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Lock immutable child contracts, roles, scope budgets, rolling waves and pre-PR independent verification | **Baseline**                         | Accepted P10B-19 PRE |
 |     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Enforce contract identity, paths, budgets, evidence coverage and terminal verdicts                      | **Baseline**                         | DEVX-01A             |
-|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Establish measured CI timing, cancellation and safe build caching                                       | **Planned / exact next engineering** | DEVX-01B             |
-|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Split independent CI work behind stable required authority                                              | **Planned**                          | DEVX-01C             |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Establish measured CI timing, cancellation and safe build caching                                       | **Baseline**                         | DEVX-01B             |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Split independent CI work behind stable required authority                                              | **Planned / exact next engineering** | DEVX-01C             |
 |     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Measure and balance retained browser groups                                                             | **Planned**                          | DEVX-01D             |
 |     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Execute browser groups safely in parallel with one required result                                      | **Planned**                          | DEVX-01E             |
 |     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove stable improvement over two clean runs and close DEVX-01                                          | **Planned**                          | DEVX-01F             |
