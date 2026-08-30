@@ -456,8 +456,39 @@ describe("DEVX-01E serial suite execution", () => {
       signal: "SIGTERM",
     });
     const grandchildPid = Number(readFileSync(join(root, "grandchild.pid"), "utf8"));
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
-    expect(() => process.kill(grandchildPid, 0)).toThrow();
+    expect(await waitForNoLiveProcess(grandchildPid)).toBe(true);
+  });
+
+  it("distinguishes a terminated Linux zombie from a live descendant", () => {
+    const signalProbe = () => undefined;
+
+    expect(
+      isLiveProcess(4321, {
+        platform: "linux",
+        signalProbe,
+        linuxStatReader: () => "4321 (fixture child) Z 1 2 3",
+      }),
+    ).toBe(false);
+    expect(
+      isLiveProcess(4321, {
+        platform: "linux",
+        signalProbe,
+        linuxStatReader: () => "4321 (fixture child) S 1 2 3",
+      }),
+    ).toBe(true);
+
+    let nonLinuxStatRead = false;
+    expect(
+      isLiveProcess(4321, {
+        platform: "darwin",
+        signalProbe,
+        linuxStatReader: () => {
+          nonLinuxStatRead = true;
+          return "4321 (fixture child) Z 1 2 3";
+        },
+      }),
+    ).toBe(true);
+    expect(nonLinuxStatRead).toBe(false);
   });
 });
 
@@ -467,6 +498,60 @@ function existsFile(path: string) {
   } catch {
     return false;
   }
+}
+
+interface ProcessLivenessProbeOptions {
+  platform?: string;
+  signalProbe?: (pid: number) => void;
+  linuxStatReader?: (pid: number) => string;
+}
+
+function isLiveProcess(pid: number, options: ProcessLivenessProbeOptions = {}) {
+  const signalProbe = options.signalProbe ?? ((candidatePid) => process.kill(candidatePid, 0));
+  try {
+    signalProbe(pid);
+  } catch {
+    return false;
+  }
+
+  if ((options.platform ?? process.platform) !== "linux") {
+    return true;
+  }
+
+  try {
+    const stat = (
+      options.linuxStatReader ??
+      ((candidatePid) => readFileSync(`/proc/${candidatePid}/stat`, "utf8"))
+    )(pid);
+    const commandEnd = stat.lastIndexOf(")");
+    const state =
+      commandEnd === -1
+        ? ""
+        : stat
+            .slice(commandEnd + 1)
+            .trimStart()
+            .charAt(0);
+    if (state.length !== 1) {
+      throw new Error(`Unable to resolve Linux process state for PID ${pid}.`);
+    }
+    return state !== "Z";
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function waitForNoLiveProcess(pid: number, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!isLiveProcess(pid)) {
+      return true;
+    }
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 20));
+  }
+  return !isLiveProcess(pid);
 }
 
 describe("DEVX-01E timing summary", () => {
