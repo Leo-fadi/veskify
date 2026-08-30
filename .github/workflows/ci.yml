@@ -55,5 +55,6 @@ jobs:
           path: |
             .ci-timings
             .ci-evidence/ci-timing-summary.json
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14

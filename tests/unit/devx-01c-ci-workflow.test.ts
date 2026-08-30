@@ -150,6 +150,7 @@ describe("DEVX-01C canonical CI workflow", () => {
     expect(artifactBlock).toContain(
       "name: ci-timings-${{ github.run_id }}-${{ github.run_attempt }}",
     );
+    expect(artifactBlock).toContain("include-hidden-files: true");
     expect(artifactBlock).toContain("if-no-files-found: warn");
     expect(artifactBlock).toContain("retention-days: 14");
     expect(artifactBlock).toContain(".ci-timings");
