@@ -17,7 +17,7 @@ Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity g
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel
-CI Baseline; DEVX-01E is Baseline; DEVX-01F is the exact next engineering task.
+CI Baseline; DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task.
 P10B-19A remains the next product-development sprint
 after DEVX-01, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
@@ -257,7 +257,7 @@ CI command timings are written as bounded JSON under profile-specific `.ci-timin
 summarized under `.ci-evidence`, appended to each execution job's GitHub Step Summary and uploaded
 as four separate 14-day artifacts. These runtime artifacts stay outside Git. The first DEVX-01C
 run provides the serial measurement authority; DEVX-01D parallel timings remain run evidence, not
-the final performance claim. Playwright grouping and sharding remain DEVX-01E and DEVX-01F work.
+the final performance claim. DEVX-01E provides the measured suite inventory; DEVX-01F provides the locked whole-suite matrix and merged-report authority.
 
 ## DEVX-01E browser timing authority
 
@@ -266,11 +266,23 @@ the final performance claim. Playwright grouping and sharding remain DEVX-01E an
 - DEVX-01C = Baseline
 - DEVX-01D = Baseline
 - DEVX-01E = Baseline
-- DEVX-01F = exact next engineering task
+- DEVX-01F = Baseline
+- DEVX-01G = exact next engineering task
 - P10B-19A = next product-development sprint after DEVX-01
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
 serial `browser-regression` job and stops at the first failing suite. Per-suite records contain
 bounded timing/status metadata only; the deterministic 2–6 group plans are advisory inputs for
-DEVX-01F and do not create matrix, shard, or parallel execution authority.
+DEVX-01F locks the two-group whole-suite matrix in
+`scripts/playwright-ci-execution-plan.v1.json` and executes it through the canonical
+`scripts/playwright-ci.mjs` authority. The workflow emits only bounded group IDs, runs every
+canonical suite exactly once, retains per-group timing and blob evidence, rejects missing,
+duplicate, unexpected or hash-mismatched artifacts before merge, and produces one merged HTML
+report plus one matrix timing summary behind the stable `validate` check. The measured whole-suite
+plan already meets the bounded makespan and balance targets, so no suite sharding is activated.
+Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
+`node scripts/playwright-ci.mjs run-group`; the report job runs
+`node scripts/playwright-ci.mjs validate-group-artifacts` before
+`pnpm exec playwright merge-reports`. DEVX-01G owns two-run performance acceptance and workflow
+closure.

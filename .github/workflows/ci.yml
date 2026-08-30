@@ -142,108 +142,178 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  browser-regression:
+  browser-plan:
+    name: Browser execution plan
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - name: Check out repository
+      - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+      - name: Audit locked Playwright execution plan
+        run: node scripts/playwright-ci.mjs audit-plan
+      - name: Emit bounded browser matrix
+        id: matrix
+        run: echo "matrix=$(node scripts/playwright-ci.mjs emit-matrix)" >> "$GITHUB_OUTPUT"
 
+  browser-regression:
+    name: Browser regression (${{ matrix.groupId }})
+    needs: browser-plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.browser-plan.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
       - name: Install dependencies
-        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings/browser -- pnpm install --frozen-lockfile
-
-      - name: Install Playwright Chromium
-        run: node scripts/ci-timing.mjs run --id playwright-install --output-directory .ci-timings/browser -- pnpm exec playwright install --with-deps chromium
-
-      - name: Run complete Playwright regression
-        env:
-          PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY: .ci-playwright-timings
-        run: node scripts/ci-timing.mjs run --id playwright-e2e --output-directory .ci-timings/browser -- pnpm test:e2e
-
-      - name: Summarize Playwright suite timings
-        if: always()
         run: >-
-          node scripts/playwright-ci.mjs summarize
-          --input-directory .ci-playwright-timings
-          --output .ci-evidence/playwright-suite-timing-summary.json
+          node scripts/ci-timing.mjs run
+          --id install
+          --output-directory .ci-timings/browser-${{ matrix.groupId }}
+          -- pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: >-
+          node scripts/ci-timing.mjs run
+          --id playwright-install
+          --output-directory .ci-timings/browser-${{ matrix.groupId }}
+          -- pnpm exec playwright install --with-deps chromium
+      - name: Run locked Playwright group
+        run: >-
+          node scripts/ci-timing.mjs run
+          --id playwright-e2e
+          --output-directory .ci-timings/browser-${{ matrix.groupId }}
+          -- node scripts/playwright-ci.mjs run-group
+          --group-id ${{ matrix.groupId }}
+          --output-directory .ci-playwright-groups
+      - name: Summarize browser group timings
+        if: ${{ always() && !cancelled() }}
+        run: >-
+          node scripts/ci-timing.mjs summarize
+          --profile browser
+          --input-directory .ci-timings/browser-${{ matrix.groupId }}
+          --output .ci-playwright-groups/${{ matrix.groupId }}/ci-browser-summary.json
           --job-status ${{ job.status }}
-
-      - name: Plan future Playwright execution groups
-        if: success()
-        run: >-
-          node scripts/playwright-ci.mjs plan
-          --summary .ci-evidence/playwright-suite-timing-summary.json
-          --output .ci-evidence/playwright-balanced-group-plan.json
-
-      - name: Upload Playwright suite timing evidence
-        if: always()
+      - name: Upload browser group evidence
+        if: ${{ always() && !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-suite-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-group-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.groupId }}
           path: |
-            .ci-playwright-timings
-            .ci-evidence/playwright-suite-timing-summary.json
-            .ci-evidence/playwright-balanced-group-plan.json
-          include-hidden-files: true
+            .ci-playwright-groups/${{ matrix.groupId }}/manifest.json
+            .ci-playwright-groups/${{ matrix.groupId }}/timings
+            .ci-playwright-groups/${{ matrix.groupId }}/ci-browser-summary.json
           if-no-files-found: error
           retention-days: 14
-
-      - name: Summarize browser timings
-        if: always()
-        run: node scripts/ci-timing.mjs summarize --profile browser --input-directory .ci-timings/browser --output .ci-evidence/browser-summary.json --job-status "${{ job.status }}"
-
-      - name: Upload browser timing evidence
-        if: always()
+      - name: Upload browser blob reports
+        if: ${{ always() && !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ci-timings-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-group-blobs-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.groupId }}
+          path: .ci-playwright-groups/${{ matrix.groupId }}/blobs
+          if-no-files-found: warn
+          retention-days: 3
+
+  browser-report:
+    name: Browser merged report
+    needs:
+      - browser-plan
+      - browser-regression
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download browser group evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-group-evidence-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: .ci-matrix-input/evidence
+          merge-multiple: false
+      - name: Download browser blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-group-blobs-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: .ci-matrix-input/blobs
+          merge-multiple: false
+      - name: Validate complete matrix artifacts
+        run: >-
+          node scripts/playwright-ci.mjs validate-group-artifacts
+          --evidence-directory .ci-matrix-input/evidence
+          --blob-directory .ci-matrix-input/blobs
+          --blob-output-directory .ci-merged-blobs
+          --artifact-run-id ${{ github.run_id }}
+          --artifact-run-attempt ${{ github.run_attempt }}
+          --output .ci-evidence/playwright-matrix-validation.json
+      - name: Merge Playwright blob reports
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_HTML_OUTPUT_DIR: .ci-playwright-report
+        run: pnpm exec playwright merge-reports --reporter=html .ci-merged-blobs
+      - name: Summarize browser matrix timings
+        run: >-
+          node scripts/playwright-ci.mjs summarize-matrix
+          --validation .ci-evidence/playwright-matrix-validation.json
+          --output .ci-evidence/playwright-matrix-timing-summary.json
+          --merge-result success
+      - name: Upload browser matrix evidence
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-matrix-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            .ci-timings/browser
-            .ci-evidence/browser-summary.json
-          include-hidden-files: true
+            .ci-evidence/playwright-matrix-validation.json
+            .ci-evidence/playwright-matrix-timing-summary.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload merged Playwright report
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-merged-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-playwright-report
           if-no-files-found: warn
           retention-days: 14
 
   validate:
-    runs-on: ubuntu-latest
-    if: always()
     needs:
       - static-checks
       - vitest
       - production-build
+      - browser-plan
       - browser-regression
+      - browser-report
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
     steps:
-      - name: Aggregate required CI results
-        env:
-          STATIC_CHECKS_RESULT: ${{ needs.static-checks.result }}
-          VITEST_RESULT: ${{ needs.vitest.result }}
-          PRODUCTION_BUILD_RESULT: ${{ needs.production-build.result }}
-          BROWSER_REGRESSION_RESULT: ${{ needs.browser-regression.result }}
+      - name: Require every validation job
         run: |
-          decision=PASS
-          for result in "$STATIC_CHECKS_RESULT" "$VITEST_RESULT" "$PRODUCTION_BUILD_RESULT" "$BROWSER_REGRESSION_RESULT"; do
-            if [ "$result" != "success" ]; then
-              decision=FAIL
-            fi
-          done
-          {
-            printf '## CI validation\n\n'
-            printf '| Required job | Result |\n'
-            printf '| --- | --- |\n'
-            printf '| static-checks | `%s` |\n' "$STATIC_CHECKS_RESULT"
-            printf '| vitest | `%s` |\n' "$VITEST_RESULT"
-            printf '| production-build | `%s` |\n' "$PRODUCTION_BUILD_RESULT"
-            printf '| browser-regression | `%s` |\n\n' "$BROWSER_REGRESSION_RESULT"
-            printf 'Final decision: **%s**\n' "$decision"
-          } >> "$GITHUB_STEP_SUMMARY"
-          test "$decision" = "PASS"
+          test "${{ needs.static-checks.result }}" = "success"
+          test "${{ needs.vitest.result }}" = "success"
+          test "${{ needs.production-build.result }}" = "success"
+          test "${{ needs.browser-plan.result }}" = "success"
+          test "${{ needs.browser-regression.result }}" = "success"
+          test "${{ needs.browser-report.result }}" = "success"

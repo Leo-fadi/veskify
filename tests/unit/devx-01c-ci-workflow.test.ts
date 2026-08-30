@@ -8,6 +8,9 @@ import { describe, expect, it } from "vitest";
 const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
 const workflow = readFileSync(`${repositoryRoot}/.github/workflows/ci.yml`, "utf8");
 const packageJson: unknown = JSON.parse(readFileSync(`${repositoryRoot}/package.json`, "utf8"));
+const executionPlan = JSON.parse(
+  readFileSync(`${repositoryRoot}/scripts/playwright-ci-execution-plan.v1.json`, "utf8"),
+) as { groups: Array<{ entries: Array<{ suiteId: string }> }> };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
@@ -18,7 +21,7 @@ const objectValue = (value: unknown) => {
 const scripts = objectValue(objectValue(packageJson)["scripts"]);
 const count = (source: string, value: string) => source.split(value).length - 1;
 
-const validationCommands = [
+const retainedCommands = [
   "pnpm typecheck",
   "pnpm lint",
   "pnpm format:check",
@@ -26,7 +29,6 @@ const validationCommands = [
   "pnpm build:webpack",
   "pnpm build:check:storefront-budgets",
   "pnpm exec playwright install --with-deps chromium",
-  "pnpm test:e2e",
 ];
 
 describe("DEVX-01C retained CI authority", () => {
@@ -39,9 +41,9 @@ describe("DEVX-01C retained CI authority", () => {
     expect(count(workflow, "cancel-in-progress:")).toBe(1);
   });
 
-  it("retains every validation command exactly once and isolated installs four times", () => {
-    for (const command of validationCommands) expect(count(workflow, `-- ${command}`)).toBe(1);
-    expect(count(workflow, "-- pnpm install --frozen-lockfile")).toBe(4);
+  it("retains every non-browser validation command once and isolates dependency installation", () => {
+    for (const command of retainedCommands) expect(count(workflow, command)).toBe(1);
+    expect(count(workflow, "pnpm install --frozen-lockfile")).toBe(5);
     expect(workflow).not.toContain("continue-on-error:");
   });
 
@@ -64,21 +66,22 @@ describe("DEVX-01C retained CI authority", () => {
     expect(cacheStart).toBeLessThan(workflow.indexOf("--id webpack-build"));
   });
 
-  it("retains Webpack, budgets and the complete twelve-configuration browser command", () => {
+  it("retains Webpack, budgets and complete canonical Playwright coverage", () => {
     expect(workflow.indexOf("--id storefront-budgets")).toBeGreaterThan(
       workflow.indexOf("--id webpack-build"),
     );
-    const expectedE2e =
-      "playwright test && playwright test -c playwright.p10a-08c-01.config.ts && playwright test -c playwright.p10a-04c.config.ts && playwright test -c playwright.p10a-08d-02.config.ts && playwright test -c playwright.p10b-08.config.ts && playwright test -c playwright.p10b-09.config.ts && playwright test -c playwright.p10b-11.config.ts && playwright test -c playwright.p10b-13.config.ts && playwright test -c playwright.p10b-16p-03.config.ts && playwright test -c playwright.p10b-16p-06.config.ts && playwright test -c playwright.p10b-17.config.ts && playwright test -c playwright.p10b-18a.config.ts";
     expect(scripts["test:e2e"]).toBe("node scripts/playwright-ci.mjs run-all");
-    expect(expectedE2e.split(" && ")).toHaveLength(12);
-    expect(workflow).toContain(
-      "--id playwright-e2e --output-directory .ci-timings/browser -- pnpm test:e2e",
+    const planned = executionPlan.groups.flatMap(({ entries }) =>
+      entries.map(({ suiteId }) => suiteId),
     );
+    expect(planned).toHaveLength(12);
+    expect(new Set(planned).size).toBe(12);
+    expect(workflow).toContain("--id playwright-e2e");
+    expect(workflow).toContain("-- node scripts/playwright-ci.mjs run-group");
   });
 
-  it("retains bounded always-run summaries and artifacts for every execution profile", () => {
-    for (const profile of ["static", "vitest", "build", "browser"]) {
+  it("retains bounded timing artifacts and extends browser evidence without raw output", () => {
+    for (const profile of ["static", "vitest", "build"]) {
       expect(workflow).toContain(`summarize --profile ${profile}`);
       expect(workflow).toContain(
         `name: ci-timings-${profile}-\${{ github.run_id }}-\${{ github.run_attempt }}`,
@@ -86,10 +89,14 @@ describe("DEVX-01C retained CI authority", () => {
       expect(workflow).toContain(`.ci-timings/${profile}`);
       expect(workflow).toContain(`.ci-evidence/${profile}-summary.json`);
     }
-    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(5);
-    expect(count(workflow, "include-hidden-files: true")).toBe(5);
-    expect(count(workflow, "if-no-files-found: warn")).toBe(4);
+    expect(workflow).toMatch(/ci-timing\.mjs summarize\s+--profile browser/u);
+    expect(workflow).toContain("playwright-group-evidence-${{ github.run_id }}");
+    expect(workflow).toContain("playwright-matrix-evidence-${{ github.run_id }}");
+    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(7);
+    expect(count(workflow, "include-hidden-files: true")).toBe(3);
+    expect(count(workflow, "if-no-files-found: warn")).toBe(6);
     expect(count(workflow, "if-no-files-found: error")).toBe(1);
-    expect(count(workflow, "retention-days: 14")).toBe(5);
+    expect(count(workflow, "retention-days: 14")).toBe(6);
+    expect(count(workflow, "retention-days: 3")).toBe(1);
   });
 });
