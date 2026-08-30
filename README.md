@@ -16,8 +16,8 @@ accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Paren
 Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate and
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
-DEVX-01A, DEVX-01B and DEVX-01C are the contract, mechanical-verification and CI-observability
-Baseline; DEVX-01D is the exact next engineering task.
+DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel
+CI Baseline; DEVX-01E is the exact next engineering task.
 P10B-19A remains the next product-development sprint
 after DEVX-01, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
@@ -249,9 +249,12 @@ The implementing agent's tests cannot be the sole acceptance evidence. Independe
 the one automatic GitHub Codex review, CI and product-owner visual/commercial approval remain
 separate gates. DEVX-01B supplies mechanical contract and verdict enforcement, and DEVX-01C adds
 safe timing evidence, same-PR/ref cancellation and compatible `.next/cache` reuse without changing
-the serial `validate` gate. DEVX-01D is the exact next engineering task.
+the measured serial `validate` gate. DEVX-01D splits that work into four independent execution
+jobs behind the stable fail-closed `validate` authority. DEVX-01E is the exact next engineering
+task.
 
-CI command timings are written as bounded JSON under `.ci-timings`, summarized under
-`.ci-evidence`, appended to the GitHub Step Summary and uploaded for 14 days. These runtime
-artifacts stay outside Git. The first DEVX-01C run provides measurement authority, not a standalone
-performance claim; job splitting and Playwright grouping remain DEVX-01D and DEVX-01E work.
+CI command timings are written as bounded JSON under profile-specific `.ci-timings` directories,
+summarized under `.ci-evidence`, appended to each execution job's GitHub Step Summary and uploaded
+as four separate 14-day artifacts. These runtime artifacts stay outside Git. The first DEVX-01C
+run provides the serial measurement authority; DEVX-01D parallel timings remain run evidence, not
+the final performance claim. Playwright grouping and sharding remain DEVX-01E and DEVX-01F work.

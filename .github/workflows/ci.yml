@@ -8,53 +8,212 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  static-checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
-      - uses: actions/setup-node@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+
       - name: Install dependencies
-        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings -- pnpm install --frozen-lockfile
+        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings/static -- pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: node scripts/ci-timing.mjs run --id typecheck --output-directory .ci-timings/static -- pnpm typecheck
+
+      - name: Lint
+        run: node scripts/ci-timing.mjs run --id lint --output-directory .ci-timings/static -- pnpm lint
+
+      - name: Check formatting
+        run: node scripts/ci-timing.mjs run --id format-check --output-directory .ci-timings/static -- pnpm format:check
+
+      - name: Summarize static timings
+        if: always()
+        run: node scripts/ci-timing.mjs summarize --profile static --input-directory .ci-timings/static --output .ci-evidence/static-summary.json --job-status "${{ job.status }}"
+
+      - name: Upload static timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-timings-static-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-timings/static
+            .ci-evidence/static-summary.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
+  vitest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings/vitest -- pnpm install --frozen-lockfile
+
+      - name: Run complete one-worker Vitest
+        run: node scripts/ci-timing.mjs run --id vitest --output-directory .ci-timings/vitest -- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
+
+      - name: Summarize Vitest timings
+        if: always()
+        run: node scripts/ci-timing.mjs summarize --profile vitest --input-directory .ci-timings/vitest --output .ci-evidence/vitest-summary.json --job-status "${{ job.status }}"
+
+      - name: Upload Vitest timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-timings-vitest-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-timings/vitest
+            .ci-evidence/vitest-summary.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
+  production-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings/build -- pnpm install --frozen-lockfile
+
       - name: Restore Next.js incremental cache
         uses: actions/cache@v4
         with:
           path: .next/cache
-          key: ${{ runner.os }}-node-24-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-next-${{ hashFiles('next.config.ts', 'postcss.config.mjs', 'tsconfig.json', 'src/**', 'public/**') }}
+          key: next-cache-${{ runner.os }}-node-24-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-${{ hashFiles('next.config.ts', 'postcss.config.mjs', 'tsconfig.json', 'src/**', 'public/**') }}
           restore-keys: |
-            ${{ runner.os }}-node-24-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-next-
-      - name: Typecheck
-        run: node scripts/ci-timing.mjs run --id typecheck --output-directory .ci-timings -- pnpm typecheck
-      - name: Lint
-        run: node scripts/ci-timing.mjs run --id lint --output-directory .ci-timings -- pnpm lint
-      - name: Check formatting
-        run: node scripts/ci-timing.mjs run --id format-check --output-directory .ci-timings -- pnpm format:check
-      - name: Run Vitest without cross-file contention
-        run: node scripts/ci-timing.mjs run --id vitest --output-directory .ci-timings -- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
-      - name: Production build (Webpack)
-        run: node scripts/ci-timing.mjs run --id webpack-build --output-directory .ci-timings -- pnpm build:webpack
-      - name: Storefront first-load budgets
-        run: node scripts/ci-timing.mjs run --id storefront-budgets --output-directory .ci-timings -- pnpm build:check:storefront-budgets
-      - name: Install Playwright Chromium
-        run: node scripts/ci-timing.mjs run --id playwright-install --output-directory .ci-timings -- pnpm exec playwright install --with-deps chromium
-      - name: Run complete Playwright suite
-        run: node scripts/ci-timing.mjs run --id playwright-e2e --output-directory .ci-timings -- pnpm test:e2e
-      - name: Summarize CI timings
+            next-cache-${{ runner.os }}-node-24-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}-
+
+      - name: Build production storefront
+        run: node scripts/ci-timing.mjs run --id webpack-build --output-directory .ci-timings/build -- pnpm build:webpack
+
+      - name: Check storefront budgets
+        run: node scripts/ci-timing.mjs run --id storefront-budgets --output-directory .ci-timings/build -- pnpm build:check:storefront-budgets
+
+      - name: Summarize production-build timings
         if: always()
-        run: node scripts/ci-timing.mjs summarize --input-directory .ci-timings --output .ci-evidence/ci-timing-summary.json --job-status "${{ job.status }}"
-      - name: Upload CI timing evidence
+        run: node scripts/ci-timing.mjs summarize --profile build --input-directory .ci-timings/build --output .ci-evidence/build-summary.json --job-status "${{ job.status }}"
+
+      - name: Upload production-build timing evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-timings-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            .ci-timings
-            .ci-evidence/ci-timing-summary.json
+            .ci-timings/build
+            .ci-evidence/build-summary.json
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
+
+  browser-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings/browser -- pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: node scripts/ci-timing.mjs run --id playwright-install --output-directory .ci-timings/browser -- pnpm exec playwright install --with-deps chromium
+
+      - name: Run complete Playwright regression
+        run: node scripts/ci-timing.mjs run --id playwright-e2e --output-directory .ci-timings/browser -- pnpm test:e2e
+
+      - name: Summarize browser timings
+        if: always()
+        run: node scripts/ci-timing.mjs summarize --profile browser --input-directory .ci-timings/browser --output .ci-evidence/browser-summary.json --job-status "${{ job.status }}"
+
+      - name: Upload browser timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-timings-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-timings/browser
+            .ci-evidence/browser-summary.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
+  validate:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - static-checks
+      - vitest
+      - production-build
+      - browser-regression
+    steps:
+      - name: Aggregate required CI results
+        env:
+          STATIC_CHECKS_RESULT: ${{ needs.static-checks.result }}
+          VITEST_RESULT: ${{ needs.vitest.result }}
+          PRODUCTION_BUILD_RESULT: ${{ needs.production-build.result }}
+          BROWSER_REGRESSION_RESULT: ${{ needs.browser-regression.result }}
+        run: |
+          decision=PASS
+          for result in "$STATIC_CHECKS_RESULT" "$VITEST_RESULT" "$PRODUCTION_BUILD_RESULT" "$BROWSER_REGRESSION_RESULT"; do
+            if [ "$result" != "success" ]; then
+              decision=FAIL
+            fi
+          done
+          {
+            printf '## CI validation\n\n'
+            printf '| Required job | Result |\n'
+            printf '| --- | --- |\n'
+            printf '| static-checks | `%s` |\n' "$STATIC_CHECKS_RESULT"
+            printf '| vitest | `%s` |\n' "$VITEST_RESULT"
+            printf '| production-build | `%s` |\n' "$PRODUCTION_BUILD_RESULT"
+            printf '| browser-regression | `%s` |\n\n' "$BROWSER_REGRESSION_RESULT"
+            printf 'Final decision: **%s**\n' "$decision"
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$decision" = "PASS"

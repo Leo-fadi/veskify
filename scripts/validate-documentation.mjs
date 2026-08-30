@@ -103,6 +103,13 @@ const requireText = (relativePath, required) => {
   }
 };
 
+const rejectText = (relativePath, rejected) => {
+  const markdown = contents.get(relativePath);
+  for (const text of rejected) {
+    if (markdown.includes(text)) failures.push(`${relativePath}: contains rejected text: ${text}`);
+  }
+};
+
 const phaseOrder = [
   "P10A — Grounded orchestration and publishing closure",
   "P10B — Commercial Storefront Generation System v1",
@@ -136,8 +143,8 @@ requireText("README.md", [
   "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "Canonical `/search` execution is Baseline",
   "P10B-19 PRE is Baseline",
-  "DEVX-01A, DEVX-01B and DEVX-01C are the contract, mechanical-verification and CI-observability",
-  "DEVX-01D is the exact next engineering task",
+  "DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel",
+  "DEVX-01E is the exact next engineering task",
   "P10B-19A remains the next product-development sprint\nafter DEVX-01",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
@@ -181,7 +188,7 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "DEVX-01A, DEVX-01B and DEVX-01C are Baseline. DEVX-01D is the exact next engineering task",
+  "DEVX-01A through DEVX-01D are Baseline. DEVX-01E is the exact next engineering task",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
@@ -314,8 +321,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "### P10B-19A planned micro-pull-request map",
   "### DEVX-01 engineering-enablement sprint",
   "explicitly approved this ten-child delivery decomposition in the immutable\nDEVX-01A contract",
-  "DEVX-01A, DEVX-01B and DEVX-01C are Baseline",
-  "DEVX-01D is the exact next engineering task",
+  "DEVX-01A through DEVX-01D are Baseline",
+  "DEVX-01E is the exact next engineering task",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -340,9 +347,15 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "DEVX-01A - Sprint contract and independent verification protocol",
   "DEVX-01B - Mechanical contract and verifier-verdict enforcement",
   "DEVX-01C - CI timings, obsolete-run cancellation and Next build caching",
-  "DEVX-01D - Parallel static, Vitest and production-build jobs",
+  "- [x] DEVX-01D - Parallel static, Vitest and production-build jobs",
+  "- [ ] DEVX-01E - Playwright timing inventory and balanced execution groups (**exact next engineering task**)",
   "P10B-19A is the next product-development sprint after DEVX-01",
   "#### P10B-19A planned micro-pull-request map",
+]);
+
+rejectText("docs/DEVELOPMENT_GUIDE.md", ["DEVX-01D is the exact next engineering task"]);
+rejectText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
+  "- [ ] DEVX-01D - Parallel static, Vitest and production-build jobs (**exact next engineering task**)",
 ]);
 
 requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
