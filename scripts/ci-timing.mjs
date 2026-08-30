@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { constants as osConstants } from "node:os";
 import {
-  appendFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -11,71 +10,73 @@ import {
   readdirSync,
   renameSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
-import { constants as osConstants } from "node:os";
 import path from "node:path";
+import process from "node:process";
 
 const SCHEMA_VERSION = "1.0.0";
 const RECORD_TYPE = "ci-command-timing";
 const SUMMARY_TYPE = "ci-timing-summary";
-const MAX_RECORD_BYTES = 16 * 1024;
-const MAX_DURATION_MS = 24 * 60 * 60 * 1000;
+const EXIT_USAGE = 64;
+const EXIT_DATA = 65;
+const EXIT_IO = 74;
+const MAX_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 const SIGNAL_GRACE_MS = 5_000;
-const STEP_ID_PATTERN = /^[a-z][a-z0-9-]{0,63}$/u;
-const SIGNAL_PATTERN = /^SIG[A-Z0-9]+$/u;
-const ISO_UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
-
-const EXPECTED_STEP_IDS = [
-  "install",
-  "typecheck",
-  "lint",
-  "format-check",
-  "vitest",
-  "webpack-build",
-  "storefront-budgets",
-  "playwright-install",
-  "playwright-e2e",
+const PROFILE_STEP_IDS = Object.freeze({
+  serial: Object.freeze([
+    "install",
+    "typecheck",
+    "lint",
+    "format-check",
+    "vitest",
+    "webpack-build",
+    "storefront-budgets",
+    "playwright-install",
+    "playwright-e2e",
+  ]),
+  static: Object.freeze(["install", "typecheck", "lint", "format-check"]),
+  vitest: Object.freeze(["install", "vitest"]),
+  build: Object.freeze(["install", "webpack-build", "storefront-budgets"]),
+  browser: Object.freeze(["install", "playwright-install", "playwright-e2e"]),
+});
+const ALL_STEP_IDS = new Set(Object.values(PROFILE_STEP_IDS).flat());
+const RECORD_KEYS = [
+  "completedAtUtc",
+  "durationMs",
+  "exitCode",
+  "recordType",
+  "schemaVersion",
+  "signal",
+  "startedAtUtc",
+  "status",
+  "stepId",
 ];
 
-class CiTimingError extends Error {
-  constructor(code, message, exitCode = 64) {
+class TimingError extends Error {
+  constructor(message, exitCode) {
     super(message);
-    this.name = "CiTimingError";
-    this.code = code;
     this.exitCode = exitCode;
   }
 }
 
-const fail = (code, message, exitCode) => {
-  throw new CiTimingError(code, message, exitCode);
+const fail = (message, exitCode = EXIT_DATA) => {
+  throw new TimingError(message, exitCode);
 };
 
-const stableValue = (value) => {
-  if (Array.isArray(value)) return value.map(stableValue);
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.keys(value)
-        .sort()
-        .map((key) => [key, stableValue(value[key])]),
-    );
-  }
-  return value;
-};
+const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const compareCodeUnits = (left, right) => (left < right ? -1 : left > right ? 1 : 0);
+const jsonText = (value) => `${JSON.stringify(value, null, 2)}\n`;
 
-const stableJson = (value) => `${JSON.stringify(stableValue(value), null, 2)}\n`;
-
-const assertSafeRelativePath = (value, label) => {
+const resolveRelativePath = (value, label) => {
   if (
     typeof value !== "string" ||
     value.length === 0 ||
-    value.length > 256 ||
     value.includes("\0") ||
     value.includes("\\") ||
     path.posix.isAbsolute(value)
   ) {
-    fail("path-invalid", `${label} must be a bounded repository-relative POSIX path.`);
+    fail(`${label} must be a safe repository-relative path.`, EXIT_USAGE);
   }
   const normalized = path.posix.normalize(value);
   if (
@@ -84,183 +85,184 @@ const assertSafeRelativePath = (value, label) => {
     normalized === ".." ||
     normalized.startsWith("../")
   ) {
-    fail("path-traversal", `${label} must not traverse outside the working directory.`);
+    fail(`${label} must not traverse outside the working directory.`, EXIT_USAGE);
   }
-  return path.resolve(process.cwd(), ...value.split("/"));
+  const absolute = path.resolve(process.cwd(), value);
+  const relative = path.relative(process.cwd(), absolute);
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    fail(`${label} must remain inside the working directory.`, EXIT_USAGE);
+  }
+  return absolute;
 };
 
-const assertStepId = (value, exitCode = 64) => {
-  if (typeof value !== "string" || !STEP_ID_PATTERN.test(value)) {
-    fail("step-id-invalid", "Step IDs must be stable lowercase kebab-case identifiers.", exitCode);
-  }
-  return value;
-};
-
-const assertPlainDirectory = (absolutePath, label) => {
-  mkdirSync(absolutePath, { recursive: true });
-  const stats = lstatSync(absolutePath);
-  if (!stats.isDirectory() || stats.isSymbolicLink()) {
-    fail("directory-invalid", `${label} must be a real directory.`, 65);
-  }
-};
-
-const assertReplaceableFile = (absolutePath) => {
-  if (!existsSync(absolutePath)) return;
-  const stats = lstatSync(absolutePath);
-  if (!stats.isFile() || stats.isSymbolicLink()) {
-    fail("output-invalid", "Refusing to replace a non-regular or symbolic-link output.", 65);
-  }
-};
-
-const writeJsonAtomically = (absolutePath, value) => {
-  const directory = path.dirname(absolutePath);
-  assertPlainDirectory(directory, "Output parent");
-  assertReplaceableFile(absolutePath);
-  const temporaryPath = path.join(
-    directory,
-    `.${path.basename(absolutePath)}.${process.pid}.${randomUUID()}.tmp`,
-  );
+const pathExists = (absolutePath) => {
   try {
-    writeFileSync(temporaryPath, stableJson(value), { flag: "wx", mode: 0o600 });
-    renameSync(temporaryPath, absolutePath);
-  } finally {
-    rmSync(temporaryPath, { force: true });
+    lstatSync(absolutePath);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
   }
 };
 
-const parseNamedOptions = (values, allowedNames) => {
-  const options = new Map();
-  for (let index = 0; index < values.length; index += 2) {
-    const name = values[index];
-    const value = values[index + 1];
-    if (!allowedNames.has(name)) fail("usage", `Unknown option ${name ?? "<missing>"}.`);
-    if (value === undefined || value.startsWith("--")) {
-      fail("usage", `Missing value for ${name}.`);
+const assertPlainDirectory = (absolutePath, label, create) => {
+  const relative = path.relative(process.cwd(), absolutePath);
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    fail(`${label} must remain inside the working directory.`, EXIT_USAGE);
+  }
+  let current = process.cwd();
+  for (const segment of relative.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    if (!pathExists(current)) {
+      if (!create) fail(`${label} does not exist.`);
+      mkdirSync(current, { mode: 0o700 });
     }
-    if (options.has(name)) fail("usage", `Duplicate option ${name}.`);
-    options.set(name, value);
-  }
-  return options;
-};
-
-const requireOptions = (options, names) => {
-  for (const name of names) {
-    if (!options.has(name)) fail("usage", `Missing required option ${name}.`);
+    const stats = lstatSync(current);
+    if (!stats.isDirectory() || stats.isSymbolicLink()) {
+      fail(`${label} must use only real directories.`);
+    }
   }
 };
 
-const parseRunArguments = (values) => {
-  const separatorIndex = values.indexOf("--");
-  if (separatorIndex < 0) fail("usage", "Timed execution requires a -- command separator.");
-  const options = parseNamedOptions(
-    values.slice(0, separatorIndex),
+const parsePairs = (arguments_, allowed) => {
+  const values = new Map();
+  for (let index = 0; index < arguments_.length; index += 2) {
+    const key = arguments_[index];
+    const value = arguments_[index + 1];
+    if (!allowed.has(key) || value === undefined || values.has(key)) {
+      fail("Invalid or duplicate command option.", EXIT_USAGE);
+    }
+    values.set(key, value);
+  }
+  return values;
+};
+
+const parseRunArguments = (arguments_) => {
+  const separator = arguments_.indexOf("--");
+  if (separator < 0 || separator === arguments_.length - 1) {
+    fail("Timed execution requires a child command after --.", EXIT_USAGE);
+  }
+  const options = parsePairs(
+    arguments_.slice(0, separator),
     new Set(["--id", "--output-directory"]),
   );
-  requireOptions(options, ["--id", "--output-directory"]);
-  const command = values.slice(separatorIndex + 1);
-  if (command.length === 0 || command.length > 256) {
-    fail("usage", "Timed execution requires one bounded child command.");
+  const stepId = options.get("--id");
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(stepId ?? "") || !ALL_STEP_IDS.has(stepId)) {
+    fail("Unknown or invalid stable step ID.", EXIT_USAGE);
   }
-  for (const argument of command) {
-    if (argument.length === 0 || argument.length > 32_768 || argument.includes("\0")) {
-      fail("usage", "Child command arguments must be non-empty bounded strings.");
-    }
-  }
-  return {
-    stepId: assertStepId(options.get("--id")),
-    outputDirectory: options.get("--output-directory"),
-    command,
-  };
-};
-
-const parseSummaryArguments = (values) => {
-  const options = parseNamedOptions(
-    values,
-    new Set(["--input-directory", "--output", "--job-status"]),
+  const outputDirectory = resolveRelativePath(
+    options.get("--output-directory"),
+    "Output directory",
   );
-  requireOptions(options, ["--input-directory", "--output", "--job-status"]);
-  const jobStatus = options.get("--job-status");
-  if (!["success", "failure", "cancelled"].includes(jobStatus)) {
-    fail("usage", "Job status must be success, failure or cancelled.");
-  }
   return {
-    inputDirectory: options.get("--input-directory"),
-    output: options.get("--output"),
-    jobStatus,
+    stepId,
+    outputDirectory,
+    command: arguments_[separator + 1],
+    args: arguments_.slice(separator + 2),
   };
 };
 
-const signalExitCode = (signal) => 128 + (osConstants.signals[signal] ?? 1);
+const parseSummaryArguments = (arguments_) => {
+  const options = parsePairs(
+    arguments_,
+    new Set(["--profile", "--input-directory", "--output", "--job-status"]),
+  );
+  const profile = options.get("--profile") ?? "serial";
+  if (!Object.hasOwn(PROFILE_STEP_IDS, profile)) {
+    fail("Unknown timing profile.", EXIT_USAGE);
+  }
+  const jobStatus = options.get("--job-status");
+  if (!new Set(["success", "failure", "cancelled"]).has(jobStatus)) {
+    fail("Job status must be success, failure or cancelled.", EXIT_USAGE);
+  }
+  const inputDirectory = resolveRelativePath(options.get("--input-directory"), "Input directory");
+  const output = resolveRelativePath(options.get("--output"), "Summary output");
+  const outputRelativeToInput = path.relative(inputDirectory, output);
+  if (
+    outputRelativeToInput === "" ||
+    (!outputRelativeToInput.startsWith(`..${path.sep}`) && outputRelativeToInput !== "..")
+  ) {
+    fail("Summary output must remain outside the timing-record directory.", EXIT_USAGE);
+  }
+  return { profile, expectedStepIds: PROFILE_STEP_IDS[profile], inputDirectory, output, jobStatus };
+};
+
+const writeAtomic = (output, value) => {
+  if (pathExists(output)) fail("Refusing to replace existing timing evidence.");
+  assertPlainDirectory(path.dirname(output), "Output parent", true);
+  const temporary = path.join(path.dirname(output), `.${path.basename(output)}.${process.pid}.tmp`);
+  try {
+    writeFileSync(temporary, jsonText(value), { flag: "wx", mode: 0o600 });
+    renameSync(temporary, output);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+};
+
+const signalExitCode = (signal) => 128 + (osConstants.signals[signal] ?? 0);
 
 const killChildGroup = (child, signal, detached) => {
   try {
-    if (detached && child.pid !== undefined) {
-      process.kill(-child.pid, signal);
-    } else {
-      child.kill(signal);
-    }
+    if (detached && child.pid !== undefined) process.kill(-child.pid, signal);
+    else child.kill(signal);
   } catch (error) {
     if (error?.code !== "ESRCH") throw error;
   }
 };
 
-const runTimedCommand = async ({ stepId, outputDirectory, command }) => {
-  const directory = assertSafeRelativePath(outputDirectory, "Output directory");
-  assertPlainDirectory(directory, "Output directory");
-  const recordPath = path.join(directory, `${stepId}.json`);
-  if (existsSync(recordPath)) {
-    fail("record-exists", `Timing record already exists for ${stepId}.`, 65);
-  }
+const executeTimedCommand = async ({ stepId, outputDirectory, command, args }) => {
+  const output = path.join(outputDirectory, `${stepId}.json`);
+  if (pathExists(output)) fail("A timing record already exists for this step.");
+  assertPlainDirectory(outputDirectory, "Output directory", true);
 
   const startedAtUtc = new Date().toISOString();
-  const monotonicStart = process.hrtime.bigint();
+  const started = process.hrtime.bigint();
   const detached = process.platform !== "win32";
-  const child = spawn(command[0], command.slice(1), {
-    detached,
-    shell: false,
-    stdio: "inherit",
-  });
   let spawnFailed = false;
   let forwardedSignal = null;
-  let forceKillTimer;
-
+  const child = spawn(command, args, {
+    detached,
+    stdio: "inherit",
+    shell: false,
+    env: process.env,
+  });
+  let forceTimer;
   child.once("error", () => {
     spawnFailed = true;
   });
-
   const signalHandlers = new Map();
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT"]) {
     const handler = () => {
       if (forwardedSignal !== null) return;
       forwardedSignal = signal;
       killChildGroup(child, signal, detached);
-      forceKillTimer = setTimeout(
-        () => killChildGroup(child, "SIGKILL", detached),
-        SIGNAL_GRACE_MS,
-      );
-      forceKillTimer.unref();
+      forceTimer = setTimeout(() => killChildGroup(child, "SIGKILL", detached), SIGNAL_GRACE_MS);
+      forceTimer.unref();
     };
     signalHandlers.set(signal, handler);
     process.once(signal, handler);
   }
-
-  const completion = await new Promise((resolveCompletion) => {
-    child.once("close", (code, signal) => resolveCompletion({ code, signal }));
+  const { code, signal } = await new Promise((resolve) => {
+    child.once("close", (closeCode, closeSignal) =>
+      resolve({ code: closeCode, signal: closeSignal }),
+    );
   });
+  if (forceTimer !== undefined) clearTimeout(forceTimer);
+  for (const [registeredSignal, handler] of signalHandlers) {
+    process.removeListener(registeredSignal, handler);
+  }
 
-  if (forceKillTimer !== undefined) clearTimeout(forceKillTimer);
-  for (const [signal, handler] of signalHandlers) process.removeListener(signal, handler);
-
-  const durationMs = Number((process.hrtime.bigint() - monotonicStart) / 1_000_000n);
+  const durationMs = Number((process.hrtime.bigint() - started) / 1_000_000n);
   const completedAtUtc = new Date().toISOString();
-  const effectiveSignal = completion.signal ?? forwardedSignal;
-  const exitCode =
+  const effectiveSignal = signal ?? forwardedSignal;
+  const effectiveCode =
     effectiveSignal === null
-      ? spawnFailed || !Number.isInteger(completion.code) || completion.code < 0
+      ? spawnFailed || !Number.isInteger(code) || code < 0
         ? 127
-        : completion.code
+        : code
       : null;
-  const status = effectiveSignal !== null ? "signaled" : exitCode === 0 ? "success" : "failure";
+  const status =
+    effectiveSignal !== null ? "signaled" : effectiveCode === 0 ? "success" : "failure";
   const record = {
     schemaVersion: SCHEMA_VERSION,
     recordType: RECORD_TYPE,
@@ -269,252 +271,163 @@ const runTimedCommand = async ({ stepId, outputDirectory, command }) => {
     startedAtUtc,
     completedAtUtc,
     durationMs,
-    exitCode,
+    exitCode: effectiveCode,
     signal: effectiveSignal,
   };
-
-  let evidenceWriteFailed = false;
+  const childStatus =
+    effectiveSignal !== null ? signalExitCode(effectiveSignal) : (effectiveCode ?? 1);
   try {
-    writeJsonAtomically(recordPath, record);
-  } catch {
-    evidenceWriteFailed = true;
-    process.stderr.write("ci-timing: evidence-write: Unable to write timing evidence.\n");
+    writeAtomic(output, record);
+  } catch (error) {
+    process.stderr.write(`ci-timing: unable to write timing evidence: ${error.message}\n`);
+    return childStatus === 0 ? EXIT_IO : childStatus;
   }
-
-  const commandExitCode =
-    effectiveSignal !== null ? signalExitCode(effectiveSignal) : (exitCode ?? 1);
-  return commandExitCode !== 0 ? commandExitCode : evidenceWriteFailed ? 74 : 0;
+  return childStatus;
 };
 
-const assertExactKeys = (value, expectedKeys, label) => {
-  const actualKeys = Object.keys(value).sort();
-  const canonicalExpected = [...expectedKeys].sort();
-  if (JSON.stringify(actualKeys) !== JSON.stringify(canonicalExpected)) {
-    fail("record-shape", `${label} has unsupported or missing fields.`, 65);
-  }
-};
-
-const assertUtcTimestamp = (value, label) => {
-  if (typeof value !== "string" || !ISO_UTC_PATTERN.test(value)) {
-    fail("record-timestamp", `${label} must be a bounded UTC timestamp.`, 65);
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.valueOf()) || parsed.toISOString() !== value) {
-    fail("record-timestamp", `${label} is not a canonical UTC timestamp.`, 65);
-  }
-};
+const validUtc = (value) =>
+  typeof value === "string" && value.endsWith("Z") && Number.isFinite(Date.parse(value));
 
 const validateRecord = (value, filename) => {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    fail("record-shape", "Timing record must be an object.", 65);
-  }
-  assertExactKeys(
-    value,
-    [
-      "schemaVersion",
-      "recordType",
-      "stepId",
-      "status",
-      "startedAtUtc",
-      "completedAtUtc",
-      "durationMs",
-      "exitCode",
-      "signal",
-    ],
-    "Timing record",
-  );
-  if (value.schemaVersion !== SCHEMA_VERSION || value.recordType !== RECORD_TYPE) {
-    fail("record-version", "Timing record uses an unsupported identity.", 65);
-  }
-  const stepId = assertStepId(value.stepId, 65);
-  if (filename !== `${stepId}.json` || !EXPECTED_STEP_IDS.includes(stepId)) {
-    fail("record-identity", "Timing record filename or step identity is not declared.", 65);
-  }
-  if (!["success", "failure", "signaled"].includes(value.status)) {
-    fail("record-status", "Timing record status is invalid.", 65);
-  }
-  assertUtcTimestamp(value.startedAtUtc, "Start time");
-  assertUtcTimestamp(value.completedAtUtc, "Completion time");
-  if (Date.parse(value.completedAtUtc) < Date.parse(value.startedAtUtc)) {
-    fail("record-timestamp", "Timing record completion precedes its start.", 65);
+  if (
+    !isObject(value) ||
+    JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(RECORD_KEYS)
+  ) {
+    fail("Timing record contains malformed or unbounded fields.");
   }
   if (
-    !Number.isInteger(value.durationMs) ||
+    value.schemaVersion !== SCHEMA_VERSION ||
+    value.recordType !== RECORD_TYPE ||
+    !ALL_STEP_IDS.has(value.stepId) ||
+    filename !== `${value.stepId}.json` ||
+    !validUtc(value.startedAtUtc) ||
+    !validUtc(value.completedAtUtc) ||
+    !Number.isSafeInteger(value.durationMs) ||
     value.durationMs < 0 ||
     value.durationMs > MAX_DURATION_MS
   ) {
-    fail("record-duration", "Timing record duration is outside the bounded range.", 65);
+    fail("Timing record does not satisfy the bounded contract.");
   }
-  const exitCodeValid =
-    value.exitCode === null ||
-    (Number.isInteger(value.exitCode) && value.exitCode >= 0 && value.exitCode <= 255);
-  const signalValid =
-    value.signal === null ||
-    (typeof value.signal === "string" &&
-      value.signal.length <= 32 &&
-      SIGNAL_PATTERN.test(value.signal));
-  if (!exitCodeValid || !signalValid) {
-    fail("record-termination", "Timing record termination metadata is invalid.", 65);
-  }
-  if (
-    (value.status === "success" && (value.exitCode !== 0 || value.signal !== null)) ||
-    (value.status === "failure" &&
-      (value.exitCode === null || value.exitCode === 0 || value.signal !== null)) ||
-    (value.status === "signaled" && (value.exitCode !== null || value.signal === null))
-  ) {
-    fail("record-consistency", "Timing status and termination metadata disagree.", 65);
-  }
+  const successful = value.status === "success" && value.exitCode === 0 && value.signal === null;
+  const failed =
+    value.status === "failure" &&
+    Number.isInteger(value.exitCode) &&
+    value.exitCode > 0 &&
+    value.signal === null;
+  const signaled =
+    value.status === "signaled" &&
+    value.exitCode === null &&
+    /^[A-Z][A-Z0-9]+$/u.test(value.signal);
+  if (!successful && !failed && !signaled) fail("Timing record status metadata is inconsistent.");
   return value;
 };
 
-const readTimingRecords = (absoluteDirectory, allowMissing) => {
-  if (!existsSync(absoluteDirectory)) {
-    if (allowMissing) return [];
-    fail("records-missing", "Successful jobs require the timing record directory.", 65);
-  }
-  const directoryStats = lstatSync(absoluteDirectory);
-  if (!directoryStats.isDirectory() || directoryStats.isSymbolicLink()) {
-    fail("records-directory", "Timing input must be a real directory.", 65);
-  }
-  const entries = readdirSync(absoluteDirectory, { withFileTypes: true }).sort((left, right) =>
-    left.name.localeCompare(right.name),
-  );
-  const records = [];
-  const ids = new Set();
-  for (const entry of entries) {
+const readRecords = (inputDirectory) => {
+  if (!existsSync(inputDirectory)) return [];
+  assertPlainDirectory(inputDirectory, "Timing input", false);
+  return readdirSync(inputDirectory, { withFileTypes: true }).map((entry) => {
     if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.endsWith(".json")) {
-      fail("record-file", "Timing input contains an unsupported entry.", 65);
+      fail("Timing directory contains an undeclared entry.");
     }
-    const recordPath = path.join(absoluteDirectory, entry.name);
-    if (statSync(recordPath).size > MAX_RECORD_BYTES) {
-      fail("record-size", "Timing record exceeds the bounded size.", 65);
-    }
+    const source = readFileSync(path.join(inputDirectory, entry.name), "utf8");
     let parsed;
     try {
-      parsed = JSON.parse(readFileSync(recordPath, "utf8"));
+      parsed = JSON.parse(source);
     } catch {
-      fail("record-json", "Timing record is not valid JSON.", 65);
+      fail("Timing directory contains malformed JSON.");
     }
-    const record = validateRecord(parsed, entry.name);
-    if (ids.has(record.stepId)) fail("record-duplicate", "Duplicate timing step ID.", 65);
-    ids.add(record.stepId);
-    records.push(record);
+    return validateRecord(parsed, entry.name);
+  });
+};
+
+const orderedRecords = (records, expectedStepIds) => {
+  const position = new Map(expectedStepIds.map((stepId, index) => [stepId, index]));
+  const seen = new Set();
+  for (const record of records) {
+    if (!position.has(record.stepId) || seen.has(record.stepId)) {
+      fail("Timing profile contains an undeclared or duplicate step.");
+    }
+    seen.add(record.stepId);
   }
-  records.sort(
-    (left, right) =>
-      EXPECTED_STEP_IDS.indexOf(left.stepId) - EXPECTED_STEP_IDS.indexOf(right.stepId),
+  const sorted = [...records].sort(
+    (left, right) => position.get(left.stepId) - position.get(right.stepId),
   );
-  return records;
+  if (sorted.some((record, index) => record.stepId !== expectedStepIds[index])) {
+    fail("Timing records do not form the expected profile prefix.");
+  }
+  return sorted;
 };
-
-const validateRecordSequence = (records, jobStatus) => {
-  const actualIds = records.map(({ stepId }) => stepId);
-  const expectedPrefix = EXPECTED_STEP_IDS.slice(0, records.length);
-  if (JSON.stringify(actualIds) !== JSON.stringify(expectedPrefix)) {
-    fail("record-order", "Timing records must form the declared ordered prefix.", 65);
-  }
-  if (records.slice(0, -1).some(({ status }) => status !== "success")) {
-    fail("record-order", "A failed or signaled command must terminate the recorded prefix.", 65);
-  }
-  if (jobStatus === "success") {
-    if (records.length !== EXPECTED_STEP_IDS.length) {
-      fail("records-incomplete", "Successful jobs require every expected timing record.", 65);
-    }
-    if (records.some(({ status }) => status !== "success")) {
-      fail("records-failed", "Successful jobs cannot contain failed timing records.", 65);
-    }
-  }
-};
-
-const formatDuration = (durationMs) => `${(durationMs / 1000).toFixed(3)} s`;
 
 const markdownSummary = (summary) => {
-  const lines = [
-    "## CI command timings",
-    "",
-    `Job status: **${summary.jobStatus}**`,
-    "",
-    "| Step | Status | Duration |",
-    "| --- | --- | ---: |",
-    ...summary.steps.map(
-      ({ stepId, status, durationMs }) =>
-        `| \`${stepId}\` | ${status} | ${formatDuration(durationMs)} |`,
-    ),
-    "",
-    `Measured command total: **${formatDuration(summary.measuredTotalDurationMs)}**`,
-    "",
-  ];
-  return `${lines.join("\n")}\n`;
+  const heading =
+    summary.profile === "serial"
+      ? "## CI command timings"
+      : `## CI command timings: \`${summary.profile}\``;
+  const rows = summary.steps
+    .map(
+      (step) =>
+        `| \`${step.stepId}\` | ${step.status} | ${(step.durationMs / 1000).toFixed(3)} s |`,
+    )
+    .join("\n");
+  return `${heading}\n\n| Step | Status | Duration |\n| --- | --- | ---: |\n${rows}${rows ? "\n" : ""}\nMeasured command total: **${(summary.measuredTotalDurationMs / 1000).toFixed(3)} s**\n\n`;
 };
 
-const appendStepSummary = (markdown) => {
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-  if (!summaryPath) return;
-  if (existsSync(summaryPath)) {
-    const stats = lstatSync(summaryPath);
-    if (!stats.isFile() || stats.isSymbolicLink()) {
-      fail("step-summary-invalid", "GitHub Step Summary target must be a regular file.", 65);
-    }
+const summarize = ({ profile, expectedStepIds, inputDirectory, output, jobStatus }) => {
+  const steps = orderedRecords(readRecords(inputDirectory), expectedStepIds);
+  const allExpected = steps.length === expectedStepIds.length;
+  const complete = allExpected && steps.every(({ status }) => status === "success");
+  if (jobStatus === "success" && !complete) {
+    fail("Successful timing profile is missing complete successful evidence.");
   }
-  appendFileSync(summaryPath, markdown, { encoding: "utf8", mode: 0o600 });
-};
-
-const summarizeTimings = ({ inputDirectory, output, jobStatus }) => {
-  const absoluteInput = assertSafeRelativePath(inputDirectory, "Input directory");
-  const absoluteOutput = assertSafeRelativePath(output, "Summary output");
-  const outputWithinInput = path.relative(absoluteInput, absoluteOutput);
-  if (
-    outputWithinInput === "" ||
-    (!outputWithinInput.startsWith("..") && !path.isAbsolute(outputWithinInput))
-  ) {
-    fail("summary-output-scope", "Summary output must be outside the timing input directory.");
-  }
-  const records = readTimingRecords(absoluteInput, jobStatus !== "success");
-  validateRecordSequence(records, jobStatus);
-  const measuredTotalDurationMs = records.reduce((total, { durationMs }) => total + durationMs, 0);
-  const slowestCompletedSteps = [...records]
+  const measuredTotalDurationMs = steps.reduce((total, step) => total + step.durationMs, 0);
+  const slowestCompletedSteps = [...steps]
     .sort(
       (left, right) =>
-        right.durationMs - left.durationMs ||
-        EXPECTED_STEP_IDS.indexOf(left.stepId) - EXPECTED_STEP_IDS.indexOf(right.stepId),
+        right.durationMs - left.durationMs || compareCodeUnits(left.stepId, right.stepId),
     )
     .slice(0, 3)
-    .map(({ stepId, durationMs }) => ({ stepId, durationMs }));
+    .map(({ stepId, durationMs }) => ({ durationMs, stepId }));
   const summary = {
     schemaVersion: SCHEMA_VERSION,
     recordType: SUMMARY_TYPE,
+    profile,
     jobStatus,
-    complete: records.length === EXPECTED_STEP_IDS.length,
-    expectedStepCount: EXPECTED_STEP_IDS.length,
-    completedStepCount: records.length,
+    complete,
+    expectedStepCount: expectedStepIds.length,
+    completedStepCount: steps.length,
     measuredTotalDurationMs,
-    steps: records,
+    steps,
     slowestCompletedSteps,
   };
-  writeJsonAtomically(absoluteOutput, summary);
-  appendStepSummary(markdownSummary(summary));
+  writeAtomic(output, summary);
+  const stepSummary = process.env.GITHUB_STEP_SUMMARY;
+  if (stepSummary) {
+    if (pathExists(stepSummary)) {
+      const stats = lstatSync(stepSummary);
+      if (!stats.isFile() || stats.isSymbolicLink()) {
+        fail("GitHub Step Summary target must be a regular file.");
+      }
+    }
+    writeFileSync(stepSummary, markdownSummary(summary), { flag: "a", mode: 0o600 });
+  }
 };
 
 const main = async () => {
-  const [subcommand, ...values] = process.argv.slice(2);
-  if (subcommand === "run") {
-    process.exitCode = await runTimedCommand(parseRunArguments(values));
-    return;
+  const [operation, ...arguments_] = process.argv.slice(2);
+  if (operation === "run") return executeTimedCommand(parseRunArguments(arguments_));
+  if (operation === "summarize") {
+    summarize(parseSummaryArguments(arguments_));
+    return 0;
   }
-  if (subcommand === "summarize") {
-    summarizeTimings(parseSummaryArguments(values));
-    return;
-  }
-  fail("usage", "Expected run or summarize.");
+  fail("Usage: ci-timing.mjs <run|summarize> ...", EXIT_USAGE);
 };
 
 try {
-  await main();
+  process.exitCode = await main();
 } catch (error) {
-  const safeError =
-    error instanceof CiTimingError
-      ? error
-      : new CiTimingError("internal-error", "Unexpected CI timing failure.", 70);
-  process.stderr.write(`ci-timing: ${safeError.code}: ${safeError.message}\n`);
-  process.exitCode = safeError.exitCode;
+  const exitCode = error instanceof TimingError ? error.exitCode : EXIT_IO;
+  process.stderr.write(
+    `ci-timing: ${error instanceof Error ? error.message : "unexpected failure"}\n`,
+  );
+  process.exitCode = exitCode;
 }

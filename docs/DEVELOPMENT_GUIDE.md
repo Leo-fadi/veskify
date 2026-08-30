@@ -404,18 +404,21 @@ migration or closure ownership in the accepted architecture.
 |     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                    |
 |     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                    |
 |     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Baseline                    |
-|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Exact next engineering task |
-|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Planned                     |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Baseline                    |
+|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Exact next engineering task |
 |     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Planned                     |
 |     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned                     |
 
-P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01D is
-the exact next engineering task after DEVX-01C.
+P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01E is
+the exact next engineering task after DEVX-01D.
 
 ### CI timing, cancellation and Next cache authority
 
-The canonical CI remains one serial `validate` job. Each existing command stage is executed without
-shell expansion through the repository-owned timing utility:
+The canonical CI runs four independent execution jobs for static checks, complete one-worker
+Vitest, production Webpack/budgets and the unchanged complete browser regression. The stable
+`validate` job executes no validation command; it runs after all four dependencies and fails unless
+every dependency result is exactly `success`. Each command still executes without shell expansion
+through the repository-owned timing utility:
 
 ```bash
 node scripts/ci-timing.mjs run \
@@ -430,19 +433,23 @@ atomic record and returns the child exit status; a child signal uses the convent
 status. Invalid invocation exits `64`, malformed timing authority exits `65`, and a timing-write
 failure after a successful child exits `74`.
 
-The always-run summary command validates the declared nine-step order:
+Each execution job writes to its own profile directory. The always-run summary command validates
+that profile's declared order and records the profile identity:
 
 ```bash
 node scripts/ci-timing.mjs summarize \
-  --input-directory .ci-timings \
-  --output .ci-evidence/ci-timing-summary.json \
+  --profile static \
+  --input-directory .ci-timings/static \
+  --output .ci-evidence/static-summary.json \
   --job-status success
 ```
 
-A successful job requires all nine records. An unsuccessful job may retain only a truthful ordered
-prefix. The summary includes each safe record, measured command total and three slowest completed
-commands, appends a bounded Markdown table to `$GITHUB_STEP_SUMMARY`, and is uploaded with the
-individual records for 14 days. Timing JSON, logs and `.next/cache` are never committed as evidence.
+A successful profile requires all of its declared records. An unsuccessful job may retain only a
+truthful ordered prefix. Repeated install records remain isolated by profile. Each summary includes
+safe records, measured command total and three slowest completed commands, appends a bounded table
+to `$GITHUB_STEP_SUMMARY`, and is uploaded with its individual records for 14 days. The aggregate
+summary contains only dependency names, results and the final decision. Timing JSON, logs and
+`.next/cache` are never committed as evidence.
 
 GitHub-native concurrency groups runs by workflow and pull-request number, falling back to ref for
 non-PR execution, and cancels only obsolete work in the same group. `actions/cache@v4` persists only
@@ -450,10 +457,13 @@ non-PR execution, and cancels only obsolete work in the same group. `actions/cac
 inputs. The restore prefix remains dependency/runtime compatible when source changes. Webpack and
 storefront budgets still execute on every run.
 
-The PR #211 baseline was 2h 6m 13s with one-second GitHub timestamp granularity. The first
-DEVX-01C run is measurement evidence rather than proof of a performance improvement. DEVX-01D owns
-serial-job decomposition, DEVX-01E owns Playwright grouping, DEVX-01F owns sharding, and DEVX-01G
-owns final two-run performance acceptance.
+The PR #211 baseline was 2h 6m 13s. The completed DEVX-01C run measured 2h 5m 49.513s of commands:
+Vitest 1h 11m 18.183s, Playwright 51m 5.840s, Webpack 1m 7.832s, and the remaining stages under
+1m 8s each. Grouping those measured stages projected a 1h 11m 24.063s command critical path, a
+54m 25.450s reduction, while four installs add a projected 17.640s of runner work. That projection
+excludes queueing, runner startup and cache variance; actual DEVX-01D timings are evidence rather
+than final performance acceptance. DEVX-01E owns Playwright grouping, DEVX-01F owns sharding, and
+DEVX-01G owns the final two-run performance decision.
 
 ### Existing branch and PR rules
 
