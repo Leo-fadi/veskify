@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A and DEVX-01B are Baseline, DEVX-01C is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A, DEVX-01B and DEVX-01C are Baseline, DEVX-01D is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -403,14 +403,57 @@ migration or closure ownership in the accepted architecture.
 | ----: | ------------------------------------------------------------------------------------ | --------------------------- |
 |     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                    |
 |     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                    |
-|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Exact next engineering task |
-|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Planned                     |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Baseline                    |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Exact next engineering task |
 |     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Planned                     |
 |     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Planned                     |
 |     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned                     |
 
-P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01C is
-the exact next engineering task after DEVX-01B.
+P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01D is
+the exact next engineering task after DEVX-01C.
+
+### CI timing, cancellation and Next cache authority
+
+The canonical CI remains one serial `validate` job. Each existing command stage is executed without
+shell expansion through the repository-owned timing utility:
+
+```bash
+node scripts/ci-timing.mjs run \
+  --id typecheck \
+  --output-directory .ci-timings \
+  -- pnpm typecheck
+```
+
+The runner streams child output normally but stores only schema/version identity, stable step ID,
+status, monotonic duration, bounded UTC timestamps, exit code and terminating signal. It writes one
+atomic record and returns the child exit status; a child signal uses the conventional `128 + signal`
+status. Invalid invocation exits `64`, malformed timing authority exits `65`, and a timing-write
+failure after a successful child exits `74`.
+
+The always-run summary command validates the declared nine-step order:
+
+```bash
+node scripts/ci-timing.mjs summarize \
+  --input-directory .ci-timings \
+  --output .ci-evidence/ci-timing-summary.json \
+  --job-status success
+```
+
+A successful job requires all nine records. An unsuccessful job may retain only a truthful ordered
+prefix. The summary includes each safe record, measured command total and three slowest completed
+commands, appends a bounded Markdown table to `$GITHUB_STEP_SUMMARY`, and is uploaded with the
+individual records for 14 days. Timing JSON, logs and `.next/cache` are never committed as evidence.
+
+GitHub-native concurrency groups runs by workflow and pull-request number, falling back to ref for
+non-PR execution, and cancels only obsolete work in the same group. `actions/cache@v4` persists only
+`.next/cache`; its key binds runner OS, Node 24, `pnpm-lock.yaml`, `package.json` and relevant build
+inputs. The restore prefix remains dependency/runtime compatible when source changes. Webpack and
+storefront budgets still execute on every run.
+
+The PR #211 baseline was 2h 6m 13s with one-second GitHub timestamp granularity. The first
+DEVX-01C run is measurement evidence rather than proof of a performance improvement. DEVX-01D owns
+serial-job decomposition, DEVX-01E owns Playwright grouping, DEVX-01F owns sharding, and DEVX-01G
+owns final two-run performance acceptance.
 
 ### Existing branch and PR rules
 
