@@ -20,8 +20,8 @@ required evidence are accepted.
 
 - [ ] DEVX-01 - Contract-driven development and CI execution enablement
   - [x] DEVX-01A - Sprint contract and independent verification protocol
-  - [ ] DEVX-01B - Mechanical contract and verifier-verdict enforcement (**exact next engineering task**)
-  - [ ] DEVX-01C - CI timings, obsolete-run cancellation and Next build caching
+  - [x] DEVX-01B - Mechanical contract and verifier-verdict enforcement
+  - [ ] DEVX-01C - CI timings, obsolete-run cancellation and Next build caching (**exact next engineering task**)
   - [ ] DEVX-01D - Parallel static, Vitest and production-build jobs
   - [ ] DEVX-01E - Playwright timing inventory and balanced execution groups
   - [ ] DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator

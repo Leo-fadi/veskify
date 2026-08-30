@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**; P10B-19A is the exact next task.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A and DEVX-01B are Baseline, DEVX-01C is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -213,9 +213,11 @@ on the child's base commit. An implementation branch must not edit its own contr
 contract change requires product-owner authority, a new locked baseline and a newly eligible branch;
 it is never a convenient scope expansion.
 
-DEVX-01B will implement deterministic RFC 8785 JSON Canonicalization Scheme serialization and a
-domain-separated SHA-256 task-contract fingerprint. DEVX-01A defines that identity policy but does
-not add the executable verifier or fingerprint implementation.
+DEVX-01B implements the canonical repository-native executable at `scripts/task-governance.mjs`.
+Its `contract`, `identity`, and `verify` commands validate immutable external or base-retained
+contracts, calculate RFC 8785 domain-separated identities, inspect complete Git worktree state,
+enforce path/scope authority, and reconcile independent verifier verdicts. The accepted v1 schemas
+remain the sole machine contract and verdict authority.
 
 ### Permanent delivery loop
 
@@ -307,9 +309,39 @@ failure requiring behavior changes, or unexpected canonical ownership change.
 
 ### Verification policy
 
-DEVX-01B owns future mechanical verification of schema validity, task/branch/base identity, changed
-and forbidden paths, file/line budgets, validation and evidence declarations, acceptance-criterion
-coverage, contract/verdict identity and terminal state. DEVX-01A does not implement those checks.
+DEVX-01B owns mechanical verification of schema validity, task/branch/base identity, changed and
+forbidden paths, file/addition budgets, validation and evidence declarations, acceptance-criterion
+coverage, contract/verdict identity and terminal state. DEVX-01A defines the protocol; DEVX-01B
+executes its bounded mechanical portion.
+
+Canonical command usage is:
+
+```bash
+pnpm governance:contract -- --contract <path> --expected-file-sha256 <sha256> [--output <path>]
+pnpm governance:identity -- --contract <path> --expected-file-sha256 <sha256> [--output <path>]
+pnpm governance:verify -- --contract <path> --expected-file-sha256 <sha256> --verdict <path> [--output <path>]
+```
+
+Contract identity is `sha256("veskify-task-contract-v1\n" + RFC8785_JCS(contract))`; raw-file
+SHA-256 remains a separate immutability gate. Implementation identity fingerprints a deterministic
+safe manifest relative to the minimum base and includes committed, staged, unstaged, untracked,
+deleted, renamed, binary, mode and non-followed symbolic-link state. Every changed path must be
+allowed, every production path must be owned, and forbidden paths override both. Likely
+secret-bearing paths fail before content hashing unless the immutable contract explicitly allows
+them.
+
+The accepted numerical scope fields named `NetProductionLines` are mechanically interpreted as
+non-generated production **additions**. Deletions are reported separately and never offset those
+limits. Exceeding a target produces a warning; exceeding a hard stop fails unless the immutable
+contract contains the schema-valid product-owner exception. Canonical merchant/runtime files under
+`src/**` are production; tests, documentation, governance scripts, and deterministic DOCX exports
+are not production runtime files.
+
+The pre-commit verdict binds the verifier's anchor HEAD plus the complete diff fingerprint. Commit
+exactly that content after verifier PASS; the base-to-committed fingerprint must remain equal even
+though HEAD advances. The CLI never executes contract commands and does not replace semantic
+verification, GitHub review, CI, or product-owner commercial judgment. A post-review correction is
+mechanically re-inspected but is not retroactively covered by the original semantic verdict.
 
 The independent semantic verifier must:
 
@@ -370,15 +402,15 @@ migration or closure ownership in the accepted architecture.
 | Order | Task                                                                                 | Status after DEVX-01A merge |
 | ----: | ------------------------------------------------------------------------------------ | --------------------------- |
 |     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                    |
-|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Exact next engineering task |
-|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Planned                     |
+|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                    |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Exact next engineering task |
 |     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Planned                     |
 |     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Planned                     |
 |     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Planned                     |
 |     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned                     |
 
-P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01B is
-the exact next engineering task after DEVX-01A.
+P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01C is
+the exact next engineering task after DEVX-01B.
 
 ### Existing branch and PR rules
 

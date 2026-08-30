@@ -26,6 +26,9 @@
     "docs:check:tooling": "node scripts/documentation-tooling-self-check.mjs",
     "docs:check:requirements": "node scripts/check-requirement-traceability.mjs",
     "docs:validate": "node scripts/validate-documentation.mjs",
+    "governance:contract": "node scripts/task-governance.mjs contract",
+    "governance:identity": "node scripts/task-governance.mjs identity",
+    "governance:verify": "node scripts/task-governance.mjs verify",
     "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",
     "validate:full": "pnpm validate && pnpm test:e2e"
   },
