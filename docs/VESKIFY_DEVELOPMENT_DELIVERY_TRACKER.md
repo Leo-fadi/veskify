@@ -1249,7 +1249,8 @@ expanded matrix contains 54 normalized topologies. The deterministic selector re
 the final complete manifest binds 280 captures across 375/768/1024/1440 and EN/FI. The final human
 verdict is **PASS WITH MINOR LIMITATION** with zero primary FAIL. P10B-16P-05B subsequently removed
 the one-time capture platform while retaining the bounded quality gate. P10B-18D subsequently
-completed as a rejected-quality diagnostic. P10B-19 PRE is Baseline, and P10B-19A is Partial; P10B-19A-02 is the exact next task.
+completed as a rejected-quality diagnostic. P10B-19 PRE is Baseline, and P10B-19A is Partial;
+P10B-19A-01 and P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next task.
 
 ## P10B-19 accepted architecture delivery state
 

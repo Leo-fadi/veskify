@@ -976,6 +976,9 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
   ]) {
     if (content.includes(stale)) throw new Error(`${devx01fStatusPath} retains obsolete ${stale}.`);
   }
+  if (/P10B-19A-02\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
+    throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-02 exact-next wording.`);
+  }
 }
 const devx01fTracker = readDevx01fStatusFile(
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
