@@ -164,6 +164,7 @@ requireText("AGENTS.md", [
 
 requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
+  "31 August 2026, P10B-19A-01 structural family identity and lifecycle Baseline",
   "Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B is now **Partial / active**",
@@ -179,12 +180,25 @@ requireText("docs/VESKIFY_SDD.md", [
   "parent P10B-18B is\nBaseline/complete",
   "P10B-18D diagnostic baseline; live quality rejected",
   "P10B-19 PRE = Baseline",
-  "P10B-19A = Planned / exact next",
+  "### 10.31 P10B-19A-01 structural family identity and lifecycle authority",
+  "P10B-19A-01 = Baseline",
+  "P10B-19A = Partial",
+  "P10B-19A-02 = Planned / exact next",
+  "editorial-offset",
+  "restrained-gallery",
+  "Active family-record count and candidate registry-record count both remain zero",
   "### 10.25 P10B-17 responsive, accessibility and performance closure",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
   "### 10.23 P10B-16P-05A active production-path and compiler rationalisation",
   "### 10.29 P10B-16P-05B major repository and historical-authority cleanup",
+]);
+
+rejectText("docs/VESKIFY_SDD.md", [
+  "24 August 2026, P10B-18D diagnostic complete; live commercial quality rejected",
+  "P10B-19A is the exact next task",
+  "P10B-19A = Planned / exact next",
+  "P10B-19A next",
 ]);
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
