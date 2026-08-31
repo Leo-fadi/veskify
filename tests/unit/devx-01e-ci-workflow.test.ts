@@ -16,7 +16,7 @@ function occurrences(source: string, needle: string) {
   return source.split(needle).length - 1;
 }
 
-describe("DEVX-01E CI browser timing authority", () => {
+describe("DEVX-01E retained Playwright inventory and timing authority", () => {
   it("keeps one canonical package entry point and the exact 12-suite inventory", () => {
     expect(packageJson.scripts["test:e2e"]).toBe("node scripts/playwright-ci.mjs run-all");
     expect(inventory.suites).toHaveLength(12);
@@ -27,63 +27,30 @@ describe("DEVX-01E CI browser timing authority", () => {
     expect(new Set(inventory.suites.map((suite) => suite.configPath)).size).toBe(12);
   });
 
-  it("preserves the four-job graph, validate gate, aggregate timing, and full command", () => {
-    for (const job of [
-      "static-checks",
-      "vitest",
-      "production-build",
-      "browser-regression",
-      "validate",
-    ]) {
-      expect(workflow).toMatch(new RegExp(`^  ${job}:`, "mu"));
-    }
+  it("retains the canonical runner and moves only browser execution to DEVX-01F groups", () => {
+    expect(workflow).toContain("node scripts/playwright-ci.mjs run-group");
     expect(workflow).toContain("--id playwright-e2e");
-    expect(occurrences(workflow, "-- pnpm test:e2e")).toBe(1);
-    expect(workflow).toContain("PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY: .ci-playwright-timings");
-    expect(workflow).not.toMatch(/^\s*matrix:/mu);
-    expect(workflow).not.toContain("--shard");
+    expect(workflow).toContain("--profile browser");
+    expect(workflow).not.toContain("PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY");
+    expect(occurrences(workflow, "pnpm test:e2e")).toBe(0);
   });
 
-  it("summarizes per-suite evidence on every outcome and plans only after success", () => {
-    expect(workflow).toContain("node scripts/playwright-ci.mjs summarize");
-    expect(workflow).toContain("--input-directory .ci-playwright-timings");
-    expect(workflow).toContain("--job-status ${{ job.status }}");
-    expect(workflow).toContain("node scripts/playwright-ci.mjs plan");
-    expect(workflow).toContain("playwright-suite-timing-summary.json");
-    expect(workflow).toContain("playwright-balanced-group-plan.json");
-    expect(workflow).toMatch(/name: Summarize Playwright suite timings[\s\S]*?if: always\(\)/u);
-    expect(workflow).toMatch(
-      /name: Plan future Playwright execution groups[\s\S]*?if: success\(\)/u,
-    );
-  });
-
-  it("uploads only bounded timing and plan evidence without changing execution topology", () => {
-    const artifactBlock = workflow.match(
-      /- name: Upload Playwright suite timing evidence[\s\S]*?(?=\n {6}- name:)/u,
-    )?.[0];
-    expect(artifactBlock).toBeDefined();
+  it("retains per-suite inventory fingerprints as the source of the locked group plan", () => {
+    expect(workflow).toContain("node scripts/playwright-ci.mjs audit-plan");
+    expect(workflow).toContain("node scripts/playwright-ci.mjs emit-matrix");
+    expect(workflow).toContain("node scripts/playwright-ci.mjs summarize-matrix");
     expect(workflow).toContain(
-      "name: playwright-suite-timings-${{ github.run_id }}-${{ github.run_attempt }}",
-    );
-    expect(workflow).toContain(".ci-playwright-timings");
-    expect(workflow).toContain(".ci-evidence/playwright-suite-timing-summary.json");
-    expect(workflow).toContain(".ci-evidence/playwright-balanced-group-plan.json");
-    expect(artifactBlock).toContain("include-hidden-files: true");
-    expect(artifactBlock).toContain("if-no-files-found: error");
-    expect(workflow).toContain("retention-days: 14");
-    expect(artifactBlock).not.toContain(".next");
-    expect(artifactBlock).not.toMatch(
-      /playwright-(report|output)|test-results|trace|screenshots?/u,
+      "playwright-matrix-evidence-${{ github.run_id }}-${{ github.run_attempt }}",
     );
   });
 
-  it("retains PR/ref-scoped cancellation and does not introduce parallel browser execution", () => {
+  it("retains PR/ref-scoped cancellation while allowing only browser row parallelism", () => {
     expect(workflow).toContain(
       "group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}",
     );
     expect(workflow).toContain("cancel-in-progress: true");
-    expect(occurrences(workflow, "pnpm test:e2e")).toBe(1);
-    expect(workflow).not.toContain("strategy:");
+    expect(workflow).toContain("fail-fast: false");
     expect(workflow).not.toContain("max-parallel:");
+    expect(workflow).not.toContain("continue-on-error");
   });
 });

@@ -8,10 +8,6 @@ import { describe, expect, it } from "vitest";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const workflow = readFileSync(`${root}/.github/workflows/ci.yml`, "utf8");
 const count = (source: string, value: string) => source.split(value).length - 1;
-const jobNames = (source: string) =>
-  [...source.slice(source.indexOf("jobs:")).matchAll(/^ {2}([a-z0-9-]+):$/gmu)].map(
-    (match) => match[1],
-  );
 const jobBlock = (source: string, job: string) => {
   const header = `\n  ${job}:\n`;
   const start = source.indexOf(header);
@@ -20,46 +16,30 @@ const jobBlock = (source: string, job: string) => {
   const next = source.slice(bodyStart).search(/^ {2}[a-z0-9-]+:$/gmu);
   return next < 0 ? source.slice(start) : source.slice(start, bodyStart + next);
 };
-const validateGraph = (source: string) => {
-  expect(jobNames(source)).toEqual([
-    "static-checks",
-    "vitest",
-    "production-build",
-    "browser-regression",
-    "validate",
-  ]);
-  const aggregate = jobBlock(source, "validate");
-  expect(aggregate).toContain("if: always()");
-  for (const job of ["static-checks", "vitest", "production-build", "browser-regression"]) {
-    expect(aggregate).toContain(`- ${job}`);
-    expect(aggregate).toContain(`needs.${job}.result`);
-  }
-  expect(aggregate).toContain('test "$decision" = "PASS"');
-  expect(aggregate).not.toContain("ci-timing.mjs run");
-};
 
-describe("DEVX-01D parallel CI graph", () => {
-  it("runs four independent execution jobs behind stable validate authority", () => {
-    validateGraph(workflow);
-    expect(workflow).not.toContain("matrix:");
-    expect(workflow).not.toContain("max-parallel:");
+describe("DEVX-01D retained parallel CI authority", () => {
+  it("keeps static, Vitest and production-build as independent jobs behind validate", () => {
+    const aggregate = jobBlock(workflow, "validate");
+    for (const job of ["static-checks", "vitest", "production-build"]) {
+      expect(workflow).toMatch(new RegExp(`^  ${job}:`, "mu"));
+      expect(aggregate).toContain(`- ${job}`);
+      expect(aggregate).toContain(`needs.${job}.result`);
+    }
+    expect(aggregate).toContain("if: ${{ always() }}");
   });
 
-  it("assigns each unchanged validation command to exactly one intended job", () => {
-    const expected = {
-      "static-checks": ["pnpm typecheck", "pnpm lint", "pnpm format:check"],
-      vitest: ["pnpm exec vitest run --maxWorkers=1 --no-file-parallelism"],
-      "production-build": ["pnpm build:webpack", "pnpm build:check:storefront-budgets"],
-      "browser-regression": ["pnpm exec playwright install --with-deps chromium", "pnpm test:e2e"],
-    } as const;
-    for (const [job, commands] of Object.entries(expected)) {
-      const block = jobBlock(workflow, job);
-      expect(count(block, "-- pnpm install --frozen-lockfile")).toBe(1);
-      for (const command of commands) {
-        expect(count(block, `-- ${command}`)).toBe(1);
-        expect(count(workflow, `-- ${command}`)).toBe(1);
-      }
+  it("retains every DEVX-01D command exactly once with one-worker Vitest", () => {
+    for (const command of [
+      "-- pnpm typecheck",
+      "-- pnpm lint",
+      "-- pnpm format:check",
+      "-- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism",
+      "-- pnpm build:webpack",
+      "-- pnpm build:check:storefront-budgets",
+    ]) {
+      expect(count(workflow, command)).toBe(1);
     }
+    expect(jobBlock(workflow, "vitest")).not.toContain("matrix:");
   });
 
   it("keeps build cache and budgets inside production-build in strict order", () => {
@@ -74,23 +54,12 @@ describe("DEVX-01D parallel CI graph", () => {
     expect(workflow.replace(block, "")).not.toContain("actions/cache@v4");
   });
 
-  it("keeps the complete browser command in one unsharded job", () => {
-    const block = jobBlock(workflow, "browser-regression");
-    expect(block).toContain("-- pnpm test:e2e");
-    expect(block).not.toContain("--shard");
-    expect(block).not.toContain("matrix:");
-    expect(count(workflow, "-- pnpm test:e2e")).toBe(1);
-  });
-
-  it.each([
-    [
-      "missing required job",
-      (source: string) => source.replace("  static-checks:\n", "  omitted-static:\n"),
-    ],
-    ["missing dependency", (source: string) => source.replace("      - production-build\n", "")],
-    ["weak aggregate", (source: string) => source.replace('test "$decision" = "PASS"', "true")],
-  ])("fails closed for %s drift", (_label, mutate) => {
-    expect(() => validateGraph(mutate(workflow))).toThrow();
+  it("permits only the dependent DEVX-01F browser matrix extension", () => {
+    expect(workflow).toMatch(/^ {2}browser-plan:$/mu);
+    expect(workflow).toMatch(/^ {2}browser-regression:$/mu);
+    expect(workflow).toMatch(/^ {2}browser-report:$/mu);
+    expect(jobBlock(workflow, "browser-regression")).toContain("fail-fast: false");
+    expect(workflow).not.toContain("max-parallel:");
   });
 
   it("retains native same-PR/ref cancellation", () => {

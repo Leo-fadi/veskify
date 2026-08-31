@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "playwright-ci-execution-plan",
+  "planId": "devx-01f-whole-suite-groups-v1",
+  "sourceInventoryFingerprint": "veskify-playwright-suite-inventory-v1_31bfeab118c9fb0943d8b488cefa657f3c10bde56ba8d96f68aa7aa3857a2e44",
+  "sourceTimingSummarySha256": "e04286caa055694d51a09b64933689b96a234d6de9023d6d6cbf8f46a69e191c",
+  "planType": "whole-suite-groups",
+  "enabled": true,
+  "required": true,
+  "sourceProvenance": {
+    "runId": 33335864920,
+    "commitSha": "50f13ea3abbed190fe522f777b6acdaf4f5e4428",
+    "groupPlanSha256": "ea351caeea8f4c7483a6c5444a359484f4249b502846c4f28304d0717b5e04c8"
+  },
+  "groups": [
+    {
+      "groupId": "group-01",
+      "order": 1,
+      "sourcePredictedDurationMs": 1199468,
+      "enabled": true,
+      "required": true,
+      "entries": [
+        { "suiteId": "default" },
+        { "suiteId": "p10a-08c-01" },
+        { "suiteId": "p10a-04c" },
+        { "suiteId": "p10b-08" },
+        { "suiteId": "p10b-16p-03" },
+        { "suiteId": "p10b-16p-06" }
+      ]
+    },
+    {
+      "groupId": "group-02",
+      "order": 2,
+      "sourcePredictedDurationMs": 1187779,
+      "enabled": true,
+      "required": true,
+      "entries": [
+        { "suiteId": "p10a-08d-02" },
+        { "suiteId": "p10b-09" },
+        { "suiteId": "p10b-11" },
+        { "suiteId": "p10b-13" },
+        { "suiteId": "p10b-17" },
+        { "suiteId": "p10b-18a" }
+      ]
+    }
+  ]
+}
