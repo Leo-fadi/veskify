@@ -16,11 +16,9 @@ accepted P10B-18B-05 content/support/utility quality upgrade are Baseline. Paren
 Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity gate and
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
-DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel
-CI Baseline; DEVX-01E, DEVX-01F and DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering
-task.
-P10B-19A remains the next product-development sprint
-after DEVX-01, and P10B-19B through P10B-19J remain Planned.
+DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A is the exact
+next product-development sprint; P10B-19A-01 is the exact next implementation task. P10B-19B
+through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -236,7 +234,8 @@ The existing protected architecture remains authoritative: one canonical page gr
 `StorefrontSnapshot`, one component registry, canonical commerce and media, one deterministic
 compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A is the
-next product-development sprint after DEVX-01; P10B-19B through P10B-19J remain Planned.
+exact next product-development sprint; P10B-19A-01 is the exact next implementation task, and
+P10B-19B through P10B-19J remain Planned.
 
 ## Contract-driven development baseline
 
@@ -250,9 +249,9 @@ The implementing agent's tests cannot be the sole acceptance evidence. Independe
 the one automatic GitHub Codex review, CI and product-owner visual/commercial approval remain
 separate gates. DEVX-01B supplies mechanical contract and verdict enforcement, and DEVX-01C adds
 safe timing evidence, same-PR/ref cancellation and compatible `.next/cache` reuse without changing
-the measured serial `validate` gate. DEVX-01D splits that work into four independent execution
-jobs behind the stable fail-closed `validate` authority. DEVX-01E is Baseline; DEVX-01F is the
-exact next engineering task.
+the measured serial `validate` gate. DEVX-01D splits that work into independent execution jobs
+behind the stable fail-closed `validate` authority. DEVX-01E, DEVX-01F, DEVX-01F2 and DEVX-01G are
+Baseline, and DEVX-01 is Baseline / closed.
 
 CI command timings are written as bounded JSON under profile-specific `.ci-timings` directories,
 summarized under `.ci-evidence`, appended to each execution job's GitHub Step Summary and uploaded
@@ -269,8 +268,10 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - DEVX-01E = Baseline
 - DEVX-01F = Baseline
 - DEVX-01F2 = Baseline
-- DEVX-01G = exact next engineering task
-- P10B-19A = next product-development sprint after DEVX-01
+- DEVX-01G = Baseline
+- DEVX-01 = Baseline / closed
+- P10B-19A = exact next product-development sprint
+- P10B-19A-01 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
@@ -289,5 +290,9 @@ Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
 `pnpm exec playwright merge-reports`. DEVX-01F2 replaces the serial Vitest job with the accepted
 three-shard plan. Runtime discovery binds every current test file to exactly one official Vitest
 shard; each shard remains one-worker and serial, and the report job rejects incomplete manifests
-or blobs before validating one merged result. DEVX-01G owns two-run performance acceptance and
-workflow closure.
+or blobs before validating one merged result. DEVX-01G closes the workflow only after two clean
+runs under identical CI architecture. Run A (`33362860614`) completed in 34m27s on a cache miss
+with 245 Vitest files (`82 / 82 / 81`), 3,165 passed, one pending, zero failed, and all 12 canonical
+Playwright suites. That is 1h31m46s, or 72.706%, less developer wait time than the 2h6m13s serial
+baseline. Its summed GitHub job time was 2h9m46s, 3m33s higher than the serial baseline, so lower
+compute cost is not claimed. Final Run B remains the before-merge closure gate.
