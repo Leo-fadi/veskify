@@ -15,8 +15,7 @@ non-goals. Capability truth and architecture live in the SDD. Checkbox progress 
 criteria live in the delivery tracker.
 
 **Engineering enablement:** DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline /
-closed. P10B-19A is the exact next product-development sprint; P10B-19A-01 is the exact next
-implementation task. P10B remains Partial.
+closed. P10B-19A-01 is Baseline, P10B-19A is Partial, and P10B-19A-02 is the exact next implementation task. P10B remains Partial.
 
 ## 1. Delivery order
 
@@ -47,8 +46,7 @@ and the Vesko pilot.
 
 DEVX-01 changes development execution, not storefront behavior or the accepted P10B-19
 architecture. Run A completed in 34m27s with complete coverage on a cache miss; Run B remains the
-final before-merge gate under the same frozen architecture. P10B-19A is the exact next
-product-development sprint, beginning with P10B-19A-01.
+final before-merge gate under the same frozen architecture. P10B-19A is Partial; P10B-19A-02 is the exact next implementation task.
 
 ### 1.2 P10B-19A planned child sequence
 
@@ -64,6 +62,15 @@ product-development sprint, beginning with P10B-19A-01.
 |     8 | P10B-19A-08 - Compatibility, deterministic selection and normalized topology identity |
 |     9 | P10B-19A-09 - v1 read/render/migration/publication compatibility                      |
 |    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
+
+P10B-19A-01 is **Baseline**, and parent P10B-19A is **Partial**. P10B-19A-02 - Cross-Page
+Structural Relationship Contract is the exact next implementation task. P10B-19A-01 establishes
+`src/domain/structural-storefront-family` as the sole family identity authority with the ordered
+IDs `editorial-offset`, `campaign-modular`, `product-first-commerce`, `technical-comparison`,
+`warm-narrative`, and `restrained-gallery`; strict supported-major-v1 versions beginning at
+`1.0.0`; and lifecycle states `candidate`, `active`, and `deprecated`. Active-family and candidate-
+registry-record counts remain zero. No registry, fingerprint, selection, PageBlueprint v2,
+rendering, or current-generation wiring exists yet.
 
 The ten children preserve the accepted P10B-19 PRE architecture and are independently mergeable
 only in dependency order. The product owner explicitly approved this DEVX-01A delivery
@@ -98,7 +105,7 @@ P10B-16P-06, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, acce
 P10B-18B-02, and accepted P10B-18B-03 are Baseline.
 P10B-16P-02, completed P10B-18B, accepted P10B-18C and P10B-16P-05B are **Baseline**; P10B-18 and
 P10B remain **Partial**. P10B-18D is a **Baseline diagnostic with live commercial quality
-rejected**. P10B-19 PRE is **Baseline**; P10B-19A is **Planned / exact next**, and P10B-19B through
+rejected**. P10B-19 PRE is **Baseline**; P10B-19A is **Partial**; P10B-19A-01 is **Baseline**, and P10B-19A-02 is **Planned / exact next**, and P10B-19B through
 P10B-19J remain **Planned**.
 P10B-16P-04
 acceptance evidence is retained in
@@ -112,7 +119,7 @@ P10B-17; P10B-16P-05B is the accepted consumer-verified cleanup. A slice does no
 independently complete the parent phase. Accepted P10B-18B-03,
 P10B-18B-04 and P10B-18B-05 are the current bounded collection/search/product-card, PDP and
 content/support/utility baselines; parent P10B-18B and P10B-18C are Baseline. P10B-18D is a
-completed rejected-quality diagnostic. P10B-19 PRE is Baseline, and P10B-19A is exact next.
+completed rejected-quality diagnostic. P10B-19 PRE is Baseline, and P10B-19A is Partial; P10B-19A-02 is exact next.
 
 The P10B-16P-04 Aurum composition is now the single lean, token-protected, production-disabled
 mock/live seam retained for P10B-18D. P10B-16P-05A removed active P10B-16L initial generation;
@@ -130,18 +137,18 @@ or production performance.
 
 ### 3.1 Dependency waves
 
-| Wave                           | Planned work                                                                                                                                        | Gate                                                                                                                                                                                                                                                                 |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Grammar                    | P10B-01 (**Baseline**)                                                                                                                              | Existing authorities have executable vocabulary; no visual implementation claim.                                                                                                                                                                                     |
-| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**)                                                                                                            | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority.                                                                                                                                                                          |
-| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08 (**Baseline**)                                                                                                   | Real registered frame/content/merchandising authority reaches renderers.                                                                                                                                                                                             |
-| 4 — Page profiles              | P10B-09 through P10B-13 (**Baseline**)                                                                                                              | Complete home, commerce, content/support, and utility page coverage.                                                                                                                                                                                                 |
-| 5 — Early complete store       | P10B-14 (**Baseline**)                                                                                                                              | One credible Premium Editorial multi-page storefront passes retained human review.                                                                                                                                                                                   |
-| 6 — Synthesis and diversity    | P10B-15, P10B-16 (**Baseline**)                                                                                                                     | Bounded synthesis, three coordinated direction packages and deterministic duplicate/near-duplicate control are live.                                                                                                                                                 |
-| 6P — Generation convergence    | P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 (**Baseline**)                                                                                    | Route instances no longer own design; strict intent, canonical compilation, mocked Studio generation, real V2 A/B/C normal-Studio acceptance, one active semantic path/compiler/materializer chain, and transient canonical search query/results authority are live. |
-| 7 — Deterministic closure      | P10B-17, P10B-18A, completed P10B-18B and P10B-18C (**Baseline**); parent P10B-18/P10B (**Partial**)                                                | Responsive/a11y/performance, all six source-authority packages, and deterministic 126-case/280-capture quality acceptance are closed.                                                                                                                                |
-| 8 — Historical cleanup         | P10B-16P-05B (**Baseline**)                                                                                                                         | Consumer-proven cleanup removes one-time acceptance infrastructure while retaining migration, durable quality and the lean P10B-18D seam.                                                                                                                            |
-| 9 — Live and intelligence      | P10B-18D (**Baseline diagnostic / quality rejected**), P10B-19 PRE (**Baseline**), P10B-19A (**Planned / exact next**) and P10B-19B-J (**Planned**) | The accepted live diagnostic exposes exact cross-prompt authority collapse; the structural-design-intelligence architecture lock precedes its ten planned implementation packages.                                                                                   |
+| Wave                           | Planned work                                                                                                                           | Gate                                                                                                                                                                                                                                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Grammar                    | P10B-01 (**Baseline**)                                                                                                                 | Existing authorities have executable vocabulary; no visual implementation claim.                                                                                                                                                                                     |
+| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**)                                                                                               | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority.                                                                                                                                                                          |
+| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08 (**Baseline**)                                                                                      | Real registered frame/content/merchandising authority reaches renderers.                                                                                                                                                                                             |
+| 4 — Page profiles              | P10B-09 through P10B-13 (**Baseline**)                                                                                                 | Complete home, commerce, content/support, and utility page coverage.                                                                                                                                                                                                 |
+| 5 — Early complete store       | P10B-14 (**Baseline**)                                                                                                                 | One credible Premium Editorial multi-page storefront passes retained human review.                                                                                                                                                                                   |
+| 6 — Synthesis and diversity    | P10B-15, P10B-16 (**Baseline**)                                                                                                        | Bounded synthesis, three coordinated direction packages and deterministic duplicate/near-duplicate control are live.                                                                                                                                                 |
+| 6P — Generation convergence    | P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 (**Baseline**)                                                                       | Route instances no longer own design; strict intent, canonical compilation, mocked Studio generation, real V2 A/B/C normal-Studio acceptance, one active semantic path/compiler/materializer chain, and transient canonical search query/results authority are live. |
+| 7 — Deterministic closure      | P10B-17, P10B-18A, completed P10B-18B and P10B-18C (**Baseline**); parent P10B-18/P10B (**Partial**)                                   | Responsive/a11y/performance, all six source-authority packages, and deterministic 126-case/280-capture quality acceptance are closed.                                                                                                                                |
+| 8 — Historical cleanup         | P10B-16P-05B (**Baseline**)                                                                                                            | Consumer-proven cleanup removes one-time acceptance infrastructure while retaining migration, durable quality and the lean P10B-18D seam.                                                                                                                            |
+| 9 — Live and intelligence      | P10B-18D (**Baseline diagnostic / quality rejected**), P10B-19 PRE (**Baseline**), P10B-19A (**Partial**) and P10B-19B-J (**Planned**) | The accepted live diagnostic exposes exact cross-prompt authority collapse; the structural-design-intelligence architecture lock precedes its ten planned implementation packages.                                                                                   |
 
 ### 3.2 Locked tasks
 
@@ -185,7 +192,7 @@ or production performance.
 | P10B-16P-05B — Major repository and historical-authority cleanup    | Remove or consolidate unconsumed acceptance scaffolding while preserving active generation, migration, durable quality and one lean P10B-18D live-AI seam.                                                                        | **Baseline**                               | P10B-16P-05A and accepted P10B-18C                              | Generation architecture and evidence                     | Complete consumer graph; production fail-closed proof; lean mock/live seam; active lifecycle, migration, quality and protected-state regressions                                                       | Storefront output, generation semantics, migration breakage or implementation of P10B-18D/P10B-19                        |
 | P10B-18D — Live AI commercial storefront acceptance                 | Diagnose final integrated live-AI commercial quality through six freshly authorized calls and retained human evidence.                                                                                                            | **Baseline diagnostic / quality rejected** | P10B-16P-05B and accepted P10B-18C                              | Product owner, provider, generation, QA                  | Six-call bounded ledger; exact lineage; protected commerce/media; disclosed lifecycle limits; 3/6 prompt-fidelity passes and exact Concept 2/6 collapse                                                | Repair calls, generated-result patches, Vesko calls, publication or architecture implementation                          |
 | P10B-19 PRE — Structural Design Intelligence Architecture Lock      | Lock the architecture and ownership boundaries for the planned structural design intelligence program.                                                                                                                            | **Baseline**                               | Completed P10B-18D diagnostic                                   | Product owner and architecture                           | Product-owner accepted architecture decision and locked P10B-19A-J sequence grounded in the rejected live-quality diagnostic                                                                           | Implementing P10B-19A-J during the lock                                                                                  |
-| P10B-19A — Structural Storefront Family Contract                    | Implement the accepted family and PageBlueprint v2 contract boundary without beginning later packages.                                                                                                                            | **Planned / exact next**                   | Accepted P10B-19 PRE                                            | Planned task owner                                       | Versioned family and PageBlueprint v2 contracts, deterministic selection, topology identity, and v1 compatibility                                                                                      | Pulling later Visual Recipe, page-family, multi-concept, or critic work into P10B-19A                                    |
+| P10B-19A — Structural Storefront Family Contract                    | Implement the accepted family and PageBlueprint v2 contract boundary without beginning later packages.                                                                                                                            | **Partial**                                | Accepted P10B-19 PRE                                            | Planned task owner                                       | Versioned family and PageBlueprint v2 contracts, deterministic selection, topology identity, and v1 compatibility                                                                                      | Pulling later Visual Recipe, page-family, multi-concept, or critic work into P10B-19A                                    |
 | P10B-19B-J — Remaining Structural Design Intelligence sequence      | Deliver the remaining nine planned packages in the accepted order after P10B-19A.                                                                                                                                                 | **Planned**                                | Accepted P10B-19 PRE and package dependencies                   | Planned task owners                                      | Package-specific contracts, implementation and acceptance                                                                                                                                              | Treating this roadmap synchronization as implementation                                                                  |
 
 P10B-18D is complete only as a diagnostic baseline. P10B-19 PRE is Baseline, and P10B-19A is the
@@ -285,11 +292,11 @@ truthful largest compatibility cluster of 14, and selects 28 deterministic store
 280-entry four-width EN/FI review. The final review is **PASS WITH MINOR LIMITATION** with zero
 primary FAIL. P10B-16P-05B subsequently completed the consumer-proven historical-authority cleanup
 and is Baseline. P10B-18D completed as a rejected-quality diagnostic. P10B-19 PRE is Baseline, and
-P10B-19A is the exact next task.
+P10B-19A is Partial; P10B-19A-02 is the exact next task.
 
 ## Accepted P10B-19 sequence
 
-P10B-19 PRE is Baseline. P10B-19A - Structural Storefront Family Contract is the exact next task.
+P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01 is Baseline, and P10B-19A-02 is the exact next task.
 P10B-19B through P10B-19J remain Planned. The accepted sequence is additive and preserves current
 snapshot, commerce, media, component, proposal, editor, and publication authority.
 
@@ -311,8 +318,9 @@ P10B remains Partial until the implementation and acceptance sequence completes.
 - DEVX-01F2 = Baseline
 - DEVX-01G = Baseline
 - DEVX-01 = Baseline / closed
-- P10B-19A = exact next product-development sprint
-- P10B-19A-01 = exact next implementation task
+- P10B-19A-01 = Baseline
+- P10B-19A = Partial
+- P10B-19A-02 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
