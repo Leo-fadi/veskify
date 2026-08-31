@@ -94,8 +94,8 @@ describe("DEVX-01C retained CI authority", () => {
     expect(workflow).toContain("playwright-matrix-evidence-${{ github.run_id }}");
     expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(7);
     expect(count(workflow, "include-hidden-files: true")).toBe(3);
-    expect(count(workflow, "if-no-files-found: warn")).toBe(6);
-    expect(count(workflow, "if-no-files-found: error")).toBe(1);
+    expect(count(workflow, "if-no-files-found: warn")).toBe(5);
+    expect(count(workflow, "if-no-files-found: error")).toBe(2);
     expect(count(workflow, "retention-days: 14")).toBe(6);
     expect(count(workflow, "retention-days: 3")).toBe(1);
   });

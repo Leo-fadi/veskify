@@ -90,6 +90,10 @@ describe("DEVX-01F browser matrix workflow authority", () => {
     expect(report).toContain("--reporter=html");
     expect(report).toContain(".ci-merged-blobs");
     expect(report).toContain("PLAYWRIGHT_HTML_OPEN: never");
+    expect(report).toContain("PLAYWRIGHT_HTML_OUTPUT_DIR: ci-playwright-report");
+    expect(report).toContain("path: ci-playwright-report");
+    expect(report).toContain("if-no-files-found: error");
+    expect(report).not.toContain("path: .ci-playwright-report");
     expect(report).toContain("node scripts/playwright-ci.mjs summarize-matrix");
     expect(report.indexOf("validate-group-artifacts")).toBeLessThan(
       report.indexOf("merge-reports"),

@@ -270,7 +270,7 @@ jobs:
       - name: Merge Playwright blob reports
         env:
           PLAYWRIGHT_HTML_OPEN: never
-          PLAYWRIGHT_HTML_OUTPUT_DIR: .ci-playwright-report
+          PLAYWRIGHT_HTML_OUTPUT_DIR: ci-playwright-report
         run: |
           printf '%s\n' 'export default { testDir: "./tests" };' > .ci-playwright-merge.config.mjs
           pnpm exec playwright merge-reports \
@@ -298,8 +298,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-merged-report-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .ci-playwright-report
-          if-no-files-found: warn
+          path: ci-playwright-report
+          if-no-files-found: error
           retention-days: 14
 
   validate:
