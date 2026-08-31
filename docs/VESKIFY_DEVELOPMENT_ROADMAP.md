@@ -14,9 +14,9 @@ This roadmap contains only approved delivery order, tasks, ownership, dependenci
 non-goals. Capability truth and architecture live in the SDD. Checkbox progress and detailed exit
 criteria live in the delivery tracker.
 
-**Engineering enablement:** DEVX-01A through DEVX-01D are Baseline. DEVX-01E, DEVX-01F and
-DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering task.
-P10B-19A remains the next product-development sprint after DEVX-01; P10B remains Partial.
+**Engineering enablement:** DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline /
+closed. P10B-19A is the exact next product-development sprint; P10B-19A-01 is the exact next
+implementation task. P10B remains Partial.
 
 ## 1. Delivery order
 
@@ -34,19 +34,21 @@ and the Vesko pilot.
 
 ### 1.1 DEVX-01 engineering-enablement sprint
 
-| Order | Task                                                                                 | Outcome                                                                                                 | Status                                    | Dependency           |
-| ----: | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------- |
-|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Lock immutable child contracts, roles, scope budgets, rolling waves and pre-PR independent verification | **Baseline**                              | Accepted P10B-19 PRE |
-|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Enforce contract identity, paths, budgets, evidence coverage and terminal verdicts                      | **Baseline**                              | DEVX-01A             |
-|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Establish measured CI timing, cancellation and safe build caching                                       | **Baseline**                              | DEVX-01B             |
-|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Split independent CI work behind stable required authority                                              | **Baseline**                              | DEVX-01C             |
-|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Measure and balance retained browser groups                                                             | **Baseline**                              | DEVX-01D             |
-|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Execute browser groups safely in parallel with one required result                                      | **Baseline**                              | DEVX-01E             |
-|     7 | DEVX-01F2 - Contention-safe Vitest sharding                                          | Execute complete one-worker Vitest shards on isolated runners and validate one merged result            | **Baseline**                              | DEVX-01F             |
-|     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove stable improvement over two clean runs and close DEVX-01                                          | **Planned / exact next engineering task** | DEVX-01F2            |
+| Order | Task                                                                                 | Outcome                                                                                                 | Status       | Dependency           |
+| ----: | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------ | -------------------- |
+|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Lock immutable child contracts, roles, scope budgets, rolling waves and pre-PR independent verification | **Baseline** | Accepted P10B-19 PRE |
+|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Enforce contract identity, paths, budgets, evidence coverage and terminal verdicts                      | **Baseline** | DEVX-01A             |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Establish measured CI timing, cancellation and safe build caching                                       | **Baseline** | DEVX-01B             |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Split independent CI work behind stable required authority                                              | **Baseline** | DEVX-01C             |
+|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Measure and balance retained browser groups                                                             | **Baseline** | DEVX-01D             |
+|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Execute browser groups safely in parallel with one required result                                      | **Baseline** | DEVX-01E             |
+|     7 | DEVX-01F2 - Contention-safe Vitest sharding                                          | Execute complete one-worker Vitest shards on isolated runners and validate one merged result            | **Baseline** | DEVX-01F             |
+|     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove stable improvement over two clean runs and close DEVX-01                                          | **Baseline** | DEVX-01F2            |
 
 DEVX-01 changes development execution, not storefront behavior or the accepted P10B-19
-architecture. P10B-19A begins only after DEVX-01 closes.
+architecture. Run A completed in 34m27s with complete coverage on a cache miss; Run B remains the
+final before-merge gate under the same frozen architecture. P10B-19A is the exact next
+product-development sprint, beginning with P10B-19A-01.
 
 ### 1.2 P10B-19A planned child sequence
 
@@ -307,8 +309,10 @@ P10B remains Partial until the implementation and acceptance sequence completes.
 - DEVX-01E = Baseline
 - DEVX-01F = Baseline
 - DEVX-01F2 = Baseline
-- DEVX-01G = exact next engineering task
-- P10B-19A = next product-development sprint after DEVX-01
+- DEVX-01G = Baseline
+- DEVX-01 = Baseline / closed
+- P10B-19A = exact next product-development sprint
+- P10B-19A-01 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
@@ -327,4 +331,6 @@ Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
 `pnpm exec playwright merge-reports`. DEVX-01F2 locks the smallest conservative Vitest plan under
 the 35-minute projection: three isolated rows, each retaining one worker, serial file execution,
 zero retry, exact runtime discovery, unique blobs and fail-closed merged-result reconciliation.
-DEVX-01G owns two-run performance acceptance and workflow closure.
+DEVX-01G closes the sprint through two comparable clean runs without changing that architecture.
+Run A reduced developer wait time from 2h6m13s to 34m27s (72.706%) while summed job time increased
+by 3m33s; no lower compute-cost claim is made. Final Run B remains merge-gated.

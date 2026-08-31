@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01D are Baseline, DEVX-01E, DEVX-01F and DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A is the exact next product-development sprint; P10B-19A-01 is the exact next implementation task.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -399,19 +399,20 @@ migration or closure ownership in the accepted architecture.
 
 ### DEVX-01 engineering-enablement sprint
 
-| Order | Task                                                                                 | Status after DEVX-01A merge           |
-| ----: | ------------------------------------------------------------------------------------ | ------------------------------------- |
-|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                              |
-|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                              |
-|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Baseline                              |
-|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Baseline                              |
-|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Baseline                              |
-|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Baseline                              |
-|     7 | DEVX-01F2 - Contention-safe Vitest sharding                                          | Baseline                              |
-|     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned / exact next engineering task |
+| Order | Task                                                                                 | Status after DEVX-01A merge |
+| ----: | ------------------------------------------------------------------------------------ | --------------------------- |
+|     1 | DEVX-01A - Sprint contract and independent verification protocol                     | Baseline                    |
+|     2 | DEVX-01B - Mechanical contract/verdict verifier                                      | Baseline                    |
+|     3 | DEVX-01C - CI timings, obsolete-run cancellation and Next build caching              | Baseline                    |
+|     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Baseline                    |
+|     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Baseline                    |
+|     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Baseline                    |
+|     7 | DEVX-01F2 - Contention-safe Vitest sharding                                          | Baseline                    |
+|     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Baseline                    |
 
-P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01E,
-DEVX-01F and DEVX-01F2 are Baseline, and DEVX-01G is the exact next engineering task.
+P10B remains Partial. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed.
+P10B-19A is the exact next product-development sprint; P10B-19A-01 is the exact next implementation
+task.
 
 ### CI timing, cancellation and Next cache authority
 
@@ -464,9 +465,17 @@ Vitest 1h 11m 18.183s, Playwright 51m 5.840s, Webpack 1m 7.832s, and the remaini
 54m 25.450s reduction, while four installs add a projected 17.640s of runner work. That projection
 excludes queueing, runner startup and cache variance; actual DEVX-01D timings are evidence rather
 than final performance acceptance. DEVX-01E owns Playwright timing inventory, DEVX-01F owns locked
-browser matrix execution and merged reports without activating unnecessary suite shards,
-DEVX-01F2 owns contention-safe Vitest sharding and merged-result validation, and DEVX-01G owns the
-final two-run performance decision.
+browser matrix execution and merged reports without activating unnecessary suite shards, and
+DEVX-01F2 owns contention-safe Vitest sharding and merged-result validation.
+
+Final-architecture Run A (`33362860614`, commit
+`563b427d3eadcae206d9b20e49793f62dd989130`) completed in 34m27s on a cache miss. It retained 245
+runtime-discovered Vitest files across `82 / 82 / 81`, 3,165 passed, one pending, zero failed, and
+all 12 canonical Playwright suites with successful merged reports and stable `validate`. Against
+the original 2h6m13s serial baseline, developer wait time fell by 1h31m46s, or 72.706%. Summed
+GitHub job time was 2h9m46s, 3m33s higher than the serial baseline; this closure claims reduced
+waiting time, not lower compute cost. Run B remains the final clean before-merge evidence gate and
+must use the same CI architecture.
 
 ### Existing branch and PR rules
 
@@ -928,8 +937,10 @@ The binding architecture and 73-child plan are in
 - DEVX-01E = Baseline
 - DEVX-01F = Baseline
 - DEVX-01F2 = Baseline
-- DEVX-01G = exact next engineering task
-- P10B-19A = next product-development sprint after DEVX-01
+- DEVX-01G = Baseline
+- DEVX-01 = Baseline / closed
+- P10B-19A = exact next product-development sprint
+- P10B-19A-01 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
@@ -949,7 +960,9 @@ Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
 `scripts/vitest-ci-plan.v1.json` and audits it through `node scripts/vitest-ci.mjs audit-plan`.
 CI emits only bounded shard IDs, retains `--maxWorkers=1` and `--no-file-parallelism` per row, then
 rejects incomplete shard manifests or blobs before `pnpm exec vitest --merge-reports` and one safe
-merged-result projection. DEVX-01G owns two-run performance acceptance and workflow closure.
+merged-result projection. DEVX-01G closes two-run performance acceptance and workflow authority.
+The closure wording becomes canonical only after the final Run B gate passes and this task merges;
+no CI execution authority changes in DEVX-01G.
 
 ### Playwright CI timing operations
 
