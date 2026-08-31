@@ -156,7 +156,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
       - name: Audit locked Playwright execution plan
         run: node scripts/playwright-ci.mjs audit-plan
       - name: Emit bounded browser matrix

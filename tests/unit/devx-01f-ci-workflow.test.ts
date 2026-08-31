@@ -52,6 +52,8 @@ describe("DEVX-01F browser matrix workflow authority", () => {
     expect(planJob).toContain("node scripts/playwright-ci.mjs audit-plan");
     expect(planJob).toContain("node scripts/playwright-ci.mjs emit-matrix");
     expect(planJob).not.toContain("playwright install");
+    expect(planJob).not.toContain("cache: pnpm");
+    expect(planJob).not.toContain("pnpm install");
     expect(matrixJob).toContain("needs: browser-plan");
     expect(matrixJob).toContain("fail-fast: false");
     expect(matrixJob).toContain("matrix: ${{ fromJSON(needs.browser-plan.outputs.matrix) }}");
