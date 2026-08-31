@@ -17,7 +17,8 @@ Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity g
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01D are the contract, mechanical-verification, CI-observability and parallel
-CI Baseline; DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task.
+CI Baseline; DEVX-01E, DEVX-01F and DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering
+task.
 P10B-19A remains the next product-development sprint
 after DEVX-01, and P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
@@ -267,6 +268,7 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - DEVX-01D = Baseline
 - DEVX-01E = Baseline
 - DEVX-01F = Baseline
+- DEVX-01F2 = Baseline
 - DEVX-01G = exact next engineering task
 - P10B-19A = next product-development sprint after DEVX-01
 
@@ -284,5 +286,8 @@ plan already meets the bounded makespan and balance targets, so no suite shardin
 Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
 `node scripts/playwright-ci.mjs run-group`; the report job runs
 `node scripts/playwright-ci.mjs validate-group-artifacts` before
-`pnpm exec playwright merge-reports`. DEVX-01G owns two-run performance acceptance and workflow
-closure.
+`pnpm exec playwright merge-reports`. DEVX-01F2 replaces the serial Vitest job with the accepted
+three-shard plan. Runtime discovery binds every current test file to exactly one official Vitest
+shard; each shard remains one-worker and serial, and the report job rejects incomplete manifests
+or blobs before validating one merged result. DEVX-01G owns two-run performance acceptance and
+workflow closure.

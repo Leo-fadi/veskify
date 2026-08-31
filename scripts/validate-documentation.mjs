@@ -143,7 +143,7 @@ requireText("README.md", [
   "P10B-18D is a Baseline diagnostic with live commercial quality rejected",
   "Canonical `/search` execution is Baseline",
   "P10B-19 PRE is Baseline",
-  "DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task",
+  "DEVX-01E, DEVX-01F and DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering\ntask",
   "P10B-19A remains the next product-development sprint\nafter DEVX-01",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
@@ -187,7 +187,7 @@ requireText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "DEVX-01A through DEVX-01D are Baseline. DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task",
+  "DEVX-01A through DEVX-01D are Baseline. DEVX-01E, DEVX-01F and\nDEVX-01F2 are Baseline; DEVX-01G is the exact next engineering task",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
@@ -320,7 +320,7 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "### P10B-19A planned micro-pull-request map",
   "### DEVX-01 engineering-enablement sprint",
   "explicitly approved this ten-child delivery decomposition in the immutable\nDEVX-01A contract",
-  "DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task",
+  "DEVX-01E, DEVX-01F and DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering task",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -348,6 +348,7 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "- [x] DEVX-01D - Parallel static, Vitest and production-build jobs",
   "- [x] DEVX-01E - Playwright timing inventory and balanced execution groups",
   "- [x] DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator",
+  "- [x] DEVX-01F2 - Contention-safe Vitest sharding",
   "- [ ] DEVX-01G - Two-run performance acceptance and workflow closure (**exact next engineering task**)",
   "P10B-19A is the next product-development sprint after DEVX-01",
   "#### P10B-19A planned micro-pull-request map",
@@ -900,6 +901,7 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
   for (const authority of [
     "DEVX-01E = Baseline",
     "DEVX-01F = Baseline",
+    "DEVX-01F2 = Baseline",
     "DEVX-01G = exact next engineering task",
   ]) {
     if (!content.includes(authority)) {
@@ -909,6 +911,7 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
   for (const stale of [
     "DEVX-01E = exact next engineering task",
     "DEVX-01F = exact next engineering task",
+    "DEVX-01F2 = exact next engineering task",
   ]) {
     if (content.includes(stale)) throw new Error(`${devx01fStatusPath} retains obsolete ${stale}.`);
   }
@@ -920,13 +923,19 @@ const devx01fTracker = readDevx01fStatusFile(
 if (!/\[x\] DEVX-01F[^\n]*Playwright sharding\/matrix/iu.test(devx01fTracker)) {
   throw new Error("Delivery tracker must mark DEVX-01F complete.");
 }
+if (!/\[x\] DEVX-01F2[^\n]*Contention-safe Vitest sharding/iu.test(devx01fTracker)) {
+  throw new Error("Delivery tracker must mark DEVX-01F2 complete.");
+}
 if (!/\[ \] DEVX-01G[^\n]*exact next engineering task/iu.test(devx01fTracker)) {
   throw new Error("Delivery tracker must mark DEVX-01G as the exact next engineering task.");
 }
 for (const stalePattern of [
   /\[ \] DEVX-01F[^\n]*exact next/iu,
+  /\[ \] DEVX-01F2[^\n]*exact next/iu,
   /\| DEVX-01F[^\n]*Planned/iu,
+  /\| DEVX-01F2[^\n]*Planned/iu,
   /DEVX-01F is(?:\s+the)? exact next/iu,
+  /DEVX-01F2 is(?:\s+the)? exact next/iu,
 ]) {
   if (stalePattern.test(devx01fTracker)) {
     throw new Error(
@@ -952,7 +961,7 @@ for (const authority of [
 for (const [path, pattern] of [
   [
     "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
-    /\|\s*7\s*\|\s*DEVX-01G[^\n]*\|\s*\*\*Planned \/ exact next engineering task\*\*/iu,
+    /\|\s*8\s*\|\s*DEVX-01G[^\n]*\|\s*\*\*Planned \/ exact next engineering task\*\*/iu,
   ],
   [
     "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

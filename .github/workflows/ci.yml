@@ -53,7 +53,150 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  vitest:
+  vitest-plan:
+    name: Vitest execution plan
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Discover complete Vitest inventory
+        run: |
+          mkdir -p .ci-vitest-plan
+          pnpm exec vitest list --filesOnly --json > .ci-vitest-plan/discovery.json
+
+      - name: Audit locked Vitest plan
+        run: >-
+          node scripts/vitest-ci.mjs audit-plan
+          --discovery .ci-vitest-plan/discovery.json
+          --output .ci-vitest-plan/discovery-audit.json
+
+      - name: Emit bounded Vitest matrix
+        id: matrix
+        run: echo "matrix=$(node scripts/vitest-ci.mjs emit-matrix)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Vitest plan evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-plan-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-vitest-plan/discovery-audit.json
+          if-no-files-found: error
+          retention-days: 14
+
+  vitest-shard:
+    name: Vitest (${{ matrix.shardId }})
+    needs: vitest-plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.vitest-plan.outputs.matrix) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: >-
+          node scripts/ci-timing.mjs run
+          --id install
+          --output-directory .ci-timings/vitest-${{ matrix.shardId }}
+          -- pnpm install --frozen-lockfile
+
+      - name: Download Vitest plan evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: vitest-plan-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-vitest-plan-input
+
+      - name: Prepare isolated Vitest evidence
+        run: mkdir -p .ci-vitest-shards/${{ matrix.shardId }}/blobs
+
+      - name: Run complete one-worker Vitest shard
+        run: >-
+          node scripts/ci-timing.mjs run
+          --id vitest
+          --output-directory .ci-timings/vitest-${{ matrix.shardId }}
+          -- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
+          --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          --reporter=blob
+          --outputFile=.ci-vitest-shards/${{ matrix.shardId }}/blobs/${{ matrix.shardId }}.json
+
+      - name: Summarize Vitest shard timings
+        if: ${{ always() && !cancelled() }}
+        run: >-
+          node scripts/ci-timing.mjs summarize
+          --profile vitest
+          --input-directory .ci-timings/vitest-${{ matrix.shardId }}
+          --output .ci-vitest-shards/${{ matrix.shardId }}/ci-vitest-summary.json
+          --job-status ${{ job.status }}
+
+      - name: Persist truthful Vitest shard manifest
+        if: ${{ always() && !cancelled() }}
+        run: >-
+          node scripts/vitest-ci.mjs write-shard-manifest
+          --shard-id ${{ matrix.shardId }}
+          --discovery-audit .ci-vitest-plan-input/discovery-audit.json
+          --timing-summary .ci-vitest-shards/${{ matrix.shardId }}/ci-vitest-summary.json
+          --blob .ci-vitest-shards/${{ matrix.shardId }}/blobs/${{ matrix.shardId }}.json
+          --job-status ${{ job.status }}
+          --artifact-run-id ${{ github.run_id }}
+          --artifact-run-attempt ${{ github.run_attempt }}
+          --output .ci-vitest-shards/${{ matrix.shardId }}/manifest.json
+
+      - name: Upload Vitest shard evidence
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-shard-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shardId }}
+          path: |
+            .ci-vitest-shards/${{ matrix.shardId }}/manifest.json
+            .ci-vitest-shards/${{ matrix.shardId }}/ci-vitest-summary.json
+            .ci-timings/vitest-${{ matrix.shardId }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Vitest shard blob
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-shard-blob-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shardId }}
+          path: .ci-vitest-shards/${{ matrix.shardId }}/blobs/${{ matrix.shardId }}.json
+          if-no-files-found: warn
+          retention-days: 3
+
+  vitest-report:
+    name: Vitest merged report
+    needs:
+      - vitest-plan
+      - vitest-shard
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -71,25 +214,62 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: node scripts/ci-timing.mjs run --id install --output-directory .ci-timings/vitest -- pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
-      - name: Run complete one-worker Vitest
-        run: node scripts/ci-timing.mjs run --id vitest --output-directory .ci-timings/vitest -- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism
+      - name: Download Vitest plan evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: vitest-plan-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-vitest-plan-input
 
-      - name: Summarize Vitest timings
-        if: always()
-        run: node scripts/ci-timing.mjs summarize --profile vitest --input-directory .ci-timings/vitest --output .ci-evidence/vitest-summary.json --job-status "${{ job.status }}"
+      - name: Download Vitest shard evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: vitest-shard-evidence-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: .ci-vitest-matrix-input/evidence
+          merge-multiple: false
 
-      - name: Upload Vitest timing evidence
-        if: always()
+      - name: Download Vitest shard blobs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: vitest-shard-blob-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: .ci-vitest-matrix-input/blobs
+          merge-multiple: false
+
+      - name: Reconcile complete Vitest shard artifacts
+        run: >-
+          node scripts/vitest-ci.mjs validate-shard-artifacts
+          --evidence-directory .ci-vitest-matrix-input/evidence
+          --blob-directory .ci-vitest-matrix-input/blobs
+          --discovery-audit .ci-vitest-plan-input/discovery-audit.json
+          --blob-output-directory .ci-merged-vitest-blobs
+          --artifact-run-id ${{ github.run_id }}
+          --artifact-run-attempt ${{ github.run_attempt }}
+          --output .ci-evidence/vitest-matrix-validation.json
+
+      - name: Merge Vitest blob reports
+        run: >-
+          pnpm exec vitest
+          --merge-reports=.ci-merged-vitest-blobs
+          --reporter=json
+          --outputFile=.ci-evidence/vitest-merged-result.json
+
+      - name: Validate merged Vitest result
+        run: >-
+          node scripts/vitest-ci.mjs validate-merged-report
+          --merged-result .ci-evidence/vitest-merged-result.json
+          --discovery-audit .ci-vitest-plan-input/discovery-audit.json
+          --artifact-validation .ci-evidence/vitest-matrix-validation.json
+          --output .ci-evidence/vitest-validated-result.json
+
+      - name: Upload Vitest matrix evidence
         uses: actions/upload-artifact@v4
         with:
-          name: ci-timings-vitest-${{ github.run_id }}-${{ github.run_attempt }}
+          name: vitest-matrix-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            .ci-timings/vitest
-            .ci-evidence/vitest-summary.json
-          include-hidden-files: true
-          if-no-files-found: warn
+            .ci-evidence/vitest-matrix-validation.json
+            .ci-evidence/vitest-validated-result.json
+          if-no-files-found: error
           retention-days: 14
 
   production-build:
@@ -305,7 +485,9 @@ jobs:
   validate:
     needs:
       - static-checks
-      - vitest
+      - vitest-plan
+      - vitest-shard
+      - vitest-report
       - production-build
       - browser-plan
       - browser-regression
@@ -316,7 +498,9 @@ jobs:
       - name: Require every validation job
         run: |
           test "${{ needs.static-checks.result }}" = "success"
-          test "${{ needs.vitest.result }}" = "success"
+          test "${{ needs.vitest-plan.result }}" = "success"
+          test "${{ needs.vitest-shard.result }}" = "success"
+          test "${{ needs.vitest-report.result }}" = "success"
           test "${{ needs.production-build.result }}" = "success"
           test "${{ needs.browser-plan.result }}" = "success"
           test "${{ needs.browser-regression.result }}" = "success"

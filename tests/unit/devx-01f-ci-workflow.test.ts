@@ -32,14 +32,14 @@ function occurrences(source: string, needle: string) {
 }
 
 describe("DEVX-01F browser matrix workflow authority", () => {
-  it("keeps static, one-worker Vitest and production-build jobs unchanged in ownership", () => {
+  it("keeps static, one-worker-per-shard Vitest and production-build authority", () => {
     expect(block("static-checks")).toContain("-- pnpm typecheck");
     expect(block("static-checks")).toContain("-- pnpm lint");
     expect(block("static-checks")).toContain("-- pnpm format:check");
-    expect(block("vitest")).toContain(
+    expect(block("vitest-shard")).toContain(
       "-- pnpm exec vitest run --maxWorkers=1 --no-file-parallelism",
     );
-    expect(block("vitest")).not.toContain("matrix:");
+    expect(block("vitest-shard")).toContain("fail-fast: false");
     expect(block("production-build")).toContain("path: .next/cache");
     expect(block("production-build")).toContain("-- pnpm build:webpack");
     expect(block("production-build")).toContain("-- pnpm build:check:storefront-budgets");
@@ -61,7 +61,7 @@ describe("DEVX-01F browser matrix workflow authority", () => {
     expect(matrixJob).not.toContain("matrix.suite");
     expect(matrixJob).not.toContain("matrix.args");
     expect(matrixJob).not.toContain("continue-on-error");
-    expect(occurrences(workflow, "node-version: 24")).toBe(6);
+    expect(occurrences(workflow, "node-version: 24")).toBe(8);
     expect(workflow).not.toContain("node-version: 22");
   });
 
@@ -106,7 +106,9 @@ describe("DEVX-01F browser matrix workflow authority", () => {
     const aggregate = block("validate");
     for (const job of [
       "static-checks",
-      "vitest",
+      "vitest-plan",
+      "vitest-shard",
+      "vitest-report",
       "production-build",
       "browser-plan",
       "browser-regression",

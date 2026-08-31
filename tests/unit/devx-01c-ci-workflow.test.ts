@@ -43,7 +43,7 @@ describe("DEVX-01C retained CI authority", () => {
 
   it("retains every non-browser validation command once and isolates dependency installation", () => {
     for (const command of retainedCommands) expect(count(workflow, command)).toBe(1);
-    expect(count(workflow, "pnpm install --frozen-lockfile")).toBe(5);
+    expect(count(workflow, "pnpm install --frozen-lockfile")).toBe(7);
     expect(workflow).not.toContain("continue-on-error:");
   });
 
@@ -81,7 +81,7 @@ describe("DEVX-01C retained CI authority", () => {
   });
 
   it("retains bounded timing artifacts and extends browser evidence without raw output", () => {
-    for (const profile of ["static", "vitest", "build"]) {
+    for (const profile of ["static", "build"]) {
       expect(workflow).toContain(`summarize --profile ${profile}`);
       expect(workflow).toContain(
         `name: ci-timings-${profile}-\${{ github.run_id }}-\${{ github.run_attempt }}`,
@@ -89,14 +89,17 @@ describe("DEVX-01C retained CI authority", () => {
       expect(workflow).toContain(`.ci-timings/${profile}`);
       expect(workflow).toContain(`.ci-evidence/${profile}-summary.json`);
     }
+    expect(workflow).toMatch(/ci-timing\.mjs summarize\s+--profile vitest/u);
+    expect(workflow).toContain("vitest-shard-evidence-${{ github.run_id }}");
+    expect(workflow).toContain("vitest-matrix-evidence-${{ github.run_id }}");
     expect(workflow).toMatch(/ci-timing\.mjs summarize\s+--profile browser/u);
     expect(workflow).toContain("playwright-group-evidence-${{ github.run_id }}");
     expect(workflow).toContain("playwright-matrix-evidence-${{ github.run_id }}");
-    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(7);
+    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(10);
     expect(count(workflow, "include-hidden-files: true")).toBe(3);
     expect(count(workflow, "if-no-files-found: warn")).toBe(5);
-    expect(count(workflow, "if-no-files-found: error")).toBe(2);
-    expect(count(workflow, "retention-days: 14")).toBe(6);
-    expect(count(workflow, "retention-days: 3")).toBe(1);
+    expect(count(workflow, "if-no-files-found: error")).toBe(5);
+    expect(count(workflow, "retention-days: 14")).toBe(8);
+    expect(count(workflow, "retention-days: 3")).toBe(2);
   });
 });
