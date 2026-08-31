@@ -84,7 +84,11 @@ describe("DEVX-01F browser matrix workflow authority", () => {
     const report = block("browser-report");
     expect(report).toContain("if: ${{ always() && !cancelled() }}");
     expect(report).toContain("node scripts/playwright-ci.mjs validate-group-artifacts");
-    expect(report).toContain("pnpm exec playwright merge-reports --reporter=html .ci-merged-blobs");
+    expect(report).toContain('export default { testDir: "./tests" };');
+    expect(report).toContain("pnpm exec playwright merge-reports");
+    expect(report).toContain("-c .ci-playwright-merge.config.mjs");
+    expect(report).toContain("--reporter=html");
+    expect(report).toContain(".ci-merged-blobs");
     expect(report).toContain("PLAYWRIGHT_HTML_OPEN: never");
     expect(report).toContain("node scripts/playwright-ci.mjs summarize-matrix");
     expect(report.indexOf("validate-group-artifacts")).toBeLessThan(

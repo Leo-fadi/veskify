@@ -271,7 +271,12 @@ jobs:
         env:
           PLAYWRIGHT_HTML_OPEN: never
           PLAYWRIGHT_HTML_OUTPUT_DIR: .ci-playwright-report
-        run: pnpm exec playwright merge-reports --reporter=html .ci-merged-blobs
+        run: |
+          printf '%s\n' 'export default { testDir: "./tests" };' > .ci-playwright-merge.config.mjs
+          pnpm exec playwright merge-reports \
+            -c .ci-playwright-merge.config.mjs \
+            --reporter=html \
+            .ci-merged-blobs
       - name: Summarize browser matrix timings
         run: >-
           node scripts/playwright-ci.mjs summarize-matrix
