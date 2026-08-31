@@ -14,7 +14,8 @@ This roadmap contains only approved delivery order, tasks, ownership, dependenci
 non-goals. Capability truth and architecture live in the SDD. Checkbox progress and detailed exit
 criteria live in the delivery tracker.
 
-**Engineering enablement:** DEVX-01A through DEVX-01D are Baseline. DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task.
+**Engineering enablement:** DEVX-01A through DEVX-01D are Baseline. DEVX-01E, DEVX-01F and
+DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering task.
 P10B-19A remains the next product-development sprint after DEVX-01; P10B remains Partial.
 
 ## 1. Delivery order
@@ -41,7 +42,8 @@ and the Vesko pilot.
 |     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Split independent CI work behind stable required authority                                              | **Baseline**                              | DEVX-01C             |
 |     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Measure and balance retained browser groups                                                             | **Baseline**                              | DEVX-01D             |
 |     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Execute browser groups safely in parallel with one required result                                      | **Baseline**                              | DEVX-01E             |
-|     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove stable improvement over two clean runs and close DEVX-01                                          | **Planned / exact next engineering task** | DEVX-01F             |
+|     7 | DEVX-01F2 - Contention-safe Vitest sharding                                          | Execute complete one-worker Vitest shards on isolated runners and validate one merged result            | **Baseline**                              | DEVX-01F             |
+|     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove stable improvement over two clean runs and close DEVX-01                                          | **Planned / exact next engineering task** | DEVX-01F2            |
 
 DEVX-01 changes development execution, not storefront behavior or the accepted P10B-19
 architecture. P10B-19A begins only after DEVX-01 closes.
@@ -304,6 +306,7 @@ P10B remains Partial until the implementation and acceptance sequence completes.
 - DEVX-01D = Baseline
 - DEVX-01E = Baseline
 - DEVX-01F = Baseline
+- DEVX-01F2 = Baseline
 - DEVX-01G = exact next engineering task
 - P10B-19A = next product-development sprint after DEVX-01
 
@@ -321,5 +324,7 @@ plan already meets the bounded makespan and balance targets, so no suite shardin
 Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
 `node scripts/playwright-ci.mjs run-group`; the report job runs
 `node scripts/playwright-ci.mjs validate-group-artifacts` before
-`pnpm exec playwright merge-reports`. DEVX-01G owns two-run performance acceptance and workflow
-closure.
+`pnpm exec playwright merge-reports`. DEVX-01F2 locks the smallest conservative Vitest plan under
+the 35-minute projection: three isolated rows, each retaining one worker, serial file execution,
+zero retry, exact runtime discovery, unique blobs and fail-closed merged-result reconciliation.
+DEVX-01G owns two-run performance acceptance and workflow closure.

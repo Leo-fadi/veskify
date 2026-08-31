@@ -18,9 +18,15 @@ const jobBlock = (source: string, job: string) => {
 };
 
 describe("DEVX-01D retained parallel CI authority", () => {
-  it("keeps static, Vitest and production-build as independent jobs behind validate", () => {
+  it("keeps static, sharded Vitest and production-build as independent jobs behind validate", () => {
     const aggregate = jobBlock(workflow, "validate");
-    for (const job of ["static-checks", "vitest", "production-build"]) {
+    for (const job of [
+      "static-checks",
+      "vitest-plan",
+      "vitest-shard",
+      "vitest-report",
+      "production-build",
+    ]) {
       expect(workflow).toMatch(new RegExp(`^  ${job}:`, "mu"));
       expect(aggregate).toContain(`- ${job}`);
       expect(aggregate).toContain(`needs.${job}.result`);
@@ -39,7 +45,8 @@ describe("DEVX-01D retained parallel CI authority", () => {
     ]) {
       expect(count(workflow, command)).toBe(1);
     }
-    expect(jobBlock(workflow, "vitest")).not.toContain("matrix:");
+    expect(jobBlock(workflow, "vitest-shard")).toContain("fail-fast: false");
+    expect(jobBlock(workflow, "vitest-shard")).not.toContain("max-parallel:");
   });
 
   it("keeps build cache and budgets inside production-build in strict order", () => {
@@ -54,7 +61,10 @@ describe("DEVX-01D retained parallel CI authority", () => {
     expect(workflow.replace(block, "")).not.toContain("actions/cache@v4");
   });
 
-  it("permits only the dependent DEVX-01F browser matrix extension", () => {
+  it("permits only the dependent browser and Vitest matrix extensions", () => {
+    expect(workflow).toMatch(/^ {2}vitest-plan:$/mu);
+    expect(workflow).toMatch(/^ {2}vitest-shard:$/mu);
+    expect(workflow).toMatch(/^ {2}vitest-report:$/mu);
     expect(workflow).toMatch(/^ {2}browser-plan:$/mu);
     expect(workflow).toMatch(/^ {2}browser-regression:$/mu);
     expect(workflow).toMatch(/^ {2}browser-report:$/mu);

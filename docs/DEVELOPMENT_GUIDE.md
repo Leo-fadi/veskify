@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01D are Baseline, DEVX-01E and DEVX-01F are Baseline; DEVX-01G is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01D are Baseline, DEVX-01E, DEVX-01F and DEVX-01F2 are Baseline; DEVX-01G is the exact next engineering task, and P10B-19A remains the next product-development sprint after DEVX-01.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -407,18 +407,19 @@ migration or closure ownership in the accepted architecture.
 |     4 | DEVX-01D - Parallel static, Vitest and production-build jobs                         | Baseline                              |
 |     5 | DEVX-01E - Playwright timing inventory and balanced execution groups                 | Baseline                              |
 |     6 | DEVX-01F - Playwright sharding/matrix, merged reports and stable required aggregator | Baseline                              |
-|     7 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned / exact next engineering task |
+|     7 | DEVX-01F2 - Contention-safe Vitest sharding                                          | Baseline                              |
+|     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Planned / exact next engineering task |
 
-P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01E and DEVX-01F are
-Baseline, and DEVX-01G is the exact next engineering task.
+P10B remains Partial. P10B-19A is the next product-development sprint after DEVX-01. DEVX-01E,
+DEVX-01F and DEVX-01F2 are Baseline, and DEVX-01G is the exact next engineering task.
 
 ### CI timing, cancellation and Next cache authority
 
-The canonical CI runs four independent execution jobs for static checks, complete one-worker
-Vitest, production Webpack/budgets and the unchanged complete browser regression. The stable
-`validate` job executes no validation command; it runs after all four dependencies and fails unless
-every dependency result is exactly `success`. Each command still executes without shell expansion
-through the repository-owned timing utility:
+The canonical CI runs independent static and production-build jobs plus bounded Vitest and browser
+plan/matrix/report graphs. Every Vitest matrix row remains internally one-worker and serial. The
+stable `validate` job executes no validation command; it runs after every graph dependency and
+fails unless every dependency result is exactly `success`. Timed commands still execute without
+shell expansion through the repository-owned timing utility:
 
 ```bash
 node scripts/ci-timing.mjs run \
@@ -462,8 +463,10 @@ Vitest 1h 11m 18.183s, Playwright 51m 5.840s, Webpack 1m 7.832s, and the remaini
 1m 8s each. Grouping those measured stages projected a 1h 11m 24.063s command critical path, a
 54m 25.450s reduction, while four installs add a projected 17.640s of runner work. That projection
 excludes queueing, runner startup and cache variance; actual DEVX-01D timings are evidence rather
-than final performance acceptance. DEVX-01E owns Playwright timing inventory, DEVX-01F owns locked matrix execution and merged reports without activating unnecessary suite shards, and
-DEVX-01G owns the final two-run performance decision.
+than final performance acceptance. DEVX-01E owns Playwright timing inventory, DEVX-01F owns locked
+browser matrix execution and merged reports without activating unnecessary suite shards,
+DEVX-01F2 owns contention-safe Vitest sharding and merged-result validation, and DEVX-01G owns the
+final two-run performance decision.
 
 ### Existing branch and PR rules
 
@@ -924,6 +927,7 @@ The binding architecture and 73-child plan are in
 - DEVX-01D = Baseline
 - DEVX-01E = Baseline
 - DEVX-01F = Baseline
+- DEVX-01F2 = Baseline
 - DEVX-01G = exact next engineering task
 - P10B-19A = next product-development sprint after DEVX-01
 
@@ -941,8 +945,11 @@ plan already meets the bounded makespan and balance targets, so no suite shardin
 Audit the plan with `node scripts/playwright-ci.mjs audit-plan`; matrix rows use
 `node scripts/playwright-ci.mjs run-group`; the report job runs
 `node scripts/playwright-ci.mjs validate-group-artifacts` before
-`pnpm exec playwright merge-reports`. DEVX-01G owns two-run performance acceptance and workflow
-closure.
+`pnpm exec playwright merge-reports`. DEVX-01F2 locks the accepted three-shard Vitest plan in
+`scripts/vitest-ci-plan.v1.json` and audits it through `node scripts/vitest-ci.mjs audit-plan`.
+CI emits only bounded shard IDs, retains `--maxWorkers=1` and `--no-file-parallelism` per row, then
+rejects incomplete shard manifests or blobs before `pnpm exec vitest --merge-reports` and one safe
+merged-result projection. DEVX-01G owns two-run performance acceptance and workflow closure.
 
 ### Playwright CI timing operations
 
