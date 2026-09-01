@@ -234,7 +234,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 31 August 2026",
-      "P10B-19A-01 structural family identity and lifecycle Baseline",
+      "P10B-19A-02 cross-page structural relationship Baseline",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
