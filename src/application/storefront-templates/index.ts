@@ -13,4 +13,5 @@ export * from "./commercial-collection-search-profiles";
 export * from "./commercial-pdp-profiles";
 export * from "./commerce-utility-materializer";
 export * from "./page-blueprint-v2-contract";
+export * from "./page-blueprint-v2-asset-role-contract";
 export * from "./page-blueprint-version-dispatch";
