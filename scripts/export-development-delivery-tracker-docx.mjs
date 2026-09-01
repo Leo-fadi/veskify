@@ -88,10 +88,33 @@ const resizeTrackerTable = (tableXml) => {
   return resized;
 };
 
-const patchTrackerDocumentXml = (documentXml) =>
-  mergeTrackerTableChunks(documentXml).replace(tablePattern, (tableXml) =>
+const preventTableRowSplits = (documentXml) =>
+  documentXml.replace(/<w:tr>[\s\S]*?<\/w:tr>/gu, (rowXml) =>
+    rowXml.includes("<w:cantSplit/>")
+      ? rowXml
+      : rowXml.replace("<w:trPr>", "<w:trPr><w:cantSplit/>"),
+  );
+
+const forceArchitectureStateHeadingToNewPage = (documentXml) => {
+  const headingText = "<w:t>P10B-19 accepted architecture delivery state</w:t>";
+  let patched = false;
+  const result = documentXml.replace(/<w:p>[\s\S]*?<\/w:p>/gu, (paragraphXml) => {
+    if (!paragraphXml.includes(headingText)) return paragraphXml;
+    patched = true;
+    return paragraphXml.includes("<w:pageBreakBefore/>")
+      ? paragraphXml
+      : paragraphXml.replace("<w:pPr>", "<w:pPr><w:pageBreakBefore/>");
+  });
+  if (!patched) throw new Error("Could not resolve the tracker architecture-state heading.");
+  return result;
+};
+
+const patchTrackerDocumentXml = (documentXml) => {
+  const resized = mergeTrackerTableChunks(documentXml).replace(tablePattern, (tableXml) =>
     trackerTable(tableXml) ? resizeTrackerTable(tableXml) : tableXml,
   );
+  return forceArchitectureStateHeadingToNewPage(preventTableRowSplits(resized));
+};
 
 const collectArchiveEntries = (directory, prefix = "") =>
   readdirSync(directory)
@@ -140,7 +163,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 1 September 2026, P10B-19A-04 PageBlueprint v2 asset-role compatibility contract Baseline",
+      "Delivery status baseline: 1 September 2026, P10B-19A-05 PageBlueprint v2 responsive-rule contract Baseline",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

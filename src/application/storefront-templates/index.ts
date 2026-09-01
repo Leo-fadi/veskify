@@ -14,4 +14,5 @@ export * from "./commercial-pdp-profiles";
 export * from "./commerce-utility-materializer";
 export * from "./page-blueprint-v2-contract";
 export * from "./page-blueprint-v2-asset-role-contract";
+export * from "./page-blueprint-v2-responsive-rule-contract";
 export * from "./page-blueprint-version-dispatch";

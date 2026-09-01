@@ -17,8 +17,8 @@ Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity g
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through
-P10B-19A-04 are Baseline, P10B-19A is Partial, and P10B-19A-05 - Responsive-Rule Contract is the
-exact next implementation task. P10B-19B
+P10B-19A-05 are Baseline, P10B-19A is Partial, and P10B-19A-06 - Omission, Substitution and
+Fallback Contract is the exact next implementation task. P10B-19B
 through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
@@ -38,8 +38,17 @@ one provider-neutral transient query/results adapter across draft, proposal, sav
 published routes. Active P10B-16L initial generation is removed; stable persisted identities and
 focused migration/publication compatibility remain. Governed P9 follow-up is retained and is not an
 initial-generation fallback.
-P10B-19A-01 through P10B-19A-04 are **Baseline**, and parent P10B-19A is **Partial**.
-P10B-19A-05 - Responsive-Rule Contract is the exact next implementation task. P10B-19A-04 adds
+P10B-19A-01 through P10B-19A-05 are **Baseline**, and parent P10B-19A is **Partial**.
+P10B-19A-06 - Omission, Substitution and Fallback Contract is the exact next implementation task.
+P10B-19A-05 adds one strict PageBlueprint v2 responsive-rule companion at contract schema version
+`1.0.0`. It binds the exact structural blueprint identity to explicit `mobile`/375,
+`tablet`/768, `desktop`/1024, and `wide`/1440 rules; requires one existing structural order
+alternative plus complete region and relationship coverage at every breakpoint; and allows only
+`preserve`, `compress`, `expand`, or `full-width` proportions and relationship-kind-compatible
+transformations. Canonicalization follows breakpoint order, each selected alternative's reading
+order, and canonical A-03 relationship order while preserving accessibility and all structural
+semantics. It adds no visibility, media, fallback, rendering, record, registry, persistence, or
+production consumer. P10B-19A-04 adds
 one versioned PageBlueprint v2 asset-role compatibility companion under the existing
 `src/application/storefront-templates` authority. It reuses the exact ordered nine-role
 `AssetRole` vocabulary, binds requirements to one structural blueprint ID, record version, and
@@ -246,8 +255,8 @@ existing content/support and utility families without a second model or renderer
 protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
 Partial. At that checkpoint, P10B-18C was the exact next task; P10B-18C and P10B-16P-05B are now
 Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected. P10B-19
-PRE is Baseline, and P10B-19A is Partial; P10B-19A-01 through P10B-19A-04 are Baseline, and
-P10B-19A-05 is the exact next task.
+PRE is Baseline, and P10B-19A is Partial; P10B-19A-01 through P10B-19A-05 are Baseline, and
+P10B-19A-06 is the exact next task.
 
 Owner: Vesko Oy
 
@@ -263,7 +272,7 @@ The existing protected architecture remains authoritative: one canonical page gr
 `StorefrontSnapshot`, one component registry, canonical commerce and media, one deterministic
 compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A is the
-active product-development sprint; P10B-19A-01 through P10B-19A-04 are Baseline; P10B-19A-05 is
+active product-development sprint; P10B-19A-01 through P10B-19A-05 are Baseline; P10B-19A-06 is
 the exact next implementation task, and P10B-19B through P10B-19J remain Planned.
 
 ## Contract-driven development baseline
@@ -303,8 +312,9 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - P10B-19A-02 = Baseline
 - P10B-19A-03 = Baseline
 - P10B-19A-04 = Baseline
+- P10B-19A-05 = Baseline
 - P10B-19A = Partial
-- P10B-19A-05 = exact next implementation task
+- P10B-19A-06 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
