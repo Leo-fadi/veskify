@@ -140,7 +140,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 1 September 2026, P10B-19A-03 required page structures, region graph and PageBlueprint v2 dispatch Baseline",
+      "Delivery status baseline: 1 September 2026, P10B-19A-04 PageBlueprint v2 asset-role compatibility contract Baseline",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
