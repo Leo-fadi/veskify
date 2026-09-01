@@ -15,8 +15,8 @@ non-goals. Capability truth and architecture live in the SDD. Checkbox progress 
 criteria live in the delivery tracker.
 
 **Engineering enablement:** DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline /
-closed. P10B-19A-01 and P10B-19A-02 are Baseline, P10B-19A is Partial, and P10B-19A-03 is the exact
-next implementation task. P10B remains Partial.
+closed. P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, P10B-19A is Partial, and
+P10B-19A-04 - Asset-Role Contract is the exact next implementation task. P10B remains Partial.
 
 ## 1. Delivery order
 
@@ -47,8 +47,8 @@ and the Vesko pilot.
 
 DEVX-01 changes development execution, not storefront behavior or the accepted P10B-19
 architecture. Run A completed in 34m27s with complete coverage on a cache miss; Run B remains the
-final before-merge gate under the same frozen architecture. P10B-19A is Partial; P10B-19A-01 and
-P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next implementation task.
+final before-merge gate under the same frozen architecture. P10B-19A is Partial; P10B-19A-01,
+P10B-19A-02 and P10B-19A-03 are Baseline, and P10B-19A-04 is the exact next implementation task.
 
 ### 1.2 P10B-19A planned child sequence
 
@@ -65,9 +65,17 @@ P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next implementation task.
 |     9 | P10B-19A-09 - v1 read/render/migration/publication compatibility                      |
 |    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
 
-P10B-19A-01 and P10B-19A-02 are **Baseline**, and parent P10B-19A is **Partial**. P10B-19A-03 -
-Required Page Structures, Region Graph and PageBlueprint v2 Dispatch is the exact next
-implementation task. P10B-19A-02 adds the strict six-role and seven-kind directed cross-page
+P10B-19A-01, P10B-19A-02 and P10B-19A-03 are **Baseline**, and parent P10B-19A is **Partial**.
+P10B-19A-04 - Asset-Role Contract is the exact next implementation task. P10B-19A-03 adds the
+strict inactive PageBlueprint v2 region contract and explicit v1 `1.0.0` / v2 `2.0.0`
+`contractSchemaVersion` dispatch under the existing storefront-template authority. Its bounded
+region graph reuses canonical A-02 page-family, narrative-role and visual-weight authority; locks
+`precedes`, `pairs-with`, `offsets`, `contains`, `spans` and `anchors`; enforces page-family minimum
+required roles, acyclic ordering/containment, single direct containment parents and complete
+accessible order alternatives; and canonicalizes successful input deterministically. Current v1
+records and behavior are unchanged, while v2 record, registry, persistence and current-generation
+consumer counts stay zero. Asset-role, responsive and fallback authority remain for later children.
+P10B-19A-02 adds the strict six-role and seven-kind directed cross-page
 relationship contract with deterministic keys, duplicate rejection and canonical ordering. It adds
 no relationship records, registry, graph, PageBlueprint v2 dispatch or current-generation consumer.
 P10B-19A-01 establishes
@@ -111,8 +119,8 @@ P10B-16P-06, accepted P10B-18A, accepted P10B-18B-01, accepted P10B-18B-06, acce
 P10B-18B-02, and accepted P10B-18B-03 are Baseline.
 P10B-16P-02, completed P10B-18B, accepted P10B-18C and P10B-16P-05B are **Baseline**; P10B-18 and
 P10B remain **Partial**. P10B-18D is a **Baseline diagnostic with live commercial quality
-rejected**. P10B-19 PRE is **Baseline**; P10B-19A is **Partial**; P10B-19A-01 and P10B-19A-02 are
-**Baseline**, P10B-19A-03 is **Planned / exact next**, and P10B-19B through
+rejected**. P10B-19 PRE is **Baseline**; P10B-19A is **Partial**; P10B-19A-01, P10B-19A-02 and
+P10B-19A-03 are **Baseline**, P10B-19A-04 is **Planned / exact next**, and P10B-19B through
 P10B-19J remain **Planned**.
 P10B-16P-04
 acceptance evidence is retained in
@@ -127,7 +135,7 @@ independently complete the parent phase. Accepted P10B-18B-03,
 P10B-18B-04 and P10B-18B-05 are the current bounded collection/search/product-card, PDP and
 content/support/utility baselines; parent P10B-18B and P10B-18C are Baseline. P10B-18D is a
 completed rejected-quality diagnostic. P10B-19 PRE is Baseline, and P10B-19A is Partial;
-P10B-19A-01 and P10B-19A-02 are Baseline, and P10B-19A-03 is exact next.
+P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, and P10B-19A-04 is exact next.
 
 The P10B-16P-04 Aurum composition is now the single lean, token-protected, production-disabled
 mock/live seam retained for P10B-18D. P10B-16P-05A removed active P10B-16L initial generation;
@@ -204,7 +212,7 @@ or production performance.
 | P10B-19B-J — Remaining Structural Design Intelligence sequence      | Deliver the remaining nine planned packages in the accepted order after P10B-19A.                                                                                                                                                 | **Planned**                                | Accepted P10B-19 PRE and package dependencies                   | Planned task owners                                      | Package-specific contracts, implementation and acceptance                                                                                                                                              | Treating this roadmap synchronization as implementation                                                                  |
 
 P10B-18D is complete only as a diagnostic baseline. P10B-19 PRE is Baseline, P10B-19A is Partial,
-P10B-19A-01 and P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next task. Concepts 3,
+P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, and P10B-19A-04 is the exact next task. Concepts 3,
 4 and 5 met prompt fidelity; Concepts 1, 2 and 6 did not. The exact Concept 2/6 snapshot and
 topology collapse is the central input to P10B-19 PRE. P10B-18 and P10B remain Partial; P10B-19A
 through P10B-19J remain Planned.
@@ -300,13 +308,13 @@ truthful largest compatibility cluster of 14, and selects 28 deterministic store
 280-entry four-width EN/FI review. The final review is **PASS WITH MINOR LIMITATION** with zero
 primary FAIL. P10B-16P-05B subsequently completed the consumer-proven historical-authority cleanup
 and is Baseline. P10B-18D completed as a rejected-quality diagnostic. P10B-19 PRE is Baseline, and
-P10B-19A is Partial; P10B-19A-01 and P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next
-task.
+P10B-19A is Partial; P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, and P10B-19A-04 is the
+exact next task.
 
 ## Accepted P10B-19 sequence
 
-P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01 and P10B-19A-02 are Baseline, and
-P10B-19A-03 is the exact next task.
+P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01, P10B-19A-02 and P10B-19A-03 are
+Baseline, and P10B-19A-04 is the exact next task.
 P10B-19B through P10B-19J remain Planned. The accepted sequence is additive and preserves current
 snapshot, commerce, media, component, proposal, editor, and publication authority.
 
@@ -330,8 +338,9 @@ P10B remains Partial until the implementation and acceptance sequence completes.
 - DEVX-01 = Baseline / closed
 - P10B-19A-01 = Baseline
 - P10B-19A-02 = Baseline
+- P10B-19A-03 = Baseline
 - P10B-19A = Partial
-- P10B-19A-03 = exact next implementation task
+- P10B-19A-04 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
