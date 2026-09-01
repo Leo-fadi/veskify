@@ -1,5 +1,5 @@
-import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -41,7 +41,42 @@ import {
 } from "@/domain/structural-storefront-family/identity";
 import { isStructuralStorefrontFamilySelectable } from "@/domain/structural-storefront-family/lifecycle";
 
-const approvedBaseCommit = "f36b35943e261f95d729932e6c1c808ccc352010";
+const approvedProtectedAuthorityFingerprint =
+  "sha256:21ef43c86f36bd9967fb4b8caf59039bc6b0dc0909d45d51dd81a666c6dddd03";
+const protectedAuthorityPaths = [
+  "src/domain/structural-storefront-family",
+  "src/application/storefront-templates/page-blueprint-v2-contract.ts",
+  "src/application/storefront-templates/page-blueprint-version-dispatch.ts",
+  "src/application/storefront-templates/page-blueprint-v2-asset-role-contract.ts",
+  "src/application/storefront-templates/page-blueprint-v2-responsive-rule-contract.ts",
+  "src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts",
+  "src/application/storefront-templates/contract.ts",
+  "src/application/storefront-templates/registry.ts",
+  "src/application/storefront-templates/resolver.ts",
+  "src/application/storefront-templates/profile-materializer.ts",
+  "src/application/storefront-templates/materializer.ts",
+  "src/application/storefront-templates/materializer-contract.ts",
+  "src/application/storefront-templates/selection-contract.ts",
+  "src/application/storefront-templates/selection-planner.ts",
+  "src/application/storefront-templates/page-family-baselines.ts",
+  "src/application/storefront-templates/profile-authority.ts",
+  "src/application/storefront-templates/design-vocabulary-validation.ts",
+  "src/application/storefront-templates/commercial-homepage-profiles.ts",
+  "src/application/storefront-templates/commercial-collection-search-profiles.ts",
+  "src/application/storefront-templates/commercial-content-support-profiles.ts",
+  "src/application/storefront-templates/commercial-pdp-profiles.ts",
+  "src/application/storefront-templates/commercial-utility-profiles.ts",
+  "src/application/storefront-templates/commerce-utility-materializer.ts",
+  "src/application/bounded-storefront-synthesis/direction-registry.ts",
+  "src/application/bounded-storefront-synthesis/direction-contract.ts",
+  "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+  "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts",
+  "src/domain/storefront/canonical-storefront.ts",
+  "src/domain/storefront/storefront.ts",
+  "src/application/storefront-draft-persistence",
+  "src/application/publishing",
+  "src/application/accepted-snapshot-publishing",
+] as const;
 
 function staleFingerprint(value: string): string {
   const replacement = value.endsWith("0") ? "1" : "0";
@@ -260,6 +295,30 @@ function collectTypeScriptFiles(directory: string): string[] {
     if (entry.isDirectory()) return collectTypeScriptFiles(path);
     return /\.[cm]?tsx?$/u.test(entry.name) ? [path] : [];
   });
+}
+
+function collectFiles(path: string): string[] {
+  if (!statSync(path).isDirectory()) return [path];
+  return readdirSync(path, { withFileTypes: true }).flatMap((entry) =>
+    collectFiles(join(path, entry.name)),
+  );
+}
+
+function fingerprintProtectedAuthority(repositoryRoot: string): string {
+  const files = protectedAuthorityPaths
+    .flatMap((path) => collectFiles(resolve(repositoryRoot, path)))
+    .map((path) => relative(repositoryRoot, path))
+    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+  const hash = createHash("sha256");
+
+  for (const path of files) {
+    hash.update(path);
+    hash.update("\0");
+    hash.update(readFileSync(resolve(repositoryRoot, path)));
+    hash.update("\0");
+  }
+
+  return `sha256:${hash.digest("hex")}`;
 }
 
 describe("P10B-19A-07 PageBlueprint candidate composition", () => {
@@ -1073,32 +1132,9 @@ describe("P10B-19A-07 forbidden later authority", () => {
 
 describe("P10B-19A-07 architecture and inactivity boundary", () => {
   it("keeps A-01 through A-06 and current v1/runtime authority byte-identical", () => {
-    expect(() =>
-      execFileSync(
-        "git",
-        [
-          "diff",
-          "--exit-code",
-          approvedBaseCommit,
-          "src/domain/structural-storefront-family",
-          "src/application/storefront-templates/page-blueprint-v2-contract.ts",
-          "src/application/storefront-templates/page-blueprint-version-dispatch.ts",
-          "src/application/storefront-templates/page-blueprint-v2-asset-role-contract.ts",
-          "src/application/storefront-templates/page-blueprint-v2-responsive-rule-contract.ts",
-          "src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts",
-          "src/application/storefront-templates/registry.ts",
-          "src/application/storefront-templates/selection-planner.ts",
-          "src/application/storefront-templates/materializer.ts",
-          "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
-          "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts",
-          "src/domain/storefront/storefront.ts",
-          "src/application/storefront-draft-persistence",
-          "src/application/publishing",
-          "src/application/accepted-snapshot-publishing",
-        ],
-        { cwd: resolve(process.cwd()), encoding: "utf8" },
-      ),
-    ).not.toThrow();
+    expect(fingerprintProtectedAuthority(resolve(process.cwd()))).toBe(
+      approvedProtectedAuthorityFingerprint,
+    );
   });
 
   it("has zero current-generation candidate-registry consumers", () => {
