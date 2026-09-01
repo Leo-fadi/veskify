@@ -1,8 +1,8 @@
 # Veskify Capability Evidence Ledger
 
-**Audit date:** 24 August 2026
+**Audit date:** 1 September 2026
 
-**Repository baseline:** completed P10B-18D diagnostic after P10B-16P-05B cleanup
+**Repository baseline:** P10B-19A-07 inactive family registry and candidate fingerprints Baseline
 
 **Phase status:** P10A **Baseline / closed**; P10B Commercial Storefront Generation System v1
 **Partial / active phase**
@@ -13,8 +13,8 @@ P10B-18B-02 and P10B-18B-03 **Baseline / accepted 18 August 2026**; P10B-18B-04
 **Baseline / accepted 19 August 2026**; P10B-18B-05 **Baseline / accepted 20 August 2026**.
 P10B-18B **Baseline / complete** and P10B-18 **Partial**; P10B-18C and P10B-16P-05B are
 **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**;
-P10B-19 PRE is **Baseline**, P10B-19A is **Planned / exact next**, and P10B-19B through P10B-19J
-remain **Planned**.
+P10B-19 PRE and P10B-19A-01 through P10B-19A-07 are **Baseline**, P10B-19A is **Partial**,
+P10B-19A-08 is **Planned / exact next**, and P10B-19B through P10B-19J remain **Planned**.
 
 **Companion analysis:** [Veskify Current-State Truth Audit](./VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
 
@@ -82,7 +82,7 @@ outcome, not against an implied commercial or production claim.
 | Dynamic PDP options, variant resolution, and rendering             | **Baseline** | PDP editor/preview/published routes                                                                                         | R Yes; Q Yes; Pl Yes; Pr Yes; C Yes; S Yes; V Yes; Ed Yes; Sv Yes; Pb Yes; Ev Yes                                                                                | contract/schema; deterministic unit; integration; browser/E2E; retained human visual review                | Native `dynamicProductDetail`, generic option engine, bounded exact-product context matching, protected SKU/price/media, four accepted PDP purposes, 20 focused retained captures, and accepted P10B-18C complete-store evidence.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Bounded P10B-17 responsive, accessibility, and performance closure | **Baseline** | Local proposal, saved preview, and published renderers                                                                      | R Yes; Q Yes; Pl Yes; Pr Yes; C Yes; S Yes; V Yes; Ed Yes; Sv Yes; Pb Yes; Ev Yes                                                                                | contract/schema; deterministic unit; integration; browser/E2E; retained human visual review                | Registered anatomy derives immutable responsive execution projections; canonical search reuses authority-fingerprinted immutable locale indexes; explicit DOM/image/layout-shift bounds and fail-closed complete first-load ceilings count each route's client-reference chunks plus shared root/polyfill chunks: home and content/utility (1.60 MB raw/450 KB gzip), search/collection/product (1.65 MB/475 KB), and editor (2.85 MB/825 KB). Automated A/B/C evidence spans 375/768/1024/1440 and EN/FI with search, keyboard/focus/mobile menu/reduced motion/touch geometry, renderer equivalence, and protected commerce/media parity; a correlated representative A/B/C visual matrix received human inspection. P10B-17 made zero provider, Vesko, and publication calls and is not production or designer-grade evidence. |
 | Commercial semantic visual foundations                             | **Baseline** | Indirect through generated storefronts and current shared renderers                                                         | R Yes; Q Yes; Pl Yes; Pr Yes; C Yes; S Yes; V Yes; Ed Yes; Sv Yes; Pb Yes; Ev Yes                                                                                | contract/schema; deterministic unit; integration; browser/E2E; real-provider; retained human visual review | P10B-02 implements the existing `BrandSystem` as bounded merchant-wide Design DNA across typography, colour, spacing, layout, surfaces, controls, shape/elevation, density, and media posture; P10B-17 closes bounded responsive/accessibility consumption. Accepted P10B-18B-01 preserves DNA v1 and merchant colour while making two exact non-colour DNA outcomes per direction materially consumed from compiler through snapshot and CSS. Accepted P10B-18C proves the bounded 126-case deterministic scale gate, protected authority, 54 normalized topologies and a hash-bound 280-capture four-width EN/FI visual review with no primary FAIL. Raw density/mobile labels remain compound rather than overstated independent renderer axes.                                                                                |
-| Commercially differentiated complete directions                    | **Baseline** | Three directions and bounded within-direction DNA/frame/asset/page-family variation across the accepted 126-case scale gate | R Yes; Q Yes; Pl Yes; Pr Yes; C Yes; S Yes; V Yes; Ed Yes; Sv Yes; Pb Yes; Ev Yes                                                                                | contract/schema; deterministic unit; integration; browser/E2E; retained human visual review                | P10B-18A froze the original ceiling. Accepted P10B-18B-01/06/02/03/04/05 then strengthened DNA/frame, approved media, homepage, discovery/card, PDP and content/utility authority without adding a second storefront model. Accepted P10B-18C compiles and replays 126/126 complete stores, preserves protected commerce/media, retains 54 normalized topologies and deterministically selects 28 stores for 280 production-server captures. The final review is 256 PASS, 24 PASS WITH MINOR LIMITATION and zero FAIL. P10B-18D accepted the six-call diagnostic evidence but rejected live commercial quality after 3/6 prompt-fidelity passes and exact Concept 2/6 authority collapse; P10B-19 PRE is the accepted architecture lock, and P10B-19A is the exact next task.                                                    |
+| Commercially differentiated complete directions                    | **Baseline** | Three directions and bounded within-direction DNA/frame/asset/page-family variation across the accepted 126-case scale gate | R Yes; Q Yes; Pl Yes; Pr Yes; C Yes; S Yes; V Yes; Ed Yes; Sv Yes; Pb Yes; Ev Yes                                                                                | contract/schema; deterministic unit; integration; browser/E2E; retained human visual review                | P10B-18A froze the original ceiling. Accepted P10B-18B-01/06/02/03/04/05 then strengthened DNA/frame, approved media, homepage, discovery/card, PDP and content/utility authority without adding a second storefront model. Accepted P10B-18C compiles and replays 126/126 complete stores, preserves protected commerce/media, retains 54 normalized topologies and deterministically selects 28 stores for 280 production-server captures. The final review is 256 PASS, 24 PASS WITH MINOR LIMITATION and zero FAIL. P10B-18D accepted the six-call diagnostic evidence but rejected live commercial quality after 3/6 prompt-fidelity passes and exact Concept 2/6 authority collapse; P10B-19 PRE and A-01 through A-07 are Baseline, parent P10B-19A is Partial, and A-08 is exact next.                                    |
 | Advanced generated media, video, or registered 3D presentation     | **Planned**  | Not available                                                                                                               | R No; Q No; Pl No; Pr No; C No; S No; V No; Ed No; Sv No; Pb No; Ev No                                                                                           | contract/schema                                                                                            | P10D policy direction only. Existing static approved assets are not evidence for generated/interactive media.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## 4. Discovery, brief, assets, and generation
@@ -193,8 +193,8 @@ homepage/editorial/campaign quality only; accepted P10B-18B-03 closes bounded co
 product-card quality only; accepted P10B-18B-04 closes bounded PDP quality only; and accepted
 P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B and P10B-18C are
 Baseline; P10B-18D is a rejected-quality diagnostic Baseline. P10B-18 remains Partial, P10B-19 PRE
-is Baseline, P10B-19A is exact next, P10C general editing remains separate, and P10B-16P-05B is
-Baseline. P10B-18C adds no
+and P10B-19A-01 through P10B-19A-07 are Baseline, P10B-19A is Partial, P10B-19A-08 is exact next,
+P10C general editing remains separate, and P10B-16P-05B is Baseline. P10B-18C adds no
 provider, Vesko-staging, real
 publication or production-readiness claim.
 Review this ledger whenever canonical main, merchant reachability, P10B implementation, or Vesko
@@ -263,7 +263,8 @@ authority, transient runtime lifecycle preservation, 30 retained captures, 78 re
 browser tests and the unchanged 72-case regression. Provider, Vesko, external image generation and
 real publication calls are zero. The product owner accepted the package on 20 August 2026;
 P10B-18B-05 and completed P10B-18B are Baseline, and P10B-18/P10B remain Partial. P10B-18C was next
-at that checkpoint; P10B-19 PRE is now Baseline, and P10B-19A is next.
+at that checkpoint; P10B-19 PRE and P10B-19A-01 through P10B-19A-07 are now Baseline, parent
+P10B-19A is Partial, and P10B-19A-08 is next.
 
 ### P10B-18C durable deterministic commercial-quality evidence
 
@@ -287,8 +288,9 @@ browser protection.
 | External activity         | Zero provider calls, zero Vesko calls, zero real publications                                                               |
 
 P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
-quality rejected. P10B-19 PRE is Baseline. P10B-19A is the exact next task, followed by planned
-P10B-19B through P10B-19J. P10B remains Partial.
+quality rejected. P10B-19 PRE and P10B-19A-01 through P10B-19A-07 are Baseline. P10B-19A is
+Partial; P10B-19A-08 is the exact next implementation task, followed by planned P10B-19B through
+P10B-19J. P10B remains Partial.
 
 ### P10B-18D live diagnostic evidence
 
@@ -309,12 +311,28 @@ diagnostic is a Baseline input to P10B-19 PRE, not a live-quality capability cla
 
 ## P10B-19 structural intelligence evidence status
 
-| Capability                                       | Status                   | Accepted evidence                                                                                                              | Current limitation / next proof                                                                     |
-| ------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Structural design intelligence architecture      | **Baseline**             | Product-owner accepted P10B-19 PRE; binding ownership, migration, safety, alternatives, and 73-child delivery map are recorded | Architecture only; no new production visual capability                                              |
-| Structural Storefront Family / PageBlueprint v2  | **Planned / exact next** | Six initial family purposes and meaningfulness gates are locked                                                                | P10B-19A must implement contracts, deterministic selection, topology identity, and v1 compatibility |
-| Visual Recipe / Design DNA v2                    | **Planned**              | Persistence and compilation decision accepted                                                                                  | P10B-19B must prove exact accessible visual authority                                               |
-| Multi-concept generation and screenshot critique | **Planned**              | Two-call hybrid, duplicate prevention, and one-pass critic boundaries accepted                                                 | P10B-19H/I must prove mocked execution before P10B-19J live acceptance                              |
+| Capability                                       | Status       | Accepted evidence                                                                                                                                                  | Current limitation / next proof                                                                           |
+| ------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Structural design intelligence architecture      | **Baseline** | Product-owner accepted P10B-19 PRE; binding ownership, migration, safety, alternatives, and 73-child delivery map are recorded                                     | Architecture only; no new production visual capability                                                    |
+| Structural Storefront Family / PageBlueprint v2  | **Partial**  | P10B-19A-01 through P10B-19A-07 establish strict identities, relationships, v2 composition companions, exact candidate fingerprints and an inactive empty registry | A-08 must add compatibility, deterministic selection and normalized topology; no records or runtime reach |
+| Visual Recipe / Design DNA v2                    | **Planned**  | Persistence and compilation decision accepted                                                                                                                      | P10B-19B must prove exact accessible visual authority                                                     |
+| Multi-concept generation and screenshot critique | **Planned**  | Two-call hybrid, duplicate prevention, and one-pass critic boundaries accepted                                                                                     | P10B-19H/I must prove mocked execution before P10B-19J live acceptance                                    |
+
+P10B-19A-07 composes exact A-03/A-04/A-05/A-06 PageBlueprint candidate authority with a
+stale-checked `page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>` content fingerprint.
+Its family candidate authority keeps exact A-01 identity and candidate lifecycle, requires one
+nonempty profile-reference entry for each of the six A-02 page-family roles plus canonical A-02
+relationships, and uses a stale-checked
+`structural-storefront-family-candidate-v1_<canonical-length>_<sha256>` fingerprint excluding
+lifecycle. The inactive registry rejects duplicates, unresolved or page-family-mismatched A-06
+targets, and direct, indirect, or cross-version substitution cycles while preserving target
+priority. Its sole production value has exactly empty candidate arrays. The fingerprints prove
+content integrity, not normalized topology; active/candidate records, selection, activation,
+persistence, publication and runtime consumers remain zero. A-01 through A-06 and v1 are unchanged.
+
+P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 -
+Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next
+implementation task.
 
 The baseline preserves one `StorefrontSnapshot`, one registry, canonical commerce/media, one
 compiler/coordinator, one final materializer, proposal lifecycle, publication, and Puck adapter

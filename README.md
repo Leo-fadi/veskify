@@ -17,8 +17,8 @@ Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity g
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through
-P10B-19A-06 are Baseline, P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and
-Candidate Fingerprints is the exact next implementation task. P10B-19B
+P10B-19A-07 are Baseline, P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic
+Selection and Normalized Topology Identity is the exact next implementation task. P10B-19B
 through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
@@ -38,8 +38,19 @@ one provider-neutral transient query/results adapter across draft, proposal, sav
 published routes. Active P10B-16L initial generation is removed; stable persisted identities and
 focused migration/publication compatibility remain. Governed P9 follow-up is retained and is not an
 initial-generation fallback.
-P10B-19A-01 through P10B-19A-06 are **Baseline**, parent P10B-19A is **Partial**, and P10B-19A-07 -
-Inactive Family Registry and Candidate Fingerprints is the exact next implementation task.
+P10B-19A-01 through P10B-19A-07 are **Baseline**, parent P10B-19A is **Partial**, and P10B-19A-08 -
+Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next
+implementation task. P10B-19A-07 composes exact canonical A-03 through A-06 PageBlueprint v2
+candidate authority and exact A-01/A-02 Structural Storefront Family candidate authority at schema
+version `1.0.0`. Candidate references contain only blueprint ID/version; every family candidate
+covers all six page-family roles with nonempty bounded references and canonical A-02 relationships.
+Exact stale-checked fingerprints cover candidate content, not normalized topology. The bounded
+registry resolves family references and A-06 targets by exact identity, enforces page-family
+equality and acyclic substitution chains, preserves A-06 target priority, canonicalizes
+deterministically, and returns deeply readonly output. Its only production registry is exactly
+empty: zero PageBlueprint candidates, family candidates, active/deprecated/selectable records,
+selection results, and current-generation consumers. A-01 through A-06 and current v1 authority
+remain unchanged.
 P10B-19A-06 adds one strict, deeply readonly PageBlueprint v2 omission, substitution and fallback
 companion at schema version `1.0.0`. It binds the exact A-03 structural, A-04 asset-role and A-05
 responsive blueprint identity; declares only the
@@ -65,8 +76,8 @@ vocabularies; locks `precedes`, `pairs-with`, `offsets`, `contains`, `spans`, an
 validates minimum required roles, bounded region graphs, complete accessible order alternatives,
 and deterministic canonical order. Existing v1 profiles and production paths remain unchanged;
 v2 record, registry, persistence, and current-generation consumer counts remain zero. The A-03
-structural source and dispatch remain byte-identical while A-04 through A-06 add inactive sibling
-companions. P10B-19A-02 adds the strict six-role,
+structural source and dispatch remain byte-identical while A-04 through A-07 add inactive sibling
+authority. P10B-19A-02 adds the strict six-role,
 seven-kind directed cross-page
 relationship value-object contract, deterministic keys and canonical collection ordering. It adds
 no relationship records, registry, graph, route, PageBlueprint v2 authority, persistence or
@@ -75,8 +86,8 @@ current-generation consumer. P10B-19A-01 establishes
 IDs `editorial-offset`, `campaign-modular`, `product-first-commerce`, `technical-comparison`,
 `warm-narrative`, and `restrained-gallery`; strict supported-major-v1 versions beginning at
 `1.0.0`; and lifecycle states `candidate`, `active`, and `deprecated`. Active-family and candidate-
-registry-record counts remain zero. No registry, fingerprint, selection, PageBlueprint v2,
-rendering, or current-generation wiring exists yet.
+registry-record counts remain zero. No active family, production candidate record, selection,
+PageBlueprint v2 rendering, or current-generation wiring exists.
 
 ## Product boundary
 
@@ -258,9 +269,9 @@ existing content/support and utility families without a second model or renderer
 protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
 Partial. At that checkpoint, P10B-18C was the exact next task; P10B-18C and P10B-16P-05B are now
 Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected. P10B-19
-PRE is Baseline. P10B-19A-01 through P10B-19A-06 are Baseline, P10B-19A is Partial, and
-P10B-19A-07 - Inactive Family Registry and Candidate Fingerprints is the exact next implementation
-task.
+PRE is Baseline. P10B-19A-01 through P10B-19A-07 are Baseline, P10B-19A is Partial, and
+P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact
+next implementation task.
 
 Owner: Vesko Oy
 
@@ -276,8 +287,9 @@ The existing protected architecture remains authoritative: one canonical page gr
 `StorefrontSnapshot`, one component registry, canonical commerce and media, one deterministic
 compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A-01
-through P10B-19A-06 are Baseline, P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry
-and Candidate Fingerprints is the exact next implementation task; P10B-19B through P10B-19J remain
+through P10B-19A-07 are Baseline, P10B-19A is Partial, and P10B-19A-08 - Compatibility,
+Deterministic Selection and Normalized Topology Identity is the exact next implementation task;
+P10B-19B through P10B-19J remain
 Planned.
 
 ## Contract-driven development baseline
@@ -319,8 +331,9 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - P10B-19A-04 = Baseline
 - P10B-19A-05 = Baseline
 - P10B-19A-06 = Baseline
+- P10B-19A-07 = Baseline
 - P10B-19A = Partial
-- P10B-19A-07 = exact next implementation task
+- P10B-19A-08 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
