@@ -23,10 +23,19 @@ const checkMode = process.argv.includes("--check");
 const archiveTimestamp = new Date("2000-01-01T00:00:00Z");
 const trackerWidths = [520, 1800, 2800, 850, 1500, 2500, 2990];
 const readableTrackerWidths = [720, 1700, 2800, 850, 1500, 2500, 2890];
+const childTaskMapWidths = [900, 7600, 4460];
 const trackerGridXml = trackerWidths.map((width) => `<w:gridCol w:w="${width}"/>`).join("");
+const childTaskMapGridXml = [3000, 1300, 8660]
+  .map((width) => `<w:gridCol w:w="${width}"/>`)
+  .join("");
 const tablePattern = /<w:tbl>[\s\S]*?<\/w:tbl>/gu;
 
 const trackerTable = (tableXml) => tableXml.includes(trackerGridXml);
+const childTaskMapTable = (tableXml) =>
+  tableXml.includes(childTaskMapGridXml) &&
+  tableXml.includes("<w:t>Order</w:t>") &&
+  tableXml.includes("<w:t>Child task</w:t>") &&
+  tableXml.includes("<w:t>Merge eligibility</w:t>");
 
 const mergeTrackerTableChunks = (documentXml) => {
   let mergedXml = documentXml;
@@ -67,15 +76,15 @@ const mergeTrackerTableChunks = (documentXml) => {
   }
 };
 
-const resizeTrackerTable = (tableXml) => {
+const resizeTable = (tableXml, sourceGridXml, widths) => {
   let resized = tableXml.replace(
-    trackerGridXml,
-    readableTrackerWidths.map((width) => `<w:gridCol w:w="${width}"/>`).join(""),
+    sourceGridXml,
+    widths.map((width) => `<w:gridCol w:w="${width}"/>`).join(""),
   );
   resized = resized.replace(/<w:tr>[\s\S]*?<\/w:tr>/gu, (rowXml) => {
     let columnIndex = 0;
     return rowXml.replace(/<w:tc>[\s\S]*?<\/w:tc>/gu, (cellXml) => {
-      const width = readableTrackerWidths[columnIndex];
+      const width = widths[columnIndex];
       columnIndex += 1;
       return width === undefined
         ? cellXml
@@ -87,6 +96,12 @@ const resizeTrackerTable = (tableXml) => {
   });
   return resized;
 };
+
+const resizeTrackerTable = (tableXml) =>
+  resizeTable(tableXml, trackerGridXml, readableTrackerWidths);
+
+const resizeChildTaskMapTable = (tableXml) =>
+  resizeTable(tableXml, childTaskMapGridXml, childTaskMapWidths);
 
 const preventTableRowSplits = (documentXml) =>
   documentXml.replace(/<w:tr>[\s\S]*?<\/w:tr>/gu, (rowXml) =>
@@ -110,9 +125,11 @@ const forceArchitectureStateHeadingToNewPage = (documentXml) => {
 };
 
 const patchTrackerDocumentXml = (documentXml) => {
-  const resized = mergeTrackerTableChunks(documentXml).replace(tablePattern, (tableXml) =>
-    trackerTable(tableXml) ? resizeTrackerTable(tableXml) : tableXml,
-  );
+  const resized = mergeTrackerTableChunks(documentXml).replace(tablePattern, (tableXml) => {
+    if (trackerTable(tableXml)) return resizeTrackerTable(tableXml);
+    if (childTaskMapTable(tableXml)) return resizeChildTaskMapTable(tableXml);
+    return tableXml;
+  });
   return forceArchitectureStateHeadingToNewPage(preventTableRowSplits(resized));
 };
 
@@ -163,7 +180,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 1 September 2026, P10B-19A-07 Inactive Family Registry and Candidate Fingerprints Baseline",
+      "Delivery status baseline: 1 September 2026, P10B-19A-08A Normalized Topology Identity Baseline",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
