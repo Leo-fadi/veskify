@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 and P10B-19A-02 are Baseline, P10B-19A is Partial, and P10B-19A-03 is the exact next implementation task.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, P10B-19A is Partial, and P10B-19A-04 - Asset-Role Contract is the exact next implementation task.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -155,8 +155,8 @@ asset-composition authority; accepted P10B-18B-02 closes bounded homepage/editor
 quality, accepted P10B-18B-03 closes bounded collection/search/card quality, accepted P10B-18B-04
 closes bounded PDP quality, and accepted P10B-18B-05 closes bounded content/support/utility quality
 and completes parent P10B-18B. Accepted P10B-18C closes deterministic integrated quality/diversity;
-P10B-18D completed as a rejected-quality diagnostic, P10B-19 PRE is Baseline, and P10B-19A is the
-exact next product task.
+P10B-18D completed as a rejected-quality diagnostic, P10B-19 PRE is Baseline, P10B-19A is Partial,
+P10B-19A-01 through P10B-19A-03 are Baseline, and P10B-19A-04 is the exact next product task.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -317,9 +317,9 @@ executes its bounded mechanical portion.
 Canonical command usage is:
 
 ```bash
-pnpm governance:contract -- --contract <path> --expected-file-sha256 <sha256> [--output <path>]
-pnpm governance:identity -- --contract <path> --expected-file-sha256 <sha256> [--output <path>]
-pnpm governance:verify -- --contract <path> --expected-file-sha256 <sha256> --verdict <path> [--output <path>]
+pnpm governance:contract --contract <path> --expected-file-sha256 <sha256> [--output <path>]
+pnpm governance:identity --contract <path> --expected-file-sha256 <sha256> [--output <path>]
+pnpm governance:verify --contract <path> --expected-file-sha256 <sha256> --verdict <path> [--output <path>]
 ```
 
 Contract identity is `sha256("veskify-task-contract-v1\n" + RFC8785_JCS(contract))`; raw-file
@@ -389,9 +389,17 @@ acceptance remains primarily in final phase gates rather than every child pull r
 |     9 | P10B-19A-09 - v1 read/render/migration/publication compatibility                      |
 |    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
 
-P10B-19A-01 and P10B-19A-02 are **Baseline**, and parent P10B-19A is **Partial**. P10B-19A-03 -
-Required Page Structures, Region Graph and PageBlueprint v2 Dispatch is the exact next
-implementation task. P10B-19A-02 owns only the strict directed cross-page relationship vocabulary,
+P10B-19A-01, P10B-19A-02, and P10B-19A-03 are **Baseline**, and parent P10B-19A is **Partial**.
+P10B-19A-04 - Asset-Role Contract is the exact next implementation task. P10B-19A-03 establishes
+the inactive `page-blueprint-v2-contract.ts` region core and explicit
+`page-blueprint-version-dispatch.ts` envelope under the sole storefront-template authority. The
+envelope maps v1 compatibility contract `1.0.0` to the unchanged v1 parser and v2 contract `2.0.0`
+to initial record version `1.0.0`. The strict core reuses A-02 page-family IDs and canonical
+narrative roles/visual weights, locks six intra-page relationship kinds, enforces the six-family
+minimum required roles, validates bounded acyclic precedence/containment and complete accessible
+orders, and canonicalizes only valid input. It adds no v2 record, registry, persistence, selector,
+materializer, renderer, provider, publication, asset-role, responsive, or fallback authority.
+P10B-19A-02 owns only the strict directed cross-page relationship vocabulary,
 value object, deterministic key and canonical collection boundary. It does not own page instances,
 routes, a graph, PageBlueprint v2 region relationships, persistence, selection or rendering.
 P10B-19A-01 establishes
@@ -424,7 +432,7 @@ migration or closure ownership in the accepted architecture.
 |     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Baseline                    |
 
 P10B remains Partial. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed.
-P10B-19A-01 and P10B-19A-02 are Baseline, P10B-19A is Partial, and P10B-19A-03 is the exact next implementation task.
+P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, P10B-19A is Partial, and P10B-19A-04 is the exact next implementation task.
 
 ### CI timing, cancellation and Next cache authority
 
@@ -595,7 +603,7 @@ P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05A, P10B-16P-06, P10B-18A
 P10B-18B-01/06/02/03/04/05 packages and P10B-18C are Baseline; P10B-16P-02 is Baseline. Parent
 P10B-18B is Baseline/complete; P10B-16P-05B is Baseline; P10B-18D is a rejected-quality diagnostic
 Baseline. P10B-18 and P10B remain Partial, P10B-19 PRE is Baseline, and P10B-19A is Partial;
-P10B-19A-01 and P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next task. Their ownership remains disjoint: P10B-05 owns
+P10B-19A-01, P10B-19A-02 and P10B-19A-03 are Baseline, and P10B-19A-04 is the exact next task. Their ownership remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
 its `BrandSystem` authority.
@@ -893,8 +901,8 @@ and focused migration/publication compatibility. Normal production cannot enable
 acceptance. No removed P10B-18C capture configuration is part of active tooling or CI.
 
 P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
-quality rejected. P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01 and P10B-19A-02 are
-Baseline, P10B-19A-03 is the exact next task, and P10B-19B through
+quality rejected. P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01, P10B-19A-02 and
+P10B-19A-03 are Baseline, P10B-19A-04 is the exact next task, and P10B-19B through
 P10B-19J remain Planned. P10B remains Partial.
 
 ### P10B-18D diagnostic handoff
@@ -911,14 +919,14 @@ explicit task authority.
 
 `P10B-19 PRE - Structural Design Intelligence Architecture Lock` is Baseline. It defines, but does
 not implement, authority for structural storefront families, PageBlueprint v2, Visual Recipe v2,
-multi-concept generation and screenshot-based refinement. P10B-19A is Partial; P10B-19A-01 and
-P10B-19A-02 are Baseline, and P10B-19A-03 is the exact next task;
+multi-concept generation and screenshot-based refinement. P10B-19A is Partial; P10B-19A-01,
+P10B-19A-02 and P10B-19A-03 are Baseline, and P10B-19A-04 is the exact next task;
 P10B-19B through P10B-19J remain Planned, and P10B remains Partial.
 
 ## Implementing the accepted P10B-19 architecture
 
-P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01 and P10B-19A-02 are Baseline, and
-P10B-19A-03 is the exact next task. Do not implement later P10B-19 packages
+P10B-19 PRE is Baseline. P10B-19A is Partial; P10B-19A-01, P10B-19A-02 and P10B-19A-03 are
+Baseline, and P10B-19A-04 is the exact next task. Do not implement later P10B-19 packages
 on an earlier child branch.
 
 P10B-19 implementation must preserve these rules:
@@ -956,8 +964,9 @@ The binding architecture and 73-child plan are in
 - DEVX-01 = Baseline / closed
 - P10B-19A-01 = Baseline
 - P10B-19A-02 = Baseline
+- P10B-19A-03 = Baseline
 - P10B-19A = Partial
-- P10B-19A-03 = exact next implementation task
+- P10B-19A-04 = exact next implementation task
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one

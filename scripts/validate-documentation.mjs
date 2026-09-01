@@ -146,8 +146,9 @@ requireText("README.md", [
   "DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
+  "P10B-19A-03 = Baseline",
   "P10B-19A = Partial",
-  "P10B-19A-03 = exact next implementation task",
+  "P10B-19A-04 = exact next implementation task",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -165,7 +166,7 @@ requireText("AGENTS.md", [
 
 requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
-  "31 August 2026, P10B-19A-02 cross-page structural relationship Baseline",
+  "1 September 2026, P10B-19A-03 required page structures, region graph and PageBlueprint v2 dispatch Baseline",
   "Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B is now **Partial / active**",
@@ -183,10 +184,16 @@ requireText("docs/VESKIFY_SDD.md", [
   "P10B-19 PRE = Baseline",
   "### 10.31 P10B-19A-01 structural family identity and lifecycle authority",
   "### 10.32 P10B-19A-02 cross-page structural relationship authority",
+  "### 10.33 P10B-19A-03 required page structures, region graph and PageBlueprint v2 dispatch authority",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
+  "P10B-19A-03 = Baseline",
   "P10B-19A = Partial",
-  "P10B-19A-03 = Planned / exact next",
+  "P10B-19A-04 = Planned / exact next",
+  "page-blueprint-v2-contract.ts",
+  "page-blueprint-version-dispatch.ts",
+  "contractSchemaVersion",
+  "`precedes`, `pairs-with`, `offsets`,\n`contains`, `spans`, and `anchors`",
   "home`, `collection`, `search`, `product-detail`, `content-support`, and `utility",
   "frame-continuity`, `navigation-continuity",
   "Active family-record count, candidate\nregistry-record count, persisted relationship count, production-selected relationship count and\ncurrent-generation consumer count all remain zero",
@@ -210,17 +217,16 @@ rejectText("docs/VESKIFY_SDD.md", [
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
   "DEVX-01A through DEVX-01G are Baseline",
-  "P10B-19A-01 and P10B-19A-02 are **Baseline**",
-  "P10B-19A-02 are **Baseline**",
-  "P10B-19A-03 is the exact next implementation task",
+  "P10B-19A-01, P10B-19A-02 and P10B-19A-03 are **Baseline**",
+  "P10B-19A-04 - Asset-Role Contract is the exact next implementation task",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
   "accepted P10B-18C and P10B-16P-05B are **Baseline**",
   "P10B-18D is complete only as a diagnostic baseline",
   "P10B-19 PRE is Baseline",
-  "P10B-19A-01 and P10B-19A-02 are **Baseline**",
-  "P10B-19A-03 -\nRequired Page Structures, Region Graph and PageBlueprint v2 Dispatch is the exact next",
+  "P10B-19A-01, P10B-19A-02 and P10B-19A-03 are **Baseline**",
+  "P10B-19A-04 - Asset-Role Contract is the exact next implementation task",
   "P10A owns internal governed initial/follow-up execution",
   "1 — Grammar",
   "2 — Parallel foundations",
@@ -340,8 +346,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "parent P10B-18B is **Baseline / complete**",
   "P10B-18 and P10B remain **Partial**",
   "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
-  "P10B-19A-01 and P10B-19A-02 are **Baseline**",
-  "P10B-19A-03 is the exact next task",
+  "P10B-19A-01, P10B-19A-02, and P10B-19A-03 are **Baseline**",
+  "P10B-19A-04 - Asset-Role Contract is the exact next implementation task",
   "### Contract-driven sprint authority",
   "### Verification policy",
   "### P10B-19A planned micro-pull-request map",
@@ -350,7 +356,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "DEVX-01A through DEVX-01G are Baseline",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
-  "P10B-19A-03 = exact next implementation task",
+  "P10B-19A-03 = Baseline",
+  "P10B-19A-04 = exact next implementation task",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
@@ -383,8 +390,9 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "DEVX-01 is Baseline / closed",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
+  "P10B-19A-03 = Baseline",
   "P10B-19A = Partial",
-  "P10B-19A-03 = exact next implementation task",
+  "P10B-19A-04 = exact next implementation task",
   "#### P10B-19A planned micro-pull-request map",
 ]);
 
@@ -428,8 +436,8 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 46) {
-  failures.push("Delivery tracker must contain exactly forty-six completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 47) {
+  failures.push("Delivery tracker must contain exactly forty-seven completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -503,22 +511,23 @@ if (
   !/^\| ☐\s+\| P10B-19A\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-01\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-02\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-03\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-19A-03\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19A-04\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19B-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, P10B-18C, and P10B-19 PRE Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18 Partial; mark P10B-19A Partial, P10B-19A-01 and P10B-19A-02 Baseline, and P10B-19A-03 Planned / exact next; and keep P10B-19B-J Planned",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, P10B-18C, and P10B-19 PRE Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18 Partial; mark P10B-19A Partial, P10B-19A-01 through P10B-19A-03 Baseline, P10B-19A-04 Planned / exact next, and P10B-19B-J Planned",
   );
 }
 
 if (
-  !/^\| Baseline\s+\| P10B-19A-02\s+\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| Next\s+\| P10B-19A-03\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker)
+  !/^\| Baseline\s+\| P10B-19A-03\s+\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| Next\s+\| P10B-19A-04\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker)
 ) {
   failures.push(
-    "Delivery tracker current-state table must mark P10B-19A-02 Baseline and P10B-19A-03 Planned / exact next",
+    "Delivery tracker current-state table must mark P10B-19A-03 Baseline and P10B-19A-04 Planned / exact next",
   );
 }
 
@@ -956,8 +965,9 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "DEVX-01 = Baseline / closed",
     "P10B-19A-01 = Baseline",
     "P10B-19A-02 = Baseline",
+    "P10B-19A-03 = Baseline",
     "P10B-19A = Partial",
-    "P10B-19A-03 = exact next implementation task",
+    "P10B-19A-04 = exact next implementation task",
   ]) {
     if (!content.includes(authority)) {
       throw new Error(`${devx01fStatusPath} must record ${authority}.`);
@@ -973,11 +983,15 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A = exact next product-development sprint",
     "P10B-19A-01 = exact next implementation task",
     "P10B-19A-02 = exact next implementation task",
+    "P10B-19A-03 = exact next implementation task",
   ]) {
     if (content.includes(stale)) throw new Error(`${devx01fStatusPath} retains obsolete ${stale}.`);
   }
   if (/P10B-19A-02\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
     throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-02 exact-next wording.`);
+  }
+  if (/P10B-19A-03\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
+    throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-03 exact-next wording.`);
   }
 }
 const devx01fTracker = readDevx01fStatusFile(
