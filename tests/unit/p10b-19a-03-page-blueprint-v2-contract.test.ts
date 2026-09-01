@@ -939,6 +939,8 @@ describe("P10B-19A-03 forbidden authority and zero reachability", () => {
       "src/application/storefront-templates/page-blueprint-v2-asset-role-contract.ts",
       "src/application/storefront-templates/page-blueprint-v2-responsive-rule-contract.ts",
       "src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts",
+      "src/application/storefront-templates/page-blueprint-v2-candidate-authority.ts",
+      "src/application/storefront-templates/structural-storefront-family-candidate-registry.ts",
       "src/application/storefront-templates/page-blueprint-version-dispatch.ts",
       "src/application/storefront-templates/index.ts",
     ]);

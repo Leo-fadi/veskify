@@ -293,7 +293,9 @@ describe("P10B-19A-01 architecture boundary", () => {
       .filter((path) => readFileSync(path, "utf8").includes("structural-storefront-family"))
       .map((path) => relative(repositoryRoot, path));
     expect(consumers).toEqual([
+      "src/application/storefront-templates/index.ts",
       "src/application/storefront-templates/page-blueprint-v2-contract.ts",
+      "src/application/storefront-templates/structural-storefront-family-candidate-registry.ts",
     ]);
   });
 });

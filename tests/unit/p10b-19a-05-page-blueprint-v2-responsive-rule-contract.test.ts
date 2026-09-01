@@ -998,6 +998,7 @@ describe("P10B-19A-05 forbidden authority and zero reachability", () => {
     const allowedAuthorityFiles = new Set([
       "src/application/storefront-templates/page-blueprint-v2-responsive-rule-contract.ts",
       "src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts",
+      "src/application/storefront-templates/page-blueprint-v2-candidate-authority.ts",
       "src/application/storefront-templates/index.ts",
     ]);
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))

@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 1 September 2026, P10B-19A-06 PageBlueprint v2 omission, substitution and fallback contract Baseline |
+| Verified baseline         | 1 September 2026, P10B-19A-07 Inactive Family Registry and Candidate Fingerprints Baseline |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-19A-07 | 1 September 2026 | P10B-19A-07 inactive family registry and candidate fingerprints baseline | Add strict deeply readonly PageBlueprint v2 and Structural Storefront Family candidate authorities at schema version `1.0.0`; compose exact A-03/A-04/A-05/A-06 authority; bind exact A-01 identity and candidate lifecycle; require all six A-02 page-family roles and canonical relationships; add stale-checked exact-content fingerprints; canonicalize a bounded inactive registry; reject duplicate identities, invalid A-06 targets and substitution cycles; keep its sole production value exactly empty; preserve A-01 through A-06/v1 and zero records, selectors and runtime consumers; make P10B-19A-08 the exact next task. |
 | 1.3.0 P10B-19A-06 | 1 September 2026 | P10B-19A-06 PageBlueprint v2 omission, substitution and fallback contract baseline | Add one strict deeply readonly companion at schema version `1.0.0`; bind exact A-03/A-04/A-05 blueprint identity; own only the required-asset-role cardinality trigger; require exact triggerable-region coverage and required-region-safe terminal outcomes; preserve a bounded ordered whole-blueprint substitution chain; internally revalidate maximum simultaneous optional omission; preserve A-03/A-04/A-05/v1 bytes and zero record/runtime-consumer counts; make P10B-19A-07 the exact next task. |
 | 1.3.0 P10B-19A-05 | 1 September 2026 | P10B-19A-05 PageBlueprint v2 responsive-rule contract baseline | Add one strict deeply readonly companion contract at schema version `1.0.0`; bind exact blueprint ID/version to explicit `mobile`/375, `tablet`/768, `desktop`/1024 and `wide`/1440 rules; require an existing structural order alternative and complete region/relationship coverage at every breakpoint; constrain proportions and relationship-kind transformations; canonicalize by breakpoint, selected reading order and A-03 relationship order; preserve accessibility, A-03/A-04/v1 bytes and zero record/runtime-consumer counts; make P10B-19A-06 the exact next task. |
 | 1.3.0 P10B-19A-04 | 1 September 2026 | P10B-19A-04 PageBlueprint v2 asset-role compatibility contract baseline | Preserve and expose the canonical ordered nine-role `AssetRole` authority; add one strict deeply readonly companion contract at schema version `1.0.0`; bind exact blueprint ID/version and known regions; validate explicit required/optional role cardinality through maximum 32; canonicalize by structural default reading order and canonical role order; preserve A-03/v1 bytes and keep contract-record and runtime-consumer counts zero; make P10B-19A-05 the exact next task. |
@@ -118,8 +119,9 @@ quality upgrade, accepted P10B-18B-04 PDP quality upgrade and accepted P10B-18B-
 content/support/utility quality upgrade are Baseline. P10B-16P-02 is Baseline; parent P10B-18B is
 Baseline/complete. P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
 live commercial quality rejected. P10B-18 and P10B remain Partial pending P10B-19. P10B-19 PRE is
-Baseline. P10B-19A-01 through P10B-19A-06 are Baseline, parent P10B-19A is Partial, and
-P10B-19A-07 - Inactive Family Registry and Candidate Fingerprints is the exact next task. The current
+Baseline. P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and
+P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact
+next task. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -934,9 +936,9 @@ closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes 
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
-live commercial quality rejected. P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-06 are
-Baseline, parent P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and Candidate
-Fingerprints is the exact next task.
+live commercial quality rejected. P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-07 are
+Baseline, parent P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic Selection and
+Normalized Topology Identity is the exact next task.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -1283,7 +1285,7 @@ closes bounded collection/search/product-card quality; and accepted P10B-18B-04 
 quality; accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
 live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-06 are Baseline, parent P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and Candidate Fingerprints is the exact next task.
+P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next task.
 
 ### 10.24 P10B-16P-06 canonical search query/results adapter
 
@@ -1320,7 +1322,7 @@ collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP 
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
 live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-06 are Baseline, parent P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and Candidate Fingerprints is the exact next task.
+P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next task.
 
 ### 10.25 P10B-17 responsive, accessibility and performance closure
 
@@ -1361,7 +1363,7 @@ P10B-18B-03 are **Baseline**, accepted on 18 August 2026, and P10B-18B-04 is **B
 on 19 August 2026. P10B-18B-05 is **Baseline**, accepted on 20 August 2026. P10B-18C is **Baseline**,
 accepted on 22 August 2026 after the final 126-case and 280-capture quality/diversity gate. P10B-18D
 is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-06 are Baseline, parent P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and Candidate Fingerprints is the exact next task.
+P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next task.
 Acceptance of P10B-18B-06
 proves only its bounded asset selection, reuse, responsive source/crop, logo-consumer and
 art-direction authority. Acceptance of P10B-18B-02 proves only bounded homepage, editorial and
@@ -1576,7 +1578,7 @@ The binding sequence is:
    Baseline; accepted P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
    Baseline/complete. P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic
    with live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline.
-   P10B-19A-01 through P10B-19A-06 are Baseline, parent P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and Candidate Fingerprints is the exact next task.
+   P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next task.
    Deliver complete commercially credible storefronts
    with bounded material diversity through registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -1896,9 +1898,9 @@ a stable 28-store selector to a final 280-entry four-width EN/FI review with zer
 overall human verdict is **PASS WITH MINOR LIMITATION**. This adds no second snapshot, page graph,
 renderer, commerce model, provider path or production evaluation system. P10B-16P-05B subsequently
 completed the consumer-proven cleanup and is Baseline. P10B-18D live-AI commercial storefront
-diagnostic is complete with live commercial quality rejected. P10B-19 PRE is Baseline. P10B-19A-01,
-P10B-19A-02 through P10B-19A-06 are Baseline, parent P10B-19A is Partial, and P10B-19A-07 -
-Inactive Family Registry and Candidate Fingerprints is the exact next task.
+diagnostic is complete with live commercial quality rejected. P10B-19 PRE is Baseline.
+P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 -
+Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next task.
 
 
 ### 10.29 P10B-16P-05B major repository and historical-authority cleanup
@@ -1914,8 +1916,8 @@ P10B-18D and is unconditionally unavailable in production. No provider, Vesko or
 call occurred; merchant rendering, snapshots and generation selection are unchanged.
 
 P10B remains Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected. The
-locked order is P10B-19 PRE Baseline, P10B-19A-01 through P10B-19A-06 Baseline, P10B-19A Partial,
-P10B-19A-07 next, then P10B-19A-08 through P10B-19A-10 and P10B-19B through P10B-19J.
+locked order is P10B-19 PRE Baseline, P10B-19A-01 through P10B-19A-07 Baseline, P10B-19A Partial,
+P10B-19A-08 next, then P10B-19A-09 through P10B-19A-10 and P10B-19B through P10B-19J.
 
 ### 10.30 P10B-18D live-AI diagnostic baseline
 
@@ -1937,9 +1939,9 @@ StorefrontSnapshot, commerce, media, proposal or publication contract changes in
 `P10B-18D = Baseline diagnostic / live commercial quality rejected`; `P10B-18 = Partial`;
 `P10B = Partial`; `P10B-19 PRE = Baseline`; `P10B-19A-01 = Baseline`;
 `P10B-19A-02 = Baseline`; `P10B-19A-03 = Baseline`; `P10B-19A-04 = Baseline`;
-`P10B-19A-05 = Baseline`; `P10B-19A-06 = Baseline`; `P10B-19A = Partial`;
-`P10B-19A-07 = Planned / exact next`; P10B-19A-08 through P10B-19A-10 and P10B-19B through P10B-19J
-remain Planned.
+`P10B-19A-05 = Baseline`; `P10B-19A-06 = Baseline`; `P10B-19A-07 = Baseline`;
+`P10B-19A = Partial`; `P10B-19A-08 = Planned / exact next`; P10B-19A-09 through P10B-19A-10 and
+P10B-19B through P10B-19J remain Planned.
 
 ## P10B-19 structural design intelligence architecture baseline
 
@@ -1971,9 +1973,9 @@ history, Preview, and publication remain readable without forced regeneration.
 One page graph, one `StorefrontSnapshot`, one component registry, canonical Vesko commerce, exact
 approved media lineage, one deterministic compiler/coordinator, one final materializer/executor,
 proposal isolation, Accept/Reject, Undo/Redo, Save, reload, Preview, publication, and the Puck
-adapter boundary remain binding. P10B remains Partial. P10B-19A-01 through P10B-19A-06 are
-Baseline, parent P10B-19A is Partial, and P10B-19A-07 - Inactive Family Registry and Candidate
-Fingerprints is the exact next task; P10B-19A-08 through P10B-19A-10 and P10B-19B
+adapter boundary remain binding. P10B remains Partial. P10B-19A-01 through P10B-19A-07 are
+Baseline, parent P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic Selection and
+Normalized Topology Identity is the exact next task; P10B-19A-09 through P10B-19A-10 and P10B-19B
 through P10B-19J remain Planned.
 
 ### 10.31 P10B-19A-01 structural family identity and lifecycle authority
@@ -2297,3 +2299,71 @@ zero.
 `P10B-19A-01 = Baseline`; `P10B-19A-02 = Baseline`; `P10B-19A-03 = Baseline`;
 `P10B-19A-04 = Baseline`; `P10B-19A-05 = Baseline`; `P10B-19A-06 = Baseline`;
 `P10B-19A = Partial`; `P10B-19A-07 = Planned / exact next`; `P10B = Partial`.
+
+### 10.37 P10B-19A-07 inactive family registry and candidate fingerprint authority
+
+P10B-19A-07 adds strict, deeply readonly inactive candidate authority under the sole existing
+storefront-template and Structural Storefront Family owners. It does not activate a family,
+register a current production record, extend PageBlueprint dispatch, or create another page graph,
+snapshot, component registry, selection system, persistence model, renderer, or runtime path.
+Candidate schema versions and the inactive registry contract schema version are exactly `1.0.0`.
+
+A PageBlueprint v2 candidate contains exactly `candidateSchemaVersion`, `structural`,
+`assetRoleCompatibility`, `responsiveRules`, `omissionSubstitutionFallback`, and
+`candidateFingerprint`. Creation validates and canonicalizes the exact A-03 structural, A-04
+asset-role, A-05 responsive-rule, and A-06 omission/substitution/fallback authorities in dependency
+order. Their blueprint ID and version must therefore remain one exact identity. Unknown fields,
+malformed or mismatched composed authority, unsupported versions, and noncanonical supplied data
+fail closed without defaults, repair, deduplication, or input mutation.
+
+The PageBlueprint candidate reference reuses the exact A-06 reference shape: only `blueprintId` and
+`blueprintVersion`. Its identity key is `<blueprintId>@<blueprintVersion>`. The candidate fingerprint
+is computed over the complete canonical candidate composition excluding the fingerprint field. Its
+exact format is `page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>`. Supplied fingerprints
+are stale-checked after canonicalization and mismatch rejects; they are never silently regenerated
+by parsing.
+
+A Structural Storefront Family candidate contains exactly `candidateSchemaVersion`, `familyId`,
+`familyVersion`, `lifecycleState`, `pageFamilyProfiles`, `crossPageRelationships`, and
+`candidateFingerprint`. It reuses exact A-01 family ID/version and requires the lifecycle state to
+remain `candidate`. It contains exactly one profile entry for each of the six ordered A-02
+page-family roles: `home`, `collection`, `search`, `product-detail`, `content-support`, and
+`utility`. Every profile contains only `pageFamilyId` and one through eight unique exact
+PageBlueprint candidate references. Cross-page relationships are nonempty strict A-02 relationship
+records. Duplicate or missing page-family profiles, duplicate references, malformed relationships,
+unknown fields, and any non-candidate lifecycle fail closed.
+
+Family profiles canonicalize by A-02 page-family order. References canonicalize by code-unit
+blueprint ID and precision-safe semantic version order. Cross-page relationships canonicalize
+through unchanged A-02 authority. The family candidate fingerprint covers schema version, exact
+A-01 family ID/version, canonical page-family profiles, and canonical cross-page relationships but
+intentionally excludes lifecycle. Its exact format is
+`structural-storefront-family-candidate-v1_<canonical-length>_<sha256>`. Supplied stale
+fingerprints reject after canonicalization.
+
+The strict inactive registry contains exactly `contractSchemaVersion`,
+`pageBlueprintCandidates`, and `familyCandidates`. It accepts no more than 96 PageBlueprint
+candidates and 24 family candidates. PageBlueprint candidates canonicalize by A-02 page-family
+order, then code-unit blueprint ID and precision-safe semantic version; family candidates
+canonicalize by A-01 family order and precision-safe semantic version. Exact PageBlueprint and
+family candidate identities must be unique.
+
+Every family profile reference must resolve to an exact registered PageBlueprint candidate in the
+same A-02 page family. Every ordered A-06 whole-blueprint substitution target must resolve, must
+differ from its source exact identity, and must remain in the source page family. Declared A-06
+target priority is preserved. A three-colour exact-identity graph audit rejects direct, indirect,
+and cross-version substitution cycles. Resolution and validation do not select or execute a target.
+
+The sole exported production registry value has exactly empty `pageBlueprintCandidates` and
+`familyCandidates` arrays. Active family-record count, candidate family-record count,
+PageBlueprint candidate-record count, selected candidate count, persisted candidate count,
+published candidate count, and current-generation candidate consumer count all remain zero. The
+candidate fingerprints prove exact canonical content integrity; they are explicitly not normalized
+topology identities and grant no compatibility, equivalence, diversity, selection, activation, or
+runtime authority.
+
+A-01 through A-06 source authority and current PageBlueprint v1 behavior remain unchanged.
+`P10B-19A-01 = Baseline`; `P10B-19A-02 = Baseline`; `P10B-19A-03 = Baseline`;
+`P10B-19A-04 = Baseline`; `P10B-19A-05 = Baseline`; `P10B-19A-06 = Baseline`;
+`P10B-19A-07 = Baseline`; `P10B-19A = Partial`;
+`P10B-19A-08 = Planned / exact next`; `P10B = Partial`.
