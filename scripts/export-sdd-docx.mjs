@@ -234,7 +234,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 1 September 2026",
-      "P10B-19A-05 PageBlueprint v2 responsive-rule contract Baseline",
+      "P10B-19A-06 PageBlueprint v2 omission, substitution and fallback contract Baseline",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
