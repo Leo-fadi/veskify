@@ -1425,6 +1425,7 @@ describe("P10B-19A-08A architecture and zero-reachability boundary", () => {
     expect(consumers).toStrictEqual([
       "src/application/storefront-templates/index.ts",
       "src/application/storefront-templates/page-blueprint-v2-normalized-topology.ts",
+      "src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts",
       "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
     ]);
   });
@@ -1437,6 +1438,7 @@ describe("P10B-19A-08A architecture and zero-reachability boundary", () => {
       )
       .map((path) => relative(repositoryRoot, path));
     expect(callSites).toStrictEqual([
+      "src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts",
       "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
     ]);
   });

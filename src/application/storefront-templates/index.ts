@@ -20,4 +20,6 @@ export * from "./page-blueprint-v2-candidate-authority";
 export * from "./structural-storefront-family-candidate-registry";
 export * from "./page-blueprint-v2-normalized-topology";
 export * from "./structural-storefront-family-normalized-topology";
+export * from "./structural-storefront-compatibility-contract";
+export * from "./structural-storefront-candidate-compatibility-evaluation";
 export * from "./page-blueprint-version-dispatch";

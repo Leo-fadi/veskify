@@ -1146,19 +1146,24 @@ describe("P10B-19A-07 architecture and inactivity boundary", () => {
       .map((path) => relative(repositoryRoot, path));
     expect(consumers).toStrictEqual([
       "src/application/storefront-templates/index.ts",
+      "src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts",
+      "src/application/storefront-templates/structural-storefront-compatibility-contract.ts",
       "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
     ]);
   });
 
-  it("exports normalized topology but no A-08B compatibility or A-08C selection authority", () => {
+  it("exports A-08B compatibility but no A-08C selection authority", () => {
     const forbiddenExports = Object.keys(storefrontTemplateAuthority).filter((name) =>
-      /StructuralStorefrontFamily.*(?:select|score|compatib)|(?:select|score|compatib).*StructuralStorefrontFamily/iu.test(
+      /StructuralStorefrontFamily.*(?:select|score|rank|winner)|(?:select|score|rank|winner).*StructuralStorefrontFamily/iu.test(
         name,
       ),
     );
     expect(forbiddenExports).toStrictEqual([]);
     expect(
       storefrontTemplateAuthority.deriveStructuralStorefrontFamilyNormalizedTopology,
+    ).toBeTypeOf("function");
+    expect(
+      storefrontTemplateAuthority.evaluateInactiveStructuralStorefrontCandidateCompatibility,
     ).toBeTypeOf("function");
     expect(structuralStorefrontFamilyCandidateV1Schema).toBeDefined();
   });

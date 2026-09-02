@@ -233,8 +233,8 @@ try {
     title: "Veskify Software Design Document",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Verified baseline: 1 September 2026",
-      "P10B-19A-08A Normalized Topology Identity Baseline",
+      "Verified baseline: 2 September 2026",
+      "P10B-19A-08B Candidate Compatibility Contract and Evaluation Baseline",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
