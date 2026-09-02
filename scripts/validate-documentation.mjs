@@ -152,10 +152,10 @@ requireText("README.md", [
   "P10B-19A-06 = Baseline",
   "P10B-19A-07 = Baseline",
   "P10B-19A-08A = Baseline",
+  "P10B-19A-08B = Baseline",
   "P10B-19A-08 = Partial",
   "P10B-19A = Partial",
-  "P10B-19A-08B = exact next implementation task",
-  "P10B-19A-08C = Planned after P10B-19A-08B",
+  "P10B-19A-08C = exact next implementation task",
   "P10B-19A-09 = Planned after P10B-19A-08C",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
@@ -176,7 +176,7 @@ requireText("AGENTS.md", [
 
 requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
-  "1 September 2026, P10B-19A-08A Normalized Topology Identity Baseline",
+  "2 September 2026, P10B-19A-08B Candidate Compatibility Contract and Evaluation Baseline",
   "Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B is now **Partial / active**",
@@ -200,6 +200,7 @@ requireText("docs/VESKIFY_SDD.md", [
   "### 10.36 P10B-19A-06 PageBlueprint v2 omission, substitution and fallback authority",
   "### 10.37 P10B-19A-07 inactive family registry and candidate fingerprint authority",
   "### 10.38 P10B-19A-08A normalized topology identity authority",
+  "### 10.39 P10B-19A-08B candidate compatibility contract and evaluation authority",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
   "P10B-19A-03 = Baseline",
@@ -208,10 +209,10 @@ requireText("docs/VESKIFY_SDD.md", [
   "P10B-19A-06 = Baseline",
   "P10B-19A-07 = Baseline",
   "P10B-19A-08A = Baseline",
+  "P10B-19A-08B = Baseline",
   "P10B-19A-08 = Partial",
   "P10B-19A = Partial",
-  "P10B-19A-08B - Candidate Compatibility Contract and Evaluation = Planned / exact next",
-  "P10B-19A-08C = Planned after P10B-19A-08B",
+  "P10B-19A-08C - Deterministic Candidate Selection = Planned / exact next",
   "P10B-19A-09 = Planned after P10B-19A-08C",
   "P10B-19A-07 = Planned / exact next",
   "P10B-19A-06 = Planned / exact next",
@@ -229,7 +230,12 @@ requireText("docs/VESKIFY_SDD.md", [
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
   "deterministic duplicate PageBlueprint-topology and family-\ntopology clusters",
-  "Focused A-08A tests are the only current consumer",
+  "structural-storefront-capability-context-v1_<canonical-length>_<sha256>",
+  "structural-storefront-family-compatibility-profile-v1_<canonical-length>_<sha256>",
+  "structural-storefront-candidate-compatibility-evaluation-v1_<canonical-length>_<sha256>",
+  "directly-compatible`, `substitution-compatible`, `omission-compatible` and\n`incompatible`",
+  "directly-compatible`, `conditionally-compatible` and `incompatible`",
+  "production PageBlueprint candidate count, family-candidate count, compatibility-profile count",
   "lifecycle state to\nremain `candidate`",
   "exactly one profile entry for each of the six ordered A-02\npage-family roles",
   "sole exported production registry value has exactly empty `pageBlueprintCandidates` and\n`familyCandidates` arrays",
@@ -277,12 +283,11 @@ rejectText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "1 September 2026, P10B-19A-08A Normalized Topology Identity Baseline",
+  "2 September 2026, P10B-19A-08B Candidate Compatibility Contract and Evaluation Baseline",
   "DEVX-01A through DEVX-01G are Baseline",
-  "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are **Baseline**",
-  "P10B-19A-08B - Candidate Compatibility Contract and Evaluation is the\nexact next implementation task",
-  "P10B-19A-08C is Planned after P10B-19A-08B",
-  "P10B-19A-09\nremains Planned after P10B-19A-08C",
+  "P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are **Baseline**",
+  "P10B-19A-08C - Deterministic Candidate Selection is the\nexact next implementation task",
+  "P10B-19A-09 remains Planned after P10B-19A-08C",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
@@ -290,6 +295,7 @@ requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "P10B-18D is complete only as a diagnostic baseline",
   "P10B-19 PRE is Baseline",
   "P10B-19A-08A establishes strict normalized PageBlueprint v2 and Structural Storefront Family",
+  "P10B-19A-08B establishes schema-version `1.0.0` compatibility authority without selection",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
   "A-08A/A-08B/A-08C split is delivery-only",
@@ -414,10 +420,9 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "parent P10B-18B is **Baseline / complete**",
   "P10B-18 and P10B remain **Partial**",
   "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
-  "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are **Baseline**",
-  "P10B-19A-08B - Candidate Compatibility Contract and Evaluation is the\nexact next implementation task",
-  "P10B-19A-08C is Planned after P10B-19A-08B",
-  "P10B-19A-09\nremains Planned after P10B-19A-08C",
+  "P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are **Baseline**",
+  "P10B-19A-08C - Deterministic Candidate Selection is the\nexact next implementation task",
+  "P10B-19A-09 remains Planned after P10B-19A-08C",
   "### Contract-driven sprint authority",
   "### Verification policy",
   "### P10B-19A planned micro-pull-request map",
@@ -432,11 +437,12 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-19A-06 = Baseline",
   "P10B-19A-07 = Baseline",
   "P10B-19A-08A = Baseline",
+  "P10B-19A-08B = Baseline",
   "P10B-19A-08 = Partial",
-  "P10B-19A-08B = exact next implementation task",
-  "P10B-19A-08C = Planned after P10B-19A-08B",
+  "P10B-19A-08C = exact next implementation task",
   "P10B-19A-09 = Planned after P10B-19A-08C",
   "P10B-19A-08A owns only normalized topology identity",
+  "P10B-19A-08B owns only compatibility contracts and deterministic evaluation",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
   "A-08A/A-08B/A-08C rows are a delivery-only decomposition",
@@ -478,12 +484,13 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "P10B-19A-06 = Baseline",
   "P10B-19A-07 = Baseline",
   "P10B-19A-08A = Baseline",
+  "P10B-19A-08B = Baseline",
   "P10B-19A-08 = Partial",
   "P10B-19A = Partial",
-  "P10B-19A-08B = exact next implementation task",
-  "P10B-19A-08C = Planned after P10B-19A-08B",
+  "P10B-19A-08C = exact next implementation task",
   "P10B-19A-09 = Planned after P10B-19A-08C",
   "P10B-19A-08A establishes strict normalized PageBlueprint v2 and Structural Storefront Family",
+  "P10B-19A-08B establishes strict schema-version `1.0.0` compatibility contracts and deterministic",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
   "A-08A/A-08B/A-08C split is delivery-only",
@@ -526,8 +533,9 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "P10B-19 PRE is Baseline as an accepted architecture lock",
   "## P10B-19A-07 current-state baseline",
   "## P10B-19A-08A current-state baseline",
-  "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are Baseline",
-  "P10B-19A-08B - Candidate Compatibility Contract and Evaluation is the exact next\nimplementation task",
+  "## P10B-19A-08B current-state baseline",
+  "P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline",
+  "P10B-19A-08C - Deterministic Candidate Selection is the exact next\nimplementation task",
   "page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-candidate-v1_<canonical-length>_<sha256>",
   "PAGE_BLUEPRINT_V2_NORMALIZED_TOPOLOGY_SCHEMA_VERSION",
@@ -535,6 +543,9 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "INACTIVE_CANDIDATE_NORMALIZED_TOPOLOGY_INDEX_SCHEMA_VERSION",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
+  "structural-storefront-capability-context-v1_<canonical-length>_<sha256>",
+  "structural-storefront-family-compatibility-profile-v1_<canonical-length>_<sha256>",
+  "structural-storefront-candidate-compatibility-evaluation-v1_<canonical-length>_<sha256>",
 ]);
 
 requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
@@ -553,18 +564,21 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
   "Structural design intelligence architecture      | **Baseline**",
   "Structural Storefront Family / PageBlueprint v2  | **Partial**",
-  "P10B-19A-01 through P10B-19A-08A establish strict identities",
+  "P10B-19A-01 through P10B-19A-08B establish strict identities",
   "P10B-19A-08A evidence is contract/schema plus deterministic unit proof",
-  "P10B-19A-08B - Candidate Compatibility Contract and\nEvaluation is the exact next implementation task",
+  "P10B-19A-08B evidence is strict contract/schema plus deterministic adversarial unit proof",
   "page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-candidate-v1_<canonical-length>_<sha256>",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
+  "structural-storefront-capability-context-v1_<canonical-length>_<sha256>",
+  "structural-storefront-family-compatibility-profile-v1_<canonical-length>_<sha256>",
+  "structural-storefront-candidate-compatibility-evaluation-v1_<canonical-length>_<sha256>",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 52) {
-  failures.push("Delivery tracker must contain exactly fifty-two completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 53) {
+  failures.push("Delivery tracker must contain exactly fifty-three completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -645,15 +659,15 @@ if (
   !/^\| ☑\s+\| P10B-19A-07\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19A-08\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-08A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-08B\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-08C\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-19A-08B\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19A-08C\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19A-09\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19B-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, P10B-18C, P10B-19 PRE and P10B-19A-01 through P10B-19A-08A Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18, parent P10B-19A-08 and P10B-19A Partial; mark P10B-19A-08B Planned / exact next, P10B-19A-08C and P10B-19A-09 Planned, and P10B-19B-J Planned",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, P10B-18C, P10B-19 PRE and P10B-19A-01 through P10B-19A-08B Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18, parent P10B-19A-08 and P10B-19A Partial; mark P10B-19A-08C Planned / exact next, P10B-19A-09 Planned, and P10B-19B-J Planned",
   );
 }
 
@@ -661,12 +675,12 @@ if (
   !/^\| Baseline\s+\| P10B-19A-07\s+\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| Partial\s+\| P10B-19A-08\s+\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| Baseline\s+\| P10B-19A-08A\s+\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| Next\s+\| P10B-19A-08B\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
-  !/^\| Planned\s+\| P10B-19A-08C\s+\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| Baseline\s+\| P10B-19A-08B\s+\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| Next\s+\| P10B-19A-08C\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| Planned\s+\| P10B-19A-09\s+\| \*\*Planned\*\*/m.test(tracker)
 ) {
   failures.push(
-    "Delivery tracker current-state table must mark P10B-19A-07 and P10B-19A-08A Baseline, parent P10B-19A-08 Partial, P10B-19A-08B Planned / exact next, and P10B-19A-08C/P10B-19A-09 Planned",
+    "Delivery tracker current-state table must mark P10B-19A-07, P10B-19A-08A and P10B-19A-08B Baseline, parent P10B-19A-08 Partial, P10B-19A-08C Planned / exact next, and P10B-19A-09 Planned",
   );
 }
 
@@ -1110,10 +1124,10 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A-06 = Baseline",
     "P10B-19A-07 = Baseline",
     "P10B-19A-08A = Baseline",
+    "P10B-19A-08B = Baseline",
     "P10B-19A-08 = Partial",
     "P10B-19A = Partial",
-    "P10B-19A-08B = exact next implementation task",
-    "P10B-19A-08C = Planned after P10B-19A-08B",
+    "P10B-19A-08C = exact next implementation task",
     "P10B-19A-09 = Planned after P10B-19A-08C",
   ]) {
     if (!content.includes(authority)) {
@@ -1137,6 +1151,7 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A-07 = exact next implementation task",
     "P10B-19A-08 = exact next implementation task",
     "P10B-19A-08A = exact next implementation task",
+    "P10B-19A-08B = exact next implementation task",
   ]) {
     if (content.includes(stale)) throw new Error(`${devx01fStatusPath} retains obsolete ${stale}.`);
   }
@@ -1158,6 +1173,9 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
   if (/P10B-19A-07\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
     throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-07 exact-next wording.`);
   }
+  if (/P10B-19A-08B\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
+    throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-08B exact-next wording.`);
+  }
 }
 
 const currentP10b19StatusDocuments = [
@@ -1175,6 +1193,9 @@ const staleP10b19A08StatusPatterns = [
   /P10B-19A-08(?![A-C])\s+-\s+Compatibility,\s+Deterministic\s+Selection\s+and\s+Normalized\s+Topology\s+Identity\s+is\s+the\s+exact\s+next/iu,
   /P10B-19A-08A\s*=\s*(?:Planned\s*\/\s*)?exact next(?: implementation)? task/iu,
   /P10B-19A-08A\s+is\s+(?:the\s+)?exact next(?: implementation)? task/iu,
+  /P10B-19A-08B\s*=\s*(?:Planned\s*\/\s*)?exact next(?: implementation)? task/iu,
+  /P10B-19A-08B\s+is\s+(?:the\s+)?exact next(?: implementation)? task/iu,
+  /P10B-19A-08B\s+-\s+Candidate\s+Compatibility\s+Contract\s+and\s+Evaluation\s+is\s+(?:the\s+)?exact\s+next/iu,
 ];
 for (const statusPath of currentP10b19StatusDocuments) {
   const currentStatusText = readDevx01fStatusFile(statusPath, "utf8")
@@ -1183,7 +1204,7 @@ for (const statusPath of currentP10b19StatusDocuments) {
     .join("\n");
   for (const stalePattern of staleP10b19A08StatusPatterns) {
     if (stalePattern.test(currentStatusText)) {
-      throw new Error(`${statusPath} retains stale parent A-08/A-08A exact-next wording.`);
+      throw new Error(`${statusPath} retains stale parent A-08/A-08A/A-08B exact-next wording.`);
     }
   }
 }

@@ -602,6 +602,8 @@ describe("P10B-19A-04 forbidden authority and zero reachability", () => {
       "src/application/storefront-templates/page-blueprint-v2-asset-role-contract.ts",
       "src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts",
       "src/application/storefront-templates/page-blueprint-v2-candidate-authority.ts",
+      "src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts",
+      "src/application/storefront-templates/structural-storefront-compatibility-contract.ts",
       "src/application/storefront-templates/index.ts",
     ]);
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
