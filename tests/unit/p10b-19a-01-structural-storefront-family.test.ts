@@ -298,8 +298,10 @@ describe("P10B-19A-01 architecture boundary", () => {
       "src/application/storefront-templates/page-blueprint-v2-normalized-topology.ts",
       "src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts",
       "src/application/storefront-templates/structural-storefront-compatibility-contract.ts",
+      "src/application/storefront-templates/structural-storefront-deterministic-selection.ts",
       "src/application/storefront-templates/structural-storefront-family-candidate-registry.ts",
       "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
+      "src/application/storefront-templates/structural-storefront-selection-contract.ts",
     ]);
   });
 });

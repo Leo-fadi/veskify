@@ -22,4 +22,13 @@ export * from "./page-blueprint-v2-normalized-topology";
 export * from "./structural-storefront-family-normalized-topology";
 export * from "./structural-storefront-compatibility-contract";
 export * from "./structural-storefront-candidate-compatibility-evaluation";
+export type {
+  StructuralStorefrontDeterministicSelectionErrorCode,
+  StructuralStorefrontDeterministicSelectionErrorDetails,
+  StructuralStorefrontDeterministicSelectionReceiptV1,
+  StructuralStorefrontDeterministicSelectionRequestV1,
+  StructuralStorefrontSelectedCompleteTopologyV1,
+  StructuralStorefrontSelectedPageFamilyCandidateV1,
+} from "./structural-storefront-selection-contract";
+export type { StructuralStorefrontDeterministicSelectionInput } from "./structural-storefront-deterministic-selection";
 export * from "./page-blueprint-version-dispatch";

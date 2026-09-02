@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 2 September 2026, P10B-19A-08B Candidate Compatibility Contract and Evaluation Baseline |
+| Verified baseline         | 2 September 2026, P10B-19A-08C Deterministic Candidate Selection Baseline                |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-19A-08C | 2 September 2026 | P10B-19A-08C scoring-free deterministic candidate-selection baseline | Add strict schema/policy-version `1.0.0` trusted selection requests; establish typed family and PageBlueprint compatibility precedence with case-bound canonical fingerprint ties; select one exact family and six PageBlueprint sources through bounded A-06 substitution/omission authority; derive identity-free selected complete-store topology; replay stale-checked immutable receipts; preserve the empty production registry/profile/request/receipt and zero runtime, provider, persistence, publication or visual effect; complete parent P10B-19A-08 and make P10B-19A-09 the exact next task. |
 | 1.3.0 P10B-19A-08B | 2 September 2026 | P10B-19A-08B candidate compatibility contract and evaluation baseline | Add strict schema-version `1.0.0` transient capability-context and exact A-04 required-role capacity evidence; add exact A-07-bound family compatibility profiles and one empty production catalogue; deterministically classify PageBlueprint and family candidates through memoized A-06 DAG evaluation while retaining all compatible targets; bind A-08A topology only as provenance; add stale-checked context, profile and aggregate fingerprints; preserve zero production candidates/profiles/contexts/evaluations/selection/runtime consumers; make P10B-19A-08C the exact next task. |
 | 1.3.0 P10B-19A-08A | 1 September 2026 | P10B-19A-08A normalized topology identity baseline | Delivery-decompose accepted parent P10B-19A-08 into A-08A/A-08B/A-08C without changing architecture or A-09 order; add strict schema-version `1.0.0` normalized PageBlueprint v2 and Structural Storefront Family topology projections; assign deterministic region tokens from A-03 reading order; retain A-03/A-05 and exclude A-04/A-06 authority; add stale-checked topology fingerprints and a pure inactive duplicate-topology index; preserve the exactly empty production registry, zero topology records and no compatibility, selection, activation, persistence or runtime reachability; make P10B-19A-08B the exact next task. |
 | 1.3.0 P10B-19A-07 | 1 September 2026 | P10B-19A-07 inactive family registry and candidate fingerprints baseline | Add strict deeply readonly PageBlueprint v2 and Structural Storefront Family candidate authorities at schema version `1.0.0`; compose exact A-03/A-04/A-05/A-06 authority; bind exact A-01 identity and candidate lifecycle; require all six A-02 page-family roles and canonical relationships; add stale-checked exact-content fingerprints; canonicalize a bounded inactive registry; reject duplicate identities, invalid A-06 targets and substitution cycles; keep its sole production value exactly empty; preserve A-01 through A-06/v1 and zero records, selectors and runtime consumers; make P10B-19A-08 the exact next task. |
@@ -121,9 +122,9 @@ quality upgrade, accepted P10B-18B-04 PDP quality upgrade and accepted P10B-18B-
 content/support/utility quality upgrade are Baseline. P10B-16P-02 is Baseline; parent P10B-18B is
 Baseline/complete. P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
 live commercial quality rejected. P10B-18 and P10B remain Partial pending P10B-19. P10B-19 PRE is
-Baseline. P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline; parent
-P10B-19A-08 and P10B-19A are Partial; P10B-19A-08C - Deterministic Candidate Selection is the
-exact next task; P10B-19A-09 remains Planned after P10B-19A-08C. The current
+Baseline. P10B-19A-01 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed
+and P10B-19A remains Partial; P10B-19A-09 - v1 Read, Render, Migration and Publication
+Compatibility is the exact next task. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -938,10 +939,9 @@ closes bounded homepage/editorial/campaign quality; accepted P10B-18B-03 closes 
 collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP quality; and
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
-live commercial quality rejected. P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-07,
-P10B-19A-08A and P10B-19A-08B are Baseline; parent P10B-19A-08 and P10B-19A are Partial;
-P10B-19A-08C - Deterministic Candidate Selection is the exact next task; P10B-19A-09 remains
-Planned after P10B-19A-08C.
+live commercial quality rejected. P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-08C are
+Baseline; parent P10B-19A-08 is Baseline / closed and P10B-19A remains Partial; P10B-19A-09 - v1
+Read, Render, Migration and Publication Compatibility is the exact next task.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -1288,9 +1288,9 @@ closes bounded collection/search/product-card quality; and accepted P10B-18B-04 
 quality; accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
 live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline; parent P10B-19A-08
-and P10B-19A are Partial; P10B-19A-08C - Deterministic Candidate Selection is the exact next task;
-P10B-19A-09 remains Planned after P10B-19A-08C.
+P10B-19A-01 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed and
+P10B-19A remains Partial; P10B-19A-09 - v1 Read, Render, Migration and Publication Compatibility
+is the exact next task.
 
 ### 10.24 P10B-16P-06 canonical search query/results adapter
 
@@ -1327,9 +1327,9 @@ collection/search/product-card quality; accepted P10B-18B-04 closes bounded PDP 
 accepted P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B is
 Baseline/complete; P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with
 live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline; parent P10B-19A-08
-and P10B-19A are Partial; P10B-19A-08C - Deterministic Candidate Selection is the exact next task;
-P10B-19A-09 remains Planned after P10B-19A-08C.
+P10B-19A-01 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed and
+P10B-19A remains Partial; P10B-19A-09 - v1 Read, Render, Migration and Publication Compatibility
+is the exact next task.
 
 ### 10.25 P10B-17 responsive, accessibility and performance closure
 
@@ -1370,9 +1370,9 @@ P10B-18B-03 are **Baseline**, accepted on 18 August 2026, and P10B-18B-04 is **B
 on 19 August 2026. P10B-18B-05 is **Baseline**, accepted on 20 August 2026. P10B-18C is **Baseline**,
 accepted on 22 August 2026 after the final 126-case and 280-capture quality/diversity gate. P10B-18D
 is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline; parent P10B-19A-08
-and P10B-19A are Partial; P10B-19A-08C - Deterministic Candidate Selection is the exact next task;
-P10B-19A-09 remains Planned after P10B-19A-08C.
+P10B-19A-01 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed and
+P10B-19A remains Partial; P10B-19A-09 - v1 Read, Render, Migration and Publication Compatibility
+is the exact next task.
 Acceptance of P10B-18B-06
 proves only its bounded asset selection, reuse, responsive source/crop, logo-consumer and
 art-direction authority. Acceptance of P10B-18B-02 proves only bounded homepage, editorial and
@@ -1587,9 +1587,9 @@ The binding sequence is:
    Baseline; accepted P10B-18A and P10B-18B-01/06/02/03/04/05 are Baseline; parent P10B-18B is
    Baseline/complete. P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic
    with live commercial quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline.
-   P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline; parent
-   P10B-19A-08 and P10B-19A are Partial; P10B-19A-08C - Deterministic Candidate Selection is the
-   exact next task; P10B-19A-09 remains Planned after P10B-19A-08C.
+   P10B-19A-01 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed and
+   P10B-19A remains Partial; P10B-19A-09 - v1 Read, Render, Migration and Publication
+   Compatibility is the exact next task.
    Deliver complete commercially credible storefronts
    with bounded material diversity through registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -1910,9 +1910,9 @@ overall human verdict is **PASS WITH MINOR LIMITATION**. This adds no second sna
 renderer, commerce model, provider path or production evaluation system. P10B-16P-05B subsequently
 completed the consumer-proven cleanup and is Baseline. P10B-18D live-AI commercial storefront
 diagnostic is complete with live commercial quality rejected. P10B-19 PRE is Baseline.
-P10B-19A-01 through P10B-19A-07, P10B-19A-08A and P10B-19A-08B are Baseline; parent P10B-19A-08
-and P10B-19A are Partial; P10B-19A-08C - Deterministic Candidate Selection is the exact next task;
-P10B-19A-09 remains Planned after P10B-19A-08C.
+P10B-19A-01 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed and
+P10B-19A remains Partial; P10B-19A-09 - v1 Read, Render, Migration and Publication Compatibility
+is the exact next task.
 
 
 ### 10.29 P10B-16P-05B major repository and historical-authority cleanup
@@ -1928,9 +1928,9 @@ P10B-18D and is unconditionally unavailable in production. No provider, Vesko or
 call occurred; merchant rendering, snapshots and generation selection are unchanged.
 
 P10B remains Partial. P10B-18D is a Baseline diagnostic with live commercial quality rejected. The
-locked order is P10B-19 PRE Baseline, P10B-19A-01 through P10B-19A-07, P10B-19A-08A and
-P10B-19A-08B Baseline, parent P10B-19A-08 and P10B-19A Partial, P10B-19A-08C next, then
-P10B-19A-09 through P10B-19A-10 and P10B-19B through P10B-19J.
+locked order is P10B-19 PRE Baseline, P10B-19A-01 through P10B-19A-08C Baseline, parent
+P10B-19A-08 Baseline / closed and P10B-19A Partial, P10B-19A-09 exact next, then P10B-19A-10 and
+P10B-19B through P10B-19J.
 
 ### 10.30 P10B-18D live-AI diagnostic baseline
 
@@ -1953,9 +1953,9 @@ StorefrontSnapshot, commerce, media, proposal or publication contract changes in
 `P10B = Partial`; `P10B-19 PRE = Baseline`; `P10B-19A-01 = Baseline`;
 `P10B-19A-02 = Baseline`; `P10B-19A-03 = Baseline`; `P10B-19A-04 = Baseline`;
 `P10B-19A-05 = Baseline`; `P10B-19A-06 = Baseline`; `P10B-19A-07 = Baseline`;
-`P10B-19A-08A = Baseline`; `P10B-19A-08B = Baseline`; `P10B-19A-08 = Partial`;
-`P10B-19A = Partial`; `P10B-19A-08C = Planned / exact next`;
-`P10B-19A-09 = Planned after P10B-19A-08C`; P10B-19A-10 and P10B-19B through P10B-19J remain
+`P10B-19A-08A = Baseline`; `P10B-19A-08B = Baseline`; `P10B-19A-08C = Baseline`;
+`P10B-19A-08 = Baseline / closed`; `P10B-19A = Partial`; `P10B-19A-09 = Planned / exact next`;
+P10B-19A-10 and P10B-19B through P10B-19J remain
 Planned.
 
 ## P10B-19 structural design intelligence architecture baseline
@@ -1988,10 +1988,10 @@ history, Preview, and publication remain readable without forced regeneration.
 One page graph, one `StorefrontSnapshot`, one component registry, canonical Vesko commerce, exact
 approved media lineage, one deterministic compiler/coordinator, one final materializer/executor,
 proposal isolation, Accept/Reject, Undo/Redo, Save, reload, Preview, publication, and the Puck
-adapter boundary remain binding. P10B remains Partial. P10B-19A-01 through P10B-19A-07,
-P10B-19A-08A and P10B-19A-08B are Baseline; parent P10B-19A-08 and P10B-19A are Partial;
-P10B-19A-08C - Deterministic Candidate Selection is the exact next task; P10B-19A-09 remains
-Planned after P10B-19A-08C; P10B-19A-10 and P10B-19B through P10B-19J remain Planned.
+adapter boundary remain binding. P10B remains Partial. P10B-19A-01 through P10B-19A-08C are
+Baseline; parent P10B-19A-08 is Baseline / closed and P10B-19A remains Partial; P10B-19A-09 - v1
+Read, Render, Migration and Publication Compatibility is the exact next task; P10B-19A-10 and
+P10B-19B through P10B-19J remain Planned.
 
 ### 10.31 P10B-19A-01 structural family identity and lifecycle authority
 
@@ -2381,8 +2381,8 @@ A-01 through A-06 source authority and current PageBlueprint v1 behavior remain 
 `P10B-19A-01 = Baseline`; `P10B-19A-02 = Baseline`; `P10B-19A-03 = Baseline`;
 `P10B-19A-04 = Baseline`; `P10B-19A-05 = Baseline`; `P10B-19A-06 = Baseline`;
 `P10B-19A-07 = Baseline`; `P10B-19A-08A = Baseline`; `P10B-19A-08B = Baseline`;
-`P10B-19A-08 = Partial`; `P10B-19A = Partial`; `P10B-19A-08C = Planned / exact next`;
-`P10B-19A-09 = Planned after P10B-19A-08C`; `P10B = Partial`.
+`P10B-19A-08C = Baseline`; `P10B-19A-08 = Baseline / closed`; `P10B-19A = Partial`;
+`P10B-19A-09 = Planned / exact next`; `P10B = Partial`.
 
 ### 10.38 P10B-19A-08A normalized topology identity authority
 
@@ -2445,9 +2445,10 @@ validation. Named future consumers are A-08C deterministic selection, P10B-19H d
 prevention and P10B-19G meaningfulness evidence.
 
 `P10B-19A-01 through P10B-19A-07 = Baseline`; `P10B-19A-08A = Baseline`;
-`P10B-19A-08B = Baseline`; `P10B-19A-08 = Partial`; `P10B-19A = Partial`;
-`P10B-19A-08C - Deterministic Candidate Selection = Planned / exact next`;
-`P10B-19A-09 = Planned after P10B-19A-08C`; `P10B = Partial`.
+`P10B-19A-08B = Baseline`; `P10B-19A-08C = Baseline`;
+`P10B-19A-08 = Baseline / closed`; `P10B-19A = Partial`;
+`P10B-19A-09 - v1 Read, Render, Migration and Publication Compatibility = Planned / exact next`;
+`P10B = Partial`.
 
 ### 10.39 P10B-19A-08B candidate compatibility contract and evaluation authority
 
@@ -2512,10 +2513,73 @@ capability-context count, compatibility-evaluation count, active-family count, s
 count, selected-candidate count and current-generation compatibility-consumer count all remain
 zero. A-01 through A-08A production authority, v1 compatibility, canonical commerce/media,
 `StorefrontSnapshot`, persistence, proposal, rendering, publication and Puck boundaries remain
-unchanged. Focused A-08B tests are the only direct current consumer; A-08C is the named future
-production consumer.
+unchanged. Focused A-08B tests and the inactive A-08C selector are the only direct current
+consumers, with no current-generation runtime consumer.
 
 `P10B-19A-01 through P10B-19A-07 = Baseline`; `P10B-19A-08A = Baseline`;
-`P10B-19A-08B = Baseline`; `P10B-19A-08 = Partial`; `P10B-19A = Partial`;
-`P10B-19A-08C - Deterministic Candidate Selection = Planned / exact next`;
-`P10B-19A-09 = Planned after P10B-19A-08C`; `P10B = Partial`.
+`P10B-19A-08B = Baseline`; `P10B-19A-08C = Baseline`;
+`P10B-19A-08 = Baseline / closed`; `P10B-19A = Partial`;
+`P10B-19A-09 - v1 Read, Render, Migration and Publication Compatibility = Planned / exact next`;
+`P10B = Partial`.
+
+### 10.40 P10B-19A-08C scoring-free deterministic candidate-selection authority
+
+P10B-19A-08C completes parent P10B-19A-08 with one inactive, side-effect-free deterministic
+selection authority over exact A-07 candidates, A-08A normalized topology and replayed A-08B
+compatibility evidence. It does not activate, materialize, persist, render or publish selected
+authority and does not connect to current generation.
+
+The strict deeply readonly request and policy schema versions are `1.0.0`. A trusted internal
+request binds one bounded lowercase-kebab technical case identity, the exact A-08B evaluation
+fingerprint, a nonempty canonical A-01 eligible-family set, and unique exact family-identity,
+family-topology and previously selected complete-store-topology exclusions. Creation canonicalizes
+all collections; parsing rejects stale or noncanonical material. Its fingerprint is
+`structural-storefront-deterministic-selection-request-v1_<canonical-length>_<sha256>`.
+
+Selection re-canonicalizes A-07, validates the supplied A-08A index exactly through A-08B replay,
+and accepts only registry members that match exact A-07 identity/fingerprint and A-08A/A-08B
+topology provenance. Family precedence is `directly-compatible` before
+`conditionally-compatible`; PageBlueprint precedence is `directly-compatible` before
+`substitution-compatible` before `omission-compatible`. Incompatible candidates are never
+selectable. Equal-class ties compare `canonicalValueFingerprint` values built only from policy,
+request, selected-family, exact candidate and normalized-topology authority, followed by exact
+code-unit identity. No numeric score, weight, penalty, confidence, stored sort value, locale,
+randomness, clock or input order controls the result.
+
+For the selected family, one pool is built for each canonical page family: home, collection,
+search, product-detail, content-support and utility. A substitution-compatible source follows the
+first compatible candidate in exact A-06 priority and may recurse only to a direct or
+omission-compatible terminal. A direct terminal declares no omission. An omission-compatible
+terminal retains exact A-08B triggered optional regions in the A-03 default reading order; it does
+not alter the A-03 or A-05 record or execute omission. Source/effective identities, the complete
+substitution path, terminal status and omitted region IDs remain explicit receipt evidence.
+
+The selector enumerates the six ordered pools as one lazy lexicographic Cartesian product. One
+invocation-global fixed bound counts at most `4096` complete combinations and fails before a
+`4097`th evaluation. Excluded complete-store topologies advance to the next combination and then
+the next compatible family; exhausting all bounded compatible topologies fails closed without a
+partial receipt.
+
+Selected complete-store topology contains only schema version `1.0.0`, all six terminal A-08A
+PageBlueprint topology fingerprints, omission tokens `r0`, `r1`, ... derived from effective A-03
+reading order, and canonical A-02 cross-page relationships. Exact candidate/family identities,
+substitution paths, request and compatibility statuses are excluded. Its fingerprint is
+`structural-storefront-selected-complete-topology-v1_<canonical-length>_<sha256>`, so direct and
+substitution routes reaching equal effective structure produce equal topology.
+
+The strict deeply readonly receipt binds the exact request/evaluation, selected family, all six
+source and effective page decisions, selected complete-store topology and
+`structural-storefront-deterministic-selection-v1_<canonical-length>_<sha256>`. Receipt parsing
+reruns selection and canonical-compares the complete result. Malformed, stale, incompatible,
+contradictory, exhausted or over-budget authority returns no partial selection and never falls
+back to v1.
+
+The exported production A-07 registry and A-08B profile catalogue remain exactly empty. Production
+selection-request, receipt, selected-family and selected-page record counts remain zero, and no
+current generation, provider, Vesko, commerce/media, `StorefrontSnapshot`, persistence, proposal,
+Puck, renderer or publication module imports or invokes A-08C. This task has no merchant-visible or
+visual effect, creates no three-concept planner or roles, and reserves distinct-concept enforcement
+for P10B-19H. P10B-19A-09 owns v1 read/render/migration/publication compatibility.
+
+`P10B-19A-01 through P10B-19A-08C = Baseline`; `P10B-19A-08 = Baseline / closed`;
+`P10B-19A = Partial`; `P10B-19A-09 = Planned / exact next`; `P10B = Partial`.
