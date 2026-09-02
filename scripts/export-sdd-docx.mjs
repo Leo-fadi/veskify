@@ -186,6 +186,88 @@ const mergeFirstAcceptanceTraceabilityChunks = (documentXml) => {
   )}`;
 };
 
+const keepCapabilityTableRowsTogether = (documentXml) => {
+  let correctedTable = false;
+  const corrected = documentXml.replace(/<w:tbl>[\s\S]*?<\/w:tbl>/g, (table) => {
+    if (
+      !table.includes("<w:t>Capability area</w:t>") ||
+      !table.includes("<w:t>Verified truth</w:t>")
+    ) {
+      return table;
+    }
+    correctedTable = true;
+    return table.replace(/<w:tr>[\s\S]*?<\/w:tr>/g, (row) => {
+      if (row.includes("<w:cantSplit/>")) return row;
+      return row.replace("<w:trPr>", "<w:trPr><w:cantSplit/>");
+    });
+  });
+  if (!correctedTable) throw new Error("Could not resolve the SDD capability table");
+  return corrected;
+};
+
+const keepInitialGenerationProcessBlockTogether = (documentXml) => {
+  let correctedBlock = false;
+  const corrected = documentXml.replace(
+    /(?:<w:p><w:pPr><w:pStyle w:val="CodeBlock"\/>[\s\S]*?<\/w:p>)+/g,
+    (block) => {
+      if (
+        !block.includes("whole-storefront-proposals") ||
+        !block.includes("one isolated proposal")
+      ) {
+        return block;
+      }
+      const paragraphs = block.match(/<w:p>[\s\S]*?<\/w:p>/g) ?? [];
+      if (paragraphs.length !== 10) {
+        throw new Error(
+          `Expected ten paragraphs in the initial-generation process block, received ${paragraphs.length}`,
+        );
+      }
+      correctedBlock = true;
+      return paragraphs
+        .map((paragraph, index) =>
+          index === paragraphs.length - 1 || paragraph.includes("<w:keepNext/>")
+            ? paragraph
+            : paragraph.replace("</w:pPr>", "<w:keepNext/></w:pPr>"),
+        )
+        .join("");
+    },
+  );
+  if (!correctedBlock) throw new Error("Could not resolve the initial-generation process block");
+  return corrected;
+};
+
+const keepInitialGenerationLeadWithProcessBlock = (documentXml) => {
+  const leadText = "P10B-16P-05A makes prompted initial generation one explicit path:";
+  let correctedParagraph = false;
+  const corrected = documentXml.replace(/<w:p>[\s\S]*?<\/w:p>/g, (paragraph) => {
+    if (!paragraph.includes(leadText)) return paragraph;
+    correctedParagraph = true;
+    return paragraph.includes("<w:keepNext/>")
+      ? paragraph
+      : paragraph.replace("</w:pPr>", "<w:keepNext/></w:pPr>");
+  });
+  if (!correctedParagraph) {
+    throw new Error("Could not resolve the initial-generation process lead paragraph");
+  }
+  return corrected;
+};
+
+const keepInitialGenerationClosingParagraphTogether = (documentXml) => {
+  const openingText = "P10B-16P-05A removes the active P10B-16L";
+  let correctedParagraph = false;
+  const corrected = documentXml.replace(/<w:p>[\s\S]*?<\/w:p>/g, (paragraph) => {
+    if (!paragraph.includes(openingText)) return paragraph;
+    correctedParagraph = true;
+    return paragraph.includes("<w:keepLines/>")
+      ? paragraph
+      : paragraph.replace("</w:pPr>", "<w:keepLines/></w:pPr>");
+  });
+  if (!correctedParagraph) {
+    throw new Error("Could not resolve the initial-generation closing paragraph");
+  }
+  return corrected;
+};
+
 const applySddVisualCorrections = (archivePath, correctedArchivePath) => {
   const stagingDirectory = mkdtempSync(join(tmpdir(), "veskify-sdd-docx-"));
   try {
@@ -194,8 +276,13 @@ const applySddVisualCorrections = (archivePath, correctedArchivePath) => {
     const originalDocumentXml = readFileSync(documentPath, "utf8");
     const splitDocumentXml = splitNfrTraceabilityTable(originalDocumentXml);
     const compactedDocumentXml = mergeFirstAcceptanceTraceabilityChunks(splitDocumentXml);
+    const wholeRowsDocumentXml = keepCapabilityTableRowsTogether(compactedDocumentXml);
+    const processLeadDocumentXml = keepInitialGenerationLeadWithProcessBlock(wholeRowsDocumentXml);
+    const paginatedDocumentXml = keepInitialGenerationProcessBlockTogether(processLeadDocumentXml);
+    const wholeParagraphsDocumentXml =
+      keepInitialGenerationClosingParagraphTogether(paginatedDocumentXml);
     let traceabilityTableCount = 0;
-    const correctedDocumentXml = compactedDocumentXml.replace(
+    const correctedDocumentXml = wholeParagraphsDocumentXml.replace(
       /<w:tbl>[\s\S]*?<\/w:tbl>/g,
       (table) => {
         if (!isTraceabilityTable(table)) return table;
@@ -234,7 +321,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 2 September 2026",
-      "P10B-19A-08C Deterministic Candidate Selection Baseline",
+      "P10B-19A-09A Legacy v1 Replay Alias and Compatibility Reference Baseline",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
