@@ -532,7 +532,8 @@ const receiptMaterialSchema = z
       if (
         !topology ||
         topology.effectivePageBlueprintTopologyFingerprint !==
-          selection.effectiveNormalizedTopologyFingerprint
+          selection.effectiveNormalizedTopologyFingerprint ||
+        topology.omittedTopologyRegionIds.length !== selection.omittedRegionIds.length
       ) {
         issue(context, ["selectedCompleteStoreTopology"], "Selected topology contradicts pages.");
       }

@@ -5,22 +5,16 @@ import { describe, expect, it } from "vitest";
 
 import * as storefrontTemplateAuthority from "@/application/storefront-templates";
 import {
-  StructuralStorefrontDeterministicSelectionError,
   canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry,
   createInactiveStructuralStorefrontFamilyCompatibilityProfileCatalogue,
   createPageBlueprintV2CandidateAuthority,
   createStructuralStorefrontCapabilityContext,
-  createStructuralStorefrontDeterministicSelectionRequest,
   createStructuralStorefrontFamilyCandidate,
   createStructuralStorefrontFamilyCompatibilityProfile,
   deriveInactiveCandidateNormalizedTopologyIndex,
   evaluateInactiveStructuralStorefrontCandidateCompatibility,
   inactiveStructuralStorefrontFamilyCandidateRegistry,
   inactiveStructuralStorefrontFamilyCompatibilityProfileCatalogue,
-  parseStructuralStorefrontDeterministicSelectionReceipt,
-  selectDeterministicStructuralStorefrontCandidate,
-  structuralStorefrontFamilyCompatibilityPrecedence,
-  structuralStorefrontPageBlueprintCompatibilityPrecedence,
   type InactiveStructuralStorefrontFamilyCandidateRegistryV1,
   type PageBlueprintV2CandidateAuthorityV1,
   type PageBlueprintV2CandidateReference,
@@ -28,6 +22,16 @@ import {
   type StructuralStorefrontDeterministicSelectionRequestV1,
   type StructuralStorefrontFamilyCandidateV1,
 } from "@/application/storefront-templates";
+import {
+  StructuralStorefrontDeterministicSelectionError,
+  createStructuralStorefrontDeterministicSelectionRequest,
+  structuralStorefrontFamilyCompatibilityPrecedence,
+  structuralStorefrontPageBlueprintCompatibilityPrecedence,
+} from "@/application/storefront-templates/structural-storefront-selection-contract";
+import {
+  parseStructuralStorefrontDeterministicSelectionReceipt,
+  selectDeterministicStructuralStorefrontCandidate,
+} from "@/application/storefront-templates/structural-storefront-deterministic-selection";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
   structuralStorefrontPageFamilyIds,

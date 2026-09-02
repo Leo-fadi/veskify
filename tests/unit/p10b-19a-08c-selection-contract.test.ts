@@ -699,6 +699,13 @@ describe("P10B-19A-08C exact immutable selection receipt contract", () => {
     const duplicateSelections = material.pageFamilySelections.map((entry, index, all) =>
       index === all.length - 1 ? all[0] : entry,
     );
+    const omittedHomeSelection = structuralStorefrontPageFamilyDecisionV1Schema.parse({
+      ...directPageSelectionInput("home", 0),
+      sourceCompatibilityStatus: "omission-compatible",
+      resolutionMode: "omission",
+      terminalCompatibilityStatus: "omission-compatible",
+      omittedRegionIds: ["optional-region"],
+    });
     const invalidCases = [
       { ...material, pageFamilySelections: material.pageFamilySelections.slice(1) },
       { ...material, pageFamilySelections: duplicateSelections },
@@ -712,6 +719,21 @@ describe("P10B-19A-08C exact immutable selection receipt contract", () => {
               : entry,
           ),
         }),
+      },
+      {
+        ...material,
+        selectedCompleteStoreTopology: createStructuralStorefrontSelectedCompleteTopology({
+          ...topologyMaterial(),
+          pageFamilyTopologies: topologyMaterial().pageFamilyTopologies.map((entry, index) =>
+            index === 0 ? { ...entry, omittedTopologyRegionIds: ["r0"] } : entry,
+          ),
+        }),
+      },
+      {
+        ...material,
+        pageFamilySelections: material.pageFamilySelections.map((entry, index) =>
+          index === 0 ? omittedHomeSelection : entry,
+        ),
       },
       {
         ...material,
