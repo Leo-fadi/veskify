@@ -1148,11 +1148,12 @@ describe("P10B-19A-07 architecture and inactivity boundary", () => {
       "src/application/storefront-templates/index.ts",
       "src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts",
       "src/application/storefront-templates/structural-storefront-compatibility-contract.ts",
+      "src/application/storefront-templates/structural-storefront-deterministic-selection.ts",
       "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
     ]);
   });
 
-  it("exports A-08B compatibility but no A-08C selection authority", () => {
+  it("exports A-08B compatibility and the inactive A-08C selection authority", () => {
     const forbiddenExports = Object.keys(storefrontTemplateAuthority).filter((name) =>
       /StructuralStorefrontFamily.*(?:select|score|rank|winner)|(?:select|score|rank|winner).*StructuralStorefrontFamily/iu.test(
         name,
@@ -1165,6 +1166,9 @@ describe("P10B-19A-07 architecture and inactivity boundary", () => {
     expect(
       storefrontTemplateAuthority.evaluateInactiveStructuralStorefrontCandidateCompatibility,
     ).toBeTypeOf("function");
+    expect(storefrontTemplateAuthority.selectDeterministicStructuralStorefrontCandidate).toBeTypeOf(
+      "function",
+    );
     expect(structuralStorefrontFamilyCandidateV1Schema).toBeDefined();
   });
 });

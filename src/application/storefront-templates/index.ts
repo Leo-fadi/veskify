@@ -22,4 +22,6 @@ export * from "./page-blueprint-v2-normalized-topology";
 export * from "./structural-storefront-family-normalized-topology";
 export * from "./structural-storefront-compatibility-contract";
 export * from "./structural-storefront-candidate-compatibility-evaluation";
+export * from "./structural-storefront-selection-contract";
+export * from "./structural-storefront-deterministic-selection";
 export * from "./page-blueprint-version-dispatch";
