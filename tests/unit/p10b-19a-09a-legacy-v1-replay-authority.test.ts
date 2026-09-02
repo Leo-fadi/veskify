@@ -490,6 +490,65 @@ describe("P10B-19A-09A exact replay-reference validation", () => {
       "stale-legacy-v1-replay-reference",
     );
   });
+
+  it.each([
+    [
+      "authority ID",
+      (selection: BoundedStorefrontSynthesisSelectionNarrowing) => ({
+        ...selection,
+        authorityId: ` ${selection.authorityId} `,
+      }),
+    ],
+    [
+      "authority fingerprint",
+      (selection: BoundedStorefrontSynthesisSelectionNarrowing) => ({
+        ...selection,
+        authorityFingerprint: ` ${selection.authorityFingerprint} `,
+      }),
+    ],
+    [
+      "selection ID",
+      (selection: BoundedStorefrontSynthesisSelectionNarrowing) => ({
+        ...selection,
+        selectionId: ` ${selection.selectionId} `,
+      }),
+    ],
+    [
+      "optional page-family ID",
+      (selection: BoundedStorefrontSynthesisSelectionNarrowing) => ({
+        ...selection,
+        includedOptionalPageFamilyIds: selection.includedOptionalPageFamilyIds.map(
+          (optionalPageId, index) => (index === 0 ? ` ${optionalPageId} ` : optionalPageId),
+        ),
+      }),
+    ],
+  ] as const)("rejects trim-normalized %s input through every public parser", (_label, mutate) => {
+    const aliasId = "legacy-v1:premium-editorial";
+    const transformedSelection = mutate(selectionFor(aliasId));
+    const reference = referenceFor(aliasId);
+    expectLegacyError(
+      () =>
+        createLegacyV1StorefrontReplayReference({
+          aliasId,
+          sourceSelection: transformedSelection,
+        }),
+      "invalid-legacy-v1-selection",
+    );
+    expectLegacyError(
+      () =>
+        parseLegacyV1StorefrontReplayReference({
+          ...reference,
+          sourceSelection: transformedSelection,
+        }),
+      "invalid-legacy-v1-selection",
+    );
+    expect(
+      legacyV1StorefrontReplayReferenceV1Schema.safeParse({
+        ...reference,
+        sourceSelection: transformedSelection,
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("P10B-19A-09A executable replay fingerprint identity", () => {

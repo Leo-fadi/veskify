@@ -354,6 +354,21 @@ const replayCreationInputSchema = z
 function parseSourceSelection(input: unknown): BoundedStorefrontSynthesisSelectionNarrowing {
   const parsed = boundedStorefrontSynthesisSelectionNarrowingSchema.safeParse(input);
   if (!parsed.success) throw new LegacyV1ReplayAuthorityError("invalid-legacy-v1-selection");
+  const source = input as Record<string, unknown>;
+  const optionalPageIds = source.includedOptionalPageFamilyIds;
+  if (
+    source.authorityId !== parsed.data.authorityId ||
+    source.authorityFingerprint !== parsed.data.authorityFingerprint ||
+    source.selectionId !== parsed.data.selectionId ||
+    !Array.isArray(optionalPageIds) ||
+    optionalPageIds.length !== parsed.data.includedOptionalPageFamilyIds.length ||
+    optionalPageIds.some(
+      (optionalPageId, index) =>
+        optionalPageId !== parsed.data.includedOptionalPageFamilyIds[index],
+    )
+  ) {
+    throw new LegacyV1ReplayAuthorityError("invalid-legacy-v1-selection");
+  }
   return parsed.data;
 }
 
@@ -468,7 +483,7 @@ function parseReplayReference(
 }
 
 export const legacyV1StorefrontReplayReferenceV1Schema = withCurrentAuthorityValidation(
-  replayReferenceRecordSchema,
+  replayReferenceEnvelopeSchema,
   (input) => parseReplayReference(input, legacyV1CoordinatedDirectionReplayAliasRegistry),
 ).transform((input) =>
   parseReplayReference(input, legacyV1CoordinatedDirectionReplayAliasRegistry),
