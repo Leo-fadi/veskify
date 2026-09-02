@@ -1137,23 +1137,29 @@ describe("P10B-19A-07 architecture and inactivity boundary", () => {
     );
   });
 
-  it("has zero current-generation candidate-registry consumers", () => {
+  it("keeps the candidate registry confined to inactive authority modules", () => {
     const repositoryRoot = resolve(process.cwd());
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
       .filter((path) =>
         readFileSync(path, "utf8").includes("structural-storefront-family-candidate-registry"),
       )
       .map((path) => relative(repositoryRoot, path));
-    expect(consumers).toStrictEqual(["src/application/storefront-templates/index.ts"]);
+    expect(consumers).toStrictEqual([
+      "src/application/storefront-templates/index.ts",
+      "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
+    ]);
   });
 
-  it("exports no A-08 selector, score or normalized-topology authority", () => {
+  it("exports normalized topology but no A-08B compatibility or A-08C selection authority", () => {
     const forbiddenExports = Object.keys(storefrontTemplateAuthority).filter((name) =>
-      /StructuralStorefrontFamily.*(?:select|score|compatib|topology)|(?:select|score|compatib|topology).*StructuralStorefrontFamily/iu.test(
+      /StructuralStorefrontFamily.*(?:select|score|compatib)|(?:select|score|compatib).*StructuralStorefrontFamily/iu.test(
         name,
       ),
     );
     expect(forbiddenExports).toStrictEqual([]);
+    expect(
+      storefrontTemplateAuthority.deriveStructuralStorefrontFamilyNormalizedTopology,
+    ).toBeTypeOf("function");
     expect(structuralStorefrontFamilyCandidateV1Schema).toBeDefined();
   });
 });

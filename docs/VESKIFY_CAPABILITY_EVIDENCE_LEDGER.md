@@ -2,7 +2,7 @@
 
 **Audit date:** 1 September 2026
 
-**Repository baseline:** P10B-19A-07 inactive family registry and candidate fingerprints Baseline
+**Repository baseline:** P10B-19A-08A Normalized Topology Identity Baseline
 
 **Phase status:** P10A **Baseline / closed**; P10B Commercial Storefront Generation System v1
 **Partial / active phase**
@@ -13,8 +13,10 @@ P10B-18B-02 and P10B-18B-03 **Baseline / accepted 18 August 2026**; P10B-18B-04
 **Baseline / accepted 19 August 2026**; P10B-18B-05 **Baseline / accepted 20 August 2026**.
 P10B-18B **Baseline / complete** and P10B-18 **Partial**; P10B-18C and P10B-16P-05B are
 **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**;
-P10B-19 PRE and P10B-19A-01 through P10B-19A-07 are **Baseline**, P10B-19A is **Partial**,
-P10B-19A-08 is **Planned / exact next**, and P10B-19B through P10B-19J remain **Planned**.
+P10B-19 PRE, P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are **Baseline**; parent
+P10B-19A-08 and P10B-19A are **Partial**; P10B-19A-08B - Candidate Compatibility Contract and
+Evaluation is **Planned / exact next**; P10B-19A-08C and P10B-19A-09 are **Planned** in that order;
+P10B-19B through P10B-19J remain **Planned**.
 
 **Companion analysis:** [Veskify Current-State Truth Audit](./VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
 
@@ -192,9 +194,10 @@ closes bounded asset-composition authority only; accepted P10B-18B-02 closes bou
 homepage/editorial/campaign quality only; accepted P10B-18B-03 closes bounded collection/search/
 product-card quality only; accepted P10B-18B-04 closes bounded PDP quality only; and accepted
 P10B-18B-05 closes bounded content/support/utility quality. Parent P10B-18B and P10B-18C are
-Baseline; P10B-18D is a rejected-quality diagnostic Baseline. P10B-18 remains Partial, P10B-19 PRE
-and P10B-19A-01 through P10B-19A-07 are Baseline, P10B-19A is Partial, P10B-19A-08 is exact next,
-P10C general editing remains separate, and P10B-16P-05B is Baseline. P10B-18C adds no
+Baseline; P10B-18D is a rejected-quality diagnostic Baseline. P10B-18 remains Partial. P10B-19 PRE,
+P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are Baseline; parent P10B-19A-08 and P10B-19A
+are Partial; P10B-19A-08B is exact next, followed by P10B-19A-08C and P10B-19A-09. P10C general
+editing remains separate, and P10B-16P-05B is Baseline. P10B-18C adds no
 provider, Vesko-staging, real
 publication or production-readiness claim.
 Review this ledger whenever canonical main, merchant reachability, P10B implementation, or Vesko
@@ -264,7 +267,8 @@ browser tests and the unchanged 72-case regression. Provider, Vesko, external im
 real publication calls are zero. The product owner accepted the package on 20 August 2026;
 P10B-18B-05 and completed P10B-18B are Baseline, and P10B-18/P10B remain Partial. P10B-18C was next
 at that checkpoint; P10B-19 PRE and P10B-19A-01 through P10B-19A-07 are now Baseline, parent
-P10B-19A is Partial, and P10B-19A-08 is next.
+P10B-19A-08A is also Baseline, parent P10B-19A-08 and P10B-19A are Partial, and P10B-19A-08B is
+next before P10B-19A-08C and P10B-19A-09.
 
 ### P10B-18C durable deterministic commercial-quality evidence
 
@@ -288,9 +292,11 @@ browser protection.
 | External activity         | Zero provider calls, zero Vesko calls, zero real publications                                                               |
 
 P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
-quality rejected. P10B-19 PRE and P10B-19A-01 through P10B-19A-07 are Baseline. P10B-19A is
-Partial; P10B-19A-08 is the exact next implementation task, followed by planned P10B-19B through
-P10B-19J. P10B remains Partial.
+quality rejected. P10B-19 PRE, P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are Baseline;
+parent P10B-19A-08 and P10B-19A are Partial; P10B-19A-08B - Candidate Compatibility Contract and
+Evaluation is the exact next implementation task; P10B-19A-08C is Planned after P10B-19A-08B;
+P10B-19A-09 remains Planned after P10B-19A-08C; P10B-19B through P10B-19J remain Planned. P10B
+remains Partial.
 
 ### P10B-18D live diagnostic evidence
 
@@ -311,12 +317,12 @@ diagnostic is a Baseline input to P10B-19 PRE, not a live-quality capability cla
 
 ## P10B-19 structural intelligence evidence status
 
-| Capability                                       | Status       | Accepted evidence                                                                                                                                                  | Current limitation / next proof                                                                           |
-| ------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| Structural design intelligence architecture      | **Baseline** | Product-owner accepted P10B-19 PRE; binding ownership, migration, safety, alternatives, and 73-child delivery map are recorded                                     | Architecture only; no new production visual capability                                                    |
-| Structural Storefront Family / PageBlueprint v2  | **Partial**  | P10B-19A-01 through P10B-19A-07 establish strict identities, relationships, v2 composition companions, exact candidate fingerprints and an inactive empty registry | A-08 must add compatibility, deterministic selection and normalized topology; no records or runtime reach |
-| Visual Recipe / Design DNA v2                    | **Planned**  | Persistence and compilation decision accepted                                                                                                                      | P10B-19B must prove exact accessible visual authority                                                     |
-| Multi-concept generation and screenshot critique | **Planned**  | Two-call hybrid, duplicate prevention, and one-pass critic boundaries accepted                                                                                     | P10B-19H/I must prove mocked execution before P10B-19J live acceptance                                    |
+| Capability                                       | Status       | Accepted evidence                                                                                                                                                                                         | Current limitation / next proof                                                                          |
+| ------------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Structural design intelligence architecture      | **Baseline** | Product-owner accepted P10B-19 PRE; binding ownership, migration, safety, alternatives, and 73-child delivery map are recorded                                                                            | Architecture only; no new production visual capability                                                   |
+| Structural Storefront Family / PageBlueprint v2  | **Partial**  | P10B-19A-01 through P10B-19A-08A establish strict identities, relationships, v2 composition companions, exact candidate fingerprints, normalized topology identities and an inactive empty registry/index | A-08B must add compatibility evaluation, then A-08C deterministic selection; no records or runtime reach |
+| Visual Recipe / Design DNA v2                    | **Planned**  | Persistence and compilation decision accepted                                                                                                                                                             | P10B-19B must prove exact accessible visual authority                                                    |
+| Multi-concept generation and screenshot critique | **Planned**  | Two-call hybrid, duplicate prevention, and one-pass critic boundaries accepted                                                                                                                            | P10B-19H/I must prove mocked execution before P10B-19J live acceptance                                   |
 
 P10B-19A-07 composes exact A-03/A-04/A-05/A-06 PageBlueprint candidate authority with a
 stale-checked `page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>` content fingerprint.
@@ -330,9 +336,22 @@ priority. Its sole production value has exactly empty candidate arrays. The fing
 content integrity, not normalized topology; active/candidate records, selection, activation,
 persistence, publication and runtime consumers remain zero. A-01 through A-06 and v1 are unchanged.
 
-P10B-19A-01 through P10B-19A-07 are Baseline, parent P10B-19A is Partial, and P10B-19A-08 -
-Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next
-implementation task.
+P10B-19A-08A evidence is contract/schema plus deterministic unit proof. All three normalized
+topology schemas are version `1.0.0`. Page topology uses deterministic `r0`, `r1`, ... region
+tokens in A-03 default reading order; retains A-03 structural relationships and A-05 responsive
+rules; excludes A-04 asset-role and A-06 fallback authority; and uses
+`page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>` fingerprints. Family
+topology covers all six canonical A-02 page-family roles and A-02 relationships and uses
+`structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>` fingerprints.
+The pure non-persisted inactive index groups equal PageBlueprint and family topology identities
+without rejection, compatibility evaluation, selection, activation or runtime reachability. PageBlueprint v2,
+Structural Storefront Family and normalized-topology production record counts remain exactly zero.
+
+The A-08A/A-08B/A-08C split is delivery-only and preserves the accepted P10B-19 PRE architecture
+and P10B-19A-09 ownership. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are Baseline; parent
+P10B-19A-08 and P10B-19A are Partial; P10B-19A-08B - Candidate Compatibility Contract and
+Evaluation is the exact next implementation task; P10B-19A-08C is Planned after P10B-19A-08B;
+P10B-19A-09 remains Planned after P10B-19A-08C.
 
 The baseline preserves one `StorefrontSnapshot`, one registry, canonical commerce/media, one
 compiler/coordinator, one final materializer, proposal lifecycle, publication, and Puck adapter

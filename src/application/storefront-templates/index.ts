@@ -18,4 +18,6 @@ export * from "./page-blueprint-v2-responsive-rule-contract";
 export * from "./page-blueprint-v2-omission-substitution-fallback-contract";
 export * from "./page-blueprint-v2-candidate-authority";
 export * from "./structural-storefront-family-candidate-registry";
+export * from "./page-blueprint-v2-normalized-topology";
+export * from "./structural-storefront-family-normalized-topology";
 export * from "./page-blueprint-version-dispatch";

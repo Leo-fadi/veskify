@@ -17,9 +17,10 @@ Baseline/complete; the accepted P10B-18C 100+ commercial quality and diversity g
 P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P10B remain Partial.
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through
-P10B-19A-07 are Baseline, P10B-19A is Partial, and P10B-19A-08 - Compatibility, Deterministic
-Selection and Normalized Topology Identity is the exact next implementation task. P10B-19B
-through P10B-19J remain Planned.
+P10B-19A-07 and P10B-19A-08A are Baseline; parent P10B-19A-08 and P10B-19A are Partial;
+P10B-19A-08B - Candidate Compatibility Contract and Evaluation is the exact next implementation
+task; P10B-19A-08C is Planned after P10B-19A-08B; and P10B-19A-09 remains Planned after
+P10B-19A-08C. P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -38,9 +39,23 @@ one provider-neutral transient query/results adapter across draft, proposal, sav
 published routes. Active P10B-16L initial generation is removed; stable persisted identities and
 focused migration/publication compatibility remain. Governed P9 follow-up is retained and is not an
 initial-generation fallback.
-P10B-19A-01 through P10B-19A-07 are **Baseline**, parent P10B-19A is **Partial**, and P10B-19A-08 -
-Compatibility, Deterministic Selection and Normalized Topology Identity is the exact next
-implementation task. P10B-19A-07 composes exact canonical A-03 through A-06 PageBlueprint v2
+P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are **Baseline**; parent P10B-19A-08 and
+P10B-19A are **Partial**; P10B-19A-08B - Candidate Compatibility Contract and Evaluation is the
+exact next implementation task; P10B-19A-08C is Planned after P10B-19A-08B; and P10B-19A-09
+remains Planned after P10B-19A-08C. P10B-19A-08A establishes strict normalized PageBlueprint v2
+and Structural Storefront Family topology projections at schema version `1.0.0`. PageBlueprint
+topology assigns contiguous `r0`, `r1`, ... identities from canonical A-03 default reading order,
+preserves structural relationships, normalized orders and all four A-05 responsive breakpoints,
+and excludes exact candidate identity plus A-04 asset and A-06 fallback authority. Its fingerprint
+is `page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>`. Family topology resolves
+exact A-07 references into six canonical A-02 page-family topology sets and canonical cross-page
+relationships while excluding exact family identity; its fingerprint is
+`structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>`. A pure
+non-persisted index reports deterministic duplicate PageBlueprint and family topology clusters
+without rejecting, selecting, activating or declaring them meaningful. The production registry,
+persisted topology records, selected topology records, compatibility evaluators, selectors and
+current-generation topology consumers remain zero. P10B-19A-07 composes exact canonical A-03
+through A-06 PageBlueprint v2
 candidate authority and exact A-01/A-02 Structural Storefront Family candidate authority at schema
 version `1.0.0`. Candidate references contain only blueprint ID/version; every family candidate
 covers all six page-family roles with nonempty bounded references and canonical A-02 relationships.
@@ -269,9 +284,10 @@ existing content/support and utility families without a second model or renderer
 protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and P10B remain
 Partial. At that checkpoint, P10B-18C was the exact next task; P10B-18C and P10B-16P-05B are now
 Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected. P10B-19
-PRE is Baseline. P10B-19A-01 through P10B-19A-07 are Baseline, P10B-19A is Partial, and
-P10B-19A-08 - Compatibility, Deterministic Selection and Normalized Topology Identity is the exact
-next implementation task.
+PRE is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A are Baseline; parent
+P10B-19A-08 and P10B-19A are Partial; P10B-19A-08B - Candidate Compatibility Contract and
+Evaluation is the exact next implementation task; P10B-19A-08C is Planned after P10B-19A-08B; and
+P10B-19A-09 remains Planned after P10B-19A-08C.
 
 Owner: Vesko Oy
 
@@ -287,10 +303,10 @@ The existing protected architecture remains authoritative: one canonical page gr
 `StorefrontSnapshot`, one component registry, canonical commerce and media, one deterministic
 compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A-01
-through P10B-19A-07 are Baseline, P10B-19A is Partial, and P10B-19A-08 - Compatibility,
-Deterministic Selection and Normalized Topology Identity is the exact next implementation task;
-P10B-19B through P10B-19J remain
-Planned.
+through P10B-19A-07 and P10B-19A-08A are Baseline; parent P10B-19A-08 and P10B-19A are Partial;
+P10B-19A-08B - Candidate Compatibility Contract and Evaluation is the exact next implementation
+task; P10B-19A-08C is Planned after P10B-19A-08B; P10B-19A-09 remains Planned after
+P10B-19A-08C; and P10B-19B through P10B-19J remain Planned.
 
 ## Contract-driven development baseline
 
@@ -332,8 +348,12 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - P10B-19A-05 = Baseline
 - P10B-19A-06 = Baseline
 - P10B-19A-07 = Baseline
+- P10B-19A-08A = Baseline
+- P10B-19A-08 = Partial
 - P10B-19A = Partial
-- P10B-19A-08 = exact next implementation task
+- P10B-19A-08B = exact next implementation task
+- P10B-19A-08C = Planned after P10B-19A-08B
+- P10B-19A-09 = Planned after P10B-19A-08C
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one

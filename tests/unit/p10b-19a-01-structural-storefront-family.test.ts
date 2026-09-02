@@ -285,7 +285,7 @@ describe("P10B-19A-01 architecture boundary", () => {
     expect(recordLikeExports).toHaveLength(0);
   });
 
-  it("has only the additive PageBlueprint v2 compatibility-contract consumer", () => {
+  it("has only additive PageBlueprint v2 authority consumers", () => {
     const repositoryRoot = resolve(process.cwd());
     const familyDomain = resolve(repositoryRoot, "src/domain/structural-storefront-family");
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
@@ -295,7 +295,9 @@ describe("P10B-19A-01 architecture boundary", () => {
     expect(consumers).toEqual([
       "src/application/storefront-templates/index.ts",
       "src/application/storefront-templates/page-blueprint-v2-contract.ts",
+      "src/application/storefront-templates/page-blueprint-v2-normalized-topology.ts",
       "src/application/storefront-templates/structural-storefront-family-candidate-registry.ts",
+      "src/application/storefront-templates/structural-storefront-family-normalized-topology.ts",
     ]);
   });
 });
