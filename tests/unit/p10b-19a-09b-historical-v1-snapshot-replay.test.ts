@@ -181,6 +181,9 @@ describe("P10B-19A-09B canonical historical snapshot reads", () => {
       "contentSupportFactDocuments"
     > &
       Partial<Pick<StorefrontSnapshot, "contentSupportFactDocuments">>;
+    historical.pages.forEach((page) => {
+      page.sections = page.sections.filter(({ component }) => component !== "contentSupport");
+    });
     delete historical.contentSupportFactDocuments;
     const before = canonicalValueString(historical);
 
@@ -270,6 +273,42 @@ describe("P10B-19A-09B canonical historical snapshot reads", () => {
             )!;
           expect(section).toBeDefined();
           section.approvedAssetPresentations![0].materialFingerprint = "tampered-media-lineage";
+        },
+      },
+      {
+        label: "missing content-support fact document",
+        mutate: (snapshot) => {
+          const section = snapshot.pages
+            .flatMap(({ sections }) => sections)
+            .find(({ component }) => component === "contentSupport")!;
+          expect(section).toBeDefined();
+          section.content = {
+            ...section.content,
+            factDocumentId: "missing_content_support_fact_document",
+          };
+        },
+      },
+      {
+        label: "content-support fact document from another page family",
+        mutate: (snapshot) => {
+          const page = snapshot.pages.find(({ sections }) =>
+            sections.some(({ component }) => component === "contentSupport"),
+          )!;
+          const section = page.sections.find(({ component }) => component === "contentSupport")!;
+          const wrongFamilyDocument = caseFor(
+            "modern-technical",
+          ).snapshot.contentSupportFactDocuments.find(
+            ({ payload }) => payload.familyId !== page.pageFamily?.familyId,
+          )!;
+          expect(page.pageFamily).toBeDefined();
+          expect(section).toBeDefined();
+          expect(wrongFamilyDocument).toBeDefined();
+          snapshot.contentSupportFactDocuments.push(structuredClone(wrongFamilyDocument));
+          page.pageFamily!.evidenceReferences.push(structuredClone(wrongFamilyDocument.evidence));
+          section.content = {
+            ...section.content,
+            factDocumentId: wrongFamilyDocument.id,
+          };
         },
       },
     ];

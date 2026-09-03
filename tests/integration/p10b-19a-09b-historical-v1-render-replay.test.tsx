@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -35,6 +36,60 @@ const ACCEPTED_BASELINE_FILE_SHA256 =
 const ACCEPTED_BASELINE_MATERIAL_SHA256 =
   "b224390ba16a850821155874dbaf1f9a740f55004684f9982531f80716ca013f";
 const FINAL_COMPARISON_PATH = "/private/tmp/veskify-p10b-19a-09b-final-replay-comparison.json";
+
+// Byte-exact mirror of the task-approved safe baseline. Compression keeps the focused fixture
+// bounded; the test verifies the decoded file hash and requires any external task artifact to
+// match these exact bytes. It contains fingerprints and bounded identifiers only, never snapshots.
+const CHECKED_IN_BASELINE_GZIP_BASE64 = [
+  "H4sIAAAAAAACE+1c224cR5J991cQep628hqZOW+GF8Yai8Ea9mJeFoNCZEaE2DPNbm53k15hMP++J0lKoi6ULYGU5BVbYItVlVWZ",
+  "lScu52RU8Z/fnJw86XzQzXqrv4xTPeO/6v6w3m2f/Pnkif/Wfeue/Gm24Yvj6W6/Pj7/j/VW5rHT9eGIHYM3q0u/2isLvrai+9WR",
+  "D/9YzWuuXlz4+hJz6/vd2dn6eHVtHnVwrxy7+Cwh+6pFEw8XkzelxJ25xXx97jPd6p6PGNe8Am/lR9HtEcOZlzrfnp+dXK6Pejie",
+  "7C+2J6vV2G1t/ezk6fl+fclHfXo8O396qYd/rO35il3rq/P9ruu3182+Pfv74dUI53h/1rHby/e7i+0carw6dn1z/9kPur+8GcjN",
+  "Ybo5fr7XAwaFg+gKB/4bu09O/nn1jQay3uuYJ/54NX9ofba+OFuprOc88uZqCFctebPmw3WrjT7j8Rwz/Of3tEfXG37+s5pikEN/",
+  "WG+f6R63fjW8V5dYTcDU9rvtcXV9Cv67OQeHF+9bWOqIlMWrds2kbKkDFuJkpVBvTaRWJfxeawjmiiUWN1odGlspVf2rUR12F/uh",
+  "v2z5/HC6O17fzuFma9lcnO0Ww4SdLrJnO9512s96ub6xRveyyeDtbjst75fX2r5x37ij2GqLCwWNJbUSkibfm6+SccBb5FFKH46D",
+  "xeLn8HuKGrhWm8dGrtniYHdrbKe8V/lhz2f6035n641e39YA7JhHWZ2tt+uz29Cc7s70nJ+93vzFztXp+tnptNXDWm6s+9WZY7fZ",
+  "XNvL61293P3KElayPozdpe6f3xqq8n6c3nUqnAfued3m1Tnncv7aCdh+7xDnPXy3lX97vuWz9fh5d3HUH7eXmIvd/vkbYBzgnasz",
+  "Pp92ljHZC0wqDDYO4rvvLk+X5wAbK36M2qNnD5TEcu/lyuSCs0ile0SIrOWWnb20hhkZdP+W/aPHFNBjLbGhO1d8UmsuKVXTodl3",
+  "CeabdmmBZXAuFowSwRpYfM1NKbbg9R09YrbkYhz/AiT47V7J0+Kj687DWaIbOY7uNTjynFwYlWKCRcLeFBNBQj2RVMfelWzZOvtW",
+  "+zs6/e4cwetS5aeX4Wa3fbtzH2tZSEoNuGFJRoN8Jodtsapm2syTr00lUvISXeEq1jMTaWXE42bGt3q/2CNOwB1nENT9dy+ywRsd",
+  "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",
+].join("");
 
 const aliases = {
   "premium-editorial": "legacy-v1:premium-editorial",
@@ -229,8 +284,11 @@ function rendererFingerprints(representatives: readonly Representative[]) {
 
 describe("P10B-19A-09B historical v1 current-renderer replay", () => {
   it("matches the immutable 3 x 6 x 2 baseline and preserves historical repository authority", async () => {
-    const baselineBytes = readFileSync(P10B19A09B_BASELINE_PATH);
+    const baselineBytes = gunzipSync(Buffer.from(CHECKED_IN_BASELINE_GZIP_BASE64, "base64"));
     const baselineFileSha256 = sha256(baselineBytes);
+    if (existsSync(P10B19A09B_BASELINE_PATH)) {
+      expect(readFileSync(P10B19A09B_BASELINE_PATH)).toEqual(baselineBytes);
+    }
     const baseline = JSON.parse(baselineBytes.toString("utf8")) as FrozenBaseline;
     const baselineMaterial = structuredClone(baseline) as Record<string, unknown>;
     delete baselineMaterial.baselineFileMaterialSha256;
@@ -577,7 +635,9 @@ describe("P10B-19A-09B historical v1 current-renderer replay", () => {
       finalVerdict: pass ? "PASS" : "FAIL",
     } as const;
 
-    writeFileSync(FINAL_COMPARISON_PATH, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    if (existsSync(P10B19A09B_BASELINE_PATH)) {
+      writeFileSync(FINAL_COMPARISON_PATH, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    }
 
     expect(evidence.baseCommit).toBe(baseline.baseCommit);
     expect(evidence.rendererAuthorityFingerprint).toBe(

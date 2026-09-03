@@ -6,6 +6,7 @@ import {
 } from "@/application/dynamic-commerce-routes/authority";
 import {
   createStorefrontRenderContext,
+  validateRegisteredPage,
   validateRegisteredSection,
 } from "@/components/registry/registry";
 import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
@@ -355,11 +356,7 @@ function validateExecutionAuthority(
       validateRegisteredSection(snapshot.sharedFrame.announcement, undefined, context);
     }
   }
-  snapshot.pages.forEach((page) =>
-    page.sections
-      .filter(({ component }) => component !== "contentSupport")
-      .forEach((section) => validateRegisteredSection(section, page.type, context)),
-  );
+  snapshot.pages.forEach((page) => validateRegisteredPage(page, context));
   snapshot.dynamicCommercePresentation?.routeInventory.forEach((route) =>
     resolveDynamicCommerceRoutePage({
       snapshot,
