@@ -124,13 +124,29 @@ const forceArchitectureStateHeadingToNewPage = (documentXml) => {
   return result;
 };
 
+const forceAcceptedP10b18cHeadingToNewPage = (documentXml) => {
+  const headingText = "<w:t>P10B-18C accepted Baseline (22 August 2026)</w:t>";
+  let patched = false;
+  const result = documentXml.replace(/<w:p>[\s\S]*?<\/w:p>/gu, (paragraphXml) => {
+    if (!paragraphXml.includes(headingText)) return paragraphXml;
+    patched = true;
+    return paragraphXml.includes("<w:pageBreakBefore/>")
+      ? paragraphXml
+      : paragraphXml.replace("<w:pPr>", "<w:pPr><w:pageBreakBefore/>");
+  });
+  if (!patched) throw new Error("Could not resolve the tracker P10B-18C accepted heading.");
+  return result;
+};
+
 const patchTrackerDocumentXml = (documentXml) => {
   const resized = mergeTrackerTableChunks(documentXml).replace(tablePattern, (tableXml) => {
     if (trackerTable(tableXml)) return resizeTrackerTable(tableXml);
     if (childTaskMapTable(tableXml)) return resizeChildTaskMapTable(tableXml);
     return tableXml;
   });
-  return forceArchitectureStateHeadingToNewPage(preventTableRowSplits(resized));
+  const wholeRows = preventTableRowSplits(resized);
+  const paginatedP10b18c = forceAcceptedP10b18cHeadingToNewPage(wholeRows);
+  return forceArchitectureStateHeadingToNewPage(paginatedP10b18c);
 };
 
 const collectArchiveEntries = (directory, prefix = "") =>
@@ -180,7 +196,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 2 September 2026, P10B-19A-08C Deterministic Candidate Selection Baseline",
+      "Delivery status baseline: 2 September 2026, P10B-19A-09A Legacy v1 Replay Alias and Compatibility Reference Baseline",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

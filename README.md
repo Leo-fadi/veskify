@@ -18,8 +18,9 @@ P10B-16P-05B repository/historical-authority cleanup are Baseline. P10B-18 and P
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE is Baseline.
 DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through
 P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is
-Baseline / closed, while P10B-19A remains Partial. P10B-19A-09 is Planned / exact next, and
-P10B-19A-10 remains Planned after P10B-19A-09. P10B-19B through P10B-19J remain Planned.
+Baseline / closed. P10B-19A-09A is Baseline; parent P10B-19A-09 and P10B-19A remain Partial.
+P10B-19A-09B is the exact next implementation task, P10B-19A-09C is Planned after A-09B, and
+P10B-19A-10 is Planned after A-09C. P10B-19B through P10B-19J remain Planned.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -39,8 +40,9 @@ published routes. Active P10B-16L initial generation is removed; stable persiste
 focused migration/publication compatibility remain. Governed P9 follow-up is retained and is not an
 initial-generation fallback.
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**; parent
-P10B-19A-08 is **Baseline / closed**, while P10B-19A remains **Partial**. P10B-19A-09 is
-**Planned / exact next**, and P10B-19A-10 remains Planned after P10B-19A-09.
+P10B-19A-08 is **Baseline / closed**. P10B-19A-09A is **Baseline**; parent P10B-19A-09 and
+P10B-19A remain **Partial**. P10B-19A-09B is the **exact next implementation task**,
+P10B-19A-09C is Planned after A-09B, and P10B-19A-10 is Planned after A-09C.
 P10B-19A-08A establishes strict normalized PageBlueprint v2
 and Structural Storefront Family topology projections at schema version `1.0.0`. PageBlueprint
 topology assigns contiguous `r0`, `r1`, ... identities from canonical A-03 default reading order,
@@ -89,6 +91,19 @@ to reject stale or contradictory authority. Request, topology and receipt finger
 `structural-storefront-deterministic-selection-v1_<canonical-length>_<sha256>`. Production
 registry, profile, request, receipt and current-generation runtime counts remain zero, with no
 visual, runtime-wiring, provider, persistence or publication change.
+P10B-19A-09A establishes opaque legacy-v1 replay identity for exactly
+`legacy-v1:premium-editorial`, `legacy-v1:modern-technical`, and
+`legacy-v1:minimal-commerce`, mapped in that order to the existing `premium-editorial`,
+`modern-technical`, and `minimal-commerce` coordinated directions. Each immutable alias binds the
+current coordinated-direction authority version `1.1.0` and exact package fingerprint. The strict
+replay reference retains a complete validated v1 selection narrowing, reuses the existing
+selection-narrowing validator and exact executable-selection projection, and excludes only the
+incidental `selectionId` from replay fingerprint identity. It never infers direction from a
+snapshot, appearance, profiles or topology and creates no Structural Storefront Family,
+PageBlueprint v2 or Visual Recipe v2 identity. Historical snapshot reading/rendering remains
+A-09B; publication replay remains A-09C. No historical snapshot has yet been classified or
+render-replayed, no publication compatibility has yet passed, and current production generation
+and merchant-visible behavior are unchanged.
 P10B-19A-06 adds one strict, deeply readonly PageBlueprint v2 omission, substitution and fallback
 companion at schema version `1.0.0`. It binds the exact A-03 structural, A-04 asset-role and A-05
 responsive blueprint identity; declares only the
@@ -308,8 +323,9 @@ protected commerce/navigation/media, and completes parent P10B-18B. P10B-18 and 
 Partial. At that checkpoint, P10B-18C was the exact next task; P10B-18C and P10B-16P-05B are now
 Baseline. P10B-18D is now a completed diagnostic with live commercial quality rejected. P10B-19
 PRE is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are
-Baseline; parent P10B-19A-08 is Baseline / closed, while P10B-19A remains Partial. P10B-19A-09 is
-Planned / exact next, and P10B-19A-10 remains Planned after P10B-19A-09.
+Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A is Baseline; parent P10B-19A-09
+and P10B-19A remain Partial. P10B-19A-09B is the exact next implementation task, P10B-19A-09C is
+Planned after A-09B, and P10B-19A-10 is Planned after A-09C.
 
 Owner: Vesko Oy
 
@@ -326,8 +342,9 @@ The existing protected architecture remains authoritative: one canonical page gr
 compiler/coordinator, one final materializer/executor, the proposal lifecycle, publication
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A-01
 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is
-Baseline / closed, while P10B-19A remains Partial. P10B-19A-09 is Planned / exact next;
-P10B-19A-10 remains Planned after P10B-19A-09; and P10B-19B through P10B-19J remain Planned.
+Baseline / closed. P10B-19A-09A is Baseline; parent P10B-19A-09 and P10B-19A remain Partial.
+P10B-19A-09B is the exact next implementation task; P10B-19A-09C is Planned after A-09B;
+P10B-19A-10 is Planned after A-09C; and P10B-19B through P10B-19J remain Planned.
 
 ## Contract-driven development baseline
 
@@ -374,8 +391,11 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - P10B-19A-08C = Baseline
 - P10B-19A-08 = Baseline / closed
 - P10B-19A = Partial
-- P10B-19A-09 = Planned / exact next implementation task
-- P10B-19A-10 = Planned after P10B-19A-09
+- P10B-19A-09A = Baseline
+- P10B-19A-09 = Partial
+- P10B-19A-09B = exact next implementation task
+- P10B-19A-09C = Planned after P10B-19A-09B
+- P10B-19A-10 = Planned after P10B-19A-09C
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one
