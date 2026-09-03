@@ -196,7 +196,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 2 September 2026, P10B-19A-09A Legacy v1 Replay Alias and Compatibility Reference Baseline",
+      "Delivery status baseline: 3 September 2026, P10B-19A-09B Historical v1 Snapshot Read and Render Replay Baseline",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

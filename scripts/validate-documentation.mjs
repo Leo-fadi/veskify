@@ -156,14 +156,19 @@ requireText("README.md", [
   "P10B-19A-08C = Baseline",
   "P10B-19A-08 = Baseline / closed",
   "P10B-19A-09A = Baseline",
+  "P10B-19A-09B = Baseline",
   "P10B-19A-09 = Partial",
   "P10B-19A = Partial",
-  "P10B-19A-09B = exact next implementation task",
-  "P10B-19A-09C = Planned after P10B-19A-09B",
+  "P10B-19A-09C = exact next implementation task",
   "P10B-19A-10 = Planned after P10B-19A-09C",
   "legacy-v1:premium-editorial",
   "legacy-v1:modern-technical",
   "legacy-v1:minimal-commerce",
+  "readable-unattributed",
+  "disposition `none`",
+  "canonical-read-defaults",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "36 of 36",
   "structural-storefront-deterministic-selection-request-v1_<canonical-length>_<sha256>",
   "structural-storefront-selected-complete-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-deterministic-selection-v1_<canonical-length>_<sha256>",
@@ -186,7 +191,7 @@ requireText("AGENTS.md", [
 
 requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
-  "2 September 2026, P10B-19A-09A Legacy v1 Replay Alias and Compatibility Reference Baseline",
+  "3 September 2026, P10B-19A-09B Historical v1 Snapshot Read and Render Replay Baseline",
   "Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B is now **Partial / active**",
@@ -213,6 +218,7 @@ requireText("docs/VESKIFY_SDD.md", [
   "### 10.39 P10B-19A-08B candidate compatibility contract and evaluation authority",
   "### 10.40 P10B-19A-08C scoring-free deterministic candidate-selection authority",
   "### 10.41 P10B-19A-09A opaque legacy-v1 replay alias and compatibility reference authority",
+  "### 10.42 P10B-19A-09B historical v1 snapshot read and render replay authority",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
   "P10B-19A-03 = Baseline",
@@ -225,14 +231,22 @@ requireText("docs/VESKIFY_SDD.md", [
   "P10B-19A-08C = Baseline",
   "P10B-19A-08 = Baseline / closed",
   "P10B-19A-09A = Baseline",
+  "P10B-19A-09B = Baseline",
   "P10B-19A-09 = Partial",
   "P10B-19A = Partial",
-  "P10B-19A-09B = exact next implementation task",
+  "P10B-19A-09C = exact next implementation task",
   "legacy-v1:premium-editorial",
   "legacy-v1:modern-technical",
   "legacy-v1:minimal-commerce",
   "validateDirectionSelectionNarrowing",
   "boundedStorefrontSynthesisExactSelectionSchema",
+  "readable-unattributed",
+  "readable-explicit-replay-binding",
+  "disposition `none` or `canonical-read-defaults`",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "seven present persisted selection",
+  "absent selection fields as unverified",
+  "All 36 of 36 observation fingerprints match the frozen exact-base baseline",
   "structural-storefront-deterministic-selection-request-v1_<canonical-length>_<sha256>",
   "structural-storefront-selected-complete-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-deterministic-selection-v1_<canonical-length>_<sha256>",
@@ -295,6 +309,18 @@ requireText("docs/VESKIFY_SDD.md", [
   "### 10.29 P10B-16P-05B major repository and historical-authority cleanup",
 ]);
 
+const currentSddStatus = contents.get("docs/VESKIFY_SDD.md");
+if (
+  currentSddStatus.indexOf(
+    "### 10.42 P10B-19A-09B historical v1 snapshot read and render replay authority",
+  ) <=
+  currentSddStatus.indexOf(
+    "### 10.41 P10B-19A-09A opaque legacy-v1 replay alias and compatibility reference authority",
+  )
+) {
+  failures.push("docs/VESKIFY_SDD.md: P10B-19A-09B section must follow P10B-19A-09A");
+}
+
 rejectText("docs/VESKIFY_SDD.md", [
   "24 August 2026, P10B-18D diagnostic complete; live commercial quality rejected",
   "P10B-19A is the exact next task",
@@ -305,13 +331,12 @@ rejectText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "2 September 2026, P10B-19A-09A Legacy v1 Replay Alias and Compatibility Reference Baseline",
+  "3 September 2026, P10B-19A-09B Historical v1 Snapshot Read and Render Replay Baseline",
   "DEVX-01A through DEVX-01G are Baseline",
   "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**",
   "P10B-19A-08 is **Baseline / closed**",
-  "P10B-19A-09A is **Baseline**",
-  "P10B-19A-09B is the **exact next implementation task**",
-  "P10B-19A-09C is Planned after A-09B",
+  "P10B-19A-09A and P10B-19A-09B are **Baseline**",
+  "P10B-19A-09C is the **exact next implementation",
   "### 1.1 DEVX-01 engineering-enablement sprint",
   "### 1.2 P10B-19A planned child sequence",
   "explicitly approved this DEVX-01A delivery\ndecomposition to supersede the earlier six-child P10B-19A partition",
@@ -322,6 +347,12 @@ requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "P10B-19A-08B establishes schema-version `1.0.0` compatibility authority without selection",
   "P10B-19A-08C establishes strict schema-version `1.0.0` deterministic selection requests",
   "P10B-19A-09A establishes opaque legacy-v1 replay identity",
+  "P10B-19A-09B establishes a strict read-only historical-v1 adapter",
+  "readable-unattributed",
+  "normalization disposition `none`",
+  "canonical-read-defaults",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "36 of 36",
   "legacy-v1:premium-editorial",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
@@ -449,9 +480,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
   "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**",
   "P10B-19A-08 is **Baseline / closed**",
-  "P10B-19A-09A is **Baseline**",
-  "P10B-19A-09B is the **exact next implementation task**",
-  "P10B-19A-09C is Planned after A-09B",
+  "P10B-19A-09A and P10B-19A-09B are **Baseline**",
+  "P10B-19A-09C is the **exact next implementation",
   "### Contract-driven sprint authority",
   "### Verification policy",
   "### P10B-19A planned micro-pull-request map",
@@ -470,14 +500,20 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-19A-08C = Baseline",
   "P10B-19A-08 = Baseline / closed",
   "P10B-19A-09A = Baseline",
+  "P10B-19A-09B = Baseline",
   "P10B-19A-09 = Partial",
-  "P10B-19A-09B = exact next implementation task",
-  "P10B-19A-09C = Planned after P10B-19A-09B",
+  "P10B-19A-09C = exact next implementation task",
   "P10B-19A-10 = Planned after P10B-19A-09C",
   "P10B-19A-08A owns only normalized topology identity",
   "P10B-19A-08B owns only compatibility contracts and deterministic evaluation",
   "P10B-19A-08C owns strict schema-version `1.0.0` deterministic selection requests",
   "P10B-19A-09A owns only opaque legacy-v1 alias and replay-reference authority",
+  "P10B-19A-09B owns strict read-only historical-v1 snapshot validation",
+  "readable-unattributed",
+  "normalization disposition `none`",
+  "canonical-read-defaults",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "36 of 36",
   "legacy-v1:premium-editorial",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
@@ -524,14 +560,20 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "P10B-19A-08C = Baseline",
   "P10B-19A-08 = Baseline / closed",
   "P10B-19A-09A = Baseline",
+  "P10B-19A-09B = Baseline",
   "P10B-19A-09 = Partial",
   "P10B-19A = Partial",
-  "P10B-19A-09B = exact next implementation task",
-  "P10B-19A-09C = Planned after P10B-19A-09B",
+  "P10B-19A-09C = exact next implementation task",
   "P10B-19A-10 = Planned after P10B-19A-09C",
   "P10B-19A-08A establishes strict normalized PageBlueprint v2 and Structural Storefront Family",
   "P10B-19A-08B establishes strict schema-version `1.0.0` compatibility contracts and deterministic",
   "P10B-19A-09A establishes one immutable populated registry for exactly",
+  "P10B-19A-09B adds a strict read-only historical-v1 adapter",
+  "readable-unattributed",
+  "normalization disposition `none`",
+  "canonical-read-defaults",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "36 of 36",
   "legacy-v1:premium-editorial",
   "page-blueprint-v2-normalized-topology-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-normalized-topology-v1_<canonical-length>_<sha256>",
@@ -578,10 +620,18 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "## P10B-19A-08B current-state baseline",
   "## P10B-19A-08C current-state baseline",
   "## P10B-19A-09A current-state baseline",
+  "## P10B-19A-09B current-state baseline",
   "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline",
   "P10B-19A-08 is Baseline / closed",
-  "P10B-19A-09A is Baseline",
-  "P10B-19A-09B is the exact next implementation task",
+  "P10B-19A-09A and P10B-19A-09B are Baseline",
+  "P10B-19A-09C is the exact next implementation task",
+  "readable-unattributed",
+  "readable-explicit-replay-binding",
+  "normalization disposition is `none` or `canonical-read-defaults`",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "seven present persisted selection fields as verified",
+  "seven absent selection fields",
+  "36 of 36 bounded current-renderer observations",
   "legacy-v1:premium-editorial",
   "page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-candidate-v1_<canonical-length>_<sha256>",
@@ -617,6 +667,13 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "P10B-19A-08C evidence is strict schema-version `1.0.0` contract/schema plus deterministic",
   "Opaque legacy-v1 replay alias/reference authority | **Baseline**",
   "P10B-19A-09A evidence is contract/schema plus deterministic adversarial unit proof",
+  "Historical v1 snapshot read and render replay",
+  "P10B-19A-09B evidence",
+  "readable-unattributed",
+  "readable-explicit-replay-binding",
+  "canonical-read-defaults",
+  "legacy-v1-historical-snapshot-read-v1_<canonical-length>_<sha256>",
+  "36 of 36",
   "legacy-v1:premium-editorial",
   "page-blueprint-v2-candidate-v1_<canonical-length>_<sha256>",
   "structural-storefront-family-candidate-v1_<canonical-length>_<sha256>",
@@ -628,8 +685,8 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 56) {
-  failures.push("Delivery tracker must contain exactly fifty-six completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 57) {
+  failures.push("Delivery tracker must contain exactly fifty-seven completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -714,14 +771,14 @@ if (
   !/^\| ☑\s+\| P10B-19A-08C\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19A-09\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-09A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-09B\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-09C\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-19A-09B\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19A-09C\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19B-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, P10B-18C, P10B-19 PRE, P10B-19A-01 through P10B-19A-09A and parent P10B-19A-08 Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18, P10B-19A and P10B-19A-09 Partial; mark P10B-19A-09B Planned / exact next and A-09C/P10B-19B-J Planned",
+    "Delivery tracker must mark P10B-01 through P10B-17, P10B-16P-01 through P10B-16P-05B, P10B-16P-06, P10B-18A, P10B-18B-01/06/02/03/04/05, parent P10B-18B, P10B-18C, P10B-19 PRE, P10B-19A-01 through P10B-19A-09B and parent P10B-19A-08 Baseline; mark P10B-18D as a rejected-quality diagnostic Baseline; keep P10B-18, P10B-19A and P10B-19A-09 Partial; mark P10B-19A-09C Planned / exact next and P10B-19B-J Planned",
   );
 }
 
@@ -733,12 +790,12 @@ if (
   !/^\| Baseline\s+\| P10B-19A-08C\s+\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| Current\s+\| P10B-19A-09\s+\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| Baseline\s+\| P10B-19A-09A\s+\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| Next\s+\| P10B-19A-09B\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
-  !/^\| Planned\s+\| P10B-19A-09C\s+\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| Baseline\s+\| P10B-19A-09B\s+\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| Next\s+\| P10B-19A-09C\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| Planned\s+\| P10B-19A-10\s+\| \*\*Planned\*\*/m.test(tracker)
 ) {
   failures.push(
-    "Delivery tracker current-state table must mark P10B-19A-07 through P10B-19A-09A and parent P10B-19A-08 Baseline, parent P10B-19A-09 Partial, P10B-19A-09B Planned / exact next, and A-09C/A-10 Planned",
+    "Delivery tracker current-state table must mark P10B-19A-07 through P10B-19A-09B and parent P10B-19A-08 Baseline, parent P10B-19A-09 Partial, P10B-19A-09C Planned / exact next, and A-10 Planned",
   );
 }
 
@@ -1186,10 +1243,10 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A-08C = Baseline",
     "P10B-19A-08 = Baseline / closed",
     "P10B-19A-09A = Baseline",
+    "P10B-19A-09B = Baseline",
     "P10B-19A-09 = Partial",
     "P10B-19A = Partial",
-    "P10B-19A-09B = exact next implementation task",
-    "P10B-19A-09C = Planned after P10B-19A-09B",
+    "P10B-19A-09C = exact next implementation task",
     "P10B-19A-10 = Planned after P10B-19A-09C",
   ]) {
     if (!content.includes(authority)) {
@@ -1216,6 +1273,7 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A-08B = exact next implementation task",
     "P10B-19A-08C = exact next implementation task",
     "P10B-19A-09A = exact next implementation task",
+    "P10B-19A-09B = exact next implementation task",
   ]) {
     if (content.includes(stale)) throw new Error(`${devx01fStatusPath} retains obsolete ${stale}.`);
   }
@@ -1246,6 +1304,9 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
   if (/P10B-19A-09A\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
     throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-09A exact-next wording.`);
   }
+  if (/P10B-19A-09B\s+(?:is|=)\s+(?:the\s+)?exact next(?: implementation)? task/iu.test(content)) {
+    throw new Error(`${devx01fStatusPath} retains obsolete P10B-19A-09B exact-next wording.`);
+  }
 }
 
 const currentP10b19StatusDocuments = [
@@ -1272,6 +1333,9 @@ const staleP10b19A08StatusPatterns = [
   /P10B-19A-09\s+(?:is|=|remains)\s+(?:\*\*)?Planned(?:\*\*)?\s+after\s+P10B-19A-08C/iu,
   /P10B-19A-09A\s*=?\s*(?:is\s+)?(?:the\s+)?(?:Planned\s*\/\s*)?exact next(?: implementation)? task/iu,
   /P10B-19A-09A\s+is\s+(?:\*\*)?Planned(?:\*\*)?\s*\/\s*exact next/iu,
+  /P10B-19A-09B\s*(?:=|is)?\s*(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next/iu,
+  /\bA-09B\s+(?:is\s+)?(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next/iu,
+  /P10B-19A-09C\s+(?:is|=|remains)\s+(?:\*\*)?Planned(?:\*\*)?\s+after\s+(?:P10B-19)?A-09B/iu,
 ];
 for (const statusPath of currentP10b19StatusDocuments) {
   const currentStatusText = readDevx01fStatusFile(statusPath, "utf8")
@@ -1280,7 +1344,7 @@ for (const statusPath of currentP10b19StatusDocuments) {
     .join("\n");
   for (const stalePattern of staleP10b19A08StatusPatterns) {
     if (stalePattern.test(currentStatusText)) {
-      throw new Error(`${statusPath} retains stale A-08/A-08A/A-08B/A-08C next-task wording.`);
+      throw new Error(`${statusPath} retains stale P10B-19A next-task wording.`);
     }
   }
 }
