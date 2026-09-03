@@ -1,0 +1,597 @@
+{
+  "baselineSchemaVersion": "1.0.0",
+  "authorityKind": "legacy-v1-publication-replay-task-base-baseline",
+  "baseCommit": "b32af02ff21c1bbbf754d23f4009e0b256610b41",
+  "generationCommandIdentity": "pnpm exec vitest run --config /private/tmp/veskify-p10b-19a-09c-baseline-vitest.config.mjs --reporter=verbose",
+  "recordCounts": {
+    "representatives": 3,
+    "directCompilations": 3,
+    "preparations": 3,
+    "isolatedConfirmations": 3,
+    "activeCompiledPublications": 3,
+    "publishedVersionAdditions": 3,
+    "publishedRenderObservations": 36
+  },
+  "mutationAndExternalActivity": {
+    "preparationWrites": 0,
+    "sourceAggregateMutations": 0,
+    "sourceSnapshotMutations": 0,
+    "externalPublicationCalls": 0,
+    "providerCalls": 0,
+    "veskoCalls": 0
+  },
+  "representatives": [
+    {
+      "directionId": "premium-editorial",
+      "aliasId": "legacy-v1:premium-editorial",
+      "historicalAuthority": {
+        "replayReferenceFingerprint": "legacy-v1-storefront-replay-reference-v1_1192_8c365d1eebe56eaf4b8e76a4f776b99dd88e67768822f07f4ad0c98ce39778e1",
+        "historicalReadReceiptFingerprint": "legacy-v1-historical-snapshot-read-v1_1237_ac501801df94063864c161359f53ecc3ab5541c327fe9a79f90afad6a02e5ff2",
+        "sourceSnapshotId": "snapshot_lumo_fresh_draft",
+        "sourceSnapshotRevision": 0,
+        "canonicalSourceSnapshotFingerprint": "v1_39893_62e3749724e41b918d53981f3ac77bc0a2f3719778b43e2a88ff3acc585f3ca0"
+      },
+      "directCompilationAuthority": {
+        "publishCompilerContractVersion": "1.0.0",
+        "publishCompilerVersion": "1.0.0",
+        "sourceAuthorityKind": "manual",
+        "compiledRuntimeFingerprint": "compiled-publication-v1_47064_aeef073d451f30c23c8a63de4068b0b3995e31282762de98f47c3e72478794cc",
+        "validationReportFingerprint": "publish-validation-v1_1469_aeb993b433e1addb9a3b0e4aab06339ec023671ae12bcdf6be2d61749dab4289",
+        "compileReceiptFingerprint": "publish-compile-receipt-v1_2117_c85e046816f617ced8afb8180c471f4e75b4418331e687b44d25720fc6581e63",
+        "manifestFingerprint": "component-capability-manifest-v1_844766_23b82c86fce664377c5af4ab8a2041d5d2b21af8cc8fb9c5ae150b847d993260",
+        "registryFingerprint": "publish-registry-v1_5466_2a4a13eae4359215ce471d44f0a9a5fea3e6ccac2dd1123d1784b7abc893b770",
+        "profileAuthorityFingerprint": "v1_2_4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "commerceFingerprint": "publish-commerce-v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+        "navigationRoutesFingerprint": "publish-navigation-v1_1818_276cd335d803a7ce5dbe2c927d82dd71da1fd40fa977355f898cc2d406eb39b8",
+        "productMediaFingerprint": "publish-product-media-v1_616_130b0188230c53cb1e2061a402c86344e42a8ecaf6d6b46d80a1075f5fba198b",
+        "productCardAuthorityFingerprint": "canonical-product-card-v1_5590_793a2a975fd5842deed1658a2c37834055aa8ba47c22d4dce30f4d327b39a433",
+        "approvedAssetFingerprint": "publish-approved-assets-v1_5890_60675e375938c91c8d4284b7387745ba235ea0ec58af8e51e750a389cd981094",
+        "dynamicCommerceFingerprint": "dynamic-commerce-presentation-v1_18569_2f29a0c5ffc15132c1d7d2c43791387d13b337c4904c044bf5ca3200e9328793",
+        "localeAuthorityFingerprint": "publish-locales-v1_73_ded1e8ee653d79944acdd993445903bf91a8a4556687b779a14bd64050c98a09",
+        "migrationStatus": "current",
+        "migrationFingerprint": "publish-migrations-v1_4426_c314ac306e5b28edf27d613686c53e44ad020e5d6190f10b7039981ebf4a0afb"
+      },
+      "preparationAuthority": {
+        "preparationId": "publish_preparation_p10b_19a_09c_premium_editorial",
+        "preparedAt": "2026-09-03T10:00:00.000Z",
+        "publishPermitted": true,
+        "preparedCompilationResultIdentity": {
+          "runtimeFingerprint": "compiled-publication-v1_47064_aeef073d451f30c23c8a63de4068b0b3995e31282762de98f47c3e72478794cc",
+          "validationReportFingerprint": "publish-validation-v1_1469_aeb993b433e1addb9a3b0e4aab06339ec023671ae12bcdf6be2d61749dab4289",
+          "sourceSnapshotId": "snapshot_lumo_fresh_draft",
+          "sourceSnapshotRevision": 0,
+          "sourceSnapshotFingerprint": "v1_39893_62e3749724e41b918d53981f3ac77bc0a2f3719778b43e2a88ff3acc585f3ca0"
+        },
+        "preparedCompileReceiptFingerprint": "publish-compile-receipt-v1_2117_c85e046816f617ced8afb8180c471f4e75b4418331e687b44d25720fc6581e63",
+        "changeSummaryFingerprint": "v1_7090_465d19a1123d2f5ed8e13cd631e45cd32d488a6e0a148b8388a1bfa3a9481afb",
+        "expectedActivePublicationVersionId": null
+      },
+      "confirmationAndStorageAuthority": {
+        "projectRevisionBefore": 0,
+        "projectRevisionAfter": 1,
+        "priorPublishedSnapshotFingerprint": "v1_7088_01c2f8f5fc59a0d2a337907de7176c95e289392c473858f722165fef5cdc47c7",
+        "newPublishedSnapshotFingerprint": "v1_39893_62e3749724e41b918d53981f3ac77bc0a2f3719778b43e2a88ff3acc585f3ca0",
+        "synchronizedDraftSnapshotFingerprint": "v1_39893_62e3749724e41b918d53981f3ac77bc0a2f3719778b43e2a88ff3acc585f3ca0",
+        "activePublicationVersionId": "published_version_cbdd46d1063e6a88b1f6c80e",
+        "activePublicationVersionFingerprint": "v1_978_ddf2b3f3a8ad07f7d54b7eee589dda0a53e073e7e274c6740f1e2ac98843ebcf",
+        "activeCompiledArtifactId": "compiled_artifact_fe3d58713bf4eb00e0ce46c4",
+        "activeCompiledArtifactFingerprint": "v1_50260_5bdc5dd30aeb44d8a879a0762a9ed754bbcd1ff4ba4f3166d2d24fb56243ce80",
+        "storedCompiledResultRuntimeFingerprint": "compiled-publication-v1_47064_aeef073d451f30c23c8a63de4068b0b3995e31282762de98f47c3e72478794cc",
+        "storedCompileReceiptFingerprint": "publish-compile-receipt-v1_2117_c85e046816f617ced8afb8180c471f4e75b4418331e687b44d25720fc6581e63",
+        "publishedVersionCount": 1,
+        "publicationOperationFingerprint": "v1_997_3e9822b6c75ac8363d4de182ef32006d35dc99b22c8f938f64580ad810ad7834"
+      },
+      "publishedRendererAuthority": {
+        "currentRendererAuthorityFingerprint": "publish-renderers-v1_6841_a15518e63b8b56746ad88e775eed5795555fa632fcadaffec07852a435a137fe",
+        "pageAndDynamicRouteInventoryFingerprint": "site-map-v1_5719_6a42cafa2d1b1b051fe6a276b71cc8b31a1539df5bb788e6720f367b14ac5e71",
+        "canonicalCommerceFingerprint": "v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+        "canonicalProductMediaFingerprint": "v1_616_130b0188230c53cb1e2061a402c86344e42a8ecaf6d6b46d80a1075f5fba198b",
+        "canonicalApprovedPresentationFingerprint": "v1_1387_6d782071d4f6c61560782df8effe9f16189ed3641d307a8dfb5a66e8a5d29ffa",
+        "renderObservations": [
+          {
+            "surface": "home",
+            "route": "/",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "home",
+            "pageProfileId": "homepage-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_10352_c4c89f8dbc4017be385f2522467a120572a643e420ccf679adf248d0afda40be"
+          },
+          {
+            "surface": "home",
+            "route": "/",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "home",
+            "pageProfileId": "homepage-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_10353_b2da369644c98ead18ab9e799652a6c586e7907397bff420431938b5ca7f64d7"
+          },
+          {
+            "surface": "collection",
+            "route": "/collections/jewellery",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "collection",
+            "pageProfileId": "collection-editorial-discovery",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_8525_605da9688ae8858218888aee98e45a9cf8d652408cba57f24bbc69383ace4a85"
+          },
+          {
+            "surface": "collection",
+            "route": "/collections/jewellery",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "collection",
+            "pageProfileId": "collection-editorial-discovery",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_8525_660705eb4c698eea9b926dd9bdce54442684ed45ff895dfc49b5db2ab9971299"
+          },
+          {
+            "surface": "search",
+            "route": "/search",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "search-results",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_7042_1a59607dc00faabb4579438c927371b6a7f1feecefdab5b12609662f9286e8ec"
+          },
+          {
+            "surface": "search",
+            "route": "/search",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "search-results",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_7043_cc4d3f3931df5532e6410931b6321b89adf413c5a7d6cf329b0e4a0189ea952f"
+          },
+          {
+            "surface": "product-detail",
+            "route": "/products/custom-halo-ring",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "product-detail",
+            "pageProfileId": "pdp-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_10724_0485a9ef57a115e49cfada7be167cafebfd3b716bf4b9f67b2263934d983fd78"
+          },
+          {
+            "surface": "product-detail",
+            "route": "/products/custom-halo-ring",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "product-detail",
+            "pageProfileId": "pdp-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_10726_fe82c67c179beecf6af481222fc059a6334b0c00b4b3214f2f59188710a3c383"
+          },
+          {
+            "surface": "content-support",
+            "route": "/pages/faq",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "faq",
+            "pageProfileId": "content-faq-disclosure",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_5847_60a42de8b360f5d541005adae7f7da924538bf999b71611a68c685014e44b8da"
+          },
+          {
+            "surface": "content-support",
+            "route": "/pages/faq",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "faq",
+            "pageProfileId": "content-faq-disclosure",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_5848_7383bc50d464d056afb9f5928566bc4ded47a73526c5ff37a4e19f4a1bb91d73"
+          },
+          {
+            "surface": "utility",
+            "route": "/cart",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "cart",
+            "pageProfileId": "commerce-utility-cart",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_5759_9aa55e7ea6d04392d9ebb79d7d03b47a86f593ebca8817918b7af8c483ca5e40"
+          },
+          {
+            "surface": "utility",
+            "route": "/cart",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "cart",
+            "pageProfileId": "commerce-utility-cart",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_5761_7e152852195d9abba423c6f1ef65e6620271c52321f08c21a88acb7abb37bc4c"
+          }
+        ]
+      }
+    },
+    {
+      "directionId": "modern-technical",
+      "aliasId": "legacy-v1:modern-technical",
+      "historicalAuthority": {
+        "replayReferenceFingerprint": "legacy-v1-storefront-replay-reference-v1_1186_20d692b61ad2e2b323eb0c50e9cad33f4642f4b6c1c772787eb6b3ae02d2ffa8",
+        "historicalReadReceiptFingerprint": "legacy-v1-historical-snapshot-read-v1_1236_1354f3678040fda4594f9fe67dd20333d9b89686ff4cce0fc7fee380572851af",
+        "sourceSnapshotId": "snapshot_lumo_fresh_draft",
+        "sourceSnapshotRevision": 0,
+        "canonicalSourceSnapshotFingerprint": "v1_37497_056cdad26497431afad17e1ad14fd2a9ac956cfcf2d3b613ec1da63203dd6818"
+      },
+      "directCompilationAuthority": {
+        "publishCompilerContractVersion": "1.0.0",
+        "publishCompilerVersion": "1.0.0",
+        "sourceAuthorityKind": "manual",
+        "compiledRuntimeFingerprint": "compiled-publication-v1_44303_8bee8779226ac072473a608aa5d59db477f664646ba45a36aea264de3c8a471e",
+        "validationReportFingerprint": "publish-validation-v1_1469_b56e2a2627db5b73ce5f4e944c8f2b48d35a0a9743afe98268ecead87ae8a070",
+        "compileReceiptFingerprint": "publish-compile-receipt-v1_2117_ddb1065efacd9fc89b357e06edc5040c06d586288fce39228def3c059fb85297",
+        "manifestFingerprint": "component-capability-manifest-v1_844766_23b82c86fce664377c5af4ab8a2041d5d2b21af8cc8fb9c5ae150b847d993260",
+        "registryFingerprint": "publish-registry-v1_5466_2a4a13eae4359215ce471d44f0a9a5fea3e6ccac2dd1123d1784b7abc893b770",
+        "profileAuthorityFingerprint": "v1_2_4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "commerceFingerprint": "publish-commerce-v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+        "navigationRoutesFingerprint": "publish-navigation-v1_1825_6a377aa0663b5dd6ec3200034084e8f35071fbf4379c33dfacd4e928ff34e1f6",
+        "productMediaFingerprint": "publish-product-media-v1_616_130b0188230c53cb1e2061a402c86344e42a8ecaf6d6b46d80a1075f5fba198b",
+        "productCardAuthorityFingerprint": "canonical-product-card-v1_5590_793a2a975fd5842deed1658a2c37834055aa8ba47c22d4dce30f4d327b39a433",
+        "approvedAssetFingerprint": "publish-approved-assets-v1_3468_755138dceb1b5a0552b29788ac024564e982db7e348bc626055d448e2722bad9",
+        "dynamicCommerceFingerprint": "dynamic-commerce-presentation-v1_19463_53c248aa9b35b7f323b122bb1eba03a479967576fb784c63ca5439e95915606e",
+        "localeAuthorityFingerprint": "publish-locales-v1_73_ded1e8ee653d79944acdd993445903bf91a8a4556687b779a14bd64050c98a09",
+        "migrationStatus": "current",
+        "migrationFingerprint": "publish-migrations-v1_4426_c314ac306e5b28edf27d613686c53e44ad020e5d6190f10b7039981ebf4a0afb"
+      },
+      "preparationAuthority": {
+        "preparationId": "publish_preparation_p10b_19a_09c_modern_technical",
+        "preparedAt": "2026-09-03T10:01:00.000Z",
+        "publishPermitted": true,
+        "preparedCompilationResultIdentity": {
+          "runtimeFingerprint": "compiled-publication-v1_44303_8bee8779226ac072473a608aa5d59db477f664646ba45a36aea264de3c8a471e",
+          "validationReportFingerprint": "publish-validation-v1_1469_b56e2a2627db5b73ce5f4e944c8f2b48d35a0a9743afe98268ecead87ae8a070",
+          "sourceSnapshotId": "snapshot_lumo_fresh_draft",
+          "sourceSnapshotRevision": 0,
+          "sourceSnapshotFingerprint": "v1_37497_056cdad26497431afad17e1ad14fd2a9ac956cfcf2d3b613ec1da63203dd6818"
+        },
+        "preparedCompileReceiptFingerprint": "publish-compile-receipt-v1_2117_ddb1065efacd9fc89b357e06edc5040c06d586288fce39228def3c059fb85297",
+        "changeSummaryFingerprint": "v1_6920_ce0d85dc0fbff46398a9ca2b95f6ad2a059ed376f430d6ec8de9cdbfdcce7cd3",
+        "expectedActivePublicationVersionId": null
+      },
+      "confirmationAndStorageAuthority": {
+        "projectRevisionBefore": 0,
+        "projectRevisionAfter": 1,
+        "priorPublishedSnapshotFingerprint": "v1_7088_01c2f8f5fc59a0d2a337907de7176c95e289392c473858f722165fef5cdc47c7",
+        "newPublishedSnapshotFingerprint": "v1_37497_056cdad26497431afad17e1ad14fd2a9ac956cfcf2d3b613ec1da63203dd6818",
+        "synchronizedDraftSnapshotFingerprint": "v1_37497_056cdad26497431afad17e1ad14fd2a9ac956cfcf2d3b613ec1da63203dd6818",
+        "activePublicationVersionId": "published_version_9d9474f10e4f47760e36dc70",
+        "activePublicationVersionFingerprint": "v1_977_be2fb6756e962d3da01171aa5fd3486b5033087d6e09fc95ddc6012865c1d228",
+        "activeCompiledArtifactId": "compiled_artifact_0561730ec45437a2e53e3485",
+        "activeCompiledArtifactFingerprint": "v1_47497_e1981c1492c57e1f9a5c2c8538252c5d3f416e516625c27c86382b671047fd58",
+        "storedCompiledResultRuntimeFingerprint": "compiled-publication-v1_44303_8bee8779226ac072473a608aa5d59db477f664646ba45a36aea264de3c8a471e",
+        "storedCompileReceiptFingerprint": "publish-compile-receipt-v1_2117_ddb1065efacd9fc89b357e06edc5040c06d586288fce39228def3c059fb85297",
+        "publishedVersionCount": 1,
+        "publicationOperationFingerprint": "v1_994_8277b9495c3995ce8542adbbc6fdfb66e7f96ac0198270b10abac6fa302f290a"
+      },
+      "publishedRendererAuthority": {
+        "currentRendererAuthorityFingerprint": "publish-renderers-v1_6841_a15518e63b8b56746ad88e775eed5795555fa632fcadaffec07852a435a137fe",
+        "pageAndDynamicRouteInventoryFingerprint": "site-map-v1_5730_42d942f08f46740c0e65cb12d239fb540ae9c093df1fe7e36eaff607534adbe0",
+        "canonicalCommerceFingerprint": "v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+        "canonicalProductMediaFingerprint": "v1_616_130b0188230c53cb1e2061a402c86344e42a8ecaf6d6b46d80a1075f5fba198b",
+        "canonicalApprovedPresentationFingerprint": "v1_466_5fc3bdecbddc6050d93c62c6be9f26af77d65f1ae1a47b441fdb1317aceaddc9",
+        "renderObservations": [
+          {
+            "surface": "home",
+            "route": "/",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "home",
+            "pageProfileId": "homepage-collection-gateway",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_9749_de244f6f89dffe71e3c9216d503106895c8687b71198cf6a075979887805c388"
+          },
+          {
+            "surface": "home",
+            "route": "/",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "home",
+            "pageProfileId": "homepage-collection-gateway",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_9747_7e5dc883627957566adc8ebf7eee7e76e19fab9e27fee7930926426c007763ee"
+          },
+          {
+            "surface": "collection",
+            "route": "/collections/jewellery",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "collection",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_8500_4da1ead4d2d74da06b7314f516f82849849384cb3cd3fb036d32b2c74bebf44f"
+          },
+          {
+            "surface": "collection",
+            "route": "/collections/jewellery",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "collection",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_8500_08b8e5fff9ec0bb16791b601b3c60f1e739fe6c52efb35e13149497079b61ada"
+          },
+          {
+            "surface": "search",
+            "route": "/search",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "search-results",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_7047_8f3d5a70aac93c81dbb475847bec19d7cf81723e74026781d44f819ee35e7946"
+          },
+          {
+            "surface": "search",
+            "route": "/search",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "search-results",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_7048_8ed0d6d9cf4f259baa8e613b3d459c3fb42f066a57dec2fd7b43acd49f0d4a5a"
+          },
+          {
+            "surface": "product-detail",
+            "route": "/products/custom-halo-ring",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "product-detail",
+            "pageProfileId": "pdp-standard-commerce",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_10706_81b7537eeac1c7684a02eb08bb2bd3dd741104295728da5b31edb597c1f01475"
+          },
+          {
+            "surface": "product-detail",
+            "route": "/products/custom-halo-ring",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "product-detail",
+            "pageProfileId": "pdp-standard-commerce",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_10708_dc88d53f8ea94d52844b3d4ff14bc8e4173b2af9d40dc3c42a5e5694462ea021"
+          },
+          {
+            "surface": "content-support",
+            "route": "/pages/contact",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "contact",
+            "pageProfileId": "content-contact-channels",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_6033_e225a6975be806a7bf6207aca72e57b205407be67ee050ed2bb2a67b2f1de4b9"
+          },
+          {
+            "surface": "content-support",
+            "route": "/pages/contact",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "contact",
+            "pageProfileId": "content-contact-channels",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_6034_cc7105ad4bd0951fd1c025b08604892f7738b746c8e84974dce1f364c4ef0d07"
+          },
+          {
+            "surface": "utility",
+            "route": "/cart",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "cart",
+            "pageProfileId": "commerce-utility-cart",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_5764_4a702ddcba5890a6445c5e775d795ace79e835eb5455267a2f01b7e47537d2f5"
+          },
+          {
+            "surface": "utility",
+            "route": "/cart",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "cart",
+            "pageProfileId": "commerce-utility-cart",
+            "sharedFrameProfileId": "commerce-utility",
+            "observationFingerprint": "v1_5766_7613262b214176090bfad5d34bbe688e19392e806a77af0480e7190b44b42cc8"
+          }
+        ]
+      }
+    },
+    {
+      "directionId": "minimal-commerce",
+      "aliasId": "legacy-v1:minimal-commerce",
+      "historicalAuthority": {
+        "replayReferenceFingerprint": "legacy-v1-storefront-replay-reference-v1_1199_9793239322c9edf86671499a76e4a7fa24ef18881f995abe1a499d51a006b10d",
+        "historicalReadReceiptFingerprint": "legacy-v1-historical-snapshot-read-v1_1236_e2bc6a2ae9b255c5d42cb085673651c00842018ab564b1e6a3567ede535124d7",
+        "sourceSnapshotId": "snapshot_lumo_fresh_draft",
+        "sourceSnapshotRevision": 0,
+        "canonicalSourceSnapshotFingerprint": "v1_46012_4d8e8a98c521786479736226d67cf9ab4bc86570f2b52cc519b80524a88fedad"
+      },
+      "directCompilationAuthority": {
+        "publishCompilerContractVersion": "1.0.0",
+        "publishCompilerVersion": "1.0.0",
+        "sourceAuthorityKind": "manual",
+        "compiledRuntimeFingerprint": "compiled-publication-v1_54499_1355833dbea15ad7f89589fa0abae04afcdadc5eda53acd0e368557ff3f48ec2",
+        "validationReportFingerprint": "publish-validation-v1_1469_fde8ff5d0ee511b01610cb6fc444daf0901eb7a89ea3ec013bd47e7af5cc37c0",
+        "compileReceiptFingerprint": "publish-compile-receipt-v1_2117_0eb0afb37f25e8fc9ca921c982b9c79eae23737e6cca273d0260e6d0207379d8",
+        "manifestFingerprint": "component-capability-manifest-v1_844766_23b82c86fce664377c5af4ab8a2041d5d2b21af8cc8fb9c5ae150b847d993260",
+        "registryFingerprint": "publish-registry-v1_5466_2a4a13eae4359215ce471d44f0a9a5fea3e6ccac2dd1123d1784b7abc893b770",
+        "profileAuthorityFingerprint": "v1_2_4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "commerceFingerprint": "publish-commerce-v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+        "navigationRoutesFingerprint": "publish-navigation-v1_2516_4288ca6855c7d90a7b1389add82b9643cb1fd1406936749dbbbfd889a2aa3645",
+        "productMediaFingerprint": "publish-product-media-v1_616_130b0188230c53cb1e2061a402c86344e42a8ecaf6d6b46d80a1075f5fba198b",
+        "productCardAuthorityFingerprint": "canonical-product-card-v1_5590_793a2a975fd5842deed1658a2c37834055aa8ba47c22d4dce30f4d327b39a433",
+        "approvedAssetFingerprint": "publish-approved-assets-v1_6265_0215cd90c67b13fb4d55504b8e1c2eca622edd8c69eb30d97c435d8229c9f53e",
+        "dynamicCommerceFingerprint": "dynamic-commerce-presentation-v1_17775_4474ca3c94d2036fe7ab9a802a98cd466eff1f60f8aafbb894e1ba6b685be7b6",
+        "localeAuthorityFingerprint": "publish-locales-v1_73_ded1e8ee653d79944acdd993445903bf91a8a4556687b779a14bd64050c98a09",
+        "migrationStatus": "current",
+        "migrationFingerprint": "publish-migrations-v1_4426_c314ac306e5b28edf27d613686c53e44ad020e5d6190f10b7039981ebf4a0afb"
+      },
+      "preparationAuthority": {
+        "preparationId": "publish_preparation_p10b_19a_09c_minimal_commerce",
+        "preparedAt": "2026-09-03T10:02:00.000Z",
+        "publishPermitted": true,
+        "preparedCompilationResultIdentity": {
+          "runtimeFingerprint": "compiled-publication-v1_54499_1355833dbea15ad7f89589fa0abae04afcdadc5eda53acd0e368557ff3f48ec2",
+          "validationReportFingerprint": "publish-validation-v1_1469_fde8ff5d0ee511b01610cb6fc444daf0901eb7a89ea3ec013bd47e7af5cc37c0",
+          "sourceSnapshotId": "snapshot_lumo_fresh_draft",
+          "sourceSnapshotRevision": 0,
+          "sourceSnapshotFingerprint": "v1_46012_4d8e8a98c521786479736226d67cf9ab4bc86570f2b52cc519b80524a88fedad"
+        },
+        "preparedCompileReceiptFingerprint": "publish-compile-receipt-v1_2117_0eb0afb37f25e8fc9ca921c982b9c79eae23737e6cca273d0260e6d0207379d8",
+        "changeSummaryFingerprint": "v1_8069_ac3e521ff6e34c9ae9612e57b0b6c14668893ad00342186dc5f6cb5985385cec",
+        "expectedActivePublicationVersionId": null
+      },
+      "confirmationAndStorageAuthority": {
+        "projectRevisionBefore": 0,
+        "projectRevisionAfter": 1,
+        "priorPublishedSnapshotFingerprint": "v1_7088_01c2f8f5fc59a0d2a337907de7176c95e289392c473858f722165fef5cdc47c7",
+        "newPublishedSnapshotFingerprint": "v1_46012_4d8e8a98c521786479736226d67cf9ab4bc86570f2b52cc519b80524a88fedad",
+        "synchronizedDraftSnapshotFingerprint": "v1_46012_4d8e8a98c521786479736226d67cf9ab4bc86570f2b52cc519b80524a88fedad",
+        "activePublicationVersionId": "published_version_35c149ac41e38ccd2aa962d1",
+        "activePublicationVersionFingerprint": "v1_977_4346697300365eaf5bf4e42ac6028768500cea6d1f4e29a6f9cfd7a1a7e5dd67",
+        "activeCompiledArtifactId": "compiled_artifact_fa9a2020a5ba62cd3b856455",
+        "activeCompiledArtifactFingerprint": "v1_57693_f242937f20d54dab7f11afbf7eab3685879603eb51174069f1180d7557a18bb8",
+        "storedCompiledResultRuntimeFingerprint": "compiled-publication-v1_54499_1355833dbea15ad7f89589fa0abae04afcdadc5eda53acd0e368557ff3f48ec2",
+        "storedCompileReceiptFingerprint": "publish-compile-receipt-v1_2117_0eb0afb37f25e8fc9ca921c982b9c79eae23737e6cca273d0260e6d0207379d8",
+        "publishedVersionCount": 1,
+        "publicationOperationFingerprint": "v1_994_f5e7635fd28ae9391cbc0ed19c7fce8d22ddc05169684819f054b653d50bf436"
+      },
+      "publishedRendererAuthority": {
+        "currentRendererAuthorityFingerprint": "publish-renderers-v1_6841_a15518e63b8b56746ad88e775eed5795555fa632fcadaffec07852a435a137fe",
+        "pageAndDynamicRouteInventoryFingerprint": "site-map-v1_8148_f36a6fe262460076e99efebc1dbf8f46f1ff5ba85e024025d39c28b30f864948",
+        "canonicalCommerceFingerprint": "v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+        "canonicalProductMediaFingerprint": "v1_616_130b0188230c53cb1e2061a402c86344e42a8ecaf6d6b46d80a1075f5fba198b",
+        "canonicalApprovedPresentationFingerprint": "v1_1161_36ba737c86cbb74b895f059f34bee7fe985889813a4a7d99842d072d0b5e9216",
+        "renderObservations": [
+          {
+            "surface": "home",
+            "route": "/",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "home",
+            "pageProfileId": "homepage-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_11146_c65893263f6ed3202e5f02b12db9e8edd467e7aa6004638a5d8bd9516fc0e60a"
+          },
+          {
+            "surface": "home",
+            "route": "/",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "home",
+            "pageProfileId": "homepage-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_11148_6d8eaa81d336c2cf510142ca69817699583fda94b08f530a4ffee9f26719e1a1"
+          },
+          {
+            "surface": "collection",
+            "route": "/collections/jewellery",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "collection",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_9289_b622c0969df1a5ba795511afdf7f980c0304d69e459f0c82b9d0d5950450ea1e"
+          },
+          {
+            "surface": "collection",
+            "route": "/collections/jewellery",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "collection",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_9290_0746c2fd7efd607116c4c540578fed24c8bc91e3ef5e0732621bf19c795928b9"
+          },
+          {
+            "surface": "search",
+            "route": "/search",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "search-results",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_7836_6dbba2081d43c988bb3dfeb0de77f7a1f0dc201dc0999ebed6fa098ca2398978"
+          },
+          {
+            "surface": "search",
+            "route": "/search",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "search-results",
+            "pageProfileId": "collection-dense-search",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_7838_af43a418d585101eb66e2d431381b58ee0bf21e65c43f48f8c3e85b345910a6f"
+          },
+          {
+            "surface": "product-detail",
+            "route": "/products/custom-halo-ring",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "product-detail",
+            "pageProfileId": "pdp-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_11518_0aa79fba2295ccd8fc4311fd63128e6785f75c411134f9329854d73c3b0e7a7d"
+          },
+          {
+            "surface": "product-detail",
+            "route": "/products/custom-halo-ring",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "product-detail",
+            "pageProfileId": "pdp-high-consideration",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_11521_3bf9c7eba5620fe0493aaabd302bba9615b26da4186291c4b1131269cdcbac8f"
+          },
+          {
+            "surface": "content-support",
+            "route": "/pages/about",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "about",
+            "pageProfileId": "content-about-story",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_6765_26f1f63fa40597745be94f32f8e98c6d62aad83cfa3b91d0cb9c4afc3e0bf208"
+          },
+          {
+            "surface": "content-support",
+            "route": "/pages/about",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "about",
+            "pageProfileId": "content-about-story",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_6767_84d3a028f5bbca3588b3ba2ce019e69716ccbcbf29c1e3b641094bf688eb6e44"
+          },
+          {
+            "surface": "utility",
+            "route": "/cart",
+            "locale": "en",
+            "renderTarget": "published",
+            "pageFamilyId": "cart",
+            "pageProfileId": "commerce-utility-cart",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_6553_007596be0c78af5c651d1c05a0d887eed2cc66693878c7ec06f87df25fe3d9ca"
+          },
+          {
+            "surface": "utility",
+            "route": "/cart",
+            "locale": "fi",
+            "renderTarget": "published",
+            "pageFamilyId": "cart",
+            "pageProfileId": "commerce-utility-cart",
+            "sharedFrameProfileId": "centered-minimal",
+            "observationFingerprint": "v1_6556_92a35d69f6bff62883d55f08dc3d00b653824b16cf57682c19153143f32a4860"
+          }
+        ]
+      }
+    }
+  ],
+  "baselineFileMaterialSha256Policy": "SHA-256 of canonical baseline JSON with baselineFileMaterialSha256 omitted; the exact byte SHA-256 is detached in the immutable task contract because a file cannot contain its own SHA-256.",
+  "baselineFileMaterialSha256": "92b2f872d10cd9777758c7cd6572e9b3fb598f1aa00703cbdaaf9e196c1e5b30"
+}

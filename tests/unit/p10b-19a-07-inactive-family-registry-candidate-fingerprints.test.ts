@@ -43,6 +43,9 @@ import { isStructuralStorefrontFamilySelectable } from "@/domain/structural-stor
 
 const approvedProtectedAuthorityFingerprint =
   "sha256:21ef43c86f36bd9967fb4b8caf59039bc6b0dc0909d45d51dd81a666c6dddd03";
+const protectedAuthorityFileExclusions = new Set([
+  "src/application/publishing/legacy-v1-publication-replay.ts",
+]);
 const protectedAuthorityPaths = [
   "src/domain/structural-storefront-family",
   "src/application/storefront-templates/page-blueprint-v2-contract.ts",
@@ -308,6 +311,7 @@ function fingerprintProtectedAuthority(repositoryRoot: string): string {
   const files = protectedAuthorityPaths
     .flatMap((path) => collectFiles(resolve(repositoryRoot, path)))
     .map((path) => relative(repositoryRoot, path))
+    .filter((path) => !protectedAuthorityFileExclusions.has(path))
     .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
   const hash = createHash("sha256");
 
