@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -47,7 +48,10 @@ const ACCEPTED_BASELINE_FILE_SHA256 =
   "e1a2eb36eed615945b100797886be4a0d345b579e7b84eb8f4629aa124d03653";
 const ACCEPTED_BASELINE_MATERIAL_SHA256 =
   "92b2f872d10cd9777758c7cd6572e9b3fb598f1aa00703cbdaaf9e196c1e5b30";
-const FINAL_COMPARISON_PATH = "/private/tmp/veskify-p10b-19a-09c-final-publication-comparison.json";
+const FINAL_COMPARISON_PATH = resolve(
+  existsSync("/private/tmp") ? "/private/tmp" : tmpdir(),
+  "veskify-p10b-19a-09c-final-publication-comparison.json",
+);
 const BASELINE_FIXTURE_PATH = resolve(
   process.cwd(),
   "tests/fixtures/p10b-19a-09c-publication-replay-baseline.v1.json",
