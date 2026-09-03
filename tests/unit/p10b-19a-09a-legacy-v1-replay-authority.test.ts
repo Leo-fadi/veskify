@@ -721,9 +721,11 @@ describe("P10B-19A-09A no-inference, no-v2 and runtime isolation boundaries", ()
     );
   });
 
-  it("has no current production consumer and is absent from the client-reachable barrel", () => {
+  it("permits only the A-09B leaf consumer and keeps both adapters out of the runtime barrel", () => {
     const repositoryRoot = resolve(process.cwd());
     const modulePath = "src/application/bounded-storefront-synthesis/legacy-v1-replay-authority.ts";
+    const historicalReplayPath =
+      "src/application/bounded-storefront-synthesis/legacy-v1-historical-snapshot-replay.ts";
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
       .map((path) => ({ path: relative(repositoryRoot, path), source: readFileSync(path, "utf8") }))
       .filter(({ path }) => path !== modulePath)
@@ -733,12 +735,18 @@ describe("P10B-19A-09A no-inference, no-v2 and runtime isolation boundaries", ()
         ),
       )
       .map(({ path }) => path);
-    expect(consumers).toStrictEqual([]);
-    expect(
-      readFileSync(
-        resolve(repositoryRoot, "src/application/bounded-storefront-synthesis/index.ts"),
-        "utf8",
-      ),
-    ).not.toContain("legacy-v1-replay-authority");
+    expect(consumers).toStrictEqual([historicalReplayPath]);
+    const historicalConsumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
+      .map((path) => ({ path: relative(repositoryRoot, path), source: readFileSync(path, "utf8") }))
+      .filter(({ path }) => path !== historicalReplayPath)
+      .filter(({ source }) => source.includes("legacy-v1-historical-snapshot-replay"))
+      .map(({ path }) => path);
+    expect(historicalConsumers).toStrictEqual([]);
+    const barrel = readFileSync(
+      resolve(repositoryRoot, "src/application/bounded-storefront-synthesis/index.ts"),
+      "utf8",
+    );
+    expect(barrel).not.toContain("legacy-v1-replay-authority");
+    expect(barrel).not.toContain("legacy-v1-historical-snapshot-replay");
   });
 });

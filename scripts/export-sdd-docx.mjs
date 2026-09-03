@@ -320,8 +320,8 @@ try {
     title: "Veskify Software Design Document",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Verified baseline: 2 September 2026",
-      "P10B-19A-09A Legacy v1 Replay Alias and Compatibility Reference Baseline",
+      "Verified baseline: 3 September 2026",
+      "P10B-19A-09B Historical v1 Snapshot Read and Render Replay Baseline",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
