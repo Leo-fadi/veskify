@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 3 September 2026, P10B-19A-09B Historical v1 Snapshot Read and Render Replay Baseline                               |
+| Baseline                    | 3 September 2026, P10B-19A-09C Publication Replay and P10B-19A-09 Closure Baseline                                  |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -101,11 +101,11 @@ required evidence are accepted.
 | ☑    | P10B-19A-08A | Normalized Topology Identity                                            | **Baseline**                               | P10B-19A task owner                      | P10B-19A-07 merged                        | Strict normalized page/family topology identity and pure inactive duplicate index; zero production records, compatibility, selection or runtime consumers                                                      |
 | ☑    | P10B-19A-08B | Candidate Compatibility Contract and Evaluation                         | **Baseline**                               | P10B-19A task owner                      | P10B-19A-08A merged                       | Strict transient context/profile contracts and deterministic PageBlueprint/family compatibility evaluation; empty production authority and no selection or runtime reach                                       |
 | ☑    | P10B-19A-08C | Deterministic Candidate Selection                                       | **Baseline**                               | P10B-19A task owner                      | P10B-19A-08B merged                       | Strict scoring-free six-page selection, bounded topology exclusions, immutable replayed receipts and zero production/runtime reach                                                                             |
-| ☐    | P10B-19A-09  | v1 read/render/migration/publication compatibility                      | **Partial**                                | P10B-19A task owner                      | P10B-19A-08C merged                       | A-09A alias/reference and A-09B historical read/render replay are Baseline; A-09C publication replay remains                                                                                                   |
+| ☑    | P10B-19A-09  | v1 read/render/migration/publication compatibility                      | **Baseline / closed**                      | P10B-19A task owner                      | P10B-19A-08C merged                       | A-09A identity, A-09B read/render replay and A-09C publication replay complete the accepted v1 compatibility outcome                                                                                           |
 | ☑    | P10B-19A-09A | Legacy v1 Replay Alias and Compatibility Reference                      | **Baseline**                               | P10B-19A task owner                      | P10B-19A-08C merged                       | Exact three opaque aliases, current 1.1.0 direction binding, strict v1 narrowing replay identity, selectionId exclusion and fail-closed stale checks                                                           |
 | ☑    | P10B-19A-09B | Historical v1 Snapshot Read and Render Replay                           | **Baseline**                               | P10B-19A task owner                      | P10B-19A-09A merged                       | Strict read-only canonical validation, exact-bound or readable-unattributed receipts, seven verified/seven unverified fields and 36/36 current-renderer replay with zero writes                                |
-| ☐    | P10B-19A-09C | Publication Replay and A-09 Closure                                     | **Planned / exact next**                   | Planned task owner                       | P10B-19A-09B merged                       | Prove publication replay and close parent A-09 without changing current generation                                                                                                                             |
-| ☐    | P10B-19A-10  | Retained matrices, integration and P10B-19A closure                     | **Planned**                                | Planned task owner                       | P10B-19A-09C merged                       | Run retained integration matrices and close P10B-19A without pulling in later P10B-19 packages                                                                                                                 |
+| ☑    | P10B-19A-09C | Publication Replay and A-09 Closure                                     | **Baseline**                               | P10B-19A task owner                      | P10B-19A-09B merged                       | Current compiler/manual-source replay, A-09B binding, three atomic confirmations, active-version integrity, and 36/36 published plus 36/36 normalized Preview parity observations                              |
+| ☐    | P10B-19A-10  | Retained matrices, integration and P10B-19A closure                     | **Planned / exact next**                   | Planned task owner                       | P10B-19A-09C merged                       | Run retained integration matrices and close P10B-19A without pulling in later P10B-19 packages                                                                                                                 |
 | ☐    | P10B-19B-J   | Remaining Structural Design Intelligence sequence                       | **Planned**                                | Planned task owners                      | Accepted P10B-19 PRE and package sequence | Nine package-specific implementation and acceptance tasks                                                                                                                                                      |
 
 ## P10C checklist
@@ -157,7 +157,7 @@ not alter storefront, generation, commerce, media, persistence, Puck or merchant
 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Prove the bounded workflow and CI improvement over two clean runs                                                                                            | **Baseline** | DEVX-01F2            | Two-run acceptance and closure record                                               | Product behavior change                         |
 
 P10B remains Partial. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed.
-P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed; P10B-19A-09A and P10B-19A-09B are Baseline; parent P10B-19A-09 and P10B-19A remain Partial; P10B-19A-09C is the exact next implementation task; P10B-19A-10 is Planned after A-09C; P10B remains Partial.
+P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed; P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is Baseline / closed; P10B-19A remains Partial; P10B-19A-10 is the exact next implementation task; P10B remains Partial.
 DEVX-01C measured the serial gate, retained PR/ref-scoped cancellation and added compatible
 `.next/cache` reuse. DEVX-01D runs static, one-worker Vitest, production-build and unchanged
 complete browser validation independently behind the stable fail-closed `validate` status, with a
@@ -192,9 +192,9 @@ identical architecture.
 |    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     | A-09C merged                       |
 
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**; parent
-P10B-19A-08 is **Baseline / closed**. P10B-19A-09A and P10B-19A-09B are **Baseline**; parent
-P10B-19A-09 and P10B-19A remain **Partial**. P10B-19A-09C is the **exact next implementation
-task**, and P10B-19A-10 is Planned after A-09C.
+P10B-19A-08 is **Baseline / closed**. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are
+**Baseline**; parent P10B-19A-09 is **Baseline / closed**. P10B-19A remains **Partial**, and
+P10B-19A-10 is the **exact next implementation task**.
 
 P10B-19A-08A establishes strict normalized PageBlueprint v2 and Structural Storefront Family
 topology projections at schema version `1.0.0`. Deterministic `r0`, `r1`, ... tokens follow the
@@ -242,7 +242,8 @@ retains and validates the complete current v1 selection narrowing, derives execu
 through the existing exact projection, and excludes incidental `selectionId` from replay
 fingerprint identity. It performs no snapshot, appearance, profile or topology inference, creates
 no v2 identity, and does not read, write, render or publish historical state. Historical snapshot
-read/render replay remains A-09B; publication replay and parent A-09 closure remain A-09C. Current
+read/render replay is owned by A-09B; publication replay and parent A-09 closure are owned by
+A-09C. Current
 generation and merchant-visible behavior are unchanged.
 
 P10B-19A-09B adds a strict read-only historical-v1 adapter over current canonical snapshot,
@@ -256,8 +257,19 @@ verified, seven absent fields as unverified, normalization disposition `none` or
 matches 36 of 36 bounded current-renderer observations for the three representatives across EN/FI,
 with zero snapshot mutation, repository write, commerce change, media change, or
 route/profile/frame mismatch. This is not raw HTML equality, original-lineage recovery, migration,
-publication replay, v2 authority, or merchant-visible change. A-09C owns publication replay and
-parent A-09 closure and is the exact next implementation task.
+publication replay, v2 authority, or merchant-visible change.
+
+P10B-19A-09C consumes the exact A-09B result and receipt, projects the historical snapshot only as
+a detached transient draft, and reuses the current canonical publication compiler with truthful
+`manual` source authority. It requires current migration status without write-back and returns one
+strict immutable replay receipt bound to A-09B and compiler fingerprints. Frozen exact-base
+evidence matches three direct compilations, three preparations and exactly three isolated atomic
+publication confirmations, including exact active compiled-artifact and added-version integrity.
+All 36 of 36 published renderer observations and all 36 of 36 normalized Preview/published
+structural observations match. Source aggregates and snapshots remain unchanged; provider, Vesko
+and external-publication calls are zero. No production/runtime consumer, v2 activation or
+merchant-visible change is added. Parent P10B-19A-09 is Baseline / closed; P10B-19A remains
+Partial until A-10, the exact next implementation task.
 
 The A-08A/A-08B/A-08C split is delivery-only. It preserves the accepted P10B-19 PRE architecture,
 parent A-08 outcome and P10B-19A-09 ownership.
@@ -391,9 +403,9 @@ accepted P10B-18B-01, P10B-18B-06, P10B-18B-02, P10B-18B-03, P10B-18B-04 and P10
 **Baseline**. P10B-16P-02, parent P10B-18B, P10B-18C and P10B-16P-05B are **Baseline**; P10B-18 and
 P10B remain **Partial**; P10B-18D is a **Baseline diagnostic with live commercial quality
 rejected**. P10B-19 PRE is **Baseline**. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through
-P10B-19A-08C are **Baseline**; parent P10B-19A-08 is **Baseline / closed**. P10B-19A-09A and
-P10B-19A-09B are **Baseline**; parent P10B-19A-09 and P10B-19A are **Partial**. P10B-19A-09C is
-the **exact next implementation task**, and P10B-19A-10 remains **Planned** after A-09C.
+P10B-19A-08C are **Baseline**; parent P10B-19A-08 is **Baseline / closed**. P10B-19A-09A,
+P10B-19A-09B and P10B-19A-09C are **Baseline**; parent P10B-19A-09 is **Baseline / closed**.
+P10B-19A remains **Partial**, and P10B-19A-10 is the **exact next implementation task**.
 P10B-16P-04 acceptance evidence is retained in
 [`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 The remaining Done conditions are implementation gates, not claims about the current repository.
@@ -402,9 +414,9 @@ between P10B-16 and P10B-17; it supplements rather than renumbers the locked P10
 P10B-18 plan.
 P10B-16P-05B follows accepted P10B-18C and is now Baseline. P10B-18D completed as a rejected-quality
 diagnostic. P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through
-P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A and
-P10B-19A-09B are Baseline; parent P10B-19A-09 and P10B-19A remain Partial. P10B-19A-09C is the
-exact next implementation task; P10B-19A-10 remains Planned after A-09C; P10B-19B
+P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A,
+P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is Baseline / closed. P10B-19A
+remains Partial; P10B-19A-10 is the exact next implementation task; P10B-19B
 through P10B-19J remain Planned.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -916,9 +928,9 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with live commercial
 quality rejected. P10B-18 and P10B remain Partial. P10B-19 PRE is Baseline. P10B-19A-01 through
 P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline /
-closed. P10B-19A-09A and P10B-19A-09B are Baseline; parent P10B-19A-09 and P10B-19A remain
-Partial. P10B-19A-09C is the exact next implementation task; P10B-19A-10 remains Planned after
-A-09C; P10B-19B through P10B-19J remain Planned.
+closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is
+Baseline / closed. P10B-19A remains Partial; P10B-19A-10 is the exact next implementation task;
+P10B-19B through P10B-19J remain Planned.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
@@ -1129,10 +1141,9 @@ A-09C; P10B-19B through P10B-19J remain Planned.
 P10B-18 and P10B remain Partial. `P10B-19 PRE - Structural Design Intelligence Architecture Lock`
 is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline;
 parent P10B-19A-08 is Baseline / closed. P10B-19A-09A and P10B-19A-09B are Baseline, while
-`P10B-19A-09 - v1 read/render/migration/publication compatibility` and
-`P10B-19A - Structural Storefront Family Contract` remain Partial. P10B-19A-09C is the exact next
-implementation task; P10B-19A-10 remains Planned after A-09C; P10B-19B through P10B-19J remain
-Planned.
+`P10B-19A-09 - v1 read/render/migration/publication compatibility` is Baseline / closed, while
+`P10B-19A - Structural Storefront Family Contract` remains Partial. P10B-19A-10 is the exact next
+implementation task; P10B-19B through P10B-19J remain Planned.
 
 ### P10C — Storefront Studio Editing Experience v1
 
@@ -1387,33 +1398,33 @@ verdict is **PASS WITH MINOR LIMITATION** with zero primary FAIL. P10B-16P-05B s
 the one-time capture platform while retaining the bounded quality gate. P10B-18D subsequently
 completed as a rejected-quality diagnostic. P10B-19 PRE is Baseline. P10B-19A-01 through
 P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline /
-closed. P10B-19A-09A and P10B-19A-09B are Baseline; parent P10B-19A-09 and P10B-19A remain
-Partial. P10B-19A-09C is the exact next implementation task, and P10B-19A-10 remains Planned after
-A-09C.
+closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is
+Baseline / closed. P10B-19A remains Partial, and P10B-19A-10 is the exact next implementation
+task.
 
 ## P10B-19 accepted architecture delivery state
 
-| Status   | Task                      | State                    | Evidence / next boundary                                                                                                              |
-| -------- | ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Complete | P10B-19 PRE               | **Baseline**             | Product owner accepted the structural design intelligence architecture; no production implementation was included                     |
-| Current  | P10B-19A                  | **Partial**              | Structural Storefront Family and PageBlueprint v2 contracts, registry, A-08 delivery, and v1 compatibility                            |
-| Baseline | P10B-19A-08               | **Baseline / closed**    | A-08A normalized topology, A-08B compatibility and A-08C deterministic selection complete the accepted parent outcome                 |
-| Baseline | P10B-19A-01               | **Baseline**             | Structural family identity, version and lifecycle authority                                                                           |
-| Baseline | P10B-19A-02               | **Baseline**             | Cross-page Structural Storefront Family relationship contract                                                                         |
-| Baseline | P10B-19A-03               | **Baseline**             | Required page structures, region graph and explicit PageBlueprint v1/v2 dispatch; zero v2 records or production consumers             |
-| Baseline | P10B-19A-04               | **Baseline**             | Asset-role compatibility contract bound to exact PageBlueprint v2 identity and regions; zero records or production consumers          |
-| Baseline | P10B-19A-05               | **Baseline**             | Responsive-rule contract bound to four breakpoints and complete structural coverage; zero records or production consumers             |
-| Baseline | P10B-19A-06               | **Baseline**             | Omission, substitution and fallback contract bound to required asset-role regions; zero records or production consumers               |
-| Baseline | P10B-19A-07               | **Baseline**             | Exact candidate fingerprints and six-profile inactive family registry authority; sole production registry value remains exactly empty |
-| Baseline | P10B-19A-08A              | **Baseline**             | Normalized PageBlueprint v2/family topology identity and pure duplicate index; all production record counts remain zero               |
-| Baseline | P10B-19A-08B              | **Baseline**             | Candidate compatibility contracts and deterministic evaluation; empty production profile catalogue and zero runtime reach             |
-| Baseline | P10B-19A-08C              | **Baseline**             | Scoring-free deterministic selection, identity-free complete topology, immutable replay receipt and zero runtime reach                |
-| Current  | P10B-19A-09               | **Partial**              | A-09A alias/reference and A-09B historical read/render replay are Baseline; publication replay remains                                |
-| Baseline | P10B-19A-09A              | **Baseline**             | Exact three legacy-v1 aliases and strict stale-checked v1 selection replay reference; no snapshot/render/publication execution        |
-| Baseline | P10B-19A-09B              | **Baseline**             | Strict read-only current-canonical validation, exact-bound or readable-unattributed receipt, and 36/36 current-renderer replay        |
-| Next     | P10B-19A-09C              | **Planned / exact next** | Publication replay and parent A-09 closure after A-09B                                                                                |
-| Planned  | P10B-19A-10               | **Planned**              | Retained matrices, integration and P10B-19A closure after P10B-19A-09C                                                                |
-| Planned  | P10B-19B through P10B-19J | **Planned**              | Granular Visual Recipe, frame, homepage, discovery, PDP, content/utility, multi-concept, critic, and final live-acceptance packages   |
+| Status   | Task                      | State                    | Evidence / next boundary                                                                                                                  |
+| -------- | ------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Complete | P10B-19 PRE               | **Baseline**             | Product owner accepted the structural design intelligence architecture; no production implementation was included                         |
+| Current  | P10B-19A                  | **Partial**              | Structural Storefront Family and PageBlueprint v2 contracts, registry, A-08 delivery, and v1 compatibility                                |
+| Baseline | P10B-19A-08               | **Baseline / closed**    | A-08A normalized topology, A-08B compatibility and A-08C deterministic selection complete the accepted parent outcome                     |
+| Baseline | P10B-19A-01               | **Baseline**             | Structural family identity, version and lifecycle authority                                                                               |
+| Baseline | P10B-19A-02               | **Baseline**             | Cross-page Structural Storefront Family relationship contract                                                                             |
+| Baseline | P10B-19A-03               | **Baseline**             | Required page structures, region graph and explicit PageBlueprint v1/v2 dispatch; zero v2 records or production consumers                 |
+| Baseline | P10B-19A-04               | **Baseline**             | Asset-role compatibility contract bound to exact PageBlueprint v2 identity and regions; zero records or production consumers              |
+| Baseline | P10B-19A-05               | **Baseline**             | Responsive-rule contract bound to four breakpoints and complete structural coverage; zero records or production consumers                 |
+| Baseline | P10B-19A-06               | **Baseline**             | Omission, substitution and fallback contract bound to required asset-role regions; zero records or production consumers                   |
+| Baseline | P10B-19A-07               | **Baseline**             | Exact candidate fingerprints and six-profile inactive family registry authority; sole production registry value remains exactly empty     |
+| Baseline | P10B-19A-08A              | **Baseline**             | Normalized PageBlueprint v2/family topology identity and pure duplicate index; all production record counts remain zero                   |
+| Baseline | P10B-19A-08B              | **Baseline**             | Candidate compatibility contracts and deterministic evaluation; empty production profile catalogue and zero runtime reach                 |
+| Baseline | P10B-19A-08C              | **Baseline**             | Scoring-free deterministic selection, identity-free complete topology, immutable replay receipt and zero runtime reach                    |
+| Baseline | P10B-19A-09               | **Baseline / closed**    | A-09A identity, A-09B historical read/render replay and A-09C publication replay complete the accepted v1 compatibility outcome           |
+| Baseline | P10B-19A-09A              | **Baseline**             | Exact three legacy-v1 aliases and strict stale-checked v1 selection replay reference; no snapshot/render/publication execution            |
+| Baseline | P10B-19A-09B              | **Baseline**             | Strict read-only current-canonical validation, exact-bound or readable-unattributed receipt, and 36/36 current-renderer replay            |
+| Baseline | P10B-19A-09C              | **Baseline**             | Exact A-09B/compiler binding, manual-source replay, three atomic confirmations, active-version integrity and 36/36 published/parity proof |
+| Next     | P10B-19A-10               | **Planned / exact next** | Retained matrices, integration and P10B-19A closure after P10B-19A-09C                                                                    |
+| Planned  | P10B-19B through P10B-19J | **Planned**              | Granular Visual Recipe, frame, homepage, discovery, PDP, content/utility, multi-concept, critic, and final live-acceptance packages       |
 
 The accepted parent plan contains 73 bounded child tasks. Each meaningful visual family requires a
 focused product-owner screenshot checkpoint before merge. P10B remains Partial.
@@ -1442,9 +1453,9 @@ focused product-owner screenshot checkpoint before merge. P10B remains Partial.
 - P10B-19A-08 = Baseline / closed
 - P10B-19A-09A = Baseline
 - P10B-19A-09B = Baseline
-- P10B-19A-09 = Partial
-- P10B-19A-09C = exact next implementation task
-- P10B-19A-10 = Planned after P10B-19A-09C
+- P10B-19A-09C = Baseline
+- P10B-19A-09 = Baseline / closed
+- P10B-19A-10 = exact next implementation task
 - P10B-19A = Partial
 - P10B = Partial
 

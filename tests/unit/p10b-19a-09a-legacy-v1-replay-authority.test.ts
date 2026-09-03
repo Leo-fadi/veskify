@@ -721,11 +721,12 @@ describe("P10B-19A-09A no-inference, no-v2 and runtime isolation boundaries", ()
     );
   });
 
-  it("permits only the A-09B leaf consumer and keeps both adapters out of the runtime barrel", () => {
+  it("permits only the A-09A to A-09B to A-09C leaf chain and keeps every adapter out of runtime barrels", () => {
     const repositoryRoot = resolve(process.cwd());
     const modulePath = "src/application/bounded-storefront-synthesis/legacy-v1-replay-authority.ts";
     const historicalReplayPath =
       "src/application/bounded-storefront-synthesis/legacy-v1-historical-snapshot-replay.ts";
+    const publicationReplayPath = "src/application/publishing/legacy-v1-publication-replay.ts";
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
       .map((path) => ({ path: relative(repositoryRoot, path), source: readFileSync(path, "utf8") }))
       .filter(({ path }) => path !== modulePath)
@@ -741,12 +742,26 @@ describe("P10B-19A-09A no-inference, no-v2 and runtime isolation boundaries", ()
       .filter(({ path }) => path !== historicalReplayPath)
       .filter(({ source }) => source.includes("legacy-v1-historical-snapshot-replay"))
       .map(({ path }) => path);
-    expect(historicalConsumers).toStrictEqual([]);
-    const barrel = readFileSync(
+    expect(historicalConsumers).toStrictEqual([publicationReplayPath]);
+    const publicationConsumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
+      .map((path) => ({ path: relative(repositoryRoot, path), source: readFileSync(path, "utf8") }))
+      .filter(({ path }) => path !== publicationReplayPath)
+      .filter(({ source }) => source.includes("legacy-v1-publication-replay"))
+      .map(({ path }) => path);
+    expect(publicationConsumers).toStrictEqual([]);
+    const synthesisBarrel = readFileSync(
       resolve(repositoryRoot, "src/application/bounded-storefront-synthesis/index.ts"),
       "utf8",
     );
-    expect(barrel).not.toContain("legacy-v1-replay-authority");
-    expect(barrel).not.toContain("legacy-v1-historical-snapshot-replay");
+    const publishingBarrel = readFileSync(
+      resolve(repositoryRoot, "src/application/publishing/index.ts"),
+      "utf8",
+    );
+    expect(synthesisBarrel).not.toContain("legacy-v1-replay-authority");
+    expect(synthesisBarrel).not.toContain("legacy-v1-historical-snapshot-replay");
+    expect(synthesisBarrel).not.toContain("legacy-v1-publication-replay");
+    expect(publishingBarrel).not.toContain("legacy-v1-replay-authority");
+    expect(publishingBarrel).not.toContain("legacy-v1-historical-snapshot-replay");
+    expect(publishingBarrel).not.toContain("legacy-v1-publication-replay");
   });
 });
