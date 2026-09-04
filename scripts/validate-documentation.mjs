@@ -171,9 +171,9 @@ requireText("README.md", [
   "P10B-19A-10 = Partial",
   "P10B-19A = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "legacy-v1:premium-editorial",
   "legacy-v1:modern-technical",
@@ -215,7 +215,7 @@ requireText("AGENTS.md", [
 
 requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
-  "| Verified baseline         | 4 September 2026, P10B-19A-10B1 Positive Cross-Authority Integration Matrix |",
+  "| Verified baseline         | 4 September 2026, P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure |",
   "Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
   "P10B is now **Partial / active**",
@@ -245,6 +245,8 @@ requireText("docs/VESKIFY_SDD.md", [
   "### 10.42 P10B-19A-09B historical v1 snapshot read and render replay authority",
   "### 10.43 P10B-19A-09C historical v1 publication replay authority",
   "### 10.44 P10B-19A-10A retained-matrix inventory and baseline lock",
+  "### 10.45 P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+  "### 10.46 P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
   "P10B-19A-01 = Baseline",
   "P10B-19A-02 = Baseline",
   "P10B-19A-03 = Baseline",
@@ -264,9 +266,9 @@ requireText("docs/VESKIFY_SDD.md", [
   "P10B-19A-10 = Partial",
   "P10B-19A = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "tests/fixtures/p10b-19a-10a-retained-matrix-inventory.v1.json",
   "Seventy-six canonical production-authority paths",
@@ -355,7 +357,7 @@ requireText("docs/VESKIFY_SDD.md", [
 ]);
 
 requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
-  "| Baseline                    | 4 September 2026, P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+  "| Baseline                    | 4 September 2026, P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
 ]);
 
 const currentSddStatus = contents.get("docs/VESKIFY_SDD.md");
@@ -389,6 +391,14 @@ if (
 ) {
   failures.push("docs/VESKIFY_SDD.md: P10B-19A-10B1 section must follow P10B-19A-10A");
 }
+if (
+  currentSddStatus.indexOf(
+    "### 10.46 P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
+  ) <=
+  currentSddStatus.indexOf("### 10.45 P10B-19A-10B1 Positive Cross-Authority Integration Matrix")
+) {
+  failures.push("docs/VESKIFY_SDD.md: P10B-19A-10B2 section must follow P10B-19A-10B1");
+}
 
 rejectText("docs/VESKIFY_SDD.md", [
   "24 August 2026, P10B-18D diagnostic complete; live commercial quality rejected",
@@ -400,7 +410,7 @@ rejectText("docs/VESKIFY_SDD.md", [
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)",
-  "4 September 2026, P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+  "4 September 2026, P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
   "DEVX-01A through DEVX-01G are Baseline",
   "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**",
   "P10B-19A-08 is **Baseline / closed**",
@@ -409,9 +419,9 @@ requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
   "P10B-19A-10A = Baseline",
   "P10B-19A-10 = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "P10B-19A-10A records the delivery-only A-10A/A-10B/A-10C decomposition",
   "### 1.1 DEVX-01 engineering-enablement sprint",
@@ -561,7 +571,7 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**",
   "parent P10B-18B is **Baseline / complete**",
   "P10B-18 and P10B remain **Partial**",
-  "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
+  "P10B-18D is a **Baseline diagnostic\nwith live commercial quality rejected**",
   "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**",
   "P10B-19A-08 is **Baseline / closed**",
   "P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are\n**Baseline**",
@@ -569,9 +579,9 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-19A-10A = Baseline",
   "P10B-19A-10 = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "### Contract-driven sprint authority",
   "### Verification policy",
@@ -597,9 +607,9 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
   "P10B-19A-10A = Baseline",
   "P10B-19A-10 = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "P10B-19A-10 is delivered through three bounded children",
   "P10B-19A-08A owns only normalized topology identity",
@@ -716,18 +726,69 @@ requireText("docs/VESKIFY_SDD.md", [
 ]);
 requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "**Audit date:** 4 September 2026",
-  "**Repository baseline:** P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+  "**Repository baseline:** P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
   "p10b-19a-positive-cross-authority-integration-v1_23279_e195aad8126b74a9990d923a6ef08d82c637589919f362e8c5e90263092a002d",
   "907a4d48cab6dacd0bc46e0fb16d4eca2ca82c87d7f00b605ca53f3f112490f2",
   "2f181f551e7b44e5429f3b67cd4f381aaf98fcf996196af75d852e67b3d435ab",
 ]);
 requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "**Audit date:** 4 September 2026",
-  "**Repository baseline:** P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+  "**Repository baseline:** P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
   "p10b-19a-positive-cross-authority-integration-v1_23279_e195aad8126b74a9990d923a6ef08d82c637589919f362e8c5e90263092a002d",
   "907a4d48cab6dacd0bc46e0fb16d4eca2ca82c87d7f00b605ca53f3f112490f2",
   "2f181f551e7b44e5429f3b67cd4f381aaf98fcf996196af75d852e67b3d435ab",
 ]);
+
+for (const relativePath of [
+  "docs/VESKIFY_SDD.md",
+  "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+  "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+]) {
+  requireText(relativePath, [
+    "tests/fixtures/p10b-19a-10b2-fail-closed-cross-authority-matrix.v1.json",
+    "p10b-19a-fail-closed-cross-authority-matrix-v1_30308_ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307",
+    "8708a2282749796c9d27d2dcd382384989c7738a5eb0b2f72f87c1ad73cb6a64",
+    "ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307",
+    "67945a1b29cc4e84623c17cc2d2c0454265717599cd1128c7adfbb0446935b0b",
+    "29f03e3e1c00c33e07cae93872877b604342f6dc",
+  ]);
+  requirePattern(relativePath, [
+    /exactly\s+36\s+ordered(?:\s+failure)?\s+cases/iu,
+    /one\s+(?:logically\s+)?atomic\s+(?:corruption|replacement)/iu,
+    /(?:exact|highest\s+canonical)\s+(?:A-03 through A-09C\s+)?owner(?:\s+boundary)?[\s\S]{0,60}?(?:exact\s+)?terminal\s+phase/iu,
+    /20\s+sorted\s+Zod\s+issue[\s\S]{0,80}?16\s+typed-error/iu,
+    /cases?\s+17,?\s+18\s+and\s+20[\s\S]{0,120}?native\s+`Error`[\s\S]{0,100}?null\s+`errorCode`/iu,
+    /Case\s+25[\s\S]{0,160}?`stale-selection-authority`/iu,
+    /Case\s+28[\s\S]{0,300}?`no-eligible-family-candidates`/iu,
+    /Four\s+legacy-v1\/v2[\s\S]{0,180}?without\s+casts/iu,
+    /(?:all\s+nine\s+production-v2\s+authority\s+counts(?:\s+and\s+production-file\s+changes)?|PageBlueprint\s+candidates,\s+Structural\s+Storefront\s+Family\s+candidates,\s+compatibility\s+profiles,\s+capability\s+contexts,\s+compatibility\s+evaluations,\s+selection\s+requests,\s+selection\s+receipts,\s+active\s+families\s+and\s+selectable\s+families)\s+remain\s+zero(?:\s+in\s+production)?/iu,
+    /accepted\s+73-child(?:\s+P10B-19(?:\s+PRE)?)?\s+architecture/iu,
+  ]);
+}
+
+const currentTruthAudit = contents.get("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md");
+if (
+  currentTruthAudit.indexOf("## P10B-19A-10B2 current-state baseline") <=
+  currentTruthAudit.indexOf("## P10B-19A-10B1 current-state baseline")
+) {
+  failures.push(
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md: A-10B2 current-state section must follow A-10B1",
+  );
+}
+
+const currentCapabilityLedger = contents.get("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md");
+if (
+  currentCapabilityLedger.indexOf(
+    "Fail-Closed Cross-Authority Failure Matrix        | **Baseline**",
+  ) <=
+  currentCapabilityLedger.indexOf(
+    "Positive Cross-Authority Integration Matrix       | **Baseline**",
+  )
+) {
+  failures.push(
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md: A-10B2 evidence must follow A-10B1 evidence",
+  );
+}
 for (const relativePath of [
   "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
@@ -742,7 +803,12 @@ for (const relativePath of [
   "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
 ]) {
-  rejectText(relativePath, ["<BASELINE_FINGERPRINT>", "<FIXTURE_SHA256>", "<EXTERNAL_SHA256>"]);
+  rejectText(relativePath, [
+    "<BASELINE_FINGERPRINT>",
+    "<FIXTURE_SHA256>",
+    "<CANONICAL_MATERIAL_SHA256>",
+    "<EXTERNAL_SHA256>",
+  ]);
   requireText(relativePath, [
     "Direct EN and direct FI each classify all eight PageBlueprint candidates and all six families as",
     "five PageBlueprints directly compatible, two\nsubstitution-compatible and one omission-compatible, with all six families conditionally",
@@ -753,7 +819,7 @@ for (const relativePath of [
 const sddExporterSource = readRepositoryFile("scripts/export-sdd-docx.mjs");
 for (const expected of [
   "Verified baseline: 4 September 2026",
-  "P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+  "P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
 ]) {
   if (!sddExporterSource.includes(expected))
     failures.push(`scripts/export-sdd-docx.mjs: missing ${expected}`);
@@ -762,7 +828,7 @@ const trackerExporterSource = readRepositoryFile(
   "scripts/export-development-delivery-tracker-docx.mjs",
 );
 const trackerExporterBaseline =
-  "Delivery status baseline: 4 September 2026, P10B-19A-10B1 Positive Cross-Authority Integration Matrix";
+  "Delivery status baseline: 4 September 2026, P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure";
 if (!trackerExporterSource.includes(trackerExporterBaseline))
   failures.push(
     `scripts/export-development-delivery-tracker-docx.mjs: missing ${trackerExporterBaseline}`,
@@ -812,9 +878,9 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "P10B-19A-10 = Partial",
   "P10B-19A = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "P10B-19A-10A records the A-10A/A-10B/A-10C delivery decomposition",
   "P10B-19A-08A establishes strict normalized PageBlueprint v2 and Structural Storefront Family",
@@ -884,16 +950,16 @@ requireText("docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md", [
   "## P10B-19A-09C current-state baseline",
   "## P10B-19A-10A current-state baseline",
   "## P10B-19A-10B1 current-state baseline",
+  "## P10B-19A-10B2 current-state baseline",
   "P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline",
   "P10B-19A-08 is Baseline / closed",
-  "P10B-19A-09A, P10B-19A-09B, P10B-19A-09C, P10B-19A-10A and P10B-19A-10B1 are Baseline",
-  "parent P10B-19A-09 is Baseline / closed",
+  "P10B-19A-09 = Baseline / closed",
   "P10B-19A-10A = Baseline",
   "P10B-19A-10 = Partial",
   "P10B-19A-10B1 = Baseline",
-  "P10B-19A-10B = Partial",
-  "P10B-19A-10B2 = exact next implementation task",
-  "P10B-19A-10C = Planned after P10B-19A-10B2",
+  "P10B-19A-10B = Baseline / closed",
+  "P10B-19A-10B2 = Baseline",
+  "P10B-19A-10C = exact next implementation task",
   "P10B-19B-01 = Planned after P10B-19A-10C",
   "readable-unattributed",
   "readable-explicit-replay-binding",
@@ -937,9 +1003,9 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "P10B-18D is a **Baseline diagnostic with live commercial quality rejected**",
   "Structural design intelligence architecture       | **Baseline**",
   "Structural Storefront Family / PageBlueprint v2   | **Partial**",
-  "P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through P10B-19A-09C, P10B-19A-10A and P10B-19A-10B1 establish strict identities",
   "Retained matrix inventory and frozen baseline     | **Baseline**",
   "Positive Cross-Authority Integration Matrix       | **Baseline**",
+  "Fail-Closed Cross-Authority Failure Matrix        | **Baseline**",
   "P10B-19A-08A evidence is contract/schema plus deterministic unit proof",
   "P10B-19A-08B evidence is strict contract/schema plus deterministic adversarial unit proof",
   "P10B-19A-08C evidence is strict schema-version `1.0.0` contract/schema plus deterministic",
@@ -950,9 +1016,8 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
   "Historical v1 publication replay",
   "P10B-19A-09C evidence",
   "P10B-19A-10A evidence is one strict checked-in inventory",
-  "and P10B-19A-10B1 are Baseline",
-  "Parent P10B-19A-10B, P10B-19A-10 and P10B-19A remain Partial.",
-  "P10B-19A-10B2 is Planned / exact\nnext",
+  "parent P10B-19A-10B are Baseline / closed",
+  "A-10C is the exact next implementation task",
   "p10b-19a-retained-matrix-inventory-v1_32375_1b97e7da8eebdcda779b51b91b2f540263c97e9d2b40950b7f002721b6a5eb7d",
   "readable-unattributed",
   "readable-explicit-replay-binding",
@@ -976,8 +1041,8 @@ requireText("docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md", [
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 61) {
-  failures.push("Delivery tracker must contain exactly sixty-one completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 63) {
+  failures.push("Delivery tracker must contain exactly sixty-three completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -1066,17 +1131,17 @@ if (
   !/^\| ☑\s+\| P10B-19A-09C\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19A-10\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-10A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-10B\s+\|[^\n]*\| \*\*Partial\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-19A-10B\s+\|[^\n]*\| \*\*Baseline \/ closed\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-10B1\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-10B2\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19A-10C\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-19A-10B2\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19A-10C\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19B-01\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-19B-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must preserve accepted Baselines through A-10A, mark A-10B1 Baseline, keep A-10B/A-10/P10B-19A Partial, make A-10B2 Planned / exact next, and keep A-10C/P10B-19B-01/P10B-19B-J Planned",
+    "Delivery tracker must preserve accepted Baselines through A-10B2, close A-10B, keep A-10/P10B-19A Partial, make A-10C Planned / exact next, and keep P10B-19B-01/P10B-19B-J Planned",
   );
 }
 
@@ -1092,14 +1157,14 @@ if (
   !/^\| Baseline\s+\| P10B-19A-09C\s+\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| Current\s+\| P10B-19A-10\s+\| \*\*Partial\*\*/m.test(tracker) ||
   !/^\| Baseline\s+\| P10B-19A-10A\s+\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| Current\s+\| P10B-19A-10B\s+\| \*\*Partial\*\*/m.test(tracker) ||
+  !/^\| Baseline\s+\| P10B-19A-10B\s+\| \*\*Baseline \/ closed\*\*/m.test(tracker) ||
   !/^\| Baseline\s+\| P10B-19A-10B1\s+\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| Next\s+\| P10B-19A-10B2\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
-  !/^\| Planned\s+\| P10B-19A-10C\s+\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| Baseline\s+\| P10B-19A-10B2\s+\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| Next\s+\| P10B-19A-10C\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
   !/^\| Planned\s+\| P10B-19B-01\s+\| \*\*Planned\*\*/m.test(tracker)
 ) {
   failures.push(
-    "Delivery tracker current-state table must preserve accepted Baselines through A-10A, mark A-10B1 Baseline, keep A-10B/A-10 Partial, make A-10B2 Planned / exact next and keep A-10C/P10B-19B-01 Planned",
+    "Delivery tracker current-state table must preserve accepted Baselines through A-10B2, close A-10B, keep A-10 Partial, make A-10C Planned / exact next and keep P10B-19B-01 Planned",
   );
 }
 
@@ -1107,20 +1172,22 @@ if (
   !/^\| ☑\s+\| P10B-19A-10B1\s+\| Positive Cross-Authority Integration Matrix\s+\| \*\*Baseline\*\*[^\n]*\| P10B-19A-10A merged\s+\|[^\n]*8 PageBlueprint candidates; 6 family candidates; 6 profiles; 3 contexts; 3 topology groups × 2 identities; 6 direct and 3 sequential receipts; A-09\/A-10A unchanged; zero production/m.test(
     tracker,
   ) ||
-  !/^\| ☐\s+\| P10B-19A-10B2\s+\| Fail-Closed Cross-Authority Failure Matrix and A-10B Closure\s+\| \*\*Planned \/ exact next\*\*[^\n]*\| P10B-19A-10B1 merged\s+\|/m.test(
+  !/^\| ☑\s+\| P10B-19A-10B2\s+\| Fail-Closed Cross-Authority Failure Matrix and A-10B Closure\s+\| \*\*Baseline\*\*[^\n]*\| P10B-19A-10B1 merged\s+\|[^\n]*36 exact ordered failures; owner\/phase isolation; no partial output or source mutation; four strict legacy\/v2 rejections; A-10A\/B1 unchanged; zero production/m.test(
     tracker,
   ) ||
-  !/^\| ☐\s+\| P10B-19A-10C\s+\|[^\n]*\| \*\*Planned\*\*[^\n]*\| P10B-19A-10B2 merged\s+\|/m.test(
+  !/^\| ☐\s+\| P10B-19A-10C\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*[^\n]*\| P10B-19A-10B2 merged\s+\|/m.test(
     tracker,
   ) ||
   !/^\| Baseline\s+\| P10B-19A-10B1\s+\| \*\*Baseline\*\*\s+\| Exact fixed-count positive matrix; A-09\/A-10A unchanged; zero production\s+\|/m.test(
     tracker,
   ) ||
-  !/^\| Next\s+\| P10B-19A-10B2\s+\| \*\*Planned \/ exact next\*\*\s+\| Fail-closed cross-authority failure matrix and parent A-10B closure\s+\|/m.test(
+  !/^\| Baseline\s+\| P10B-19A-10B2\s+\| \*\*Baseline\*\*\s+\| Exact 36-case owner\/phase matrix; no downstream work, partial output, source mutation or production change\s+\|/m.test(
     tracker,
   )
 ) {
-  failures.push("Delivery tracker must retain exact A-10B1/A-10B2 dependency and evidence rows");
+  failures.push(
+    "Delivery tracker must retain exact A-10B1/A-10B2/A-10C dependency and evidence rows",
+  );
 }
 
 requireText("docs/P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md", [
@@ -1562,9 +1629,9 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A-10 = Partial",
     "P10B-19A = Partial",
     "P10B-19A-10B1 = Baseline",
-    "P10B-19A-10B = Partial",
-    "P10B-19A-10B2 = exact next implementation task",
-    "P10B-19A-10C = Planned after P10B-19A-10B2",
+    "P10B-19A-10B = Baseline / closed",
+    "P10B-19A-10B2 = Baseline",
+    "P10B-19A-10C = exact next implementation task",
     "P10B-19B-01 = Planned after P10B-19A-10C",
   ]) {
     if (!content.includes(authority)) {
@@ -1598,8 +1665,11 @@ for (const devx01fStatusPath of devx01fStatusDocuments) {
     "P10B-19A-10A = exact next implementation task",
     "P10B-19A-10B1 = exact next implementation task",
     "P10B-19A-10B1 = Planned",
-    "P10B-19A-10B2 = Baseline",
+    "P10B-19A-10B = Partial",
+    "P10B-19A-10B2 = exact next implementation task",
+    "P10B-19A-10B2 = Planned",
     "P10B-19A-10B2 = Baseline / closed",
+    "P10B-19A-10C = Planned after P10B-19A-10B2",
     "P10B-19B-01 = exact next implementation task",
   ]) {
     if (content.includes(stale)) throw new Error(`${devx01fStatusPath} retains obsolete ${stale}.`);
@@ -1681,18 +1751,26 @@ const staleP10b19A08StatusPatterns = [
   /P10B-19A-10B(?![12])\s*(?:=|is)?\s*(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next(?: implementation)? task/iu,
   /P10B-19A-10B1\s+(?:is|=|remains)\s+(?:\*\*)?Planned/iu,
   /P10B-19A-10B1\s*(?:=|is)?\s*(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next(?: implementation)? task/iu,
-  /P10B-19A-10B2\s+(?:is|=)\s+(?:\*\*)?Baseline(?:\s*\/\s*closed)?/iu,
-  /P10B-19A-10B(?![12])\s+(?:is|=)\s+(?:\*\*)?Baseline(?:\s*\/\s*closed)?/iu,
-  /P10B-19A-10C\s+(?:is|=)\s+(?:the\s+)?(?:\*\*)?(?:Planned\s*\/\s*)?exact next/iu,
+  /P10B-19A-10B2\s+(?:(?:is|=|remains)\s+)?(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next/iu,
+  /P10B-19A-10B2\s+(?:(?:is|=|remains)\s+)?(?:\*\*)?Planned/iu,
+  /P10B-19A-10B2\s+(?:is|=|remains)\s+(?:\*\*)?Baseline(?:\*\*)?\s*\/\s*(?:\*\*)?(?:closed|complete)/iu,
+  /P10B-19A-10B(?![12])\s+(?:(?:is|=|remains)\s+)?(?:\*\*)?Partial/iu,
+  /P10B-19A-10C\s+(?:(?:is|=|remains)\s+)?(?:\*\*)?Planned(?:\*\*)?\s+after\s+(?:P10B-19)?A-10B2/iu,
+  /\bA-10C\s+(?:is|=|remains)\s+(?:\*\*)?Planned(?:\*\*)?\s+after\s+it/iu,
   /P10B-19A-10C\s+(?:is|=|remains)\s+(?:\*\*)?Planned(?:\*\*)?\s+after\s+(?:P10B-19)?A-10B(?!2)/iu,
   /P10B-19B-01\s+(?:is|=)\s+(?:the\s+)?(?:\*\*)?(?:Planned\s*\/\s*)?exact next/iu,
   /\bA-10B(?![12])\s+(?:is|=)\s+(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next/iu,
-  /\bA-10B(?![12])\s+(?:is|=)\s+(?:\*\*)?Baseline(?:\s*\/\s*(?:closed|complete))?/iu,
+  /\bA-10B(?![12])\s+(?:(?:is|=|remains)\s+)?(?:\*\*)?Partial/iu,
   /\bA-10B1\s+(?:is|=|remains)\s+(?:\*\*)?Planned/iu,
   /\bA-10B1\s+(?:is|=)\s+(?:the\s+)?(?:\*\*)?exact next/iu,
   /\bA-10B1\s+(?:is|=)\s+(?:\*\*)?Baseline\s*\/\s*(?:closed|complete)/iu,
-  /\bA-10B2\s+(?:is|=)\s+(?:\*\*)?(?:Baseline|closed|complete)/iu,
+  /\bA-10B2\s+(?:(?:is|=|remains)\s+)?(?:the\s+)?(?:\*\*)?(?:Planned(?:\*\*)?\s*\/\s*)?(?:\*\*)?exact next/iu,
+  /\bA-10B2\s+(?:(?:is|=|remains)\s+)?(?:\*\*)?Planned/iu,
+  /\bA-10B2\s+(?:is|=|remains)\s+(?:\*\*)?Baseline(?:\*\*)?\s*\/\s*(?:\*\*)?(?:closed|complete)/iu,
   /\bA-10C\s+(?:is|=|remains)\s+(?:\*\*)?Planned(?:\*\*)?\s+after\s+A-10B(?!2)/iu,
+  /\bA-10C\s+(?:is|=|remains)\s+(?:\*\*)?Planned(?:\*\*)?\s+after\s+A-10B2/iu,
+  /exact next(?: implementation)? task\s+is\s+P10B-19A-10B2/iu,
+  /owns\s+that\s+exact\s+next\s+boundary/iu,
   /\bA-10(?![A-C])\s+(?:is|=)\s+(?:the\s+)?exact next/iu,
   /\bA-10A\s+(?:is|=)\s+(?:the\s+)?exact next/iu,
 ];

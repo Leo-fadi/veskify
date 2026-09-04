@@ -321,7 +321,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 4 September 2026",
-      "P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
+      "P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
