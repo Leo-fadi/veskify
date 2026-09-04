@@ -37,45 +37,6 @@ const childTaskMapTable = (tableXml) =>
   tableXml.includes("<w:t>Child task</w:t>") &&
   tableXml.includes("<w:t>Merge eligibility</w:t>");
 
-const mergeTrackerTableChunks = (documentXml) => {
-  let mergedXml = documentXml;
-  while (true) {
-    const tables = [...mergedXml.matchAll(tablePattern)];
-    let merged = false;
-    for (let index = 0; index < tables.length - 1; index += 1) {
-      const current = tables[index];
-      const next = tables[index + 1];
-      const currentStart = current.index;
-      const currentEnd = currentStart + current[0].length;
-      const nextStart = next.index;
-      const nextEnd = nextStart + next[0].length;
-      const separator = mergedXml.slice(currentEnd, nextStart);
-      if (
-        !trackerTable(current[0]) ||
-        !trackerTable(next[0]) ||
-        !separator.includes('<w:br w:type="page"/>')
-      ) {
-        continue;
-      }
-
-      const nextRowsStart = next[0].indexOf("</w:tblGrid>") + "</w:tblGrid>".length;
-      const nextRows = next[0].slice(nextRowsStart, -"</w:tbl>".length);
-      const repeatedHeaderEnd = nextRows.indexOf("</w:tr>") + "</w:tr>".length;
-      if (nextRowsStart < "</w:tblGrid>".length || repeatedHeaderEnd < "</w:tr>".length) {
-        throw new Error("The tracker checklist table structure is not mergeable.");
-      }
-      const combinedTable = current[0].replace(
-        /<\/w:tbl>$/u,
-        `${nextRows.slice(repeatedHeaderEnd)}</w:tbl>`,
-      );
-      mergedXml = `${mergedXml.slice(0, currentStart)}${combinedTable}${mergedXml.slice(nextEnd)}`;
-      merged = true;
-      break;
-    }
-    if (!merged) return mergedXml;
-  }
-};
-
 const resizeTable = (tableXml, sourceGridXml, widths) => {
   let resized = tableXml.replace(
     sourceGridXml,
@@ -139,7 +100,7 @@ const forceAcceptedP10b18cHeadingToNewPage = (documentXml) => {
 };
 
 const patchTrackerDocumentXml = (documentXml) => {
-  const resized = mergeTrackerTableChunks(documentXml).replace(tablePattern, (tableXml) => {
+  const resized = documentXml.replace(tablePattern, (tableXml) => {
     if (trackerTable(tableXml)) return resizeTrackerTable(tableXml);
     if (childTaskMapTable(tableXml)) return resizeChildTaskMapTable(tableXml);
     return tableXml;
@@ -196,7 +157,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 3 September 2026, P10B-19A-10A Retained Matrix Inventory and Frozen Baseline Lock",
+      "Delivery status baseline: 4 September 2026, P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

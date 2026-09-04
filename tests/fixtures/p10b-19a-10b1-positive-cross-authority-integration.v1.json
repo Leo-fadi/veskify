@@ -1,0 +1,450 @@
+{
+  "schemaVersion": "1.0.0",
+  "authorityKind": "p10b-19a-positive-cross-authority-integration",
+  "baseCommit": "d946a4a60d3edb5afd8cdb7a162e104750e8fd5d",
+  "a10aAuthority": {
+    "inventoryFingerprint": "p10b-19a-retained-matrix-inventory-v1_32375_1b97e7da8eebdcda779b51b91b2f540263c97e9d2b40950b7f002721b6a5eb7d",
+    "fixtureSha256": "2324cf405e12f4b06cbb288eac8d90dc759fc0eb87a39ba206eef784f3b0f4ab",
+    "retainedSemanticMetricsFingerprint": "v1_1819_33c603143044e4eacb21bba49f0717be3ee16f34e8c279b1dfb7f54051681d4e",
+    "matrixEntryCount": 24,
+    "protectedProductionHashCount": 76,
+    "productionInactivityAssertionCount": 9,
+    "completeCaseCount": 126,
+    "frozenCaseCount": 72
+  },
+  "fixtureCounts": {
+    "pageBlueprintCandidateCount": 8,
+    "primaryPageBlueprintCandidateCount": 6,
+    "fallbackOnlyPageBlueprintCandidateCount": 2,
+    "structuralFamilyCandidateCount": 6,
+    "compatibilityProfileCount": 6,
+    "capabilityContextCount": 3,
+    "canonicalPageFamilyRoleCount": 6,
+    "canonicalStructuralFamilyIdCount": 6
+  },
+  "topologyEvidence": {
+    "pageBlueprintTopologyCount": 8,
+    "structuralFamilyTopologyCount": 6,
+    "duplicateFamilyTopologyClusterCount": 3,
+    "identitiesPerDuplicateCluster": 2,
+    "pageBlueprintTopologies": [
+      "test-a10b1-home-primary@1.0.0|home|page-blueprint-v2-candidate-v1_2841_8fd89386e9b3a1b5a57eb7451727ee8fda21caad41bfb84df5ecd3f344cfd244|page-blueprint-v2-normalized-topology-v1_1446_c779bc455a44a549d01e4cf1c3d5bb4c59f360ddd0eb688f651dcb67a7aca521",
+      "test-a10b1-collection-primary@1.0.0|collection|page-blueprint-v2-candidate-v1_2966_e645a2e6988ece4848e1d6c866bcc42c35be9e69a0f825ef23b25efc6b6a550a|page-blueprint-v2-normalized-topology-v1_1452_e12a7669f972e17daf573f7559c5e3118a1212b3539414fb2e5bf2aceb7d0968",
+      "test-a10b1-search-primary@1.0.0|search|page-blueprint-v2-candidate-v1_2891_cfbc48c979fc7fcd0502279312845b0978019e810d0861ccb553150df50cafe6|page-blueprint-v2-normalized-topology-v1_1448_eac08649bf0f7d4a0462f398b7e679f8c983101f74e11325b06dc38c306039fa",
+      "test-a10b1-product-detail-intermediate@1.0.0|product-detail|page-blueprint-v2-candidate-v1_3181_43b3c9e2078c93526fe811217837f84cb8ef613881c40692532477a38dcc332a|page-blueprint-v2-normalized-topology-v1_1451_deba6bbdde26aa4a7d5f8ea09c704b43117d6ddeeb9f513b5c43f06113d4e1b0",
+      "test-a10b1-product-detail-primary@1.0.0|product-detail|page-blueprint-v2-candidate-v1_3095_c265698be0c0748325686a0d82cd33bf590a39ea7b6a9771912b82cc1e4ea3b1|page-blueprint-v2-normalized-topology-v1_1451_deba6bbdde26aa4a7d5f8ea09c704b43117d6ddeeb9f513b5c43f06113d4e1b0",
+      "test-a10b1-product-detail-terminal@1.0.0|product-detail|page-blueprint-v2-candidate-v1_3030_e41619aacef86fe0ee70a5d55f879063049c175b0b4e730580e27b00edba6d60|page-blueprint-v2-normalized-topology-v1_1451_deba6bbdde26aa4a7d5f8ea09c704b43117d6ddeeb9f513b5c43f06113d4e1b0",
+      "test-a10b1-content-support-primary@1.0.0|content-support|page-blueprint-v2-candidate-v1_2826_3dd5b58beaae79db6b2fef27bc580f9f8eaa0ece993c885ec65b634241138118|page-blueprint-v2-normalized-topology-v1_1451_20dcba4fc86fd46befe002eacad6ff1a3c3d3d371c923d090c280b9319563929",
+      "test-a10b1-utility-primary@1.0.0|utility|page-blueprint-v2-candidate-v1_2277_3079a7376a823088edefa0b9291161f11164c690de855d189e6a9c403d1e99cd|page-blueprint-v2-normalized-topology-v1_1056_542a2cf85b75d78fec13e7f4c005569b198eb2e5b2aee2f688748119bdd5bb10"
+    ],
+    "structuralFamilyTopologies": [
+      "editorial-offset@1.0.0|editorial-offset|structural-storefront-family-candidate-v1_1006_8cd9ceb7071bb0bda844fbdc68590d57e3b6059039dbd8d128c3030ea4ad8b8a|structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+      "campaign-modular@1.0.0|campaign-modular|structural-storefront-family-candidate-v1_1006_215ee566397e1249e1fcca4b6d7019738dae33df448ba0a0af704cc2037665cd|structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+      "product-first-commerce@1.0.0|product-first-commerce|structural-storefront-family-candidate-v1_1016_3a88401dbf4f807eaee6eb002410eec8f817b5dbc932fafeab0729d9bdfc777d|structural-storefront-family-normalized-topology-v1_1273_22f00a3868ae26beacfb735b43d95716339d4d55a57f4604ff45243816e521e5",
+      "technical-comparison@1.0.0|technical-comparison|structural-storefront-family-candidate-v1_1014_364bd91288a1992aebf79fbfad0008f3ad4b9c96d4a66791020a82f2646d7c96|structural-storefront-family-normalized-topology-v1_1273_22f00a3868ae26beacfb735b43d95716339d4d55a57f4604ff45243816e521e5",
+      "warm-narrative@1.0.0|warm-narrative|structural-storefront-family-candidate-v1_1004_ce417081424cb1221027b455558ffac356a99857c3b14357959f9777140d54ed|structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3",
+      "restrained-gallery@1.0.0|restrained-gallery|structural-storefront-family-candidate-v1_1008_7ba844f0922403e2f6be75a5d5da3e5a9f5420cc9eca334a2553bacf7cc7c2d9|structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3"
+    ],
+    "duplicateFamilyTopologyClusters": [
+      "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d|campaign-modular@1.0.0,editorial-offset@1.0.0",
+      "structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3|restrained-gallery@1.0.0,warm-narrative@1.0.0",
+      "structural-storefront-family-normalized-topology-v1_1273_22f00a3868ae26beacfb735b43d95716339d4d55a57f4604ff45243816e521e5|product-first-commerce@1.0.0,technical-comparison@1.0.0"
+    ]
+  },
+  "compatibilityEvidence": {
+    "profileCatalogueFingerprint": "inactive-structural-storefront-family-compatibility-profile-catalogue-v1_5450_835a5a452751802c39be1c82a9858d854cc83f97b98fefe4c8377d0a346ad922",
+    "evaluationCount": 3,
+    "evaluations": [
+      {
+        "evaluationId": "direct-en",
+        "activeLocale": "en",
+        "contextFingerprint": "structural-storefront-capability-context-v1_3047_9be4a4eec4b8b1678249be509ad75c2f1c38e1d7a0ed4490b7fd188b8f77d9f5",
+        "evaluationFingerprint": "structural-storefront-candidate-compatibility-evaluation-v1_23386_ac115e1edfe5a69bc974733d607253a429e2505e4fe6ade63f16fdd5ca3873f1",
+        "pageStatusCounts": {
+          "direct": 8,
+          "substitution": 0,
+          "omission": 0,
+          "incompatible": 0
+        },
+        "familyStatusCounts": {
+          "direct": 6,
+          "conditional": 0,
+          "incompatible": 0
+        }
+      },
+      {
+        "evaluationId": "direct-fi",
+        "activeLocale": "fi",
+        "contextFingerprint": "structural-storefront-capability-context-v1_3047_0ac421e2f899a0894a2ac0b6016728e200f2bb097f0ca45d4b3237f7c6163b3b",
+        "evaluationFingerprint": "structural-storefront-candidate-compatibility-evaluation-v1_23386_f50c946fd95d2451fb6c2221a1709a78c009eb7b8022ebf7829933ae93e16bbc",
+        "pageStatusCounts": {
+          "direct": 8,
+          "substitution": 0,
+          "omission": 0,
+          "incompatible": 0
+        },
+        "familyStatusCounts": {
+          "direct": 6,
+          "conditional": 0,
+          "incompatible": 0
+        }
+      },
+      {
+        "evaluationId": "mixed-fallback-en",
+        "activeLocale": "en",
+        "contextFingerprint": "structural-storefront-capability-context-v1_3047_c8da7aebc83ac0aa71061d0e2b97604d2b614ea87d7dc8d5aaa4a74570e1f57c",
+        "evaluationFingerprint": "structural-storefront-candidate-compatibility-evaluation-v1_23745_3fa0e80d008a2b49d1e63ab51badcf11f45367b94a13693d03170222652cea11",
+        "pageStatusCounts": {
+          "direct": 5,
+          "substitution": 2,
+          "omission": 1,
+          "incompatible": 0
+        },
+        "familyStatusCounts": {
+          "direct": 0,
+          "conditional": 6,
+          "incompatible": 0
+        }
+      }
+    ]
+  },
+  "selectionEvidence": {
+    "familyConstrainedDirect": [
+      {
+        "familyId": "editorial-offset",
+        "selectionCaseId": "test-a10b1-direct-editorial-offset",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_459_f1c368651843067607c86b474a33f89221fe1878a0d50d57ac1d2fc1adf7ad15",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8194_f3900a2f46f4a89167b12e1cf7134a907abff5edc44bfafb39e3a6b05219917c",
+        "selectedFamilyIdentityKey": "editorial-offset@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_a8d6b44ec3ef24c6fc56783c728d0c5bd657003fbc055b6574233b863a6836c2",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      },
+      {
+        "familyId": "campaign-modular",
+        "selectionCaseId": "test-a10b1-direct-campaign-modular",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_459_cb95dab31de302617bae6bd03bc1d4365e1c3b72fe87370509189dd484f706a4",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8194_890b78e3e8344049dd2574eeaa640b78546676ed24ed7a17cfe98b3fe92cbc54",
+        "selectedFamilyIdentityKey": "campaign-modular@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_a8d6b44ec3ef24c6fc56783c728d0c5bd657003fbc055b6574233b863a6836c2",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      },
+      {
+        "familyId": "product-first-commerce",
+        "selectionCaseId": "test-a10b1-direct-product-first-commerce",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_471_d48b684efe1d5c8849dfe624e7f216784fa30407fd2b4d75ea3e005cec163788",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8210_9a8fab12ac4acc5ceb8f693878758e59b2137bb058915da6d4ca8ddd29620903",
+        "selectedFamilyIdentityKey": "product-first-commerce@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1273_22f00a3868ae26beacfb735b43d95716339d4d55a57f4604ff45243816e521e5",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1489_f8e3b1ca7afeffea65abc5ade34182740f40d72ca696fee8561df152f04a0697",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      },
+      {
+        "familyId": "technical-comparison",
+        "selectionCaseId": "test-a10b1-direct-technical-comparison",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_467_3b3a2c5ce445a5ff90ab03150c4d43ae2d702eb20a160061f021305e8f59574b",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8206_a5e3ce94725c17434d312ab4d80e9e8c7db61b926fa4d0f646c9783263278663",
+        "selectedFamilyIdentityKey": "technical-comparison@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1273_22f00a3868ae26beacfb735b43d95716339d4d55a57f4604ff45243816e521e5",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1489_f8e3b1ca7afeffea65abc5ade34182740f40d72ca696fee8561df152f04a0697",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      },
+      {
+        "familyId": "warm-narrative",
+        "selectionCaseId": "test-a10b1-direct-warm-narrative",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_455_afe165c3f8cbb6dbf57df24aae397ae0215cc2e0d6a894d5d417739011cacad2",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8190_1a5e640468baee3679147706b46400b83f06f3a9a033b91ea6d85e5681bbc123",
+        "selectedFamilyIdentityKey": "warm-narrative@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_d32eede631e8b4280465117631ae55795a3c9eec79b10fecd31006c0c62001fe",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      },
+      {
+        "familyId": "restrained-gallery",
+        "selectionCaseId": "test-a10b1-direct-restrained-gallery",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_463_55be6f76e238d1c38d0ee93e36dae3114207f80ad78482b5167a1215315873fd",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8198_e787e4fbb737b6ffc319dcbcea077c467654c897850f5c965e8dc3bd46a373bf",
+        "selectedFamilyIdentityKey": "restrained-gallery@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_d32eede631e8b4280465117631ae55795a3c9eec79b10fecd31006c0c62001fe",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      }
+    ],
+    "localeEquivalent": [
+      {
+        "locale": "en",
+        "selectionCaseId": "test-a10b1-locale-equivalent-en",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_475_fdfee5699de0f8e1ff4124e6e5905b9a79c0cd3162e7a502bdbd2dce76a7297e",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8194_d3fec805ae38405eb74ec6bf7e6c5896c305c6c67b8a65dbf41d0a595487acbb",
+        "selectedFamilyIdentityKey": "campaign-modular@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_a8d6b44ec3ef24c6fc56783c728d0c5bd657003fbc055b6574233b863a6836c2",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      },
+      {
+        "locale": "fi",
+        "selectionCaseId": "test-a10b1-locale-equivalent-fi",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_475_52f26abca52a8b6c42fd08e42eb28296ed74966021ecfaf60d2e222fe62fb05a",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8194_d20013682ee2601a8e39e44cd0b36d40b9a3c6adfa5eda8e81c1458937fc1ebd",
+        "selectedFamilyIdentityKey": "campaign-modular@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_a8d6b44ec3ef24c6fc56783c728d0c5bd657003fbc055b6574233b863a6836c2",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ]
+      }
+    ],
+    "mixedFallback": {
+      "selectionCaseId": "test-a10b1-mixed-positive-path",
+      "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_455_8454ef816cb3c186a94d37fd95ac101c88fb68b84371359de39d10ad96106442",
+      "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8336_c3a0fef0423e68c69391f7a4ae17a46b067e5e9d15ebcca450667e40ad97c6ab",
+      "selectedFamilyIdentityKey": "editorial-offset@1.0.0",
+      "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+      "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1489_bef49ffb7bff1d9a8d862773eeabdada1f03161695699266ca1ec2f7b667b648",
+      "selectedPageCandidateIdentityKeys": [
+        "test-a10b1-home-primary@1.0.0",
+        "test-a10b1-collection-primary@1.0.0",
+        "test-a10b1-search-primary@1.0.0",
+        "test-a10b1-product-detail-terminal@1.0.0",
+        "test-a10b1-content-support-primary@1.0.0",
+        "test-a10b1-utility-primary@1.0.0"
+      ],
+      "resolutionModeCounts": {
+        "direct": 4,
+        "substitution": 1,
+        "omission": 1
+      },
+      "productDetailSubstitutionPath": [
+        "test-a10b1-product-detail-intermediate@1.0.0",
+        "test-a10b1-product-detail-terminal@1.0.0"
+      ],
+      "productDetailTerminalCandidateIdentityKey": "test-a10b1-product-detail-terminal@1.0.0",
+      "contentSupportOmittedRegionIds": ["test-a10b1-brand-story-region"]
+    },
+    "sequentialDistinct": [
+      {
+        "selectionCaseId": "test-a10b1-sequential-1",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_553_f424512b23ceaf2a24294d2c44d28716fed253ca1dfd98512b66f6439c6757bf",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8190_a9681123b9dd466c49a49ed4d36d9a780e6aad9345e92ac32c5b4ce78be6f080",
+        "selectedFamilyIdentityKey": "warm-narrative@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_d32eede631e8b4280465117631ae55795a3c9eec79b10fecd31006c0c62001fe",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ],
+        "eligibleFamilyIds": [
+          "editorial-offset",
+          "campaign-modular",
+          "product-first-commerce",
+          "technical-comparison",
+          "warm-narrative",
+          "restrained-gallery"
+        ],
+        "excludedFamilyTopologyFingerprints": [],
+        "excludedCompleteStoreTopologyFingerprints": []
+      },
+      {
+        "selectionCaseId": "test-a10b1-sequential-2",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_799_8da47a1f234348433886a06e61581e8408e199dea30c39230177a3c81845f37e",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8194_5aa10d2da04a7daf3377e55a98a333557d76e9e4882af4e310647480aef7dae3",
+        "selectedFamilyIdentityKey": "campaign-modular@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1485_a8d6b44ec3ef24c6fc56783c728d0c5bd657003fbc055b6574233b863a6836c2",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ],
+        "eligibleFamilyIds": [
+          "editorial-offset",
+          "campaign-modular",
+          "product-first-commerce",
+          "technical-comparison",
+          "warm-narrative",
+          "restrained-gallery"
+        ],
+        "excludedFamilyTopologyFingerprints": [
+          "structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3"
+        ],
+        "excludedCompleteStoreTopologyFingerprints": [
+          "structural-storefront-selected-complete-topology-v1_1485_d32eede631e8b4280465117631ae55795a3c9eec79b10fecd31006c0c62001fe"
+        ]
+      },
+      {
+        "selectionCaseId": "test-a10b1-sequential-3",
+        "requestFingerprint": "structural-storefront-deterministic-selection-request-v1_1047_e849773f38c0189a63bd788ed97b237830f1176422388a0f3b2c57302c8b8f5b",
+        "selectionFingerprint": "structural-storefront-deterministic-selection-v1_8207_68461ceedc151dbf3f4f0775edf96ac2aca4c613300981b508f2023e9a2b4597",
+        "selectedFamilyIdentityKey": "technical-comparison@1.0.0",
+        "selectedFamilyTopologyFingerprint": "structural-storefront-family-normalized-topology-v1_1273_22f00a3868ae26beacfb735b43d95716339d4d55a57f4604ff45243816e521e5",
+        "selectedCompleteStoreTopologyFingerprint": "structural-storefront-selected-complete-topology-v1_1489_f8e3b1ca7afeffea65abc5ade34182740f40d72ca696fee8561df152f04a0697",
+        "selectedPageCandidateIdentityKeys": [
+          "test-a10b1-home-primary@1.0.0",
+          "test-a10b1-collection-primary@1.0.0",
+          "test-a10b1-search-primary@1.0.0",
+          "test-a10b1-product-detail-primary@1.0.0",
+          "test-a10b1-content-support-primary@1.0.0",
+          "test-a10b1-utility-primary@1.0.0"
+        ],
+        "eligibleFamilyIds": [
+          "editorial-offset",
+          "campaign-modular",
+          "product-first-commerce",
+          "technical-comparison",
+          "warm-narrative",
+          "restrained-gallery"
+        ],
+        "excludedFamilyTopologyFingerprints": [
+          "structural-storefront-family-normalized-topology-v1_1269_80b6f614c1e34537b08de980b8ddd60d464952ddc2eb1d9b0a416c40f3f6c28d",
+          "structural-storefront-family-normalized-topology-v1_1269_86d274d483dc74e1c45c92e5efc3b6dc05afd95b8442248539437d9fdaef52d3"
+        ],
+        "excludedCompleteStoreTopologyFingerprints": [
+          "structural-storefront-selected-complete-topology-v1_1485_a8d6b44ec3ef24c6fc56783c728d0c5bd657003fbc055b6574233b863a6836c2",
+          "structural-storefront-selected-complete-topology-v1_1485_d32eede631e8b4280465117631ae55795a3c9eec79b10fecd31006c0c62001fe"
+        ]
+      }
+    ]
+  },
+  "legacyCompatibilityEvidence": {
+    "legacyAliasCount": 3,
+    "historicalRepresentativeCount": 3,
+    "previewObservationExpectedCount": 36,
+    "previewObservationActualCount": 36,
+    "previewLocaleCount": 2,
+    "previewSurfaceCount": 6,
+    "previewRepositoryWriteCount": 0,
+    "previewSourceMutationCount": 0,
+    "directCompilationExpectedCount": 3,
+    "directCompilationActualCount": 3,
+    "preparationExpectedCount": 3,
+    "preparationActualCount": 3,
+    "isolatedConfirmationExpectedCount": 3,
+    "isolatedConfirmationActualCount": 3,
+    "publishedObservationExpectedCount": 36,
+    "publishedObservationActualCount": 36,
+    "previewPublishedParityExpectedCount": 36,
+    "previewPublishedParityActualCount": 36,
+    "migrationCurrentExpectedCount": 3,
+    "migrationCurrentActualCount": 3,
+    "externalPublicationCallCount": 0,
+    "providerCallCount": 0,
+    "veskoCallCount": 0,
+    "commerceMutationCount": 0,
+    "mediaMutationCount": 0,
+    "a09bBaselineFileSha256": "e14bd08a18e63848a24fab161d50875c188fb3a49b22ae63ec9930b27a8fed06",
+    "a09bBaselineMaterialSha256": "b224390ba16a850821155874dbaf1f9a740f55004684f9982531f80716ca013f",
+    "a09cBaselineFileSha256": "e1a2eb36eed615945b100797886be4a0d345b579e7b84eb8f4629aa124d03653",
+    "a09cBaselineMaterialSha256": "92b2f872d10cd9777758c7cd6572e9b3fb598f1aa00703cbdaaf9e196c1e5b30"
+  },
+  "productionInactivityEvidence": {
+    "assertions": [
+      {
+        "assertionId": "production-active-structural-families",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-capability-contexts",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-compatibility-evaluations",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-compatibility-profiles",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-page-blueprint-candidates",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-selectable-structural-families",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-selection-receipts",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-selection-requests",
+        "expectedCount": 0
+      },
+      {
+        "assertionId": "production-structural-family-candidates",
+        "expectedCount": 0
+      }
+    ],
+    "allProductionV2Count": 0,
+    "clientRuntimeLeakCount": 0,
+    "currentGenerationV2ConsumerCount": 0,
+    "providerCallCount": 0,
+    "veskoCallCount": 0,
+    "externalPublicationCallCount": 0,
+    "commerceMutationCount": 0,
+    "mediaMutationCount": 0
+  },
+  "baselineFingerprint": "p10b-19a-positive-cross-authority-integration-v1_23279_e195aad8126b74a9990d923a6ef08d82c637589919f362e8c5e90263092a002d"
+}

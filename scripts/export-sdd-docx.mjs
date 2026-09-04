@@ -320,8 +320,8 @@ try {
     title: "Veskify Software Design Document",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Verified baseline: 3 September 2026",
-      "P10B-19A-10A Retained Matrix Inventory and Frozen Baseline Lock",
+      "Verified baseline: 4 September 2026",
+      "P10B-19A-10B1 Positive Cross-Authority Integration Matrix",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],
