@@ -11,7 +11,7 @@ import { failureBaselineFingerprint, failureBaselinePath, failureCaseCatalogue, 
 
 // prettier-ignore
 const expectedFingerprint = "p10b-19a-fail-closed-cross-authority-matrix-v1_30308_ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307", expectedFixtureSha256 = "8708a2282749796c9d27d2dcd382384989c7738a5eb0b2f72f87c1ad73cb6a64";
-const checked = readFailureBaseline();
+const checked = parseFailureBaseline(JSON.parse(readFileSync(failureBaselinePath, "utf8")), false);
 // prettier-ignore
 const fingerprint = (value: unknown) => failureBaselineFingerprint(value as FailureBaseline), refingerprint = (value: unknown): FailureBaseline => ({ ...(value as FailureBaseline), baselineFingerprint: fingerprint(value) });
 
@@ -25,11 +25,12 @@ function expectDeepFrozen(value: unknown, seen = new WeakSet<object>()): void {
 describe("P10B-19A-10B2 failure baseline", () => {
   it("is byte-exact, deterministic and fresh-clone sufficient", async () => {
     const bytes = readFileSync(failureBaselinePath);
+    const recreated = readFailureBaseline();
     // prettier-ignore
-    expect(bytes.toString("utf8")).toBe(await format(JSON.stringify(checked, null, 2), { parser: "json" }));
+    expect(bytes.toString("utf8")).toBe(await format(JSON.stringify(recreated, null, 2), { parser: "json" }));
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(expectedFixtureSha256);
-    expect(checked.baselineFingerprint).toBe(expectedFingerprint);
-  });
+    expect(recreated.baselineFingerprint).toBe(expectedFingerprint);
+  }, 300_000);
 
   it("locks all cases, predecessors, zero activity and authorized corrections", () => {
     // prettier-ignore
@@ -66,5 +67,5 @@ describe("P10B-19A-10B2 failure baseline", () => {
     const reordered = { ...checked, failureCases: [...checked.failureCases].reverse() };
     // prettier-ignore
     expect(() => parseFailureBaseline(refingerprint(reordered))).toThrow(/incomplete or noncanonical/u);
-  }, 120_000);
+  });
 });

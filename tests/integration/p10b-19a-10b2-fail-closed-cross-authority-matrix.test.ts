@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { canonicalValueString } from "@/domain/storefront";
 // prettier-ignore
-import { createFailureMatrixObservations, failureCaseCatalogue } from "../helpers/p10b-19a-10b2-fail-closed-cross-authority-matrix";
+import { createFailureMatrixObservations, failureCaseCatalogue, failureExecutionRecorderDiagnostics } from "../helpers/p10b-19a-10b2-fail-closed-cross-authority-matrix";
 
 const observations = createFailureMatrixObservations();
 
@@ -31,6 +31,12 @@ describe("P10B-19A-10B2 fail-closed cross-authority matrix", () => {
     expect(observations.find(({ caseId }) => caseId.includes("invalid-substitution"))).toMatchObject({ errorCode: "stale-selection-authority" });
     // prettier-ignore
     expect(observations.find(({ caseId }) => caseId.includes("production-empty"))).toMatchObject({ corruptedAuthorityKind: "complete-selection-root-authority", errorCode: "no-eligible-family-candidates" });
+  });
+
+  it("records counterfactual downstream, activity and blocked egress", () => {
+    const diagnostics = failureExecutionRecorderDiagnostics();
+    // prettier-ignore
+    expect(diagnostics).toMatchObject({ failure: { didThrow: true, phaseEvents: [{ status: "entered", phaseId: "candidate-registry" }, { status: "failed", phaseId: "candidate-registry" }] }, success: { didThrow: false, downstreamCount: 6, partialOutputCount: 1, activity: { silentNormalizationCount: 1, repositoryWriteCount: 1, testOnlyPublicationConfirmationCount: 1, providerCallCount: 1, veskoCallCount: 1 } }, external: { didThrow: true, errorName: "UnexpectedExternalActivityError", downstreamCount: 0, activity: { externalPublicationCallCount: 1 } } });
   });
 
   it("preserves source authority with zero repair, fallback or external activity", () => {

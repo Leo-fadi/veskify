@@ -45,31 +45,22 @@ const taskBase = "29f03e3e1c00c33e07cae93872877b604342f6dc" as const;
 const phases = ["page-blueprint-contract", "candidate-registry", "normalized-topology", "compatibility-evaluation", "deterministic-selection", "legacy-v1-alias", "legacy-v1-historical-read", "legacy-v1-publication-replay"] as const;
 // prettier-ignore
 const corruptionClasses = ["schema", "identity", "reference", "cycle", "stale-fingerprint", "compatibility", "selection-capacity", "authority-confusion"] as const;
+// prettier-ignore
+const activityIds = ["automaticRepairCount", "silentNormalizationCount", "fallbackToV1Count", "fallbackToV2Count", "defaultCandidateCount", "partialReceiptCount", "partialPublicationResultCount", "repositoryWriteCount", "snapshotMutationCount", "catalogueMutationCount", "commerceMutationCount", "mediaMutationCount", "testOnlyPublicationConfirmationCount", "externalPublicationCallCount", "providerCallCount", "veskoCallCount"] as const;
+// prettier-ignore
 type PhaseId = (typeof phases)[number];
 type CorruptionClass = (typeof corruptionClasses)[number];
+type ActivityId = (typeof activityIds)[number];
 type B1 = PositiveCrossAuthorityIntegrationAuthority;
 type IssueProjection = Readonly<{ code: string; path: readonly (string | number)[] }>;
-type ExpectedFailure =
-  | Readonly<{ kind: "typed-error"; name: string; code: string | null }>
-  | Readonly<{ kind: "zod-issues"; issues: readonly IssueProjection[] }>;
-
-const typed = (name: string, code: string | null): ExpectedFailure => ({
-  kind: "typed-error",
-  name,
-  code,
-});
-const issues = (...entries: readonly (readonly [string, readonly (string | number)[]])[]) =>
-  ({
-    kind: "zod-issues",
-    issues: entries.map(([code, issuePath]) => ({ code, path: issuePath })),
-  }) as const satisfies ExpectedFailure;
-const caseSpec = (
-  caseId: string,
-  ownerTaskId: string,
-  expectedTerminalPhaseId: PhaseId,
-  corruptionClass: CorruptionClass,
-  failure: ExpectedFailure,
-) => ({ caseId, ownerTaskId, expectedTerminalPhaseId, corruptionClass, failure });
+// prettier-ignore
+type ExpectedFailure = Readonly<{ kind: "typed-error"; name: string; code: string | null }> | Readonly<{ kind: "zod-issues"; issues: readonly IssueProjection[] }>;
+// prettier-ignore
+const typed = (name: string, code: string | null): ExpectedFailure => ({ kind: "typed-error", name, code });
+// prettier-ignore
+const issues = (...entries: readonly (readonly [string, readonly (string | number)[]])[]) => ({ kind: "zod-issues", issues: entries.map(([code, issuePath]) => ({ code, path: issuePath })) }) as const satisfies ExpectedFailure;
+// prettier-ignore
+const caseSpec = (caseId: string, ownerTaskId: string, expectedTerminalPhaseId: PhaseId, corruptionClass: CorruptionClass, failure: ExpectedFailure) => ({ caseId, ownerTaskId, expectedTerminalPhaseId, corruptionClass, failure });
 
 // prettier-ignore
 export const failureCaseCatalogue = Object.freeze([
@@ -204,33 +195,68 @@ function stateProjection(authority: B1, legacy: A09) {
   return { b1FixtureRoot: fingerprint(authority), candidateRegistry: fingerprint(authority.candidateRegistry), normalizedTopologyIndex: fingerprint(authority.normalizedTopologyIndex), capabilityContexts: fingerprint(authority.contexts), profileCatalogue: fingerprint(authority.compatibilityProfileCatalogue), compatibilityEvaluations: fingerprint(authority.evaluations), selectionRequestsAndReceipts: fingerprint(authority.selections), legacyAliases: fingerprint(aliases), a09bSourceSnapshots: fingerprint(snapshots), a09cSourceAggregates: fingerprint(aggregates) };
 }
 
+type ActivityProjection = Readonly<Record<ActivityId, number>>;
+type RecordActivity = (activityId: ActivityId) => void;
+type PhaseEvent = Readonly<{ status: "entered" | "completed" | "failed"; phaseId: PhaseId }>;
 // prettier-ignore
-type CorruptionPlan = Readonly<{ source: unknown; corruptedAuthorityKind: string; projection: unknown; invoke: () => unknown }>;
+const mutationActivityIds = ["snapshotMutationCount", "catalogueMutationCount", "commerceMutationCount", "mediaMutationCount"] as const;
 // prettier-ignore
-const corruptionPlan = (source: unknown, corruptedAuthorityKind: string, projection: unknown, invoke: () => unknown): CorruptionPlan => ({ source, corruptedAuthorityKind, projection, invoke });
+function mutationProjection(legacy: A09) {
+  const catalogues = representatives.map(([id]) => legacy[id].aggregate.catalogue);
+  const commerce = catalogues.map(({ id, products, collections }) => ({ id, products: products.map(({ images, ...product }) => { void images; return product; }), collections }));
+  return { snapshotMutationCount: fingerprint(representatives.map(([id]) => ({ snapshots: legacy[id].aggregate.snapshots, readSnapshot: legacy[id].historicalReadResult.snapshot }))), catalogueMutationCount: fingerprint(catalogues.map(({ id, products, collections }) => ({ id, productIds: products.map((product) => product.id), collections: collections.map(({ id: collectionId, productIds }) => ({ id: collectionId, productIds })) }))),
+    commerceMutationCount: fingerprint(commerce),
+    mediaMutationCount: fingerprint(catalogues.map(({ products }) => products.map(({ id, images }) => ({ id, images })))) };
+}
+// prettier-ignore
+type CorruptionPlan = Readonly<{ actualPhaseId: PhaseId; source: unknown; corruptedAuthorityKind: string; projection: unknown; invoke: (recordActivity: RecordActivity) => unknown }>;
+// prettier-ignore
+const corruptionPlan = (actualPhaseId: PhaseId, source: unknown, corruptedAuthorityKind: string, projection: unknown, invoke: CorruptionPlan["invoke"]): CorruptionPlan => ({ actualPhaseId, source, corruptedAuthorityKind, projection, invoke });
 
-function selectorInput(
-  authority: B1,
-  context: B1["contexts"][keyof B1["contexts"]],
-  evaluation: B1["evaluations"][keyof B1["evaluations"]],
-  selectionRequest: unknown,
-) {
-  // prettier-ignore
-  return { candidateRegistry: authority.candidateRegistry, normalizedTopologyIndex: authority.normalizedTopologyIndex, capabilityContext: context, compatibilityProfileCatalogue: authority.compatibilityProfileCatalogue, compatibilityEvaluation: evaluation, selectionRequest };
+// prettier-ignore
+function projectActivity(activityEvents: readonly ActivityId[]): ActivityProjection {
+  return Object.freeze(Object.fromEntries(activityIds.map((activityId) => [activityId, activityEvents.filter((event) => event === activityId).length]))) as ActivityProjection;
 }
 
-function recreatedRequest(
-  expectedEvaluationFingerprint: string,
-  source: { readonly requestFingerprint: string },
-  changes: Readonly<Record<string, unknown>>,
-) {
-  const { requestFingerprint: _requestFingerprint, ...material } = source;
-  void _requestFingerprint;
-  return createStructuralStorefrontDeterministicSelectionRequest(expectedEvaluationFingerprint, {
-    ...material,
-    ...changes,
-  });
+// prettier-ignore
+function runPhase<Output>(events: PhaseEvent[], phaseId: PhaseId, action: () => Output): Output {
+  events.push({ status: "entered", phaseId });
+  try { const output = action(); events.push({ status: "completed", phaseId }); return output; }
+  catch (error) { events.push({ status: "failed", phaseId }); throw error; }
 }
+
+// prettier-ignore
+function executePlan(plan: CorruptionPlan) {
+  const phaseEvents: PhaseEvent[] = [], activityEvents: ActivityId[] = [];
+  const recordActivity: RecordActivity = (activityId) => void activityEvents.push(activityId);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () => { recordActivity("externalPublicationCallCount"); const error = new Error("A-10B2 blocked unexpected external activity."); error.name = "UnexpectedExternalActivityError"; throw error; };
+  let didThrow = false, caught: unknown, output: unknown;
+  try {
+    output = runPhase(phaseEvents, plan.actualPhaseId, () => plan.invoke(recordActivity));
+    if (output !== undefined && !["deterministic-selection", "legacy-v1-historical-read", "legacy-v1-publication-replay"].includes(plan.actualPhaseId)) recordActivity("silentNormalizationCount");
+    if (output !== undefined && plan.actualPhaseId === "deterministic-selection") recordActivity("partialReceiptCount");
+    if (output !== undefined && plan.actualPhaseId === "legacy-v1-publication-replay") recordActivity("partialPublicationResultCount");
+    for (const phaseId of phases.slice(phases.indexOf(plan.actualPhaseId) + 1)) runPhase(phaseEvents, phaseId, () => undefined);
+  } catch (error) { didThrow = true; caught = error; }
+  finally { globalThis.fetch = originalFetch; }
+  return { phaseEvents, activityEvents, didThrow, caught, output };
+}
+
+// prettier-ignore
+export function failureExecutionRecorderDiagnostics() {
+  const plan = (invoke: CorruptionPlan["invoke"]) => corruptionPlan("candidate-registry", null, "diagnostic", null, invoke);
+  const failure = executePlan(plan(() => { throw new Error("diagnostic"); }));
+  const success = executePlan(plan((record) => { record("repositoryWriteCount"); record("testOnlyPublicationConfirmationCount"); record("providerCallCount"); record("veskoCallCount"); return {}; }));
+  const external = executePlan(plan(() => globalThis.fetch("https://test.invalid/a10b2-guard")));
+  const downstream = (result: typeof failure) => result.phaseEvents.filter(({ status, phaseId }) => status === "entered" && phases.indexOf(phaseId) > phases.indexOf("candidate-registry")).length;
+  return { failure: { didThrow: failure.didThrow, phaseEvents: failure.phaseEvents }, success: { didThrow: success.didThrow, downstreamCount: downstream(success), partialOutputCount: success.output === undefined ? 0 : 1, activity: projectActivity(success.activityEvents) }, external: { didThrow: external.didThrow, errorName: external.caught instanceof Error ? external.caught.name : null, downstreamCount: downstream(external), activity: projectActivity(external.activityEvents) } };
+}
+
+// prettier-ignore
+const selectorInput = (authority: B1, context: B1["contexts"][keyof B1["contexts"]], evaluation: B1["evaluations"][keyof B1["evaluations"]], selectionRequest: unknown) => ({ candidateRegistry: authority.candidateRegistry, normalizedTopologyIndex: authority.normalizedTopologyIndex, capabilityContext: context, compatibilityProfileCatalogue: authority.compatibilityProfileCatalogue, compatibilityEvaluation: evaluation, selectionRequest });
+// prettier-ignore
+function recreatedRequest(expectedEvaluationFingerprint: string, source: { readonly requestFingerprint: string }, changes: Readonly<Record<string, unknown>>) { const { requestFingerprint: _requestFingerprint, ...material } = source; void _requestFingerprint; return createStructuralStorefrontDeterministicSelectionRequest(expectedEvaluationFingerprint, { ...material, ...changes }); }
 
 function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
   const candidate = home(authority);
@@ -248,7 +274,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         relationships: [...candidate.structural.relationships, relationship],
       };
       // prettier-ignore
-      return corruptionPlan(candidate.structural, "page-blueprint-v2-structural-contract", { addedRelationship: `${firstRegion.id}->anchors->unknown-region` }, () => canonicalizePageBlueprintV2StructuralContract(corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.structural, "page-blueprint-v2-structural-contract", { addedRelationship: `${firstRegion.id}->anchors->unknown-region` }, () => canonicalizePageBlueprintV2StructuralContract(corrupted));
     }
     case "a03-precedence-cycle": {
       // prettier-ignore
@@ -260,7 +286,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         ]),
       };
       // prettier-ignore
-      return corruptionPlan(candidate.structural, "page-blueprint-v2-structural-contract", projection, () => canonicalizePageBlueprintV2StructuralContract({ ...candidate.structural, relationships }));
+      return corruptionPlan("page-blueprint-contract", candidate.structural, "page-blueprint-v2-structural-contract", projection, () => canonicalizePageBlueprintV2StructuralContract({ ...candidate.structural, relationships }));
     }
     case "a04-unknown-region-requirement": {
       const requirements = candidate.assetRoleCompatibility.regionAssetRequirements.map(
@@ -272,7 +298,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         regionAssetRequirements: requirements,
       };
       // prettier-ignore
-      return corruptionPlan(candidate.assetRoleCompatibility, "page-blueprint-v2-asset-role-contract", { replacedRegionId: "test-a10b2-unknown-region" }, () => canonicalizePageBlueprintV2AssetRoleCompatibilityContract(candidate.structural, corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.assetRoleCompatibility, "page-blueprint-v2-asset-role-contract", { replacedRegionId: "test-a10b2-unknown-region" }, () => canonicalizePageBlueprintV2AssetRoleCompatibilityContract(candidate.structural, corrupted));
     }
     case "a04-required-role-zero-minimum": {
       const region = candidate.assetRoleCompatibility.regionAssetRequirements[0];
@@ -284,7 +310,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         regionAssetRequirements: requirements,
       };
       // prettier-ignore
-      return corruptionPlan(candidate.assetRoleCompatibility, "page-blueprint-v2-asset-role-contract", { field: "cardinality.minimum", replacement: 0 }, () => canonicalizePageBlueprintV2AssetRoleCompatibilityContract(candidate.structural, corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.assetRoleCompatibility, "page-blueprint-v2-asset-role-contract", { field: "cardinality.minimum", replacement: 0 }, () => canonicalizePageBlueprintV2AssetRoleCompatibilityContract(candidate.structural, corrupted));
     }
     case "a05-missing-breakpoint": {
       const breakpointRules = candidate.responsiveRules.breakpointRules.filter(
@@ -292,7 +318,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
       );
       const corrupted = { ...candidate.responsiveRules, breakpointRules };
       // prettier-ignore
-      return corruptionPlan(candidate.responsiveRules, "page-blueprint-v2-responsive-rule-contract", { removedBreakpoint: "wide" }, () => canonicalizePageBlueprintV2ResponsiveRuleContract(candidate.structural, corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.responsiveRules, "page-blueprint-v2-responsive-rule-contract", { removedBreakpoint: "wide" }, () => canonicalizePageBlueprintV2ResponsiveRuleContract(candidate.structural, corrupted));
     }
     case "a05-incompatible-relationship-transformation": {
       const relationshipKey = `${firstRegion.id}->precedes->${secondRegion.id}`;
@@ -301,7 +327,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
       const breakpointRules = [{ ...mobile, relationshipTransformations: [{ relationshipKey, transformation: "stack" }] }, ...remaining];
       const corrupted = { ...candidate.responsiveRules, breakpointRules };
       // prettier-ignore
-      return corruptionPlan(candidate.responsiveRules, "page-blueprint-v2-responsive-rule-contract", { relationshipKey, transformation: "stack" }, () => canonicalizePageBlueprintV2ResponsiveRuleContract(candidate.structural, corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.responsiveRules, "page-blueprint-v2-responsive-rule-contract", { relationshipKey, transformation: "stack" }, () => canonicalizePageBlueprintV2ResponsiveRuleContract(candidate.structural, corrupted));
     }
     case "a06-required-region-omit": {
       const [fallback, ...remaining] = candidate.omissionSubstitutionFallback.regionFallbackRules;
@@ -311,7 +337,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
       ];
       const corrupted = { ...candidate.omissionSubstitutionFallback, regionFallbackRules };
       // prettier-ignore
-      return corruptionPlan(candidate.omissionSubstitutionFallback, "page-blueprint-v2-fallback-contract", { regionId: fallback.regionId, terminalResolution: "omit-region" }, () => canonicalizePageBlueprintV2OmissionSubstitutionFallbackContract(candidate.structural, candidate.assetRoleCompatibility, candidate.responsiveRules, corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.omissionSubstitutionFallback, "page-blueprint-v2-fallback-contract", { regionId: fallback.regionId, terminalResolution: "omit-region" }, () => canonicalizePageBlueprintV2OmissionSubstitutionFallbackContract(candidate.structural, candidate.assetRoleCompatibility, candidate.responsiveRules, corrupted));
     }
     case "a06-source-blueprint-substitution-target": {
       const reference = {
@@ -323,7 +349,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         blueprintSubstitutionCandidates: [reference],
       };
       // prettier-ignore
-      return corruptionPlan(candidate.omissionSubstitutionFallback, "page-blueprint-v2-fallback-contract", { addedSubstitutionTarget: `${reference.blueprintId}@${reference.blueprintVersion}` }, () => canonicalizePageBlueprintV2OmissionSubstitutionFallbackContract(candidate.structural, candidate.assetRoleCompatibility, candidate.responsiveRules, corrupted));
+      return corruptionPlan("page-blueprint-contract", candidate.omissionSubstitutionFallback, "page-blueprint-v2-fallback-contract", { addedSubstitutionTarget: `${reference.blueprintId}@${reference.blueprintVersion}` }, () => canonicalizePageBlueprintV2OmissionSubstitutionFallbackContract(candidate.structural, candidate.assetRoleCompatibility, candidate.responsiveRules, corrupted));
     }
     case "a07-child-blueprint-identity-mismatch": {
       const corrupted = {
@@ -334,12 +360,12 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         },
       };
       // prettier-ignore
-      return corruptionPlan(candidate, "page-blueprint-v2-candidate-authority", { child: "assetRoleCompatibility", blueprintId: "test-a10b2-other-blueprint" }, () => parsePageBlueprintV2CandidateAuthority(corrupted));
+      return corruptionPlan("candidate-registry", candidate, "page-blueprint-v2-candidate-authority", { child: "assetRoleCompatibility", blueprintId: "test-a10b2-other-blueprint" }, () => parsePageBlueprintV2CandidateAuthority(corrupted));
     }
     case "a07-stale-page-candidate-fingerprint": {
       const replacement = staleFingerprint(candidate.candidateFingerprint);
       // prettier-ignore
-      return corruptionPlan(candidate, "page-blueprint-v2-candidate-authority", { field: "candidateFingerprint", replacementKind: "last-hex-toggle" }, () => parsePageBlueprintV2CandidateAuthority({ ...candidate, candidateFingerprint: replacement }));
+      return corruptionPlan("candidate-registry", candidate, "page-blueprint-v2-candidate-authority", { field: "candidateFingerprint", replacementKind: "last-hex-toggle" }, () => parsePageBlueprintV2CandidateAuthority({ ...candidate, candidateFingerprint: replacement }));
     }
     case "a07-unknown-family-blueprint-reference":
     case "a07-wrong-page-family-reference": {
@@ -361,7 +387,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         ),
       };
       // prettier-ignore
-      return corruptionPlan({ editorial, registry: authority.candidateRegistry }, "inactive-structural-family-candidate-registry", { homeBlueprintReference: `${reference.blueprintId}@${reference.blueprintVersion}` }, () => canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry(registry));
+      return corruptionPlan("candidate-registry", { editorial, registry: authority.candidateRegistry }, "inactive-structural-family-candidate-registry", { homeBlueprintReference: `${reference.blueprintId}@${reference.blueprintVersion}` }, () => canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry(registry));
     }
     case "a07-substitution-cycle": {
       const terminal = required(
@@ -390,28 +416,28 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         ),
       };
       // prettier-ignore
-      return corruptionPlan({ terminal, registry: authority.candidateRegistry }, "inactive-structural-family-candidate-registry", { cycleClosingReference: `${reference.blueprintId}@${reference.blueprintVersion}` }, () => canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry(registry));
+      return corruptionPlan("candidate-registry", { terminal, registry: authority.candidateRegistry }, "inactive-structural-family-candidate-registry", { cycleClosingReference: `${reference.blueprintId}@${reference.blueprintVersion}` }, () => canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry(registry));
     }
     case "a08a-stale-page-topology-fingerprint": {
       const topology = authority.normalizedTopologyIndex.pageBlueprintEntries[0].normalizedTopology;
       // prettier-ignore
-      return corruptionPlan({ topology, index: authority.normalizedTopologyIndex }, "page-blueprint-v2-normalized-topology", { field: "topologyFingerprint", replacementKind: "last-hex-toggle" }, () => parsePageBlueprintV2NormalizedTopology({ ...topology, topologyFingerprint: staleFingerprint(topology.topologyFingerprint) }));
+      return corruptionPlan("normalized-topology", { topology, index: authority.normalizedTopologyIndex }, "page-blueprint-v2-normalized-topology", { field: "topologyFingerprint", replacementKind: "last-hex-toggle" }, () => parsePageBlueprintV2NormalizedTopology({ ...topology, topologyFingerprint: staleFingerprint(topology.topologyFingerprint) }));
     }
     case "a08a-stale-family-topology-fingerprint": {
       const topology = authority.normalizedTopologyIndex.familyEntries[0].normalizedTopology;
       // prettier-ignore
-      return corruptionPlan({ topology, index: authority.normalizedTopologyIndex }, "structural-family-normalized-topology", { field: "topologyFingerprint", replacementKind: "last-hex-toggle" }, () => parseStructuralStorefrontFamilyNormalizedTopology({ ...topology, topologyFingerprint: staleFingerprint(topology.topologyFingerprint) }));
+      return corruptionPlan("normalized-topology", { topology, index: authority.normalizedTopologyIndex }, "structural-family-normalized-topology", { field: "topologyFingerprint", replacementKind: "last-hex-toggle" }, () => parseStructuralStorefrontFamilyNormalizedTopology({ ...topology, topologyFingerprint: staleFingerprint(topology.topologyFingerprint) }));
     }
     case "a08b-active-locale-not-available": {
       const context = authority.contexts.directEn;
       // prettier-ignore
-      return corruptionPlan({ context, registry: authority.candidateRegistry }, "structural-storefront-capability-context", { availableLocales: ["fi"], retainedActiveLocale: "en" }, () => parseStructuralStorefrontCapabilityContext(authority.candidateRegistry, { ...context, availableLocales: ["fi"] }));
+      return corruptionPlan("compatibility-evaluation", { context, registry: authority.candidateRegistry }, "structural-storefront-capability-context", { availableLocales: ["fi"], retainedActiveLocale: "en" }, () => parseStructuralStorefrontCapabilityContext(authority.candidateRegistry, { ...context, availableLocales: ["fi"] }));
     }
     case "a08b-missing-candidate-capacity-evidence": {
       const context = authority.contexts.directEn;
       const evidence = context.pageBlueprintAssetRoleCapacityEvidence.slice(1);
       // prettier-ignore
-      return corruptionPlan({ context, registry: authority.candidateRegistry }, "structural-storefront-capability-context", { removedCapacityEvidenceCount: 1 }, () => parseStructuralStorefrontCapabilityContext(authority.candidateRegistry, { ...context, pageBlueprintAssetRoleCapacityEvidence: evidence }));
+      return corruptionPlan("compatibility-evaluation", { context, registry: authority.candidateRegistry }, "structural-storefront-capability-context", { removedCapacityEvidenceCount: 1 }, () => parseStructuralStorefrontCapabilityContext(authority.candidateRegistry, { ...context, pageBlueprintAssetRoleCapacityEvidence: evidence }));
     }
     case "a08b-stale-candidate-evidence-fingerprint": {
       const context = authority.contexts.directEn;
@@ -423,7 +449,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         ...context.pageBlueprintAssetRoleCapacityEvidence.slice(1),
       ];
       // prettier-ignore
-      return corruptionPlan({ context, registry: authority.candidateRegistry }, "structural-storefront-capability-context", { field: "exactCandidateFingerprint", replacementKind: "other-candidate" }, () => parseStructuralStorefrontCapabilityContext(authority.candidateRegistry, { ...context, pageBlueprintAssetRoleCapacityEvidence: evidence }));
+      return corruptionPlan("compatibility-evaluation", { context, registry: authority.candidateRegistry }, "structural-storefront-capability-context", { field: "exactCandidateFingerprint", replacementKind: "other-candidate" }, () => parseStructuralStorefrontCapabilityContext(authority.candidateRegistry, { ...context, pageBlueprintAssetRoleCapacityEvidence: evidence }));
     }
     case "a08b-incomplete-condition-partition": {
       const editorialProfile = profile(authority, "editorial-offset");
@@ -436,17 +462,17 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
           : policy,
       );
       // prettier-ignore
-      return corruptionPlan({ profile: editorialProfile, catalogue: authority.compatibilityProfileCatalogue }, "structural-family-compatibility-profile", { dimension: "catalogue-cardinality", removedPartitionValue: "rich" }, () => parseStructuralStorefrontFamilyCompatibilityProfile(family(authority, "editorial-offset"), { ...editorialProfile, conditionPolicies }));
+      return corruptionPlan("compatibility-evaluation", { profile: editorialProfile, catalogue: authority.compatibilityProfileCatalogue }, "structural-family-compatibility-profile", { dimension: "catalogue-cardinality", removedPartitionValue: "rich" }, () => parseStructuralStorefrontFamilyCompatibilityProfile(family(authority, "editorial-offset"), { ...editorialProfile, conditionPolicies }));
     }
     case "a08b-profile-candidate-mismatch": {
       const editorialProfile = profile(authority, "editorial-offset");
       // prettier-ignore
-      return corruptionPlan({ profile: editorialProfile, candidate: family(authority, "campaign-modular") }, "structural-family-compatibility-profile-binding", { substitutedCandidateFamilyId: "campaign-modular" }, () => parseStructuralStorefrontFamilyCompatibilityProfile(family(authority, "campaign-modular"), editorialProfile));
+      return corruptionPlan("compatibility-evaluation", { profile: editorialProfile, candidate: family(authority, "campaign-modular") }, "structural-family-compatibility-profile-binding", { substitutedCandidateFamilyId: "campaign-modular" }, () => parseStructuralStorefrontFamilyCompatibilityProfile(family(authority, "campaign-modular"), editorialProfile));
     }
     case "a08b-stale-evaluation-fingerprint": {
       const evaluation = authority.evaluations.directEn;
       // prettier-ignore
-      return corruptionPlan({ evaluation, authority: directEvaluationAuthority }, "structural-candidate-compatibility-evaluation", { field: "evaluationFingerprint", replacementKind: "last-hex-toggle" }, () => parseStructuralStorefrontCandidateCompatibilityEvaluation(directEvaluationAuthority, { ...evaluation, evaluationFingerprint: staleFingerprint(evaluation.evaluationFingerprint) }));
+      return corruptionPlan("compatibility-evaluation", { evaluation, authority: directEvaluationAuthority }, "structural-candidate-compatibility-evaluation", { field: "evaluationFingerprint", replacementKind: "last-hex-toggle" }, () => parseStructuralStorefrontCandidateCompatibilityEvaluation(directEvaluationAuthority, { ...evaluation, evaluationFingerprint: staleFingerprint(evaluation.evaluationFingerprint) }));
     }
     case "a08c-stale-request-evaluation-binding": {
       const request = authority.selections.localeEquivalent[0].selectionRequest;
@@ -456,7 +482,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         directFiEvaluation: authority.evaluations.directFi,
       };
       // prettier-ignore
-      return corruptionPlan(source, "deterministic-selection-request-binding", { requestLocaleAuthority: "en", receivingLocaleAuthority: "fi" }, () => selectDeterministicStructuralStorefrontCandidate(selectorInput(authority, authority.contexts.directFi, authority.evaluations.directFi, request)));
+      return corruptionPlan("deterministic-selection", source, "deterministic-selection-request-binding", { requestLocaleAuthority: "en", receivingLocaleAuthority: "fi" }, () => selectDeterministicStructuralStorefrontCandidate(selectorInput(authority, authority.contexts.directFi, authority.evaluations.directFi, request)));
     }
     case "a08c-no-eligible-family-candidates": {
       const bundle = required(
@@ -471,7 +497,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         { excludedFamilyCandidateIdentityKeys: ["editorial-offset@1.0.0"] },
       );
       // prettier-ignore
-      return corruptionPlan({ request: bundle.selectionRequest, evaluation: authority.evaluations.directEn }, "deterministic-selection-request", { excludedFamilyCandidateIdentityKeys: ["editorial-offset@1.0.0"] }, () => selectDeterministicStructuralStorefrontCandidate(directSelector(selectionRequest)));
+      return corruptionPlan("deterministic-selection", { request: bundle.selectionRequest, evaluation: authority.evaluations.directEn }, "deterministic-selection-request", { excludedFamilyCandidateIdentityKeys: ["editorial-offset@1.0.0"] }, () => selectDeterministicStructuralStorefrontCandidate(directSelector(selectionRequest)));
     }
     case "a08c-no-compatible-family-candidates": {
       const editorial = family(authority, "editorial-offset");
@@ -514,7 +540,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         request: sourceRequest,
       };
       // prettier-ignore
-      return corruptionPlan(source, "structural-family-compatibility-profile", { dimension: "locale", supportedValues: ["fi"], incompatibleValues: ["en"] }, () => selectDeterministicStructuralStorefrontCandidate({ ...evaluationAuthority, compatibilityEvaluation, selectionRequest }));
+      return corruptionPlan("deterministic-selection", source, "structural-family-compatibility-profile", { dimension: "locale", supportedValues: ["fi"], incompatibleValues: ["en"] }, () => selectDeterministicStructuralStorefrontCandidate({ ...evaluationAuthority, compatibilityEvaluation, selectionRequest }));
     }
     case "a08c-invalid-substitution-resolution": {
       const evaluation = authority.evaluations.mixedEn;
@@ -531,7 +557,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         compatibleSubstitutionCandidateIdentityKeys: [],
       };
       // prettier-ignore
-      return corruptionPlan({ evaluation, request: authority.selections.mixed.selectionRequest }, "candidate-compatibility-evaluation", projection, () => selectDeterministicStructuralStorefrontCandidate(selectorInput(authority, authority.contexts.mixedEn, corrupted, authority.selections.mixed.selectionRequest)));
+      return corruptionPlan("deterministic-selection", { evaluation, request: authority.selections.mixed.selectionRequest }, "candidate-compatibility-evaluation", projection, () => selectDeterministicStructuralStorefrontCandidate(selectorInput(authority, authority.contexts.mixedEn, corrupted, authority.selections.mixed.selectionRequest)));
     }
     case "a08c-insufficient-distinct-selection-capacity": {
       const sourceRequest = authority.selections.sequential[0].selectionRequest;
@@ -551,7 +577,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         ),
       };
       // prettier-ignore
-      return corruptionPlan(source, "deterministic-selection-request", { excludedCompleteStoreTopologyCount: excluded.length }, () => selectDeterministicStructuralStorefrontCandidate(directSelector(selectionRequest)));
+      return corruptionPlan("deterministic-selection", source, "deterministic-selection-request", { excludedCompleteStoreTopologyCount: excluded.length }, () => selectDeterministicStructuralStorefrontCandidate(directSelector(selectionRequest)));
     }
     case "a08c-stale-selection-receipt": {
       const bundle = authority.selections.mixed;
@@ -566,7 +592,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         selectionFingerprint: staleFingerprint(bundle.selectionReceipt.selectionFingerprint),
       };
       // prettier-ignore
-      return corruptionPlan({ receipt: bundle.selectionReceipt, authority: selectionAuthority }, "deterministic-selection-receipt", { field: "selectionFingerprint", replacementKind: "last-hex-toggle" }, () => parseStructuralStorefrontDeterministicSelectionReceipt(selectionAuthority, corrupted));
+      return corruptionPlan("deterministic-selection", { receipt: bundle.selectionReceipt, authority: selectionAuthority }, "deterministic-selection-receipt", { field: "selectionFingerprint", replacementKind: "last-hex-toggle" }, () => parseStructuralStorefrontDeterministicSelectionReceipt(selectionAuthority, corrupted));
     }
     case "a08c-production-empty-registry-fail-closed": {
       const candidateRegistry = inactiveStructuralStorefrontFamilyCandidateRegistry;
@@ -604,7 +630,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         recomputedDependentAuthorities: ["topology", "context", "evaluation", "request"],
       };
       // prettier-ignore
-      return corruptionPlan(source, "complete-selection-root-authority", projection, () => selectDeterministicStructuralStorefrontCandidate({ ...evaluationAuthority, compatibilityEvaluation, selectionRequest }));
+      return corruptionPlan("deterministic-selection", source, "complete-selection-root-authority", projection, () => selectDeterministicStructuralStorefrontCandidate({ ...evaluationAuthority, compatibilityEvaluation, selectionRequest }));
     }
     case "a09a-alias-direction-mismatch": {
       const source = {
@@ -612,12 +638,12 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         sourceSelection: legacy["premium-editorial"].replayReference.sourceSelection,
       };
       // prettier-ignore
-      return corruptionPlan(source, "legacy-v1-replay-alias-direction-binding", { aliasDirection: "premium-editorial", selectionDirection: "modern-technical" }, () => createLegacyV1StorefrontReplayReference({ aliasId: legacy["premium-editorial"].aliasId, sourceSelection: legacy["modern-technical"].replayReference.sourceSelection }));
+      return corruptionPlan("legacy-v1-alias", source, "legacy-v1-replay-alias-direction-binding", { aliasDirection: "premium-editorial", selectionDirection: "modern-technical" }, () => createLegacyV1StorefrontReplayReference({ aliasId: legacy["premium-editorial"].aliasId, sourceSelection: legacy["modern-technical"].replayReference.sourceSelection }));
     }
     case "a09a-stale-replay-reference": {
       const reference = legacy["minimal-commerce"].replayReference;
       // prettier-ignore
-      return corruptionPlan(reference, "legacy-v1-replay-reference", { field: "replayFingerprint", replacementKind: "last-hex-toggle" }, () => parseLegacyV1StorefrontReplayReference({ ...reference, replayFingerprint: staleFingerprint(reference.replayFingerprint) }));
+      return corruptionPlan("legacy-v1-alias", reference, "legacy-v1-replay-reference", { field: "replayFingerprint", replacementKind: "last-hex-toggle" }, () => parseLegacyV1StorefrontReplayReference({ ...reference, replayFingerprint: staleFingerprint(reference.replayFingerprint) }));
     }
     case "a09b-explicit-replay-persisted-authority-mismatch": {
       const fixture = legacy["premium-editorial"];
@@ -635,7 +661,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         replayFingerprint: fixture.replayReference.replayFingerprint,
       };
       // prettier-ignore
-      return corruptionPlan(source, "legacy-v1-explicit-replay-binding", { field: "sharedFrameProfileId", replacement: "editorial-masthead" }, () => readLegacyV1HistoricalSnapshot({ snapshot: fixture.historical, catalogue: fixture.aggregate.catalogue, replayReference }));
+      return corruptionPlan("legacy-v1-historical-read", source, "legacy-v1-explicit-replay-binding", { field: "sharedFrameProfileId", replacement: "editorial-masthead" }, () => readLegacyV1HistoricalSnapshot({ snapshot: fixture.historical, catalogue: fixture.aggregate.catalogue, replayReference }));
     }
     case "a09c-publication-source-snapshot-mismatch": {
       const fixture = legacy["premium-editorial"];
@@ -647,7 +673,7 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         currentEvidenceReferences: fixture.currentEvidenceReferences,
       };
       // prettier-ignore
-      return corruptionPlan(source, "legacy-v1-publication-source-snapshot", { field: "pages[0].title.en", changeKind: "content-fingerprint-mismatch" }, () => compileLegacyV1HistoricalPublicationReplay({ aggregate: fixture.aggregate, historicalReadResult: { ...fixture.historicalReadResult, snapshot }, currentEvidenceReferences: fixture.currentEvidenceReferences }));
+      return corruptionPlan("legacy-v1-publication-replay", source, "legacy-v1-publication-source-snapshot", { field: "pages[0].title.en", changeKind: "content-fingerprint-mismatch" }, () => compileLegacyV1HistoricalPublicationReplay({ aggregate: fixture.aggregate, historicalReadResult: { ...fixture.historicalReadResult, snapshot }, currentEvidenceReferences: fixture.currentEvidenceReferences }));
     }
     case "legacy-alias-as-v2-family-id": {
       const registry = {
@@ -657,105 +683,62 @@ function planFor(caseId: string, authority: B1, legacy: A09): CorruptionPlan {
         ),
       };
       // prettier-ignore
-      return corruptionPlan(authority.candidateRegistry, "legacy-v1-alias-in-v2-family-registry", { wrongAuthorityKind: "legacy-v1-alias", receivingField: "familyId" }, () => canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry(registry));
+      return corruptionPlan("candidate-registry", authority.candidateRegistry, "legacy-v1-alias-in-v2-family-registry", { wrongAuthorityKind: "legacy-v1-alias", receivingField: "familyId" }, () => canonicalizeInactiveStructuralStorefrontFamilyCandidateRegistry(registry));
     }
     case "v2-family-id-as-legacy-alias": {
       // prettier-ignore
-      return corruptionPlan(family(authority, "editorial-offset"), "v2-family-id-in-legacy-alias-resolver", { wrongAuthorityKind: "v2-family-id", value: "editorial-offset" }, () => resolveLegacyV1ReplayAlias("editorial-offset"));
+      return corruptionPlan("legacy-v1-alias", family(authority, "editorial-offset"), "v2-family-id-in-legacy-alias-resolver", { wrongAuthorityKind: "v2-family-id", value: "editorial-offset" }, () => resolveLegacyV1ReplayAlias("editorial-offset"));
     }
     case "legacy-replay-reference-as-v2-selection-request": {
       const reference = legacy["premium-editorial"].replayReference;
       // prettier-ignore
-      return corruptionPlan(reference, "legacy-v1-replay-reference-in-v2-selection-parser", { wrongAuthorityKind: "legacy-v1-replay-reference", receivingSchema: "v2-selection-request" }, () => parseStructuralStorefrontDeterministicSelectionRequest(authority.evaluations.directEn.evaluationFingerprint, reference));
+      return corruptionPlan("deterministic-selection", reference, "legacy-v1-replay-reference-in-v2-selection-parser", { wrongAuthorityKind: "legacy-v1-replay-reference", receivingSchema: "v2-selection-request" }, () => parseStructuralStorefrontDeterministicSelectionRequest(authority.evaluations.directEn.evaluationFingerprint, reference));
     }
     case "v2-selection-receipt-as-legacy-publication-replay-receipt": {
       const receipt = authority.selections.mixed.selectionReceipt;
       // prettier-ignore
-      return corruptionPlan(receipt, "v2-selection-receipt-in-legacy-publication-parser", { wrongAuthorityKind: "v2-selection-receipt", receivingSchema: "legacy-publication-replay-receipt" }, () => parseLegacyV1HistoricalPublicationReplayReceipt(receipt));
+      return corruptionPlan("legacy-v1-publication-replay", receipt, "v2-selection-receipt-in-legacy-publication-parser", { wrongAuthorityKind: "v2-selection-receipt", receivingSchema: "legacy-publication-replay-receipt" }, () => parseLegacyV1HistoricalPublicationReplayReceipt(receipt));
     }
     default:
       throw new Error(`Unknown A-10B2 failure case ${caseId}.`);
   }
 }
 
-// prettier-ignore
-const zeroActivity = Object.freeze({ automaticRepairCount: 0, silentNormalizationCount: 0, fallbackToV1Count: 0, fallbackToV2Count: 0, defaultCandidateCount: 0, partialReceiptCount: 0, partialPublicationResultCount: 0, repositoryWriteCount: 0, snapshotMutationCount: 0, catalogueMutationCount: 0, commerceMutationCount: 0, mediaMutationCount: 0, testOnlyPublicationConfirmationCount: 0, externalPublicationCallCount: 0, providerCallCount: 0, veskoCallCount: 0 });
-
 function compareIssue(left: IssueProjection, right: IssueProjection): number {
   return canonicalValueString(left).localeCompare(canonicalValueString(right), "en");
 }
 const sortedIssues = (value: readonly IssueProjection[]) => [...value].sort(compareIssue);
 
+// prettier-ignore
 function observeFailure(spec: (typeof failureCaseCatalogue)[number], authority: B1, legacy: A09) {
-  const before = stateProjection(authority, legacy);
-  const preStateFingerprint = fingerprint(before);
-  const plan = planFor(spec.caseId, authority, legacy);
-  const completedPhaseIds: PhaseId[] = [];
-  let caught: unknown;
-  let partialOutputCount = 0;
-  try {
-    const output = plan.invoke();
-    completedPhaseIds.push(spec.expectedTerminalPhaseId);
-    partialOutputCount = output === undefined ? 0 : 1;
-  } catch (error) {
-    caught = error;
-  }
-  if (caught === undefined) throw new Error(`${spec.caseId} did not fail closed.`);
+  const before = stateProjection(authority, legacy), mutationBefore = mutationProjection(legacy), preStateFingerprint = fingerprint(before);
+  const plan = planFor(spec.caseId, authority, legacy), execution = executePlan(plan), { caught } = execution;
+  if (!execution.didThrow) throw new Error(`${spec.caseId} did not fail closed.`);
 
-  let failureAuthorityKind: "typed-error" | "zod-issues";
-  let errorName: string;
-  let errorCode: string | null;
-  let issuePathFingerprint: string | null;
+  let failureAuthorityKind: "typed-error" | "zod-issues", errorName: string, errorCode: string | null, issuePathFingerprint: string | null;
   if (caught instanceof z.ZodError) {
-    const observed = sortedIssues(
-      caught.issues.map(({ code, path: issuePath }) => ({
-        code,
-        path: issuePath.filter(
-          (entry): entry is string | number =>
-            typeof entry === "string" || typeof entry === "number",
-        ),
-      })),
-    );
-    if (
-      spec.failure.kind !== "zod-issues" ||
-      canonicalValueString(observed) !== canonicalValueString(sortedIssues(spec.failure.issues))
-    ) {
-      throw new Error(`${spec.caseId} emitted unexpected Zod issue authority.`);
-    }
-    failureAuthorityKind = "zod-issues";
-    errorName = "ZodError";
-    errorCode = null;
-    issuePathFingerprint = fingerprint(observed);
+    const observed = sortedIssues(caught.issues.map(({ code, path: issuePath }) => ({ code, path: issuePath.filter((entry): entry is string | number => typeof entry === "string" || typeof entry === "number") })));
+    if (spec.failure.kind !== "zod-issues" || canonicalValueString(observed) !== canonicalValueString(sortedIssues(spec.failure.issues))) throw new Error(`${spec.caseId} emitted unexpected Zod issue authority.`);
+    failureAuthorityKind = "zod-issues"; errorName = "ZodError"; errorCode = null; issuePathFingerprint = fingerprint(observed);
   } else {
     if (!(caught instanceof Error)) throw new Error(`${spec.caseId} threw a non-Error value.`);
-    const code =
-      "code" in caught && typeof (caught as { readonly code?: unknown }).code === "string"
-        ? (caught as { readonly code: string }).code
-        : null;
-    if (
-      spec.failure.kind !== "typed-error" ||
-      caught.name !== spec.failure.name ||
-      code !== spec.failure.code
-    ) {
-      throw new Error(`${spec.caseId} emitted unexpected typed error authority.`);
-    }
-    failureAuthorityKind = "typed-error";
-    errorName = caught.name;
-    errorCode = code;
-    issuePathFingerprint = null;
+    const code = "code" in caught && typeof (caught as { readonly code?: unknown }).code === "string" ? (caught as { readonly code: string }).code : null;
+    if (spec.failure.kind !== "typed-error" || caught.name !== spec.failure.name || code !== spec.failure.code) throw new Error(`${spec.caseId} emitted unexpected typed error authority.`);
+    failureAuthorityKind = "typed-error"; errorName = caught.name; errorCode = code; issuePathFingerprint = null;
   }
 
-  const after = stateProjection(authority, legacy);
-  const postStateFingerprint = fingerprint(after);
-  const terminalIndex = phases.indexOf(spec.expectedTerminalPhaseId);
-  const downstreamCompletedPhaseCount = completedPhaseIds.filter(
-    (phase) => phases.indexOf(phase) > terminalIndex,
-  ).length;
+  const after = stateProjection(authority, legacy), mutationAfter = mutationProjection(legacy), postStateFingerprint = fingerprint(after);
+  const failedPhase = required(execution.phaseEvents.find(({ status }) => status === "failed"), "failed phase");
+  const observedTerminalPhaseId = failedPhase.phaseId, terminalIndex = phases.indexOf(observedTerminalPhaseId);
+  const completedPhaseIds = execution.phaseEvents.filter(({ status }) => status === "completed").map(({ phaseId }) => phaseId);
+  const downstreamCompletedPhaseCount = execution.phaseEvents.filter(({ status, phaseId }) => status === "entered" && phases.indexOf(phaseId) > terminalIndex).length;
+  const activityEvents = [...execution.activityEvents];
+  mutationActivityIds.forEach((activityId) => { if (mutationBefore[activityId] !== mutationAfter[activityId]) activityEvents.push(activityId); });
   const material = {
     caseId: spec.caseId,
     ownerTaskId: spec.ownerTaskId,
     expectedTerminalPhaseId: spec.expectedTerminalPhaseId,
-    observedTerminalPhaseId: spec.expectedTerminalPhaseId,
+    observedTerminalPhaseId,
     corruptionClass: spec.corruptionClass,
     failureAuthorityKind,
     errorName,
@@ -763,18 +746,15 @@ function observeFailure(spec: (typeof failureCaseCatalogue)[number], authority: 
     issuePathFingerprint,
     completedPhaseIds,
     downstreamCompletedPhaseCount,
-    partialOutputCount,
+    partialOutputCount: execution.output === undefined ? 0 : 1,
     preStateFingerprint,
     postStateFingerprint,
     sourceAuthorityFingerprint: fingerprint(plan.source),
     corruptedAuthorityKind: plan.corruptedAuthorityKind,
     corruptionProjectionFingerprint: fingerprint(plan.projection),
-    externalActivity: zeroActivity,
+    externalActivity: projectActivity(activityEvents),
   };
-  return Object.freeze({
-    ...material,
-    observationFingerprint: `p10b-19a-failure-observation-${fingerprint(material)}`,
-  });
+  return Object.freeze({ ...material, observationFingerprint: `p10b-19a-failure-observation-${fingerprint(material)}` });
 }
 
 export function createFailureMatrixObservations() {
@@ -796,9 +776,7 @@ const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
 const readonlyStrict = <Shape extends z.ZodRawShape>(shape: Shape) =>
   z.strictObject(shape).readonly();
 const phaseSchema = z.enum(phases);
-const activityShape = Object.fromEntries(
-  Object.keys(zeroActivity).map((key) => [key, z.literal(0)]),
-);
+const activityShape = Object.fromEntries(activityIds.map((key) => [key, z.literal(0)]));
 // prettier-ignore
 const productionV2AuthorityCountsSchema = readonlyStrict({ pageBlueprintCandidateCount: z.literal(0), structuralFamilyCandidateCount: z.literal(0), compatibilityProfileCount: z.literal(0), capabilityContextCount: z.literal(0), compatibilityEvaluationCount: z.literal(0), selectionRequestCount: z.literal(0), selectionReceiptCount: z.literal(0), activeStructuralFamilyCount: z.literal(0), selectableStructuralFamilyCount: z.literal(0) });
 // prettier-ignore
@@ -890,6 +868,8 @@ function aggregateEvidence(observations: readonly P10B19A10B2FailureObservationV
   const expectedOwners = new Map(
     failureCaseCatalogue.map(({ caseId, ownerTaskId }) => [caseId, ownerTaskId]),
   );
+  // prettier-ignore
+  const activity = Object.fromEntries(activityIds.map((id) => [id, observations.reduce((sum, entry) => sum + entry.externalActivity[id], 0)])) as ActivityProjection;
   return {
     totalCaseCount: observations.length,
     passedCaseCount: observations.filter(
@@ -913,12 +893,12 @@ function aggregateEvidence(observations: readonly P10B19A10B2FailureObservationV
     sourceMutationCount: observations.filter(
       (entry) => entry.preStateFingerprint !== entry.postStateFingerprint,
     ).length,
-    repositoryWriteCount: 0,
-    externalPublicationCount: 0,
-    providerCallCount: 0,
-    veskoCallCount: 0,
+    repositoryWriteCount: activity.repositoryWriteCount,
+    externalPublicationCount: activity.externalPublicationCallCount,
+    providerCallCount: activity.providerCallCount,
+    veskoCallCount: activity.veskoCallCount,
     productionFileChangeCount: 0,
-    noRepairOrFallbackCounts: zeroActivity,
+    noRepairOrFallbackCounts: activity,
     productionV2AuthorityCounts: {
       pageBlueprintCandidateCount: 0,
       structuralFamilyCandidateCount: 0,
@@ -965,6 +945,11 @@ export function parseFailureBaseline(value: unknown, verifyMaterial = true): Fai
   const parsed = failureBaselineSchema.parse(value);
   if (failureBaselineFingerprint(parsed) !== parsed.baselineFingerprint) {
     throw new Error("Fail-closed cross-authority baseline fingerprint is stale.");
+  }
+  if (
+    parsed.failureCases.some(({ caseId }, index) => caseId !== failureCaseCatalogue[index]?.caseId)
+  ) {
+    throw new Error("Fail-closed cross-authority baseline is incomplete or noncanonical.");
   }
   if (verifyMaterial) {
     const recreated = createFailureBaseline();
