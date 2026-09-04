@@ -321,7 +321,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 3 September 2026",
-      "P10B-19A-09C Publication Replay and P10B-19A-09 Closure Baseline",
+      "P10B-19A-10A Retained Matrix Inventory and Frozen Baseline Lock",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

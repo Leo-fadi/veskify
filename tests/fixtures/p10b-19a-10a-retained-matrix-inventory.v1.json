@@ -1,0 +1,641 @@
+{
+  "schemaVersion": "1.0.0",
+  "authorityKind": "p10b-19a-retained-matrix-inventory",
+  "baseCommit": "ffecc5be5d00630f90bf6bcbd17247773b38aeee",
+  "matrixEntries": [
+    {
+      "matrixId": "candidate-compatibility",
+      "ownerTaskId": "P10B-19A-08B",
+      "verificationClass": "compatibility",
+      "testFiles": [
+        "tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts",
+        "tests/unit/p10b-19a-08b-compatibility-contract.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-08b-compatibility-contract.test.ts tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts",
+      "expectedOutcomes": {
+        "compatibility-dimension-count": 5,
+        "compatibility-dispositions": "direct-substitution-omission-incompatible",
+        "production-compatibility-authority-count": 0
+      },
+      "protectedAuthorityIds": [
+        "a08b-candidate-compatibility-evaluation",
+        "a08b-structural-family-compatibility"
+      ]
+    },
+    {
+      "matrixId": "ci-discovery-integrity",
+      "ownerTaskId": "P10B-19A-10A",
+      "verificationClass": "boundary",
+      "testFiles": [
+        "tests/unit/devx-01f2-vitest-ci.test.ts",
+        "tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/devx-01f2-vitest-ci.test.ts tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts",
+      "expectedOutcomes": {
+        "inventoried-tests-discovered": true,
+        "shard-overlap-count": 0
+      },
+      "protectedAuthorityIds": []
+    },
+    {
+      "matrixId": "client-runtime-isolation",
+      "ownerTaskId": "P10B-19A-09A",
+      "verificationClass": "boundary",
+      "testFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+        "tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts",
+        "tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+        "tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts tests/unit/p10b-19a-08c-deterministic-selection.test.ts tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts",
+      "expectedOutcomes": {
+        "allowed-leaf-chain": "a09a-a09b-a09c",
+        "client-runtime-leaks": 0
+      },
+      "protectedAuthorityIds": [
+        "a09a-legacy-v1-replay-alias",
+        "a09b-legacy-v1-historical-read",
+        "a09c-legacy-v1-publication-replay"
+      ]
+    },
+    {
+      "matrixId": "cross-page-relationship-contract",
+      "ownerTaskId": "P10B-19A-02",
+      "verificationClass": "contract",
+      "testFiles": ["tests/unit/p10b-19a-02-cross-page-relationships.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-02-cross-page-relationships.test.ts",
+      "expectedOutcomes": {
+        "canonical-ordering": true,
+        "page-family-role-count": 6,
+        "relationship-kind-count": 7
+      },
+      "protectedAuthorityIds": ["a01-structural-family-identity", "a02-cross-page-relationships"]
+    },
+    {
+      "matrixId": "current-generation-isolation",
+      "ownerTaskId": "P10B-19A-08C",
+      "verificationClass": "boundary",
+      "testFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+        "tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts",
+        "tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+        "tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts tests/unit/p10b-19a-08c-deterministic-selection.test.ts tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts",
+      "expectedOutcomes": {
+        "current-generation-v2-consumers": 0
+      },
+      "protectedAuthorityIds": [
+        "a03-page-blueprint-version-dispatch",
+        "a07-structural-family-candidate-registry",
+        "a08c-deterministic-selection",
+        "retained-v1-synthesis-index"
+      ]
+    },
+    {
+      "matrixId": "deterministic-candidate-selection",
+      "ownerTaskId": "P10B-19A-08C",
+      "verificationClass": "deterministic-matrix",
+      "testFiles": [
+        "tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+        "tests/unit/p10b-19a-08c-selection-contract.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-08c-selection-contract.test.ts tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+      "expectedOutcomes": {
+        "combination-evaluation-maximum": 4096,
+        "empty-production-authority": "fail-closed",
+        "selection-precedence": "scoring-free"
+      },
+      "protectedAuthorityIds": ["a08c-deterministic-selection", "a08c-selection-contract"]
+    },
+    {
+      "matrixId": "exact-candidate-fingerprints",
+      "ownerTaskId": "P10B-19A-07",
+      "verificationClass": "contract",
+      "testFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+      "expectedOutcomes": {
+        "family-candidate-fingerprint": "exact-stale-checked",
+        "page-candidate-fingerprint": "exact-stale-checked"
+      },
+      "protectedAuthorityIds": [
+        "a03-page-blueprint-v2-structural",
+        "a04-page-blueprint-v2-asset-role",
+        "a05-page-blueprint-v2-responsive",
+        "a06-page-blueprint-v2-fallback",
+        "a07-page-blueprint-v2-candidate",
+        "a07-structural-family-candidate-registry"
+      ]
+    },
+    {
+      "matrixId": "inactive-candidate-registry",
+      "ownerTaskId": "P10B-19A-07",
+      "verificationClass": "inactivity",
+      "testFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+      "expectedOutcomes": {
+        "active-families": 0,
+        "production-family-candidates": 0,
+        "production-page-blueprint-candidates": 0,
+        "selectable-families": 0
+      },
+      "protectedAuthorityIds": [
+        "a07-page-blueprint-v2-candidate",
+        "a07-structural-family-candidate-registry"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-complete-commercial-matrix",
+      "ownerTaskId": "P10B-18C",
+      "verificationClass": "deterministic-matrix",
+      "testFiles": ["tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts",
+      "expectedOutcomes": {
+        "complete-cases": 126,
+        "consumed-authority-lineages": 98,
+        "deterministic-replays": 126,
+        "direction-label-free-topologies": 54,
+        "largest-repeated-cluster": 14,
+        "normalized-material-topologies": 54,
+        "repeated-clusters": 34,
+        "repeated-memberships": 106,
+        "singletons": 20,
+        "successful-compiles": 126
+      },
+      "protectedAuthorityIds": [
+        "retained-v1-compatible-direction-selections",
+        "retained-v1-coordinated-directions",
+        "retained-v1-direction-contract",
+        "retained-v1-direction-registry",
+        "retained-v1-synthesis-contract",
+        "retained-v1-synthesis-index",
+        "retained-v1-template-contract",
+        "retained-v1-template-materializer",
+        "retained-v1-template-profile-materializer",
+        "retained-v1-template-registry",
+        "retained-v1-template-resolver"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-frozen-72-regression",
+      "ownerTaskId": "P10B-18C",
+      "verificationClass": "frozen-regression",
+      "testFiles": ["tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts",
+      "expectedOutcomes": {
+        "frozen-case-set-fingerprint": "v1_4064_0be3cc37dfb3fe0e842f9a728df868a9ceb3914f5b2f974ddfb24f77ef281f66",
+        "frozen-cases": 72,
+        "frozen-largest-cluster": 7,
+        "frozen-normalized-topologies": 39,
+        "frozen-repeated-memberships": 53,
+        "frozen-singletons": 19
+      },
+      "protectedAuthorityIds": [
+        "retained-v1-page-family-baselines",
+        "retained-v1-template-profile-authority",
+        "retained-v1-template-selection-contract",
+        "retained-v1-template-selection-planner"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-historical-read",
+      "ownerTaskId": "P10B-19A-09B",
+      "verificationClass": "compatibility",
+      "testFiles": ["tests/unit/p10b-19a-09b-historical-v1-snapshot-replay.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-09b-historical-v1-snapshot-replay.test.ts",
+      "expectedOutcomes": {
+        "historical-representatives": 3,
+        "source-mutations": 0
+      },
+      "protectedAuthorityIds": [
+        "a09b-legacy-v1-historical-read",
+        "retained-canonical-storefront-snapshot-schema"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-preview-render-replay",
+      "ownerTaskId": "P10B-19A-09B",
+      "verificationClass": "integration",
+      "testFiles": ["tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx"],
+      "exactCommand": "pnpm exec vitest run tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx",
+      "expectedOutcomes": {
+        "locale-count": 2,
+        "preview-observations": 36,
+        "repository-writes": 0,
+        "source-mutations": 0,
+        "surface-count": 6
+      },
+      "protectedAuthorityIds": [
+        "a09b-legacy-v1-historical-read",
+        "retained-storefront-renderer-entry"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-protected-commerce-media",
+      "ownerTaskId": "P10B-18C",
+      "verificationClass": "boundary",
+      "testFiles": ["tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts",
+      "expectedOutcomes": {
+        "commerce-mutations": 0,
+        "external-publications": 0,
+        "media-mutations": 0,
+        "provider-calls": 0,
+        "vesko-calls": 0
+      },
+      "protectedAuthorityIds": [
+        "retained-canonical-storefront-content-fingerprint",
+        "retained-canonical-storefront-snapshot-schema",
+        "retained-storefront-renderer-entry"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-publication-replay",
+      "ownerTaskId": "P10B-19A-09C",
+      "verificationClass": "publication",
+      "testFiles": [
+        "tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+        "tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+      "expectedOutcomes": {
+        "direct-compilations": 3,
+        "external-calls": 0,
+        "isolated-confirmations": 3,
+        "migration-current": 3,
+        "preparations": 3
+      },
+      "protectedAuthorityIds": [
+        "a09c-legacy-v1-publication-replay",
+        "retained-compiled-publication-schema",
+        "retained-confirm-publish",
+        "retained-prepare-publish",
+        "retained-publish-compiler"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-published-render-replay",
+      "ownerTaskId": "P10B-19A-09C",
+      "verificationClass": "publication",
+      "testFiles": [
+        "tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+        "tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+      "expectedOutcomes": {
+        "active-publications": 3,
+        "published-observations": 36,
+        "version-additions": 3
+      },
+      "protectedAuthorityIds": [
+        "a09c-legacy-v1-publication-replay",
+        "retained-compiled-publication-schema",
+        "retained-publish-compiler",
+        "retained-storefront-renderer-entry"
+      ]
+    },
+    {
+      "matrixId": "legacy-v1-replay-alias",
+      "ownerTaskId": "P10B-19A-09A",
+      "verificationClass": "compatibility",
+      "testFiles": ["tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts",
+      "expectedOutcomes": {
+        "legacy-alias-count": 3,
+        "replay-reference-authority": "exact-stale-checked"
+      },
+      "protectedAuthorityIds": [
+        "a09a-legacy-v1-replay-alias",
+        "retained-v1-direction-registry",
+        "retained-v1-synthesis-contract"
+      ]
+    },
+    {
+      "matrixId": "normalized-topology",
+      "ownerTaskId": "P10B-19A-08A",
+      "verificationClass": "contract",
+      "testFiles": ["tests/unit/p10b-19a-08a-normalized-topology-identity.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-08a-normalized-topology-identity.test.ts",
+      "expectedOutcomes": {
+        "family-topology-identity": "deterministic",
+        "page-topology-identity": "deterministic",
+        "production-topology-index-count": 0
+      },
+      "protectedAuthorityIds": [
+        "a08a-family-normalized-topology",
+        "a08a-page-blueprint-normalized-topology"
+      ]
+    },
+    {
+      "matrixId": "page-blueprint-v2-asset-role-contract",
+      "ownerTaskId": "P10B-19A-04",
+      "verificationClass": "contract",
+      "testFiles": ["tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts",
+      "expectedOutcomes": {
+        "canonical-asset-role-count": 9,
+        "region-cardinality-authority": true
+      },
+      "protectedAuthorityIds": ["a04-canonical-asset-role", "a04-page-blueprint-v2-asset-role"]
+    },
+    {
+      "matrixId": "page-blueprint-v2-fallback-contract",
+      "ownerTaskId": "P10B-19A-06",
+      "verificationClass": "contract",
+      "testFiles": [
+        "tests/unit/p10b-19a-06-page-blueprint-v2-omission-substitution-fallback-contract.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-06-page-blueprint-v2-omission-substitution-fallback-contract.test.ts",
+      "expectedOutcomes": {
+        "deterministic-ordering": true,
+        "required-region-protection": true,
+        "substitution-candidate-maximum": 8
+      },
+      "protectedAuthorityIds": ["a06-page-blueprint-v2-fallback"]
+    },
+    {
+      "matrixId": "page-blueprint-v2-responsive-contract",
+      "ownerTaskId": "P10B-19A-05",
+      "verificationClass": "contract",
+      "testFiles": ["tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts",
+      "expectedOutcomes": {
+        "breakpoint-count": 4,
+        "breakpoint-viewports": "375-768-1024-1440",
+        "complete-rule-coverage": true
+      },
+      "protectedAuthorityIds": [
+        "a05-page-blueprint-v2-responsive",
+        "retained-responsive-execution",
+        "retained-responsive-image-authority"
+      ]
+    },
+    {
+      "matrixId": "page-blueprint-v2-structural-contract",
+      "ownerTaskId": "P10B-19A-03",
+      "verificationClass": "contract",
+      "testFiles": ["tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts",
+      "expectedOutcomes": {
+        "explicit-v1-v2-dispatch": true,
+        "minimum-policy-count": 6,
+        "production-v2-record-count": 0
+      },
+      "protectedAuthorityIds": [
+        "a03-a08-storefront-template-index",
+        "a03-page-blueprint-v2-structural",
+        "a03-page-blueprint-version-dispatch"
+      ]
+    },
+    {
+      "matrixId": "preview-published-structural-parity",
+      "ownerTaskId": "P10B-19A-09C",
+      "verificationClass": "compatibility",
+      "testFiles": [
+        "tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+        "tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+      "expectedOutcomes": {
+        "parity-mismatches": 0,
+        "parity-observations": 36
+      },
+      "protectedAuthorityIds": [
+        "a09b-legacy-v1-historical-read",
+        "a09c-legacy-v1-publication-replay",
+        "retained-storefront-renderer-entry"
+      ]
+    },
+    {
+      "matrixId": "production-v2-inactivity",
+      "ownerTaskId": "P10B-19A-08C",
+      "verificationClass": "inactivity",
+      "testFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+        "tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts",
+        "tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+        "tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts"
+      ],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts tests/unit/p10b-19a-08c-deterministic-selection.test.ts tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts",
+      "expectedOutcomes": {
+        "all-production-v2-counts": 0
+      },
+      "protectedAuthorityIds": [
+        "a07-structural-family-candidate-registry",
+        "a08b-candidate-compatibility-evaluation",
+        "a08c-deterministic-selection"
+      ]
+    },
+    {
+      "matrixId": "structural-family-identity-lifecycle",
+      "ownerTaskId": "P10B-19A-01",
+      "verificationClass": "contract",
+      "testFiles": ["tests/unit/p10b-19a-01-structural-storefront-family.test.ts"],
+      "exactCommand": "pnpm exec vitest run tests/unit/p10b-19a-01-structural-storefront-family.test.ts",
+      "expectedOutcomes": {
+        "family-id-count": 6,
+        "lifecycle-state-count": 3,
+        "production-family-record-count": 0
+      },
+      "protectedAuthorityIds": [
+        "a01-structural-family-identity",
+        "a01-structural-family-index",
+        "a01-structural-family-lifecycle"
+      ]
+    }
+  ],
+  "protectedProductionAuthorities": [
+    "retained-accepted-snapshot-file-system-repository|P10B-19A-07|src/application/accepted-snapshot-publishing/file-system-repository.server.ts|8dd2af5ea41bfcb03f5c581164077d913fa14dc5245890605b3b523cd5baf782",
+    "retained-accepted-snapshot-index-server|P10B-19A-07|src/application/accepted-snapshot-publishing/index.server.ts|5d5c4427b54381e5d053fd1d58a75368cc28441d00b29428937d54a6e60fff4f",
+    "retained-accepted-snapshot-index|P10B-19A-07|src/application/accepted-snapshot-publishing/index.ts|1ef5b1c16ad72188eb9c16f1a66360233f6d7cd79e963c654f3fefcb6efef4a3",
+    "retained-accepted-snapshot-receipt|P10B-19A-07|src/application/accepted-snapshot-publishing/receipt.ts|bc5528f1eb09f1ed28a3d258ae7e5575f4ac8820a391d3f55bdcb63f4146d9b6",
+    "retained-accepted-snapshot-repository|P10B-19A-07|src/application/accepted-snapshot-publishing/repository.ts|3fa07c78fe29edc08f71c1dc16dce0e98d427d75d697eb9bd66b631a1d1cb630",
+    "retained-accepted-snapshot-service|P10B-19A-07|src/application/accepted-snapshot-publishing/service.server.ts|8855314efa158560ebcf0ff2d886055b39105c6de8dad76e404344929f11f6c2",
+    "retained-v1-compatible-direction-selections|P10B-19A-07|src/application/bounded-storefront-synthesis/compatible-direction-selections.ts|ff2af5f1cee5458e633e476cfc8bf2ffbbeb3e8ed6b451cb46f9219614db96dc",
+    "retained-v1-synthesis-contract|P10B-19A-07|src/application/bounded-storefront-synthesis/contract.ts|39dc68a8484c6c9ce70dfb271ed5c25261dba31aa0b2801741bf439bb1d71784",
+    "retained-v1-coordinated-directions|P10B-19A-07|src/application/bounded-storefront-synthesis/coordinated-directions.ts|0c80158f6f3da5a07525b32c6057f2a66551b256d83f50c7635d25f7064183cc",
+    "retained-v1-direction-contract|P10B-19A-07|src/application/bounded-storefront-synthesis/direction-contract.ts|f62ab54f221d084a0f593d2a090feca7ba9ddce4f9d23dcf8688960f4d8d1b28",
+    "retained-v1-direction-registry|P10B-19A-07|src/application/bounded-storefront-synthesis/direction-registry.ts|89bc33413448fadb73a56385c4e9cd1b12ca6b23e1022eb0e5cbf4e6c0605ca1",
+    "retained-v1-synthesis-index|P10B-19A-07|src/application/bounded-storefront-synthesis/index.ts|7fa861f5e07721d36ab85220d2ec4ebe84717d8f3b73b94ba4a599cf86f937a8",
+    "a09b-legacy-v1-historical-read|P10B-19A-09B|src/application/bounded-storefront-synthesis/legacy-v1-historical-snapshot-replay.ts|0a8f5d929abf07b639549862f5caec49b2594e06d844b6e1f3fae2825dcb9f63",
+    "a09a-legacy-v1-replay-alias|P10B-19A-09A|src/application/bounded-storefront-synthesis/legacy-v1-replay-authority.ts|8f7291a7ec5bfeb7afc86686321a1cbbc8b103de7b9624dd4c57820a1fe69495",
+    "retained-commercial-shared-frame-implementation|P10B-19A-05|src/application/commercial-shared-frame/commercial-shared-frame.ts|2602ba6ceffe9d7c171319feb4d478b7af69121bab95c65b7d66013a6846353b",
+    "retained-commercial-shared-frame-index|P10B-19A-05|src/application/commercial-shared-frame/index.ts|d8f1e7c5162979a5bffb194c004179f2f50fa226070d887f1cdf315eac3bff13",
+    "retained-semantic-compatibility-resolution|P10B-19A-07|src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts|0defde83c5531069f5c1091c5918220b702e1869469f0000822deec70e7530bb",
+    "retained-authoritative-merchant-publish|P10B-19A-07|src/application/publishing/authoritative-merchant-publish.server.ts|8dab1131af45607ab0a9578b0463626fc28f0e970a1e7430db006ccd42c51f0b",
+    "retained-publish-change-summary|P10B-19A-07|src/application/publishing/change-summary.ts|95c609805f2a4eee9dc060469404f48928a595064531000557143631461c2003",
+    "retained-confirm-publish|P10B-19A-07|src/application/publishing/confirm-publish.ts|79fa51d9284dcb0c6772d52fc97fb97b1662398c546c087eafc8f89347afdd3c",
+    "retained-publish-contract|P10B-19A-07|src/application/publishing/contract.ts|0091c64e1a1b355673dc2b81f0e72f661fbef988827d24e3295fb33c6c2285d9",
+    "retained-publish-index|P10B-19A-07|src/application/publishing/index.ts|dcd7533bf99d30e38cc0c28ccca85634f16b652a31a275ce5c708a15bbabcd4a",
+    "a09c-legacy-v1-publication-replay|P10B-19A-09C|src/application/publishing/legacy-v1-publication-replay.ts|edded94d2148da2a81b2d5d42cd72c44949871bda2a1513b3f1aa14304de99a8",
+    "retained-prepare-publish|P10B-19A-07|src/application/publishing/prepare-publish.ts|d8003e6108f3e54dccc9b2c3afb0ec5a61cca9fb2b962d89fe4a87a9b69f799b",
+    "retained-publish-compiler|P10B-19A-07|src/application/publishing/publish-compiler.ts|69d26b55dc9656095ae3e56c15a15a05f3e27a819109b0570f4dcb1970c57460",
+    "retained-responsive-image-authority-index|P10B-19A-05|src/application/responsive-image-authority/index.ts|eafd46bf82102c7ac6fabf3d76d385e078d70cc3e0352d82e2a1f92b5ac68e67",
+    "retained-responsive-image-authority|P10B-19A-05|src/application/responsive-image-authority/responsive-image-authority.ts|aabc867314f59b52d0a2580c69e4227bcab1e2cac51997a582bb04adbe2c80a5",
+    "retained-storefront-draft-persistence-adapter|P10B-19A-07|src/application/storefront-draft-persistence/adapter.ts|1bed1de8f7d37de37644c04f58a6d42d8e47e195dee1cc26ddff2f7263e821f9",
+    "retained-storefront-draft-persistence-index|P10B-19A-07|src/application/storefront-draft-persistence/index.ts|8903e7630991436bb349a47a4a3c727a31b28fe0223e5589c5436489367e15b4",
+    "retained-v1-commerce-utility-materializer|P10B-19A-07|src/application/storefront-templates/commerce-utility-materializer.ts|edcb0c1f9d0e11b2baa27d75118cb89fc342d3e4f82ea4611c990c3b2a54ac2a",
+    "retained-v1-commercial-collection-search-profiles|P10B-19A-07|src/application/storefront-templates/commercial-collection-search-profiles.ts|6c51118058047b3e034ecd90f638cab93d420f5cac79eddf5dac3428f9e513ec",
+    "retained-v1-commercial-content-support-profiles|P10B-19A-07|src/application/storefront-templates/commercial-content-support-profiles.ts|c51a741e49cfe3c2be14736f9424a74bc53cef084a52ed84f6c687ccf8d7f3c2",
+    "retained-v1-commercial-homepage-profiles|P10B-19A-07|src/application/storefront-templates/commercial-homepage-profiles.ts|402a4fba1f21895f2ddaba7a607badf60078dd0a61bf606806d53a563b73341f",
+    "retained-v1-commercial-pdp-profiles|P10B-19A-07|src/application/storefront-templates/commercial-pdp-profiles.ts|ec359b9dbf06ce1abdaa280a8c307c08f71a7fc13feb45c11491416647ad4917",
+    "retained-v1-commercial-utility-profiles|P10B-19A-07|src/application/storefront-templates/commercial-utility-profiles.ts|cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0",
+    "retained-v1-template-contract|P10B-19A-07|src/application/storefront-templates/contract.ts|399bca1b66120f3f4ad50d53700c5207f450e7e701821492efa4386a01970b0a",
+    "retained-v1-design-vocabulary-validation|P10B-19A-07|src/application/storefront-templates/design-vocabulary-validation.ts|4909a3ab3a96bbecc11192fbaa97b250f87ac829efadd5e483e70daa5c5c89ad",
+    "a03-a08-storefront-template-index|P10B-19A-08C|src/application/storefront-templates/index.ts|67c36fc83ed35ac26adb1578cc69997877290c865fc455343a54928cb0d8f9a4",
+    "retained-v1-template-materializer-contract|P10B-19A-07|src/application/storefront-templates/materializer-contract.ts|5d1b5b3788fb8b369914814985261d76c2fdfbca370d90c232f0340afe7a7320",
+    "retained-v1-template-materializer|P10B-19A-07|src/application/storefront-templates/materializer.ts|56b5906ae840a9e3abbe09950aefb615d3a75f7bebc334a39343b9e8a29ba385",
+    "a04-page-blueprint-v2-asset-role|P10B-19A-04|src/application/storefront-templates/page-blueprint-v2-asset-role-contract.ts|253ea3e99e3c4728bef0df0fc5c452f817c56affecb6f10fe73bafec462dd68d",
+    "a07-page-blueprint-v2-candidate|P10B-19A-07|src/application/storefront-templates/page-blueprint-v2-candidate-authority.ts|954214c8abfcc9358ea2ba6d76e446c6e4137768e8eef21e8364898707b458a8",
+    "a03-page-blueprint-v2-structural|P10B-19A-03|src/application/storefront-templates/page-blueprint-v2-contract.ts|4a050629af7b792e59b54c229891020cde65fffc793ae88c9049b2a3e143da69",
+    "a08a-page-blueprint-normalized-topology|P10B-19A-08A|src/application/storefront-templates/page-blueprint-v2-normalized-topology.ts|1134ea892f346690457806d1a21f9b8430b71e729d29ad92ab525d54a5f8e588",
+    "a06-page-blueprint-v2-fallback|P10B-19A-06|src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts|607b5fa0160d0915fb457301b6a0031194151a5ccaa32d0e7fa7876372f9e91a",
+    "a05-page-blueprint-v2-responsive|P10B-19A-05|src/application/storefront-templates/page-blueprint-v2-responsive-rule-contract.ts|c2799603ff03b735cc5171156494e8031a346d3fe99172b38c4c72ea7acfd337",
+    "a03-page-blueprint-version-dispatch|P10B-19A-03|src/application/storefront-templates/page-blueprint-version-dispatch.ts|56a72d7dc001249b64b355991cdf04cc441149a6c7d0e248d64993d29afc9331",
+    "retained-v1-page-family-baselines|P10B-19A-07|src/application/storefront-templates/page-family-baselines.ts|fa46c79c3d0e9af34172c3797b4a256292bdc994f250b36c343278037c8d9a0a",
+    "retained-v1-template-profile-authority|P10B-19A-07|src/application/storefront-templates/profile-authority.ts|7e26f7ba7c13f9fc21ce7b28aaf3d4de6a090371af70a393fc6440005ef494b3",
+    "retained-v1-template-profile-materializer|P10B-19A-07|src/application/storefront-templates/profile-materializer.ts|908b67c9801dde9cc3971cbc4dd65789993c4dc96178a9fcd6450e99695c6701",
+    "retained-v1-template-registry|P10B-19A-07|src/application/storefront-templates/registry.ts|b2291d651452b30969fbe752c50e33874c950e1ab414da3d202b246cc708bca2",
+    "retained-v1-template-resolver|P10B-19A-07|src/application/storefront-templates/resolver.ts|bf34c4af3715071d87cfbf2122abfa6187170a8da56386523249bc47fdfa6a4a",
+    "retained-v1-template-selection-contract|P10B-19A-07|src/application/storefront-templates/selection-contract.ts|a9a8752770deb1f80191682633916947445cc8a73f2eaaf7f82d9968b8fb898d",
+    "retained-v1-template-selection-planner|P10B-19A-07|src/application/storefront-templates/selection-planner.ts|a4603dfde4e08628894c5faa5c567dbf35283fa6a4a911628a9e4a7e7f8f78ca",
+    "a08b-candidate-compatibility-evaluation|P10B-19A-08B|src/application/storefront-templates/structural-storefront-candidate-compatibility-evaluation.ts|96b6f1bc989fa69c1bb1a3de2ec80a38979867b83ea7ace06135da7aa26c36af",
+    "a08b-structural-family-compatibility|P10B-19A-08B|src/application/storefront-templates/structural-storefront-compatibility-contract.ts|c7da0b5d8b941dc3c4ca5890aa0ea3ca984a2b5440b03da61e6c79a5cf69c6fd",
+    "a08c-deterministic-selection|P10B-19A-08C|src/application/storefront-templates/structural-storefront-deterministic-selection.ts|ed01b9c7e1e6b8e978f0d8115626567765622ff26f9f68f1b9b68452fcfbac0c",
+    "a07-structural-family-candidate-registry|P10B-19A-07|src/application/storefront-templates/structural-storefront-family-candidate-registry.ts|87793c1c280a006f3c9c06fe8573c3dd2a5be06d07773911a4c8dbb35b64e8e0",
+    "a08a-family-normalized-topology|P10B-19A-08A|src/application/storefront-templates/structural-storefront-family-normalized-topology.ts|931050723ddd5674226de3a05ffe3d008b5a26b757b63ee6f6a10a6e874a82a3",
+    "a08c-selection-contract|P10B-19A-08C|src/application/storefront-templates/structural-storefront-selection-contract.ts|fd298cd0f4a39eaa2e2dd1675e0b5a5dd597fc1776c4aad3dccdc1453c2ee81c",
+    "retained-commercial-storefront-frame-renderer|P10B-19A-05|src/components/storefront/commercial-storefront-frame.tsx|61bba3a18bbcd2c1d62a0f579dc9ea51ee4158a464855809fd23de5f2eb8b6a5",
+    "retained-responsive-execution|P10B-19A-05|src/components/storefront/responsive-execution.ts|e5f70a9a77279cfdf465943059bb7a5c33f46c999979542756410fe2be1e9b12",
+    "retained-responsive-storefront-image|P10B-19A-05|src/components/storefront/responsive-storefront-image.tsx|0136b765035a440413226bfc4678e61d82c74718705a64464d674fbf9957bdcc",
+    "retained-storefront-renderer-entry|P10B-19A-09C|src/components/storefront/storefront-page.tsx|1a471541dd2f3b372723bbfbaaf6101cd2f7caa9e92e62a591dbe150c045b380",
+    "retained-responsive-image-domain|P10B-19A-05|src/domain/asset-presentation/responsive-image.ts|7154a51147f22f800f5f85779b2b013c6ccf77f9ba37f8c086b00347102e02ed",
+    "retained-commercial-design-grammar|P10B-19A-05|src/domain/component-platform/commercial-design-grammar.ts|6d1e47109ac688a9232732f294747d2594a6afe15bd5dcd91d0e10c427b3edef",
+    "retained-component-platform|P10B-19A-05|src/domain/component-platform/component-platform.ts|bf0ebf58d155b580e9bfbf3ce8bb7d5059042496357f283d278cfee7ffa3e652",
+    "a04-canonical-asset-role|P10B-19A-04|src/domain/shared/asset-role.ts|da209602d1e1a6362b2692c6ad0e56a746ce30ad84b80da943861b95991505b4",
+    "retained-canonical-storefront-content-fingerprint|P10B-19A-07|src/domain/storefront/canonical-storefront.ts|d47e26eb93d935f83e604a357e6a43edd39e00deabcbf3b1df131eea50b5e6bb",
+    "retained-commercial-shared-frame-domain|P10B-19A-05|src/domain/storefront/commercial-shared-frame.ts|dbde4547b9b496c2ff94b8415926196402f375670fa4c3f20508ef56e5464cc8",
+    "retained-canonical-storefront-snapshot-schema|P10B-19A-07|src/domain/storefront/storefront.ts|ef5c167114b2f94f66a9f13bb181db9fe1f03d06f2ff4b7c141795c0739d9d99",
+    "a02-cross-page-relationships|P10B-19A-02|src/domain/structural-storefront-family/cross-page-relationships.ts|53ea09b458e49bbb46ce17c5f1db4884c6a52e50cbf3f8ea27c07bd9f049d7e0",
+    "a01-structural-family-identity|P10B-19A-01|src/domain/structural-storefront-family/identity.ts|b1c3ea8dfa27c205c8f2e2b145eca285b582599273f674d933df469373c9cc07",
+    "a01-structural-family-index|P10B-19A-01|src/domain/structural-storefront-family/index.ts|703c1d9acc414f59607488991d8a1b13d89a54b229f1c02a603ea6e70a372a8d",
+    "a01-structural-family-lifecycle|P10B-19A-01|src/domain/structural-storefront-family/lifecycle.ts|21a3e118a39a21f429886fd2e5ec23a2b017bee68dbfaf3423217b4eb5719400",
+    "retained-compiled-publication-schema|P10B-19A-09C|src/services/storage/compiled-publication.ts|cf1d3ff1344c001b94e40c1f03f2c1cbec3c40c78469aebaea6f2035f73f2d37"
+  ],
+  "productionInactivityAssertions": [
+    {
+      "assertionId": "production-active-structural-families",
+      "expectedCount": 0,
+      "evidenceTestFiles": [
+        "tests/unit/p10b-19a-01-structural-storefront-family.test.ts",
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts"
+      ]
+    },
+    {
+      "assertionId": "production-capability-contexts",
+      "expectedCount": 0,
+      "evidenceTestFiles": ["tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts"]
+    },
+    {
+      "assertionId": "production-compatibility-evaluations",
+      "expectedCount": 0,
+      "evidenceTestFiles": ["tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts"]
+    },
+    {
+      "assertionId": "production-compatibility-profiles",
+      "expectedCount": 0,
+      "evidenceTestFiles": ["tests/unit/p10b-19a-08b-compatibility-contract.test.ts"]
+    },
+    {
+      "assertionId": "production-page-blueprint-candidates",
+      "expectedCount": 0,
+      "evidenceTestFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts"
+      ]
+    },
+    {
+      "assertionId": "production-selectable-structural-families",
+      "expectedCount": 0,
+      "evidenceTestFiles": [
+        "tests/unit/p10b-19a-01-structural-storefront-family.test.ts",
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts"
+      ]
+    },
+    {
+      "assertionId": "production-selection-receipts",
+      "expectedCount": 0,
+      "evidenceTestFiles": [
+        "tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+        "tests/unit/p10b-19a-08c-selection-contract.test.ts"
+      ]
+    },
+    {
+      "assertionId": "production-selection-requests",
+      "expectedCount": 0,
+      "evidenceTestFiles": [
+        "tests/unit/p10b-19a-08c-deterministic-selection.test.ts",
+        "tests/unit/p10b-19a-08c-selection-contract.test.ts"
+      ]
+    },
+    {
+      "assertionId": "production-structural-family-candidates",
+      "expectedCount": 0,
+      "evidenceTestFiles": [
+        "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts"
+      ]
+    }
+  ],
+  "expectedSemanticMetrics": {
+    "completeCaseCount": 126,
+    "successfulCompileCount": 126,
+    "successfulReplayCount": 126,
+    "consumedAuthorityLineageCount": 98,
+    "normalizedMaterialTopologyCount": 54,
+    "directionLabelFreeTopologyCount": 54,
+    "repeatedClusterCount": 34,
+    "repeatedMembershipCount": 106,
+    "largestRepeatedClusterSize": 14,
+    "singletonCount": 20,
+    "completeMatrixCaseSetFingerprint": "v1_7127_741312a0b0d85a0a7dc330cd097863e1c6b95cfc65dda680dd97a296ba3cda38",
+    "frozenCaseCount": 72,
+    "frozenNormalizedTopologyCount": 39,
+    "frozenRepeatedMembershipCount": 53,
+    "frozenLargestClusterSize": 7,
+    "frozenSingletonCount": 19,
+    "frozenMatrixCaseSetFingerprint": "v1_4064_0be3cc37dfb3fe0e842f9a728df868a9ceb3914f5b2f974ddfb24f77ef281f66",
+    "legacyAliasCount": 3,
+    "historicalRepresentativeCount": 3,
+    "previewObservationExpectedCount": 36,
+    "previewObservationActualCount": 36,
+    "previewLocaleCount": 2,
+    "previewSurfaceCount": 6,
+    "previewRepositoryWriteCount": 0,
+    "previewSourceMutationCount": 0,
+    "directCompilationExpectedCount": 3,
+    "directCompilationActualCount": 3,
+    "preparationExpectedCount": 3,
+    "preparationActualCount": 3,
+    "isolatedConfirmationExpectedCount": 3,
+    "isolatedConfirmationActualCount": 3,
+    "publishedObservationExpectedCount": 36,
+    "publishedObservationActualCount": 36,
+    "previewPublishedParityExpectedCount": 36,
+    "previewPublishedParityActualCount": 36,
+    "migrationCurrentExpectedCount": 3,
+    "migrationCurrentActualCount": 3,
+    "externalPublicationCallCount": 0,
+    "providerCallCount": 0,
+    "veskoCallCount": 0,
+    "commerceMutationCount": 0,
+    "mediaMutationCount": 0,
+    "a09bBaselineFileSha256": "e14bd08a18e63848a24fab161d50875c188fb3a49b22ae63ec9930b27a8fed06",
+    "a09bBaselineMaterialSha256": "b224390ba16a850821155874dbaf1f9a740f55004684f9982531f80716ca013f",
+    "a09cBaselineFileSha256": "e1a2eb36eed615945b100797886be4a0d345b579e7b84eb8f4629aa124d03653",
+    "a09cBaselineMaterialSha256": "92b2f872d10cd9777758c7cd6572e9b3fb598f1aa00703cbdaaf9e196c1e5b30"
+  },
+  "inventoryFingerprint": "p10b-19a-retained-matrix-inventory-v1_32375_1b97e7da8eebdcda779b51b91b2f540263c97e9d2b40950b7f002721b6a5eb7d"
+}
