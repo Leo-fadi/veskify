@@ -105,7 +105,7 @@ P10B-18B-01 Design DNA/shared-frame upgrade, P10B-18B-06 asset-composition/art-d
 P10B-18B-02 homepage/editorial/campaign quality upgrade, P10B-18B-03 collection/search/product-card
 quality upgrade, P10B-18B-04 PDP quality upgrade, and P10B-18B-05 content/support/utility quality
 upgrade are **Baseline**. P10B-16P-02 is **Baseline**; parent P10B-18B is **Baseline / complete**.
-P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is Baseline / closed. P10B-19A-10A is Baseline; parent P10B-19A-10 and P10B-19A remain Partial; P10B-19A-10B is the exact next implementation task; P10B-19A-10C is Planned after A-10B; P10B-19B-01 is Planned after A-10C; and P10B remains Partial.
+P10B-18C, P10B-16P-05B and P10B-19 PRE are **Baseline**. P10B-18D is a **Baseline diagnostic with live commercial quality rejected**. P10B-18 and P10B remain **Partial**. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is Baseline / closed. P10B-19A-10A and P10B-19A-10B1 are Baseline; parent P10B-19A-10B, P10B-19A-10 and P10B-19A remain Partial; P10B-19A-10B2 is the exact next implementation task; P10B-19A-10C is Planned after A-10B2; P10B-19B-01 is Planned after A-10C; and P10B remains Partial.
 
 The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
 metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
@@ -158,9 +158,9 @@ and completes parent P10B-18B. Accepted P10B-18C closes deterministic integrated
 P10B-18D completed as a rejected-quality diagnostic, P10B-19 PRE is Baseline, P10B-19A is Partial,
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline, and parent
 P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline;
-parent P10B-19A-09 is Baseline / closed. P10B-19A-10A is Baseline; parent P10B-19A-10 and
-P10B-19A remain Partial. P10B-19A-10B is the exact next implementation task; A-10C is Planned
-after A-10B, and P10B-19B-01 is Planned after A-10C.
+parent P10B-19A-09 is Baseline / closed. P10B-19A-10A and P10B-19A-10B1 are Baseline; parent
+P10B-19A-10B, P10B-19A-10 and P10B-19A remain Partial. P10B-19A-10B2 is the exact next
+implementation task; A-10C is Planned after A-10B2, and P10B-19B-01 is Planned after A-10C.
 
 For normal initial generation, follow this ownership chain and do not add a parallel composition:
 
@@ -400,13 +400,16 @@ acceptance remains primarily in final phase gates rather than every child pull r
 |    10 | P10B-19A-10 - Retained matrices, integration and P10B-19A closure                     |
 |   10A | P10B-19A-10A - Retained Matrix Inventory and Frozen Baseline Lock                     |
 |   10B | P10B-19A-10B - Cross-Authority Integration and Failure Matrix                         |
+|  10B1 | P10B-19A-10B1 - Positive Cross-Authority Integration Matrix                           |
+|  10B2 | P10B-19A-10B2 - Fail-Closed Cross-Authority Failure Matrix and A-10B Closure          |
 |   10C | P10B-19A-10C - P10B-19A Closure and Product-Owner Architecture Gate                   |
 
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**; parent
 P10B-19A-08 is **Baseline / closed**. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are
-**Baseline**; parent P10B-19A-09 is **Baseline / closed**. P10B-19A-10A is **Baseline**; parent
-P10B-19A-10 and P10B-19A remain **Partial**. P10B-19A-10B is the **exact next implementation
-task**; A-10C is **Planned** after A-10B, and P10B-19B-01 is **Planned** after A-10C.
+**Baseline**; parent P10B-19A-09 is **Baseline / closed**. P10B-19A-10A and P10B-19A-10B1 are
+**Baseline**; parent P10B-19A-10B, P10B-19A-10 and P10B-19A remain **Partial**.
+P10B-19A-10B2 is the **exact next implementation task**; A-10C is **Planned** after A-10B2, and
+P10B-19B-01 is **Planned** after A-10C.
 
 P10B-19A-08A owns only normalized topology identity. Its three schemas are version `1.0.0`.
 PageBlueprint v2 regions receive deterministic `r0`, `r1`, ... tokens in the A-03 canonical
@@ -493,12 +496,20 @@ negative-failure coverage; A-10C owns complete retained execution, the closure r
 product-owner architecture gate. A-10A freezes 24 explicit matrix entries, 76 exact task-base
 production-source hashes, nine zero-count v2 inactivity assertions, exact 126-case/frozen-72 and
 A-09 metrics, and dynamic DEVX-01 CI discoverability in a fresh-clone-safe checked fixture. It adds
-zero production files and no runtime consumer. A-10A is Baseline; parent A-10 and P10B-19A remain
-Partial. A-10B is exact next; A-10C is Planned after it; P10B-19B-01 remains Planned after A-10C.
+zero production files and no runtime consumer.
 
-The A-08A/A-08B/A-08C, A-09A/A-09B/A-09C and A-10A/A-10B/A-10C rows are delivery-only
-decompositions of their accepted parent tasks. They do not redefine P10B-19 PRE or P10B-19B
-ordering.
+A-10B is delivered through two nested delivery-only children: A-10B1 owns the positive
+cross-authority integration matrix, while A-10B2 owns fail-closed negative coverage and parent
+A-10B closure. A-10B1 proves the exact 8/6/6/3 candidate/profile/context authority, three
+two-identity normalized topology groups, two-hop product-detail substitution, optional
+content/support omission, six family-constrained receipts and three sequential topology-distinct
+receipts. It preserves A-09 coexistence and frozen A-10A without production or runtime reach.
+A-10A and A-10B1 are Baseline; parent A-10B, A-10 and P10B-19A remain Partial. A-10B2 is exact
+next; A-10C is Planned after it; P10B-19B-01 remains Planned after A-10C.
+
+The A-08A/A-08B/A-08C, A-09A/A-09B/A-09C and A-10A/A-10B/A-10C rows, including
+A-10B1/A-10B2 beneath A-10B, are nested delivery-only decompositions of their accepted parent
+tasks. They do not renumber or expand the accepted 73-child architecture.
 
 P10B-19A-07 adds strict schema-version `1.0.0` PageBlueprint v2 and Structural
 Storefront Family candidate composition plus one bounded inactive registry. Exact stale-checked
@@ -568,7 +579,7 @@ or closure ownership in the accepted architecture.
 |     8 | DEVX-01G - Two-run performance acceptance and workflow closure                       | Baseline                    |
 
 P10B remains Partial. DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed.
-P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through P10B-19A-09C, and P10B-19A-10A are Baseline; parents P10B-19A-08 and P10B-19A-09 are Baseline / closed; parent P10B-19A-10 and P10B-19A remain Partial; P10B-19A-10B is the exact next implementation task; P10B-19A-10C is Planned after A-10B; P10B-19B-01 is Planned after A-10C; P10B remains Partial.
+P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through P10B-19A-09C, P10B-19A-10A, and P10B-19A-10B1 are Baseline; parents P10B-19A-08 and P10B-19A-09 are Baseline / closed; parent P10B-19A-10B, P10B-19A-10 and P10B-19A remain Partial; P10B-19A-10B2 is the exact next implementation task; P10B-19A-10C is Planned after A-10B2; P10B-19B-01 is Planned after A-10C; P10B remains Partial.
 
 ### CI timing, cancellation and Next cache authority
 
@@ -741,8 +752,9 @@ P10B-18B is Baseline/complete; P10B-16P-05B is Baseline; P10B-18D is a rejected-
 Baseline. P10B-18 and P10B remain Partial, P10B-19 PRE is Baseline, and P10B-19A is Partial;
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline, while parent
 P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline;
-parent P10B-19A-09 is Baseline / closed. P10B-19A-10A is Baseline; parent P10B-19A-10 and
-P10B-19A remain Partial. P10B-19A-10B is the exact next implementation task. Their ownership remains
+parent P10B-19A-09 is Baseline / closed. P10B-19A-10A and P10B-19A-10B1 are Baseline; parent
+P10B-19A-10B, P10B-19A-10 and P10B-19A remain Partial. P10B-19A-10B2 is the exact next
+implementation task. Their ownership remains
 disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
@@ -1044,8 +1056,8 @@ P10B-18C and P10B-16P-05B are Baseline. P10B-18D is a Baseline diagnostic with l
 quality rejected. P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A
 through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A,
 P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is Baseline / closed. P10B-19A
-remains Partial; P10B-19A-10A is Baseline; parent P10B-19A-10 remains Partial;
-P10B-19A-10B is the exact next implementation task; A-10C is Planned after A-10B;
+remains Partial; P10B-19A-10A and P10B-19A-10B1 are Baseline; parent P10B-19A-10B and
+P10B-19A-10 remain Partial; P10B-19A-10B2 is the exact next implementation task; A-10C is Planned after A-10B2;
 P10B-19B-01 is Planned after A-10C; P10B-19B through P10B-19J remain Planned. P10B remains Partial.
 
 ### P10B-18D diagnostic handoff
@@ -1065,16 +1077,18 @@ not implement, authority for structural storefront families, PageBlueprint v2, V
 multi-concept generation and screenshot-based refinement. P10B-19A-01 through P10B-19A-07 and
 P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed.
 P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent P10B-19A-09 is Baseline /
-closed. P10B-19A-10A is Baseline; parent P10B-19A-10 and P10B-19A remain Partial;
-P10B-19A-10B is the exact next implementation task; A-10C and P10B-19B-01 follow in order;
+closed. P10B-19A-10A and P10B-19A-10B1 are Baseline; parent P10B-19A-10B, P10B-19A-10 and
+P10B-19A remain Partial; P10B-19A-10B2 is the exact next implementation task; A-10C and
+P10B-19B-01 follow in order;
 P10B-19B through P10B-19J remain Planned, and P10B remains Partial.
 
 ## Implementing the accepted P10B-19 architecture
 
 P10B-19 PRE is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C
 are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B,
-P10B-19A-09C and P10B-19A-10A are Baseline; parent P10B-19A-09 is Baseline / closed. Parent
-P10B-19A-10 and P10B-19A remain Partial, and P10B-19A-10B is the exact next implementation task.
+P10B-19A-09C, P10B-19A-10A and P10B-19A-10B1 are Baseline; parent P10B-19A-09 is Baseline /
+closed. Parent P10B-19A-10B, P10B-19A-10 and P10B-19A remain Partial, and P10B-19A-10B2 is the
+exact next implementation task.
 Do not
 implement later P10B-19 packages
 on an earlier child branch.
@@ -1128,9 +1142,11 @@ The binding architecture and 73-child plan are in
 - P10B-19A-09C = Baseline
 - P10B-19A-09 = Baseline / closed
 - P10B-19A-10A = Baseline
+- P10B-19A-10B1 = Baseline
+- P10B-19A-10B = Partial
 - P10B-19A-10 = Partial
-- P10B-19A-10B = exact next implementation task
-- P10B-19A-10C = Planned after P10B-19A-10B
+- P10B-19A-10B2 = exact next implementation task
+- P10B-19A-10C = Planned after P10B-19A-10B2
 - P10B-19B-01 = Planned after P10B-19A-10C
 - P10B-19A = Partial
 - P10B = Partial
