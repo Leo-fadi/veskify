@@ -1,0 +1,6 @@
+# Coordinator model/effort is selected in the main IDE conversation.
+# Thread capacity is not write authority: only one implementation writer initially.
+[agents]
+max_concurrent_threads_per_session = 3
+default_subagent_model = "gpt-5.6-terra"
+default_subagent_reasoning_effort = "medium"

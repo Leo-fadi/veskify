@@ -258,6 +258,17 @@ screenshot evidence before the independent verifier and product-owner screenshot
 product owner judges subjective commercial quality after mechanical failures are removed; they do
 not create captures or perform basic QA.
 
+### 8.5 Local Codex development team
+
+Use [docs/AGENT_TEAM_WORKFLOW.md](docs/AGENT_TEAM_WORKFLOW.md) for the project-local
+coordinator, worker, read-only helpers and independent verifier. The main IDE
+conversation coordinates; initially only one implementation writer is permitted.
+Only the coordinator performs authorized Git/PR mutations. Pause implementation
+before independent verification of the exact final diff; material changes invalidate
+the verdict. The two project skills under `.agents/skills/` reuse section 8.4 and
+the native governance schemas. Team configuration grants no roadmap execution,
+recursive delegation, additional concurrent writers or automatic merge authority.
+
 ## 9. Validation and usage discipline
 
 For normal feature PRs:
