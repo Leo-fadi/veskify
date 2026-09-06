@@ -1,0 +1,272 @@
+{
+  "$schema": "/Users/leo/veskify/docs/governance/task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AGTEAM",
+  "taskId": "AGTEAM-01",
+  "title": "Configure and verify the local Veskify Codex development team",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/agent-team-setup",
+  "baseCommit": "a665324b500b2d4e921a97bd4b33946d72297316",
+  "objective": "Configure project-local development roles and skills only; leave the first checkpoint uncommitted.",
+  "expectedOutcome": "Discoverable supported configuration with explicit model/effort and authority boundaries, honest runtime activation evidence, and one clear next action. No merchant-visible behavior change.",
+  "dependencies": [
+    {
+      "taskId": "P10B-19A-10C",
+      "requiredState": "MERGED",
+      "commit": "a665324b500b2d4e921a97bd4b33946d72297316"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "AGENTS.md",
+    "docs/DEVELOPMENT_GUIDE.md section 4",
+    "docs/governance/task-contract.schema.v1.json",
+    "docs/governance/verifier-verdict.schema.v1.json",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "User AGTEAM-01 commission: setup only; current checkout; no commit/push/PR/merge"
+  ],
+  "ownedPaths": [
+    ".codex/config.toml",
+    ".codex/agents/veskify_worker.toml",
+    ".codex/agents/veskify_helper_a.toml",
+    ".codex/agents/veskify_helper_b.toml",
+    ".codex/agents/veskify_verifier.toml",
+    ".agents/skills/veskify-task-delivery/SKILL.md",
+    ".agents/skills/veskify-independent-verification/SKILL.md",
+    "AGENTS.md",
+    "docs/AGENT_TEAM_WORKFLOW.md",
+    "docs/governance/task-contracts/AGTEAM/AGTEAM-01.json",
+    "docs/AGTEAM_01_APPROACH.md",
+    "docs/AGTEAM_01_SETUP_REPORT.md"
+  ],
+  "allowedPaths": [
+    ".codex/config.toml",
+    ".codex/agents/veskify_worker.toml",
+    ".codex/agents/veskify_helper_a.toml",
+    ".codex/agents/veskify_helper_b.toml",
+    ".codex/agents/veskify_verifier.toml",
+    ".agents/skills/veskify-task-delivery/SKILL.md",
+    ".agents/skills/veskify-independent-verification/SKILL.md",
+    "AGENTS.md",
+    "docs/AGENT_TEAM_WORKFLOW.md",
+    "docs/governance/task-contracts/AGTEAM/AGTEAM-01.json",
+    "docs/AGTEAM_01_APPROACH.md",
+    "docs/AGTEAM_01_SETUP_REPORT.md",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json"
+  ],
+  "forbiddenPaths": [
+    "src/**",
+    "tests/**",
+    "public/**",
+    "scripts/**",
+    ".github/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "docs/VESKIFY_SDD*",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP*",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER*",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/governance/*.json",
+    "docs/adr/**"
+  ],
+  "noTouchAreas": [
+    "All product source, dependencies, CI, architectural contracts and historical evidence",
+    "All global Codex configuration, credentials, sign-in, billing and security policy",
+    "Nine supplied pre-existing untracked package files: allowed in complete-diff inventory ONLY, never edit, stage or adopt. Exact SHA-256 baseline: {\"docs/Veskify_Architecture_Reset/00_START_HERE.md\": \"05159b7068ffb6cb8c4cf284bf340577d86769120ce0397c3d5758363ceb8575\", \"docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md\": \"4db1aa38c30a022f0c013dab29a4acc1b712f874ff208d6450e57f3e08301c24\", \"docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md\": \"17504b961cdcfe14de81a032e20d4ce368ca5deba8c1ca329455a335e3c71e94\", \"docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md\": \"4ca0302458660a0865b1aca334d64871a1a78a263647aec7446acc05620830ca\", \"docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md\": \"fb46490f123b22ddd1ece565d820b5aea5e4c6d3068f1188031a437485a024c2\", \"docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md\": \"59d8982d11026bdb483db30b375562045940135360f9e8a097e8cf336329b1d2\", \"docs/Veskify_Architecture_Reset/manifest.json\": \"e5b6dd94f31cd217ca55f611da98b785882c5d99db8ef2b79ea1b90ee5f92a47\", \"docs/Veskify_Architecture_Reset/refactor_inventory.json\": \"4c03122efb9cd3bd1527d4958447894b77db31a3fd4a643ff405e650209b10ea\", \"docs/Veskify_Architecture_Reset/roadmap.json\": \"4a72e0f55ca535b8db0b79a45b50f8237a8a02f8da15fe17a8d48f85cb236dbf\"}",
+    "AR-00, AR-01, P10B-19B and all storefront refactoring"
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "Local Codex development-team setup only; zero production files",
+    "generatedFileExclusions": [],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Official OpenAI documentation reads",
+      "git fetch origin and read-only GitHub PR/merge metadata",
+      "Installed IDE/runtime metadata and local supported config/skill discovery",
+      "Normal Codex conversation and bounded non-recursive delegation expressly authorized by AGTEAM-01; openAiCallLimit=0 applies to storefront provider/API tests, not the development assistant. At most one preflight helper plus four role-exercise sessions. No broader permission grant for exercise."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Use supported standalone project agent TOML and two instruction-only repository skills; minimal AGENTS link and concise guide. Lock this external native contract before implementation and retain a byte-identical documentary copy.",
+    "canonicalAuthorityExtended": "Existing DEVELOPMENT_GUIDE task delivery and independent verification; no architecture or roadmap adoption.",
+    "namedCurrentConsumers": [
+      "Main Veskify IDE coordinator",
+      "One bounded implementation worker",
+      "Read-only investigation helpers and independent verifier"
+    ],
+    "rejectedShortcuts": [
+      "Treat generic model-overridden delegation as proof of custom-role discovery",
+      "Use a separate CLI version or stale model cache as proof of current IDE runtime",
+      "Weaken permissions, enable all tools, create extra worktrees, or execute embedded AR-00 instructions",
+      "Exclude pre-existing untracked files from the canonical complete-diff fingerprint; instead preserve their exact pinned bytes"
+    ],
+    "expectedFailureBehavior": "Unsupported IDs/settings fail closed without model substitution; missing activation produces configured; activation pending and stops. Permission restrictions are reported without widening the exercise sandbox. No commit/push/PR/merge at this checkpoint, even if verification passes.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Preflight actual root, origin, branch, HEAD, refreshed main and PR ownership. Preserve A-10C/P10B-19A closure and all nine package hashes; document stale package instructions.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction or forbidden change; BLOCKED for unavailable required runtime proof. Activation-pending checkpoint is not a semantic PASS."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Create four supported project-local child roles with explicit requested exact model IDs and reasoning; main conversation remains coordinator. Clearly distinguish configured from runtime-verified metadata.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction or forbidden change; BLOCKED for unavailable required runtime proof. Activation-pending checkpoint is not a semantic PASS."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Document one writer, read-only helpers, paused implementation before independent verifier, no recursive delegation, coordinator-only Git/PR mutations, explicit ownership/dependencies/tests/stops, bounded correction and merge authority. Do not widen permissions.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction or forbidden change; BLOCKED for unavailable required runtime proof. Activation-pending checkpoint is not a semantic PASS."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Two valid narrowly scoped skills and a concise operating guide reuse native immutable task-contract/approach/evidence/verdict procedure, exact final diff verification and invalidation on material changes.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction or forbidden change; BLOCKED for unavailable required runtime proof. Activation-pending checkpoint is not a semantic PASS."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Validate TOML and skill metadata; inspect supported client discovery. If custom roles are available, run the four bounded read-only assignments and verifier review. If a new conversation/reload is needed, record configured; activation pending, no role-run or verifier PASS claim, then stop.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction or forbidden change; BLOCKED for unavailable required runtime proof. Activation-pending checkpoint is not a semantic PASS."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Leave all setup files uncommitted. No push, PR, merge, next task, product/provider/Vesko/deployment/full-build/full-suite work. Report effective permissions, actual limitations, final changed paths and next action.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction or forbidden change; BLOCKED for unavailable required runtime proof. Activation-pending checkpoint is not a semantic PASS."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "node scripts/task-governance.mjs contract --contract /private/tmp/veskify-agteam-01/AGTEAM-01.json --expected-file-sha256 \"$(cat /private/tmp/veskify-agteam-01/contract.sha256)\"",
+      "purpose": "Validate locked external task contract against native schema.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "python3 /Users/leo/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/veskify-task-delivery",
+      "purpose": "Validate delivery skill metadata.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "python3 /Users/leo/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/veskify-independent-verification",
+      "purpose": "Validate verification skill metadata.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "git diff --check",
+      "purpose": "Check whitespace in tracked setup diff. TOML parsing, local link and package-hash checks and client-discovery observations are recorded with exact commands in setup evidence.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "docs/AGTEAM_01_SETUP_REPORT.md records command outcomes, configured vs loaded roles, runtime evidence, permissions, preserved package hashes, and any activation-pending blocker. Exact final native identity/verdict retained externally when reached; no self-issued PASS.",
+      "retention": "repository",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-commit",
+    "criteria": [
+      "AGTEAM-01 first checkpoint: leave changes uncommitted and stop for Leo; no Git/PR delivery authority granted."
+    ]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Any scope/architecture/permission conflict or unexpected user-work change.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Custom roles require a new conversation or IDE reload: report configured; activation pending and stop; do not run substitutes as role proof.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "First checkpoint complete: stop without commit/push/PR/merge or next task.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Independent verifier FAIL/BLOCKED: no push; maximum one consolidated correction and one rerun only when already authorized and activation available.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AGTEAM-01",
+    "title": "Resume this same setup checkpoint only",
+    "eligibility": "Only Leo resumes activation/read-only verification in a new IDE conversation if needed. No AR/P10B task or automatic merge is authorized."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
