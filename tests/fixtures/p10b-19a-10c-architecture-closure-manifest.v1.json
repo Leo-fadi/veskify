@@ -1,0 +1,301 @@
+{
+  "schemaVersion": "1.0.0",
+  "authorityKind": "p10b-19a-structural-architecture-closure",
+  "baseCommit": "f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37",
+  "architectureLock": {
+    "path": "docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md",
+    "fileSha256": "5292792dae97273411702eeaf468575172c0cf46b026103216423de29eaf47fd",
+    "numberedSectionCount": 21,
+    "mermaidDiagramCount": 4,
+    "acceptedArchitectureChildCount": 73,
+    "acceptedChildIdFingerprint": "v1_658_475b9d78ccc7069af6f781de9a1fe7c7130db989b1e3786360dc17a365f1cbbf",
+    "childDistribution": {
+      "A": 6,
+      "B": 7,
+      "C": 8,
+      "D": 8,
+      "E": 9,
+      "F": 8,
+      "G": 11,
+      "H": 6,
+      "I": 6,
+      "J": 4
+    },
+    "nestedDeliveryDecompositionChildDelta": 0,
+    "p10b19aExitBoundary": "Versioned schemas, inactive candidate catalogue, registry/selector infrastructure, topology identity, and v1 compatibility; no active v2 family or visual output",
+    "p10b19bEntryDependency": "19A constraints"
+  },
+  "predecessorAuthority": {
+    "frozenFileCount": 11,
+    "frozenPathSetFingerprint": "v1_744_6d346615ab964f33f6eba5dce2a4f5b48f496b57de6b6dda95b4716077f2d35e",
+    "frozenByteManifestFingerprint": "v1_1679_6d4aa24650888b1aceecdd58af6145dedab6d570d28d51cbc44f95edefe41196",
+    "a10a": {
+      "inventoryFingerprint": "p10b-19a-retained-matrix-inventory-v1_32375_1b97e7da8eebdcda779b51b91b2f540263c97e9d2b40950b7f002721b6a5eb7d",
+      "fixtureSha256": "2324cf405e12f4b06cbb288eac8d90dc759fc0eb87a39ba206eef784f3b0f4ab",
+      "retainedSemanticMetricsFingerprint": "v1_1819_33c603143044e4eacb21bba49f0717be3ee16f34e8c279b1dfb7f54051681d4e"
+    },
+    "a10b1": {
+      "baselineFingerprint": "p10b-19a-positive-cross-authority-integration-v1_23279_e195aad8126b74a9990d923a6ef08d82c637589919f362e8c5e90263092a002d",
+      "fixtureSha256": "907a4d48cab6dacd0bc46e0fb16d4eca2ca82c87d7f00b605ca53f3f112490f2"
+    },
+    "a10b2": {
+      "baselineFingerprint": "p10b-19a-fail-closed-cross-authority-matrix-v1_30308_ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307",
+      "fixtureSha256": "8708a2282749796c9d27d2dcd382384989c7738a5eb0b2f72f87c1ad73cb6a64",
+      "canonicalMaterialSha256": "ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307",
+      "externalBaselineSha256": "67945a1b29cc4e84623c17cc2d2c0454265717599cd1128c7adfbb0446935b0b"
+    }
+  },
+  "structuralExitEvidence": {
+    "structuralFamilyIds": {
+      "count": 6,
+      "fingerprint": "v1_125_98afd676a5fc31c8543910e63a7d8682e3b4e268638f213ec9fc56fd44d9296d"
+    },
+    "structuralPageFamilyRoles": {
+      "count": 6,
+      "fingerprint": "v1_75_e389d18732c54b037065104c292247a968805207b4a354871b3a770fada6417a"
+    },
+    "crossPageRelationshipKinds": {
+      "count": 7,
+      "fingerprint": "v1_160_496eddc742a00d4fc84e524f87a2a5a49742c0ca851424e3a4fb4084aed8899d"
+    },
+    "pageBlueprintV2StructuralAuthority": {
+      "path": "src/application/storefront-templates/page-blueprint-v2-contract.ts",
+      "sha256": "4a050629af7b792e59b54c229891020cde65fffc793ae88c9049b2a3e143da69",
+      "state": "present-and-protected"
+    },
+    "canonicalAssetRoles": {
+      "count": 9,
+      "fingerprint": "v1_157_c43d572c2ff202c0bf20a9e783605319fe4ad5fddddf49c39a98a217920066d3"
+    },
+    "assetRoleAuthority": {
+      "path": "src/domain/shared/asset-role.ts",
+      "sha256": "da209602d1e1a6362b2692c6ad0e56a746ce30ad84b80da943861b95991505b4",
+      "state": "present-and-protected"
+    },
+    "responsiveBreakpoints": {
+      "count": 4,
+      "fingerprint": "v1_158_764a7cb74bace29414671d780a0dfb2c8dbfb79668219d8b433735d72588deeb"
+    },
+    "responsiveRuleAuthority": {
+      "path": "src/application/storefront-templates/page-blueprint-v2-responsive-rule-contract.ts",
+      "sha256": "c2799603ff03b735cc5171156494e8031a346d3fe99172b38c4c72ea7acfd337",
+      "state": "present-and-protected"
+    },
+    "omissionSubstitutionFallbackAuthority": {
+      "path": "src/application/storefront-templates/page-blueprint-v2-omission-substitution-fallback-contract.ts",
+      "sha256": "607b5fa0160d0915fb457301b6a0031194151a5ccaa32d0e7fa7876372f9e91a",
+      "state": "present-and-protected"
+    },
+    "productionCandidateRegistry": {
+      "state": "empty",
+      "pageBlueprintCandidateCount": 0,
+      "structuralFamilyCandidateCount": 0
+    },
+    "normalizedTopology": "deterministic",
+    "compatibilityEvaluation": "deterministic",
+    "selection": {
+      "method": "scoring-free-and-deterministic",
+      "combinationMaximum": 4096
+    },
+    "positiveIntegrationBaselineFingerprint": "p10b-19a-positive-cross-authority-integration-v1_23279_e195aad8126b74a9990d923a6ef08d82c637589919f362e8c5e90263092a002d",
+    "negativeIntegrationBaselineFingerprint": "p10b-19a-fail-closed-cross-authority-matrix-v1_30308_ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307"
+  },
+  "legacyCompatibilityEvidence": {
+    "legacyAliasCount": 3,
+    "historicalRepresentativeCount": 3,
+    "previewObservationExpectedCount": 36,
+    "previewObservationActualCount": 36,
+    "previewLocaleCount": 2,
+    "previewSurfaceCount": 6,
+    "previewRepositoryWriteCount": 0,
+    "previewSourceMutationCount": 0,
+    "directCompilationExpectedCount": 3,
+    "directCompilationActualCount": 3,
+    "preparationExpectedCount": 3,
+    "preparationActualCount": 3,
+    "isolatedConfirmationExpectedCount": 3,
+    "isolatedConfirmationActualCount": 3,
+    "publishedObservationExpectedCount": 36,
+    "publishedObservationActualCount": 36,
+    "previewPublishedParityExpectedCount": 36,
+    "previewPublishedParityActualCount": 36,
+    "migrationCurrentExpectedCount": 3,
+    "migrationCurrentActualCount": 3,
+    "externalPublicationCallCount": 0,
+    "providerCallCount": 0,
+    "veskoCallCount": 0,
+    "commerceMutationCount": 0,
+    "mediaMutationCount": 0,
+    "a09bBaselineFileSha256": "e14bd08a18e63848a24fab161d50875c188fb3a49b22ae63ec9930b27a8fed06",
+    "a09bBaselineMaterialSha256": "b224390ba16a850821155874dbaf1f9a740f55004684f9982531f80716ca013f",
+    "a09cBaselineFileSha256": "e1a2eb36eed615945b100797886be4a0d345b579e7b84eb8f4629aa124d03653",
+    "a09cBaselineMaterialSha256": "92b2f872d10cd9777758c7cd6572e9b3fb598f1aa00703cbdaaf9e196c1e5b30",
+    "selectorEligibility": "legacy-v1-ineligible"
+  },
+  "integrationEvidence": {
+    "retained": {
+      "inventoryFingerprint": "p10b-19a-retained-matrix-inventory-v1_32375_1b97e7da8eebdcda779b51b91b2f540263c97e9d2b40950b7f002721b6a5eb7d",
+      "fixtureSha256": "2324cf405e12f4b06cbb288eac8d90dc759fc0eb87a39ba206eef784f3b0f4ab",
+      "retainedSemanticMetricsFingerprint": "v1_1819_33c603143044e4eacb21bba49f0717be3ee16f34e8c279b1dfb7f54051681d4e",
+      "matrixEntryCount": 24,
+      "protectedProductionHashCount": 76,
+      "productionInactivityAssertionCount": 9,
+      "completeMatrix": {
+        "caseCount": 126,
+        "successfulCompileCount": 126,
+        "successfulReplayCount": 126,
+        "consumedAuthorityLineageCount": 98,
+        "normalizedMaterialTopologyCount": 54,
+        "directionLabelFreeTopologyCount": 54,
+        "repeatedClusterCount": 34,
+        "repeatedMembershipCount": 106,
+        "largestRepeatedClusterSize": 14,
+        "singletonCount": 20,
+        "caseSetFingerprint": "v1_7127_741312a0b0d85a0a7dc330cd097863e1c6b95cfc65dda680dd97a296ba3cda38"
+      },
+      "frozenMatrix": {
+        "caseCount": 72,
+        "normalizedTopologyCount": 39,
+        "repeatedMembershipCount": 53,
+        "largestClusterSize": 7,
+        "singletonCount": 19,
+        "caseSetFingerprint": "v1_4064_0be3cc37dfb3fe0e842f9a728df868a9ceb3914f5b2f974ddfb24f77ef281f66"
+      }
+    },
+    "positive": {
+      "baselineFingerprint": "p10b-19a-positive-cross-authority-integration-v1_23279_e195aad8126b74a9990d923a6ef08d82c637589919f362e8c5e90263092a002d",
+      "fixtureSha256": "907a4d48cab6dacd0bc46e0fb16d4eca2ca82c87d7f00b605ca53f3f112490f2",
+      "pageBlueprintCandidateCount": 8,
+      "primaryPageBlueprintCandidateCount": 6,
+      "fallbackOnlyPageBlueprintCandidateCount": 2,
+      "structuralFamilyCandidateCount": 6,
+      "compatibilityProfileCount": 6,
+      "capabilityContextCount": 3,
+      "compatibilityEvaluationCount": 3,
+      "profileCatalogueFingerprint": "inactive-structural-storefront-family-compatibility-profile-catalogue-v1_5450_835a5a452751802c39be1c82a9858d854cc83f97b98fefe4c8377d0a346ad922",
+      "familyConstrainedDirectSelectionCount": 6,
+      "mixedPageStatusCounts": {
+        "direct": 5,
+        "substitution": 2,
+        "omission": 1,
+        "incompatible": 0
+      },
+      "mixedFamilyStatusCounts": {
+        "direct": 0,
+        "conditional": 6,
+        "incompatible": 0
+      },
+      "mixedReceiptResolutionCounts": {
+        "direct": 4,
+        "substitution": 1,
+        "omission": 1
+      },
+      "sequentialDistinctSelectionCount": 3,
+      "sequentialDistinctFamilyTopologyCount": 3,
+      "sequentialDistinctCompleteStoreTopologyCount": 3
+    },
+    "negative": {
+      "baselineFingerprint": "p10b-19a-fail-closed-cross-authority-matrix-v1_30308_ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307",
+      "fixtureSha256": "8708a2282749796c9d27d2dcd382384989c7738a5eb0b2f72f87c1ad73cb6a64",
+      "canonicalMaterialSha256": "ffae8e9700b84c08fcf1fe7315846077b01170f0be0d82743dce4e8a0ac8d307",
+      "externalBaselineSha256": "67945a1b29cc4e84623c17cc2d2c0454265717599cd1128c7adfbb0446935b0b",
+      "totalCaseCount": 36,
+      "passedCaseCount": 36,
+      "typedErrorObservationCount": 16,
+      "zodIssueObservationCount": 20,
+      "nativeErrorNullCodeCount": 3,
+      "authorityConfusionCaseCount": 4,
+      "ownerMismatchCount": 0,
+      "terminalPhaseMismatchCount": 0,
+      "downstreamExecutionCount": 0,
+      "partialOutputCount": 0,
+      "sourceMutationCount": 0,
+      "repositoryWriteCount": 0,
+      "productionFileChangeCount": 0,
+      "automaticRepairCount": 0,
+      "silentNormalizationCount": 0,
+      "fallbackToV1Count": 0,
+      "fallbackToV2Count": 0,
+      "defaultCandidateCount": 0,
+      "partialReceiptCount": 0,
+      "partialPublicationResultCount": 0,
+      "snapshotMutationCount": 0,
+      "catalogueMutationCount": 0,
+      "commerceMutationCount": 0,
+      "mediaMutationCount": 0,
+      "testOnlyPublicationConfirmationCount": 0,
+      "externalPublicationCallCount": 0,
+      "providerCallCount": 0,
+      "veskoCallCount": 0
+    },
+    "retainedPlan": {
+      "testFileCount": 26,
+      "testFileSetFingerprint": "v1_1686_7662d474cac69427306d3c810aa09bdf4b5310b3c34043f45927d35a36bae925",
+      "exactCommand": "pnpm exec vitest run tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx tests/integration/p10b-19a-09c-publication-render-replay.test.tsx tests/integration/p10b-19a-10b1-positive-cross-authority-integration.test.ts tests/integration/p10b-19a-10b2-fail-closed-cross-authority-matrix.test.ts tests/integration/p10b-19a-10c-architecture-closure.test.ts tests/unit/devx-01f2-vitest-ci.test.ts tests/unit/p10b-18c-100-plus-commercial-quality-diversity-gate.test.ts tests/unit/p10b-19a-01-structural-storefront-family.test.ts tests/unit/p10b-19a-02-cross-page-relationships.test.ts tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts tests/unit/p10b-19a-06-page-blueprint-v2-omission-substitution-fallback-contract.test.ts tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/unit/p10b-19a-08a-normalized-topology-identity.test.ts tests/unit/p10b-19a-08b-candidate-compatibility-evaluation.test.ts tests/unit/p10b-19a-08b-compatibility-contract.test.ts tests/unit/p10b-19a-08c-deterministic-selection.test.ts tests/unit/p10b-19a-08c-selection-contract.test.ts tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts tests/unit/p10b-19a-09b-historical-v1-snapshot-replay.test.ts tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts tests/unit/p10b-19a-10b1-positive-integration-baseline.test.ts tests/unit/p10b-19a-10b2-failure-baseline.test.ts tests/unit/p10b-19a-10c-closure-manifest.test.ts"
+    }
+  },
+  "productionBoundary": {
+    "productionPageBlueprintCandidateCount": 0,
+    "productionStructuralFamilyCandidateCount": 0,
+    "productionCompatibilityProfileCount": 0,
+    "productionCapabilityContextCount": 0,
+    "productionCompatibilityEvaluationCount": 0,
+    "productionSelectionRequestCount": 0,
+    "productionSelectionReceiptCount": 0,
+    "productionActiveStructuralFamilyCount": 0,
+    "productionSelectableStructuralFamilyCount": 0,
+    "currentGenerationP10b19aConsumerCount": 0,
+    "clientRuntimeConsumerCount": 0,
+    "productionSourceFileChangeCount": 0,
+    "merchantVisibleChangeCount": 0,
+    "providerCallCount": 0,
+    "veskoCallCount": 0,
+    "externalPublicationCallCount": 0,
+    "a10cPublicationPreparationCount": 0,
+    "a10cPublicationConfirmationCount": 0,
+    "imageGenerationCallCount": 0,
+    "secretFileAccessCount": 0,
+    "retainedA09PreparationExpectedCount": 3,
+    "retainedA09PreparationActualCount": 3,
+    "retainedA09IsolatedConfirmationExpectedCount": 3,
+    "retainedA09IsolatedConfirmationActualCount": 3
+  },
+  "acceptedLimitations": [
+    "no-active-v2-family",
+    "no-v2-rendered-storefront",
+    "no-visual-recipe",
+    "no-design-dna-v2",
+    "no-v2-frame-family",
+    "no-v2-page-family-realization",
+    "no-ai-design-director",
+    "no-screenshot-critic",
+    "no-live-ai-quality-evidence",
+    "no-v2-commercial-quality-claim"
+  ],
+  "productOwnerDecision": {
+    "decisionText": "ACCEPT P10B-19A STRUCTURAL ARCHITECTURE CLOSURE",
+    "decisionFingerprint": "p10b-19a-product-owner-architecture-decision-v1_653_1e2f42c02bcac0e507b032eb81885aa3797d734ba94371f3f97047d22523e88b",
+    "acceptedClosureCandidateFingerprint": "p10b-19a-structural-architecture-closure-candidate-v1_11823_e1482cb9f76b470302823bc25f767243cf108776cfe318dd9194821e0ce55e8e",
+    "acceptedLimitations": [
+      "no-active-v2-family",
+      "no-v2-rendered-storefront",
+      "no-visual-recipe",
+      "no-design-dna-v2",
+      "no-v2-frame-family",
+      "no-v2-page-family-realization",
+      "no-ai-design-director",
+      "no-screenshot-critic",
+      "no-live-ai-quality-evidence",
+      "no-v2-commercial-quality-claim"
+    ]
+  },
+  "statusTransition": {
+    "P10B-19A-10C": "Baseline",
+    "P10B-19A-10": "Baseline / closed",
+    "P10B-19A": "Baseline / closed",
+    "P10B-19B-01": "exact next implementation task",
+    "P10B": "Partial"
+  },
+  "exactNextTask": "P10B-19B-01",
+  "closureFingerprint": "p10b-19a-structural-architecture-closure-v1_12651_76316ec1e4c4edc48b02942ec27624b6a05926b91cf11dbcf08a64c65d18e728"
+}
