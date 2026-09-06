@@ -19,10 +19,9 @@ P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19
 DEVX-01A through DEVX-01G are Baseline, and DEVX-01 is Baseline / closed. P10B-19A-01 through
 P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is
 Baseline / closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent
-P10B-19A-09 is Baseline / closed. P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline;
-parent P10B-19A-10B is Baseline / closed; P10B-19A-10 and P10B-19A remain Partial.
-P10B-19A-10C is the exact next implementation task, and P10B-19B-01 is Planned after
-P10B-19A-10C.
+P10B-19A-09 is Baseline / closed. P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and
+P10B-19A-10C are Baseline; parents P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19 and P10B remain Partial. P10B-19B-01 is Planned / exact next and has not begun.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
@@ -43,10 +42,10 @@ focused migration/publication compatibility remain. Governed P9 follow-up is ret
 initial-generation fallback.
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are **Baseline**; parent
 P10B-19A-08 is **Baseline / closed**. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are
-**Baseline**; parent P10B-19A-09 is **Baseline / closed**. P10B-19A-10A, P10B-19A-10B1 and
-P10B-19A-10B2 are **Baseline**; parent P10B-19A-10B is **Baseline / closed**. P10B-19A-10 and
-P10B-19A remain **Partial**; P10B-19A-10C is the **exact next implementation task**, and
-P10B-19B-01 is **Planned** after A-10C.
+**Baseline**; parent P10B-19A-09 is **Baseline / closed**. P10B-19A-10A, P10B-19A-10B1,
+P10B-19A-10B2 and P10B-19A-10C are **Baseline**; parents P10B-19A-10B, P10B-19A-10 and
+P10B-19A are **Baseline / closed**. P10B-19 and P10B remain **Partial**; P10B-19B-01 is
+**Planned / exact next** and has not begun.
 P10B-19A-08A establishes strict normalized PageBlueprint v2
 and Structural Storefront Family topology projections at schema version `1.0.0`. PageBlueprint
 topology assigns contiguous `r0`, `r1`, ... identities from canonical A-03 default reading order,
@@ -132,7 +131,7 @@ the exact 126-case and frozen-72 metrics, all accepted A-09 results, and dynamic
 discoverability under one deterministic
 `p10b-19a-retained-matrix-inventory-v1_<canonical-length>_<sha256>` identity. The checked fixture
 is sufficient in a fresh clone; a read-only external baseline only corroborates it. A-10A is
-Baseline; parent A-10 and P10B-19A remain Partial.
+Baseline; at that checkpoint, parent A-10 and P10B-19A remained Partial.
 P10B-19A-10B1 adds no production code. Its positive cross-authority fixture contains eight
 PageBlueprint v2 candidates—six primary and two product-detail fallbacks—six Structural Storefront
 Family candidates, six compatibility profiles, three capability contexts, six exact family
@@ -155,8 +154,30 @@ fail without coercion. The checked fingerprint is
 the fixture SHA-256 is `8708a2282749796c9d27d2dcd382384989c7738a5eb0b2f72f87c1ad73cb6a64`.
 A-10A and A-10B1 remain byte-identical, their accepted 24/76/9 and 126/72/A-09 authority is
 unchanged, and all nine production-v2 authority counts remain zero. A-10B2 is Baseline and parent
-A-10B is Baseline / closed; A-10 and P10B-19A remain Partial. A-10C is the exact next
-implementation task, and P10B-19B-01 remains Planned after A-10C.
+A-10B is Baseline / closed. At that checkpoint, A-10 and P10B-19A remained Partial, A-10C was the
+exact next implementation task, and P10B-19B-01 remained Planned after A-10C.
+
+P10B-19A-10C closes only the accepted structural architecture and adds no production code or
+merchant-visible output. Its accepted candidate fingerprint is
+`p10b-19a-structural-architecture-closure-candidate-v1_11823_e1482cb9f76b470302823bc25f767243cf108776cfe318dd9194821e0ce55e8e`;
+the exact product-owner decision `ACCEPT P10B-19A STRUCTURAL ARCHITECTURE CLOSURE` has fingerprint
+`p10b-19a-product-owner-architecture-decision-v1_653_1e2f42c02bcac0e507b032eb81885aa3797d734ba94371f3f97047d22523e88b`;
+and the final closure fingerprint is
+`p10b-19a-structural-architecture-closure-v1_12651_76316ec1e4c4edc48b02942ec27624b6a05926b91cf11dbcf08a64c65d18e728`.
+The checked fixture SHA-256 is
+`757c0febf40da2e893f99795dc12bbf1e5bf933fe55b326cab512f80f35d67b1`, its canonical-material
+SHA-256 is `76316ec1e4c4edc48b02942ec27624b6a05926b91cf11dbcf08a64c65d18e728`, and the read-only
+external corroborating baseline SHA-256 is
+`529da1152e5d088a9ff3bff075829d8f22f5b4bed95446eac119f9d79e338122`. Its exact sorted unique
+26-file retained plan preserves the accepted 126/72 and A-09 authority and remains discoverable
+exactly once by current CI, with zero production, current-generation or client-runtime reach. The
+exact ordered limitations remain `no-active-v2-family`, `no-v2-rendered-storefront`,
+`no-visual-recipe`,
+`no-design-dna-v2`, `no-v2-frame-family`, `no-v2-page-family-realization`,
+`no-ai-design-director`, `no-screenshot-critic`, `no-live-ai-quality-evidence`, and
+`no-v2-commercial-quality-claim`. P10B-19A-10C is Baseline; parent P10B-19A-10 and P10B-19A are
+Baseline / closed. P10B-19 and P10B remain Partial. P10B-19B-01 is Planned / exact next and has not
+begun.
 P10B-19A-06 adds one strict, deeply readonly PageBlueprint v2 omission, substitution and fallback
 companion at schema version `1.0.0`. It binds the exact A-03 structural, A-04 asset-role and A-05
 responsive blueprint identity; declares only the
@@ -378,8 +399,9 @@ Baseline. P10B-18D is now a completed diagnostic with live commercial quality re
 PRE is Baseline. P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are
 Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B,
 P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent
-P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10 and P10B-19A remain
-Partial, and P10B-19A-10C is the exact next implementation task.
+P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10C is Baseline; parent
+P10B-19A-10 and P10B-19A are Baseline / closed. P10B-19 and P10B remain Partial, and
+P10B-19B-01 is Planned / exact next and has not begun.
 
 Owner: Vesko Oy
 
@@ -397,10 +419,10 @@ compiler/coordinator, one final materializer/executor, the proposal lifecycle, p
 compiler, and Puck as an adapter rather than persisted truth. P10B remains Partial. P10B-19A-01
 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is
 Baseline / closed. P10B-19A-09A, P10B-19A-09B and P10B-19A-09C are Baseline; parent
-P10B-19A-09 is Baseline / closed. P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline;
-parent P10B-19A-10B is Baseline / closed. P10B-19A-10 and P10B-19A remain Partial.
-P10B-19A-10C is exact next, P10B-19B-01 is Planned after A-10C, and the remaining
-P10B-19B through P10B-19J work remains Planned.
+P10B-19A-09 is Baseline / closed. P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and
+P10B-19A-10C are Baseline; parents P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19 and P10B remain Partial. P10B-19B-01 is Planned / exact next and has not begun; the
+remaining P10B-19B through P10B-19J work remains Planned.
 
 ## Contract-driven development baseline
 
@@ -446,7 +468,7 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - P10B-19A-08B = Baseline
 - P10B-19A-08C = Baseline
 - P10B-19A-08 = Baseline / closed
-- P10B-19A = Partial
+- P10B-19A = Baseline / closed
 - P10B-19A-09A = Baseline
 - P10B-19A-09B = Baseline
 - P10B-19A-09C = Baseline
@@ -454,10 +476,12 @@ the final performance claim. DEVX-01E provides the measured suite inventory; DEV
 - P10B-19A-10A = Baseline
 - P10B-19A-10B1 = Baseline
 - P10B-19A-10B = Baseline / closed
-- P10B-19A-10 = Partial
+- P10B-19A-10 = Baseline / closed
 - P10B-19A-10B2 = Baseline
-- P10B-19A-10C = exact next implementation task
-- P10B-19B-01 = Planned after P10B-19A-10C
+- P10B-19A-10C = Baseline
+- P10B-19 = Partial
+- P10B-19B-01 = Planned / exact next; not begun
+- P10B = Partial
 
 The canonical serial browser command now reads the versioned 12-suite inventory in
 `scripts/playwright-ci-suites.v1.json` through `scripts/playwright-ci.mjs`. CI still runs one

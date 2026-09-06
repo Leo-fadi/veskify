@@ -99,6 +99,33 @@ const forceAcceptedP10b18cHeadingToNewPage = (documentXml) => {
   return result;
 };
 
+const keepAcceptedP10b18b05BodyTogether = (documentXml) => {
+  const openingText = "The accepted package preserves one";
+  const closingText = "PR review, CI and merge remain.";
+  let matchCount = 0;
+  let patched = false;
+  const result = documentXml.replace(/<w:p>[\s\S]*?<\/w:p>/gu, (paragraphXml) => {
+    if (!paragraphXml.includes(openingText) || !paragraphXml.includes(closingText)) {
+      return paragraphXml;
+    }
+    matchCount += 1;
+    if (!paragraphXml.includes("<w:pPr>")) {
+      throw new Error("The tracker P10B-18B-05 accepted body has no paragraph properties.");
+    }
+    if (paragraphXml.includes("<w:keepLines/>")) {
+      throw new Error("The tracker P10B-18B-05 accepted body already keeps its lines together.");
+    }
+    patched = true;
+    return paragraphXml.replace("<w:pPr>", "<w:pPr><w:keepLines/>");
+  });
+  if (matchCount !== 1 || !patched) {
+    throw new Error(
+      `Expected exactly one tracker P10B-18B-05 accepted body, received ${matchCount}.`,
+    );
+  }
+  return result;
+};
+
 const patchTrackerDocumentXml = (documentXml) => {
   const resized = documentXml.replace(tablePattern, (tableXml) => {
     if (trackerTable(tableXml)) return resizeTrackerTable(tableXml);
@@ -106,7 +133,8 @@ const patchTrackerDocumentXml = (documentXml) => {
     return tableXml;
   });
   const wholeRows = preventTableRowSplits(resized);
-  const paginatedP10b18c = forceAcceptedP10b18cHeadingToNewPage(wholeRows);
+  const wholeP10b18b05Body = keepAcceptedP10b18b05BodyTogether(wholeRows);
+  const paginatedP10b18c = forceAcceptedP10b18cHeadingToNewPage(wholeP10b18b05Body);
   return forceArchitectureStateHeadingToNewPage(paginatedP10b18c);
 };
 
@@ -157,7 +185,7 @@ try {
     title: "Veskify Development Delivery Tracker",
     subtitle: "Version 1.3.0",
     coverLines: [
-      "Delivery status baseline: 4 September 2026, P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure",
+      "Delivery status baseline: 4 September 2026, P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

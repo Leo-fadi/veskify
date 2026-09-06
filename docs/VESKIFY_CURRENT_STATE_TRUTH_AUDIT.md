@@ -2,11 +2,11 @@
 
 **Audit date:** 4 September 2026
 
-**Repository baseline:** P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure
+**Repository baseline:** P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate
 
-**Scope:** code-grounded current-truth record synchronized through the completed P10B-19A-10B2
-fail-closed cross-authority baseline and parent A-10B closure while retaining frozen A-10A,
-A-10B1 and the P10B-18D live commercial-quality rejection
+**Scope:** code-grounded current-truth record synchronized through the product-owner-accepted
+P10B-19A-10C structural architecture closure and closed A-10/P10B-19A package while retaining
+frozen A-10A/A-10B1/A-10B2 authority and the P10B-18D live commercial-quality rejection
 
 ## 1. Audit contract
 
@@ -85,10 +85,10 @@ Baseline. P10B-18C deterministic commercial-quality/diversity acceptance is also
 delivery, accepted live-AI commercial quality, Vesko environment wiring, and production operation
 are not. P10B-19 PRE, P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C
 are Baseline; parent P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B,
-P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent
-P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10 and P10B-19A remain
-Partial. A-10C is the exact next implementation task, P10B-19B-01 is Planned after A-10C, and
-P10B remains Partial.
+P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are Baseline; parents
+P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed. P10B-19B-01 is the
+exact next implementation task and is Planned / exact next; it has not begun. P10B-19 and P10B
+remain Partial.
 
 ## 3. Mission and product boundary
 
@@ -319,9 +319,10 @@ quality, and P10B-18B-05 closes bounded content/support/utility quality. Parent 
 diagnostic with live commercial quality rejected. P10B-18 and P10B remain **Partial**. P10B-19 PRE,
 P10B-19A-01 through P10B-19A-07 and P10B-19A-08A through P10B-19A-08C are Baseline; parent
 P10B-19A-08 is Baseline / closed. P10B-19A-09A, P10B-19A-09B, P10B-19A-09C and
-P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent P10B-19A-09 and parent
-P10B-19A-10B are Baseline / closed. P10B-19A-10 and P10B-19A remain Partial, and A-10C is the
-exact next implementation task. P10A does not require another registry, proposal model, recipe
+P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are Baseline; parents P10B-19A-09,
+P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed. P10B-19B-01 is the exact next
+implementation task and is Planned / exact next; it has not begun. P10B-19 and P10B remain Partial.
+P10A does not require another registry, proposal model, recipe
 engine, component system, provider, publish command, or merchant editor integration.
 
 ### Decided P10A/P10C editor boundary
@@ -431,18 +432,18 @@ not merely untested.
 
 ## 11. Documentation, naming, status, and duplication drift
 
-| Drift                                                                               | Current repository truth                                                                                                                                                                                                                                                                                                                                                                                                                                                    | v1.3.0 action                                                                                                                                                                     |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| README and roadmap call Phase 9 active                                              | `P9_CLOSEOUT_RECORD.md` records the explicit post-PR-#134 closeout; later P10A work is merged.                                                                                                                                                                                                                                                                                                                                                                              | Replace active-Phase-9 narrative while retaining the evidence limitations and historical records.                                                                                 |
-| Earlier roadmap called P10A planned after Phase 9                                   | All required P10A gates are merged; P10B-18A, completed P10B-18B, P10B-18C, P10B-16P-05B, P10B-19 PRE, P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are accepted Baselines; parents P10B-19A-08, P10B-19A-09 and P10B-19A-10B are Baseline / closed; P10B-18D is a rejected-quality diagnostic Baseline while P10B-18/P10B/P10B-19A and parent A-10 remain Partial. | Keep P10A and parents P10B-19A-08/P10B-19A-09/P10B-19A-10B closed, keep P10B, P10B-19A and parent A-10 Partial, make A-10C exact next, and keep historical records point-in-time. |
-| Earlier SDD verified baseline was `4a96a5a`                                         | Current closure baseline is `3d36f54`; significant authority landed afterward.                                                                                                                                                                                                                                                                                                                                                                                              | Keep the closure baseline current and preserve older hashes only in revision history.                                                                                             |
-| SDD says deterministic discovery was the only adapter in P7-01                      | A bounded public server adapter exists, but merchant runtime wiring is incomplete.                                                                                                                                                                                                                                                                                                                                                                                          | Separate adapter implementation from merchant reachability and production service status.                                                                                         |
-| `StorefrontDesignSystemV1` and executable profiles both describe recipes/directions | PageBlueprint profiles execute; direction material still supplies active planner context.                                                                                                                                                                                                                                                                                                                                                                                   | Name the direction material as transitional bounded selection data and remove duplicated recipe authority through an explicit migration.                                          |
-| Legacy V1 registry and V2 registry coexist                                          | V1 is still the generic Puck/snapshot bridge; V2 is the capability authority; native dynamic/home components bypass or bridge it.                                                                                                                                                                                                                                                                                                                                           | Mark the V1 bridge **Deprecated** only where a tested V2 migration path exists; do not delete active compatibility prematurely.                                                   |
-| P10A-04B document records 19 blockers and six commercial gaps                       | Current test expectation is 16 blockers, 25 metadata gaps, one migration item, zero commercial gaps.                                                                                                                                                                                                                                                                                                                                                                        | Treat the report output as current and the task document as historical baseline.                                                                                                  |
-| “Same renderer everywhere” is stated broadly                                        | Shared/native bridges largely preserve implementation identity, but conformance still reports target/ownership drift.                                                                                                                                                                                                                                                                                                                                                       | Scope parity claims per component and require zero relevant blocking defects before global wording.                                                                               |
-| Merchant-facing names include historical P9/P10 labels and Veskify proof routes     | Normal UI says Storefront Studio; active P10B-16L routes are removed and P9/Lumo live generation is isolated historical evidence.                                                                                                                                                                                                                                                                                                                                           | Keep historical evidence names internal; standardize merchant language only in product surfaces and finish consumer-verified cleanup under P10B-16P-05B.                          |
-| Authentication/tenancy appear implemented in contract prose                         | They are deterministic/standalone authorities; no production identity system exists.                                                                                                                                                                                                                                                                                                                                                                                        | Use **Partial** for contracts/adapters and **Blocked** for real environment operation.                                                                                            |
+| Drift                                                                               | Current repository truth                                                                                                                                                                                                                                                                                                                                         | v1.3.0 action                                                                                                                                                          |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| README and roadmap call Phase 9 active                                              | `P9_CLOSEOUT_RECORD.md` records the explicit post-PR-#134 closeout; later P10A work is merged.                                                                                                                                                                                                                                                                   | Replace active-Phase-9 narrative while retaining the evidence limitations and historical records.                                                                      |
+| Earlier roadmap called P10A planned after Phase 9                                   | All required P10A gates are merged; P10B-18A, completed P10B-18B, P10B-18C, P10B-16P-05B, P10B-19 PRE and P10B-19A-01 through P10B-19A-10C are accepted Baselines; parents P10B-19A-08, P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed; P10B-18D is a rejected-quality diagnostic Baseline while P10B-18/P10B-19/P10B remain Partial. | Keep P10A and all completed P10B-19A parent authorities closed, make P10B-19B-01 Planned / exact next without beginning it, and keep historical records point-in-time. |
+| Earlier SDD verified baseline was `4a96a5a`                                         | Current closure baseline is `3d36f54`; significant authority landed afterward.                                                                                                                                                                                                                                                                                   | Keep the closure baseline current and preserve older hashes only in revision history.                                                                                  |
+| SDD says deterministic discovery was the only adapter in P7-01                      | A bounded public server adapter exists, but merchant runtime wiring is incomplete.                                                                                                                                                                                                                                                                               | Separate adapter implementation from merchant reachability and production service status.                                                                              |
+| `StorefrontDesignSystemV1` and executable profiles both describe recipes/directions | PageBlueprint profiles execute; direction material still supplies active planner context.                                                                                                                                                                                                                                                                        | Name the direction material as transitional bounded selection data and remove duplicated recipe authority through an explicit migration.                               |
+| Legacy V1 registry and V2 registry coexist                                          | V1 is still the generic Puck/snapshot bridge; V2 is the capability authority; native dynamic/home components bypass or bridge it.                                                                                                                                                                                                                                | Mark the V1 bridge **Deprecated** only where a tested V2 migration path exists; do not delete active compatibility prematurely.                                        |
+| P10A-04B document records 19 blockers and six commercial gaps                       | Current test expectation is 16 blockers, 25 metadata gaps, one migration item, zero commercial gaps.                                                                                                                                                                                                                                                             | Treat the report output as current and the task document as historical baseline.                                                                                       |
+| “Same renderer everywhere” is stated broadly                                        | Shared/native bridges largely preserve implementation identity, but conformance still reports target/ownership drift.                                                                                                                                                                                                                                            | Scope parity claims per component and require zero relevant blocking defects before global wording.                                                                    |
+| Merchant-facing names include historical P9/P10 labels and Veskify proof routes     | Normal UI says Storefront Studio; active P10B-16L routes are removed and P9/Lumo live generation is isolated historical evidence.                                                                                                                                                                                                                                | Keep historical evidence names internal; standardize merchant language only in product surfaces and finish consumer-verified cleanup under P10B-16P-05B.               |
+| Authentication/tenancy appear implemented in contract prose                         | They are deterministic/standalone authorities; no production identity system exists.                                                                                                                                                                                                                                                                             | Use **Partial** for contracts/adapters and **Blocked** for real environment operation.                                                                                 |
 
 ## 12. Decisions preserved by the v1.3.0 synchronization
 
@@ -480,9 +481,9 @@ The later synchronization must make or preserve these decisions explicitly:
     Partial, record P10B-18D as a rejected-quality diagnostic Baseline, record P10B-19 PRE as an
     accepted architecture Baseline, record P10B-19A-01 through P10B-19A-07 and P10B-19A-08A
     through P10B-19A-08C, P10B-19A-09A through P10B-19A-09C, P10B-19A-10A,
-    P10B-19A-10B1 and P10B-19A-10B2 as Baseline, close parent P10B-19A-08, parent
-    P10B-19A-09 and parent A-10B, leave A-10 and P10B-19A Partial, and make P10B-19A-10C the
-    exact next implementation task.
+    P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C as Baseline, close parent P10B-19A-08,
+    parent P10B-19A-09, parent A-10B, A-10 and P10B-19A, and make P10B-19B-01 the exact next
+    implementation task without beginning it; keep P10B-19 and P10B Partial.
 13. Clarify current onboarding: deterministic local project creation is reachable; URL discovery,
     exact approved-brief runtime correlation, and existing Vesko catalogue creation are not one
     complete merchant journey.
@@ -504,9 +505,9 @@ P10B-18B, P10B-18C and P10B-16P-05B are Baseline, while P10B-18 remains Partial.
 rejected-quality diagnostic Baseline. P10B-19 PRE, P10B-19A-01 through P10B-19A-07 and
 P10B-19A-08A through P10B-19A-08C are Baseline; parent P10B-19A-08 is Baseline / closed.
 P10B-19A-09A, P10B-19A-09B, P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and
-P10B-19A-10B2 are Baseline; parent P10B-19A-09 and parent P10B-19A-10B are Baseline / closed.
-P10B-19A-10 and P10B-19A remain Partial; A-10C is the exact next implementation task. P10B
-remains Partial.
+P10B-19A-10B2 and P10B-19A-10C are Baseline; parents P10B-19A-09, P10B-19A-10B,
+P10B-19A-10 and P10B-19A are Baseline / closed. P10B-19B-01 is the exact next implementation
+task and is Planned / exact next; it has not begun. P10B-19 and P10B remain Partial.
 Historical documentation remains historical.
 
 ## P10B-18B-06 accepted bounded-authority synchronization
@@ -582,9 +583,9 @@ protected-state and frozen-matrix evidence exist. The product owner accepted the
 August 2026; P10B-18B-05 and completed P10B-18B are Baseline, P10B-18/P10B remain Partial, and
 accepted history is unchanged. At that checkpoint P10B-18C was next. P10B-19 PRE,
 P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through
-P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are now Baseline; parent P10B-19A-08 and parent
-P10B-19A-09 are Baseline / closed. Parent P10B-19A-10B is Baseline / closed; P10B-19A-10 and P10B-19A remain Partial,
-and P10B-19A-10B2 is Baseline.
+P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are now Baseline;
+parents P10B-19A-08, P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19B-01 is the exact next implementation task and has not begun; P10B-19 and P10B remain Partial.
 
 ## P10B-18C and P10B-16P-05B current-state synchronization
 
@@ -604,10 +605,10 @@ persisted evidence authority. Provider, Vesko and real-publication calls for cle
 
 P10B-18D is a Baseline diagnostic with live commercial quality rejected. P10B-19 PRE,
 P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through
-P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent
-P10B-19A-08, parent P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10 and
-P10B-19A remain Partial; A-10C is the exact next implementation task, and
-P10B-19B-01 is Planned after A-10C. P10B remains Partial.
+P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are Baseline; parents
+P10B-19A-08, P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19B-01 is the exact next implementation task and is Planned / exact next; it has not begun.
+P10B-19 and P10B remain Partial.
 
 ## P10B-18D current-state truth
 
@@ -636,10 +637,11 @@ Current status is `P10B-18D = Baseline diagnostic / live commercial quality reje
 `P10B-19A-01 through P10B-19A-08C = Baseline`, `P10B-19A-08 = Baseline / closed`,
 `P10B-19A-09A = Baseline`, `P10B-19A-09B = Baseline`, `P10B-19A-09C = Baseline`,
 `P10B-19A-09 = Baseline / closed`, `P10B-19A-10A = Baseline`,
-`P10B-19A-10B1 = Baseline`, `P10B-19A-10B = Baseline / closed`, `P10B-19A-10 = Partial`,
-`P10B-19A = Partial`, `P10B-19A-10B2 = Baseline`,
-`P10B-19A-10C = exact next implementation task`, and
-`P10B-19B-01 = Planned after P10B-19A-10C`. P10B-19B through P10B-19J remain Planned.
+`P10B-19A-10B1 = Baseline`, `P10B-19A-10B2 = Baseline`,
+`P10B-19A-10B = Baseline / closed`, `P10B-19A-10C = Baseline`,
+`P10B-19A-10 = Baseline / closed`, `P10B-19A = Baseline / closed`,
+`P10B-19B-01 = exact next implementation task`, `P10B-19 = Partial`, and `P10B = Partial`.
+P10B-19B through P10B-19J remain Planned.
 
 ## P10B-19 PRE current-state baseline
 
@@ -675,9 +677,10 @@ activation, persistence, publication, and runtime consumers remain zero. A-01 th
 remain unchanged.
 
 P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through
-P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent
-P10B-19A-08, parent P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10 and
-P10B-19A remain Partial; A-10C is the exact next implementation task, and P10B remains Partial.
+P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are Baseline; parents
+P10B-19A-08, P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19B-01 is the exact next implementation task and is Planned / exact next; it has not begun.
+P10B-19 and P10B remain Partial.
 
 ## P10B-19A-08A current-state baseline
 
@@ -704,9 +707,9 @@ publication behavior is unchanged.
 The A-08A/A-08B/A-08C split is delivery-only and preserves the accepted P10B-19 PRE architecture
 and P10B-19A-09 boundary. P10B-19A-08A through P10B-19A-08C and parent P10B-19A-08 are Baseline;
 the parent is closed. P10B-19A-09A, P10B-19A-09B, P10B-19A-09C, P10B-19A-10A and
-P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent P10B-19A-09 and parent P10B-19A-10B are
-Baseline / closed. P10B-19A-10 and P10B-19A remain Partial; A-10C is the exact next implementation
-task, and P10B remains Partial.
+P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are Baseline; parents P10B-19A-09,
+P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed. P10B-19B-01 is the exact next
+implementation task and is Planned / exact next; it has not begun. P10B-19 and P10B remain Partial.
 
 ## P10B-19A-08B current-state baseline
 
@@ -748,9 +751,10 @@ current-generation runtime counts remain zero, with no visual, runtime-wiring, p
 persistence or publication change.
 
 P10B-19A-08C and parent P10B-19A-08 are Baseline; the parent is closed. P10B-19A-09A,
-P10B-19A-09B, P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent
-P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10 and P10B-19A remain
-Partial; A-10C is the exact next implementation task, and P10B remains Partial.
+P10B-19A-09B, P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are
+Baseline; parents P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19B-01 is the exact next implementation task and is Planned / exact next; it has not begun.
+P10B-19 and P10B remain Partial.
 
 ## P10B-19A-09A current-state baseline
 
@@ -775,9 +779,10 @@ read/render replay without write-back; A-09C owns the now-complete publication r
 parent A-09 closure.
 
 P10B-19A-01 through P10B-19A-07, P10B-19A-08A through P10B-19A-08C, P10B-19A-09A through
-P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and P10B-19A-10B2 are Baseline; parent
-P10B-19A-08, parent P10B-19A-09 and parent P10B-19A-10B are Baseline / closed. P10B-19A-10 and
-P10B-19A remain Partial; A-10C is the exact next implementation task, and P10B remains Partial.
+P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1, P10B-19A-10B2 and P10B-19A-10C are Baseline; parents
+P10B-19A-08, P10B-19A-09, P10B-19A-10B, P10B-19A-10 and P10B-19A are Baseline / closed.
+P10B-19B-01 is the exact next implementation task and is Planned / exact next; it has not begun.
+P10B-19 and P10B remain Partial.
 
 ## P10B-19A-09B current-state baseline
 
@@ -805,9 +810,9 @@ original-lineage recovery, migration, publication compatibility, v2 execution, p
 operation nor merchant-visible change.
 
 P10B-19A-09A, P10B-19A-09B, P10B-19A-09C, P10B-19A-10A, P10B-19A-10B1 and
-P10B-19A-10B2 are Baseline; parent P10B-19A-09 and parent P10B-19A-10B are Baseline / closed.
-P10B-19A-10 and P10B-19A remain Partial; A-10C is the exact next implementation task, and P10B
-remains Partial.
+P10B-19A-10B2 and P10B-19A-10C are Baseline; parents P10B-19A-09, P10B-19A-10B,
+P10B-19A-10 and P10B-19A are Baseline / closed. P10B-19B-01 is the exact next implementation
+task and is Planned / exact next; it has not begun. P10B-19 and P10B remain Partial.
 
 ## P10B-19A-09C current-state baseline
 
@@ -838,11 +843,10 @@ merchant-visible change, original lineage inference, snapshot rewrite or v2 acti
 
 `P10B-19A-09A = Baseline`; `P10B-19A-09B = Baseline`; `P10B-19A-09C = Baseline`;
 `P10B-19A-09 = Baseline / closed`; `P10B-19A-10A = Baseline`;
-`P10B-19A-10B1 = Baseline`; `P10B-19A-10B = Baseline / closed`;
-`P10B-19A-10 = Partial`; `P10B-19A = Partial`;
-`P10B-19A-10B2 = Baseline`;
-`P10B-19A-10C = exact next implementation task`;
-`P10B-19B-01 = Planned after P10B-19A-10C`; `P10B = Partial`.
+`P10B-19A-10B1 = Baseline`; `P10B-19A-10B2 = Baseline`;
+`P10B-19A-10B = Baseline / closed`; `P10B-19A-10C = Baseline`;
+`P10B-19A-10 = Baseline / closed`; `P10B-19A = Baseline / closed`;
+`P10B-19B-01 = exact next implementation task`; `P10B-19 = Partial`; `P10B = Partial`.
 
 ## P10B-19A-10A current-state baseline
 
@@ -887,11 +891,10 @@ or merchant-visible behavior is added.
 `P10B-19A-01 through P10B-19A-07 = Baseline`; `P10B-19A-08A through P10B-19A-08C = Baseline`;
 `P10B-19A-09A through P10B-19A-09C = Baseline`; `P10B-19A-08 = Baseline / closed`;
 `P10B-19A-09 = Baseline / closed`; `P10B-19A-10A = Baseline`;
-`P10B-19A-10B1 = Baseline`; `P10B-19A-10B = Baseline / closed`;
-`P10B-19A-10 = Partial`; `P10B-19A = Partial`;
-`P10B-19A-10B2 = Baseline`;
-`P10B-19A-10C = exact next implementation task`;
-`P10B-19B-01 = Planned after P10B-19A-10C`; `P10B = Partial`.
+`P10B-19A-10B1 = Baseline`; `P10B-19A-10B2 = Baseline`;
+`P10B-19A-10B = Baseline / closed`; `P10B-19A-10C = Baseline`;
+`P10B-19A-10 = Baseline / closed`; `P10B-19A = Baseline / closed`;
+`P10B-19B-01 = exact next implementation task`; `P10B-19 = Partial`; `P10B = Partial`.
 
 ## P10B-19A-10B1 current-state baseline
 
@@ -927,10 +930,10 @@ bounded evidence. Neither child proves A-10/P10B-19A closure, production activat
 or merchant-visible behavior.
 
 `P10B-19A-10A = Baseline`; `P10B-19A-10B1 = Baseline`;
-`P10B-19A-10B = Baseline / closed`; `P10B-19A-10 = Partial`; `P10B-19A = Partial`;
 `P10B-19A-10B2 = Baseline`;
-`P10B-19A-10C = exact next implementation task`;
-`P10B-19B-01 = Planned after P10B-19A-10C`; `P10B = Partial`.
+`P10B-19A-10B = Baseline / closed`; `P10B-19A-10C = Baseline`;
+`P10B-19A-10 = Baseline / closed`; `P10B-19A = Baseline / closed`;
+`P10B-19B-01 = exact next implementation task`; `P10B-19 = Partial`; `P10B = Partial`.
 
 ## P10B-19A-10B2 current-state baseline
 
@@ -977,6 +980,60 @@ expanding the accepted 73-child architecture.
 
 `P10B-19A-10A = Baseline`; `P10B-19A-10B1 = Baseline`;
 `P10B-19A-10B2 = Baseline`; `P10B-19A-10B = Baseline / closed`;
-`P10B-19A-10 = Partial`; `P10B-19A = Partial`;
-`P10B-19A-10C = exact next implementation task`;
-`P10B-19B-01 = Planned after P10B-19A-10C`; `P10B = Partial`.
+`P10B-19A-10C = Baseline`; `P10B-19A-10 = Baseline / closed`;
+`P10B-19A = Baseline / closed`; `P10B-19B-01 = exact next implementation task`;
+`P10B-19 = Partial`; `P10B = Partial`.
+
+## P10B-19A-10C current-state baseline
+
+P10B-19A-10C closes only the accepted structural-architecture package. It is test, evidence and
+constitutional-documentation authority at exact base
+`f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37`; production source remains unchanged. The checked
+fresh-clone authority is
+`tests/fixtures/p10b-19a-10c-architecture-closure-manifest.v1.json`. It binds the sorted unique
+26-file retained plan, exact-once current CI discovery and exact-once Vitest shard assignment.
+
+The exact product-owner decision is `ACCEPT P10B-19A STRUCTURAL ARCHITECTURE CLOSURE`. It accepts
+candidate
+`p10b-19a-structural-architecture-closure-candidate-v1_11823_e1482cb9f76b470302823bc25f767243cf108776cfe318dd9194821e0ce55e8e`
+under decision fingerprint
+`p10b-19a-product-owner-architecture-decision-v1_653_1e2f42c02bcac0e507b032eb81885aa3797d734ba94371f3f97047d22523e88b`.
+The final closure fingerprint is
+`p10b-19a-structural-architecture-closure-v1_12651_76316ec1e4c4edc48b02942ec27624b6a05926b91cf11dbcf08a64c65d18e728`;
+its canonical material SHA-256 is `76316ec1e4c4edc48b02942ec27624b6a05926b91cf11dbcf08a64c65d18e728`.
+The checked fixture SHA-256 is `757c0febf40da2e893f99795dc12bbf1e5bf933fe55b326cab512f80f35d67b1`;
+the read-only external baseline SHA-256 is
+`529da1152e5d088a9ff3bff075829d8f22f5b4bed95446eac119f9d79e338122`.
+
+All 11 frozen predecessor files from A-10A/A-10B1/A-10B2 remain byte-identical. The A-10A retained
+inventory remains 24 matrix entries, 76 protected production-source hashes and nine production-
+inactivity assertions. Accepted complete-126, frozen-72 and A-09 metrics remain unchanged, as do
+A-10B1 positive authority and the A-10B2 36-of-36 fail-closed matrix.
+
+The immutable architecture file remains SHA-256
+`5292792dae97273411702eeaf468575172c0cf46b026103216423de29eaf47fd` with 21 numbered sections,
+four Mermaid diagrams, 73 accepted architecture children and zero nested-delivery child delta.
+Production candidates, profiles, contexts, evaluations, requests, receipts, active/selectable
+families, production-source changes, current-generation consumers, client-runtime consumers,
+merchant-visible changes, provider/Vesko/external-publication calls, A-10C publication work, image
+generation and secret-file access all remain zero. No current-generation or client-runtime
+reachability is introduced.
+
+The accepted limitations remain, in exact order:
+
+1. `no-active-v2-family`
+2. `no-v2-rendered-storefront`
+3. `no-visual-recipe`
+4. `no-design-dna-v2`
+5. `no-v2-frame-family`
+6. `no-v2-page-family-realization`
+7. `no-ai-design-director`
+8. `no-screenshot-critic`
+9. `no-live-ai-quality-evidence`
+10. `no-v2-commercial-quality-claim`
+
+Architecture acceptance is not merge authority. A-10C has no screenshot gate. P10B-19B-01 has
+not begun; after A-10C merges, `VisualRecipeIntentV1 Safe Schema and Capability Projection` is the
+exact next implementation task. `P10B-19A-10C = Baseline`;
+`P10B-19A-10 = Baseline / closed`; `P10B-19A = Baseline / closed`;
+`P10B-19B-01 = exact next implementation task`; `P10B-19 = Partial`; `P10B = Partial`.
