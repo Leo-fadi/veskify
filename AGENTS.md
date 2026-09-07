@@ -168,6 +168,11 @@ bounded operational persistence, one-concept default, two initial families, and 
 The roadmap remains the delivery-order authority and the tracker remains the sole status authority.
 Historical P10B-19A/A-10C records remain event evidence and do not schedule successor work.
 
+For an explicitly owner-approved finite batch, the coordinator may continue only the named next
+child after the preceding child is accepted and merged. It may reuse one worktree sequentially only
+after a clean boundary; concurrent writing still requires separate worktrees. Workers and verifiers
+stop at their child checkpoint. Each merge remains explicit owner authority.
+
 ### 8.1 Branch discipline
 
 - One task, one branch, one worktree and one PR.

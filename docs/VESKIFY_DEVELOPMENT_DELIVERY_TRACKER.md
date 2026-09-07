@@ -1,9 +1,10 @@
 # Veskify Development Delivery Tracker
 
-> **Repository status effective upon explicit owner adoption/merge of AR-01:** This projection does not
+> **Candidate status effective upon explicit owner acceptance/merge of AR-02A:** This projection does not
 > claim that this PR has merged or that owner acceptance has occurred.
-> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.**
-> AR-02 is **Planned — exact next task, not started**. AR-23 depends on AR-01 and is not serialized behind
+> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.**
+> AR-02 is **Partial**; definition/materializer isolation remains. AR-03 is **Planned**. It is unstarted.
+> AR-03A is **Planned — exact next selected child**. AR-23 depends on AR-01 and is not serialized behind
 > visual work. This tracker owns current status; the roadmap owns dependency order.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -24,6 +25,11 @@
 Implementation status and evidence level are separate. A task is not done because a contract, test,
 or partial implementation exists. The checkbox changes only when the task's complete outcome and
 required evidence are accepted.
+
+| Child  | Parent | Bounded outcome and evidence                                                                                                                        | Status effective on AR-02A acceptance/merge  |
+| ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| AR-02A | AR-02  | Separate live renderer observation and composition; [contract](governance/task-contracts/AR/AR-02A.json), [report](AR_02A_IMPLEMENTATION_REPORT.md) | **Baseline / closed**                        |
+| AR-03A | AR-03  | Extract route matching and errors; [approved queue](BATCH_01_EXECUTION.md)                                                                          | **Planned** — next selected child; unstarted |
 
 ## Overall phase checklist
 

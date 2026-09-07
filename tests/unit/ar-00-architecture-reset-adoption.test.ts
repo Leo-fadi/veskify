@@ -429,7 +429,7 @@ describe("post-adoption repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner adoption/merge");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02A");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -459,10 +459,6 @@ describe("post-adoption repository state and PR lifecycle", () => {
             .replace(
               "**AR-00 current status authority:** **Baseline / closed",
               "**AR-00 current status authority:** **Active — pending adoption/merge",
-            )
-            .replaceAll(
-              "exact next task, not started",
-              "sole next task after AR-00 adoption/merge",
             ),
         );
       }
@@ -611,8 +607,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "exact next task, not started",
-        "blocked; AR-02 is the sole next task after AR-00 adoption/merge",
+        "AR-03A is **Planned — exact next selected child**",
+        "AR-03A is **Planned — blocked selected child**",
       );
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
@@ -639,18 +635,18 @@ describe("AR-00 architecture-reset adoption guard", () => {
     }
   });
 
-  it("rejects current next-task declarations other than AR-02", () => {
+  it("rejects current next-task declarations other than AR-03A", () => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "AR-02 is Planned — exact next task, not started",
-        "AR-03 is the sole next reset task",
+        "AR-03A is the exact\n> next selected child after",
+        "AR-30 is the exact\n> next selected child after",
       );
       expect(changed).not.toBe(original);
       writeFileSync(readmePath, changed);
-      expect(() => check(directory)).toThrow(/AR-03/);
+      expect(() => check(directory)).toThrow(/AR-30/);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -662,8 +658,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-02 is **Planned — exact next task",
-        "AR-30 is **Planned — exact next task",
+        "AR-03A is **Planned — exact next selected child",
+        "AR-30 is **Planned — exact next selected child",
       );
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
@@ -875,7 +871,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
 });
 
 describe("AR-01 bounded proposed status transition", () => {
-  it.each(["AR-02", "AR-03", "AR-23", "AR-30"])(
+  it.each(["AR-02", "AR-03", "AR-03A", "AR-23", "AR-30"])(
     "rejects premature %s closure despite dependency eligibility",
     (task) => {
       const directory = fixture();

@@ -7,9 +7,11 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner adoption/merge of AR-01 and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed; AR-01 is Baseline / closed; AR-02 is Planned — exact next task, not started.
-AR-23 is eligible after AR-01 and is not serialized behind visual work.
+explicit owner acceptance/merge of AR-02A and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit
+owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation
+remains. AR-03 is Planned. It is unstarted. AR-03A is Planned — exact next selected child after
+AR-02A acceptance and merge. AR-23 is eligible after AR-01 and is not serialized behind visual work.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -719,7 +721,13 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 
 ### AR-02 — Separate pure capability metadata from rendering and diagnostics
 
-**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Planned detail:** future work; tracker status controls.
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Partial;
+definition and PageBlueprint materializer isolation remains; tracker status controls.
+
+The approved [AR-02A child](governance/task-contracts/AR/AR-02A.json) separates live renderer
+observation and report composition with unchanged observed behavior. It is a preparatory slice;
+the parent acceptance below still requires definition/materializer isolation. See its
+[implementation report](AR_02A_IMPLEMENTATION_REPORT.md) and the [BATCH-01 queue](BATCH_01_EXECUTION.md).
 
 **Outcome:** Template planning can use truthful component capabilities without importing editor/runtime/audit implementations.
 
@@ -745,7 +753,10 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 
 ### AR-03 — Extract dynamic-route authority without changing semantics
 
-**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Planned detail:** future work; tracker status controls.
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Planned.
+AR-03 is unstarted. Its approved AR-03A slice extracts route matching and errors after AR-02A
+acceptance and merge in the [BATCH-01 queue](BATCH_01_EXECUTION.md). This pilot execution order
+does not change the parent dependency on AR-01; tracker status controls.
 
 **Outcome:** Migration, validation, selection, runtime resolution and editor projection have clear separate owners.
 

@@ -15,5 +15,7 @@ export * from "./homepage";
 export * from "./product";
 export * from "./registry";
 export * from "./renderer-conformance";
+export * from "./renderer-observation";
+export * from "./live-renderer-conformance";
 export * from "./v2-registry";
 export * from "./merchant-section-label";
