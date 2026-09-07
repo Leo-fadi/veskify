@@ -391,7 +391,7 @@ for (const [path, block] of allCurrentAuthorities) {
   )) {
     addDependencies(subject, rawDependencies);
   }
-  for (const [, subject] of block.matchAll(/\b(AR-\d{2}) is the active amendment\b/giu)) {
+  for (const [, subject] of block.matchAll(/\b(AR-\d{2}[A-Z]?) is the active amendment\b/giu)) {
     activeAmendmentRecords.push({ path, subject });
   }
 }

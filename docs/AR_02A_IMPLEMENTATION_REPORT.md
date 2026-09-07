@@ -17,9 +17,9 @@ Partial, records AR-03 as Planned/unstarted, and selects AR-03A as the next seri
 bounded BATCH-01 coordination amendment adds no role, settings, provider, Vesko, publication, or
 deployment authority.
 
-Implementer validation passed 657 tests in the five declared files and one complete observation
-capture test. The final import-helper lint correction was rechecked with both boundary tests
-passing. Complete before/after observation JSON is equal: 33 registrations and 52 findings
+Initial implementer validation passed 657 tests in the five declared files and one complete
+observation capture test. The final import-helper lint correction was rechecked with both boundary
+tests passing. Complete before/after observation JSON is equal: 33 registrations and 52 findings
 (16 blocking, 29 metadata, seven future, zero commercial). Typecheck, scoped lint/format,
 documentation/exports and complete whitespace checks are recorded with their exact commands.
 
@@ -33,3 +33,8 @@ Implementer logs and subsequent independent/native verification evidence are ret
 `/Users/leo/veskify-batch-runs/BATCH-01/AR-02A/`; temporary execution files are under
 `/private/tmp/veskify-batch-01/ar-02a/`. Independent verification, commit, PR, review, CI and merge
 remain separately evidenced gates. No build, browser campaign, live provider or Vesko call ran.
+
+The one GitHub-review correction extends the existing active-amendment child-ID matcher and its
+negative control to AR-03A. An `AR-03A is the active amendment` declaration now fails with the
+existing contradictory-current-schedule behavior. Final post-review validation totals are retained
+separately and are not asserted by this initial implementer result.

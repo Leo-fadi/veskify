@@ -805,20 +805,23 @@ describe("AR-00 architecture-reset adoption guard", () => {
     },
   );
 
-  it.each(["AR-00", "AR-02"])("rejects %s as an active amendment after adoption", (task) => {
-    const directory = fixture();
-    const guidePath = join(directory, "docs/DEVELOPMENT_GUIDE.md");
-    try {
-      const original = readFileSync(guidePath, "utf8");
-      expect(original).toContain("AR-00 is Baseline / closed");
-      const changed = `${original}\n\n## CURRENT POLICY\n\n${task} is the active amendment.\n`;
-      expect(changed).not.toBe(original);
-      writeFileSync(guidePath, changed);
-      expect(() => check(directory)).toThrow(/contradictory current schedule/);
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
-  });
+  it.each(["AR-00", "AR-02", "AR-03A"])(
+    "rejects %s as an active amendment after adoption",
+    (task) => {
+      const directory = fixture();
+      const guidePath = join(directory, "docs/DEVELOPMENT_GUIDE.md");
+      try {
+        const original = readFileSync(guidePath, "utf8");
+        expect(original).toContain("AR-00 is Baseline / closed");
+        const changed = `${original}\n\n## CURRENT POLICY\n\n${task} is the active amendment.\n`;
+        expect(changed).not.toBe(original);
+        writeFileSync(guidePath, changed);
+        expect(() => check(directory)).toThrow(/contradictory current schedule/);
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("rejects duplicate current dependencies and detailed dependency declarations", () => {
     const trackerDirectory = fixture();
