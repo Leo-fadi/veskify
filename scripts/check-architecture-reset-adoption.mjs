@@ -438,7 +438,7 @@ for (const [path] of allCurrentAuthorities) {
 const nextTaskIds = (block) =>
   [
     ...block.matchAll(
-      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:sole|exact) next (?:reset )?(?:task|selected child)/giu,
+      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:(?:sole|exact) next (?:reset )?(?:task|selected child)|selected successor)/giu,
     ),
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {

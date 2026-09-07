@@ -16,3 +16,10 @@ The implementation handoff records the declared validation commands, their actua
 their totals in the external AR-03A implementer evidence directory. Baseline observation equality,
 public facade identity, shared typed errors, inclusive ranges, unique highest-priority matching,
 known/unknown behavior, editor behavior, and migration behavior are all required evidence.
+
+## GitHub review correction
+
+The single automatic-review finding showed that the current-policy guard rejected only `sole` or
+`exact` next-task wording. The existing successor test now covers both that wording and `selected
+successor`; the bounded matcher rejects both forms after the pilot. This review correction does not
+change the route extraction or its original validation totals.

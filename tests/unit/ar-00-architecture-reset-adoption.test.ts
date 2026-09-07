@@ -635,14 +635,17 @@ describe("AR-00 architecture-reset adoption guard", () => {
     }
   });
 
-  it("rejects a current successor declaration after the pilot", () => {
+  it.each([
+    "AR-30 is the exact next selected child after the pilot.",
+    "AR-30 is the selected successor after the pilot.",
+  ])("rejects a current successor declaration after the pilot: %s", (successor) => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
         "The pilot has no selected successor; remaining AR-02 work is future planning only.",
-        "AR-30 is the exact next selected child after the pilot.",
+        successor,
       );
       expect(changed).not.toBe(original);
       writeFileSync(readmePath, changed);
