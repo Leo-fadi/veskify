@@ -7,11 +7,12 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner acceptance/merge of AR-02A and does not assert the PR's lifecycle or owner acceptance.
+explicit owner acceptance/merge of AR-03A and does not assert the PR's lifecycle or owner acceptance.
 AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit
 owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation
-remains. AR-03 is Planned. It is unstarted. AR-03A is Planned — exact next selected child after
-AR-02A acceptance and merge. AR-23 is eligible after AR-01 and is not serialized behind visual work.
+remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain.
+AR-03A is Baseline / closed upon explicit owner acceptance/merge. The pilot has no selected successor;
+remaining AR-02 work is future planning only. AR-23 is eligible after AR-01 and is not serialized behind visual work.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -753,10 +754,10 @@ the parent acceptance below still requires definition/materializer isolation. Se
 
 ### AR-03 — Extract dynamic-route authority without changing semantics
 
-**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Planned.
-AR-03 is unstarted. Its approved AR-03A slice extracts route matching and errors after AR-02A
-acceptance and merge in the [BATCH-01 queue](BATCH_01_EXECUTION.md). This pilot execution order
-does not change the parent dependency on AR-01; tracker status controls.
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Partial;
+route resolution, editor, migration, and expand/fold isolation remain. The accepted
+[AR-03A child](governance/task-contracts/AR/AR-03A.json) extracted route matching and errors without
+changing semantics. This pilot execution order did not change the parent dependency on AR-01; tracker status controls.
 
 **Outcome:** Migration, validation, selection, runtime resolution and editor projection have clear separate owners.
 

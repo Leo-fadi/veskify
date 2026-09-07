@@ -8,8 +8,27 @@ import {
   listCommercialPdpProfiles,
 } from "@/application/storefront-templates/commercial-pdp-profiles";
 import { materializeExecutablePageBlueprint } from "@/application/storefront-templates/profile-materializer";
-import { createDynamicCommerceProductMatchContext } from "./product-match-context";
+import {
+  resolveCollectionContextArchetype,
+  resolveProductComplexityArchetype,
+  selectProductComplexityRule,
+  type DynamicCommerceCollectionMatchContext,
+} from "./route-selection";
+import {
+  DynamicCommerceRouteAuthorityError,
+  type DynamicCommerceRouteAuthorityErrorCode,
+} from "./route-errors";
 
+export {
+  dynamicCommerceRouteAuthorityErrorCodes,
+  DynamicCommerceRouteAuthorityError,
+  type DynamicCommerceRouteAuthorityErrorCode,
+} from "./route-errors";
+export {
+  resolveCollectionContextArchetype,
+  resolveProductComplexityArchetype,
+  type DynamicCommerceCollectionMatchContext,
+} from "./route-selection";
 export {
   createDynamicCommerceProductMatchContext,
   type DynamicCommerceProductMatchContext,
@@ -34,7 +53,6 @@ import {
   catalogueDisplayModelSchema,
   type CatalogueDisplayModel,
   type CollectionDisplayModel,
-  type ProductDisplayModel,
 } from "@/domain/catalogue";
 import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import { idSchema } from "@/domain/shared";
@@ -78,31 +96,6 @@ const PDP_PROFILE_TO_ARCHETYPE = {
 } as const;
 
 const GENERIC_PDP_ARCHETYPE_ID = "archetype_pdp_generic_fallback" as const;
-
-export const dynamicCommerceRouteAuthorityErrorCodes = [
-  "missing-authority",
-  "stale-authority",
-  "unknown-route",
-  "unknown-commerce-identity",
-  "unknown-archetype",
-  "stale-profile",
-  "incompatible-shared-frame",
-  "invalid-presentation",
-] as const;
-
-export type DynamicCommerceRouteAuthorityErrorCode =
-  (typeof dynamicCommerceRouteAuthorityErrorCodes)[number];
-
-export class DynamicCommerceRouteAuthorityError extends Error {
-  constructor(
-    readonly code: DynamicCommerceRouteAuthorityErrorCode,
-    message: string,
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = "DynamicCommerceRouteAuthorityError";
-  }
-}
 
 export type DynamicCommerceMigrationDecision = Readonly<{
   code:
@@ -770,104 +763,6 @@ function isLegacyDynamicPage(page: PageModel): boolean {
     page.pageFamily?.familyId === "product-detail" ||
     legacyDynamicSection(page) !== undefined
   );
-}
-
-function inBoundedRange(value: number, range?: { minimum: number; maximum: number }): boolean {
-  return range === undefined || (value >= range.minimum && value <= range.maximum);
-}
-
-function requireUniqueHighestPriorityRule<T extends { id: string; priority: number }>(
-  family: "collection" | "product",
-  rules: readonly T[],
-): T {
-  if (rules.length === 0) {
-    return fail(
-      "invalid-presentation",
-      `No registered ${family} matching rule supports the current canonical context.`,
-    );
-  }
-  const priority = Math.max(...rules.map((rule) => rule.priority));
-  const selected = rules.filter((rule) => rule.priority === priority);
-  if (selected.length !== 1) {
-    return fail(
-      "invalid-presentation",
-      `The current canonical ${family} context matches ambiguous rules at priority ${priority}.`,
-    );
-  }
-  return selected[0];
-}
-
-function selectProductComplexityRule(input: {
-  product: ProductDisplayModel;
-  rules: readonly DynamicCommerceProductComplexityRule[];
-  highConsideration?: boolean;
-}): DynamicCommerceProductComplexityRule {
-  const context = createDynamicCommerceProductMatchContext(input.product, input.highConsideration);
-  const matches = input.rules.filter((rule) => {
-    const match = rule.match;
-    return (
-      (match.optionStructure === "any" || match.optionStructure === context.optionStructure) &&
-      inBoundedRange(context.optionGroupCount, match.optionGroupCount) &&
-      (match.configurationComplexity === undefined ||
-        match.configurationComplexity === "any" ||
-        match.configurationComplexity === context.configurationComplexity) &&
-      (match.mediaAvailability === "any" ||
-        match.mediaAvailability === context.mediaAvailability) &&
-      inBoundedRange(context.mediaCount, match.mediaCount) &&
-      (match.mediaDepth === undefined ||
-        match.mediaDepth === "any" ||
-        match.mediaDepth === context.mediaDepth) &&
-      (match.highConsideration === "any" ||
-        (match.highConsideration === "required" && context.highConsideration) ||
-        (match.highConsideration === "excluded" && !context.highConsideration))
-    );
-  });
-  return requireUniqueHighestPriorityRule("product", matches);
-}
-
-export function resolveProductComplexityArchetype(input: {
-  product: ProductDisplayModel;
-  rules: readonly DynamicCommerceProductComplexityRule[];
-  highConsideration?: boolean;
-}): string {
-  return selectProductComplexityRule(input).archetypeId;
-}
-
-export type DynamicCommerceCollectionMatchContext = Readonly<{
-  depth: number;
-  productCount: number;
-  childCollections: boolean;
-  campaignEvidence: boolean;
-  merchandisingDensity: "compact" | "standard" | "spacious";
-}>;
-
-function selectCollectionContextRule(input: {
-  context: DynamicCommerceCollectionMatchContext;
-  rules: readonly DynamicCommerceCollectionContextRule[];
-}): DynamicCommerceCollectionContextRule {
-  const matches = input.rules.filter((rule) => {
-    const match = rule.match;
-    return (
-      inBoundedRange(input.context.depth, match.depth) &&
-      inBoundedRange(input.context.productCount, match.productCount) &&
-      (match.childCollections === "any" ||
-        (match.childCollections === "present" && input.context.childCollections) ||
-        (match.childCollections === "absent" && !input.context.childCollections)) &&
-      (match.campaignEvidence === "any" ||
-        (match.campaignEvidence === "present" && input.context.campaignEvidence) ||
-        (match.campaignEvidence === "absent" && !input.context.campaignEvidence)) &&
-      (match.merchandisingDensity === "any" ||
-        match.merchandisingDensity === input.context.merchandisingDensity)
-    );
-  });
-  return requireUniqueHighestPriorityRule("collection", matches);
-}
-
-export function resolveCollectionContextArchetype(input: {
-  context: DynamicCommerceCollectionMatchContext;
-  rules: readonly DynamicCommerceCollectionContextRule[];
-}): string {
-  return selectCollectionContextRule(input).archetypeId;
 }
 
 function productTypeMappings(
