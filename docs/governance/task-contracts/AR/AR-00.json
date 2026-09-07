@@ -1,0 +1,384 @@
+{
+  "$schema": "/Users/leo/veskify-worktrees/ar-00-architecture-reset-adoption/docs/governance/task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AR",
+  "taskId": "AR-00",
+  "title": "Adopt template-scoped architecture and replacement roadmap",
+  "repository": {
+    "root": "/Users/leo/veskify-worktrees/ar-00-architecture-reset-adoption",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-00-architecture-reset-adoption",
+  "baseCommit": "db95f7c055217d380e88cebe50256741905d222c",
+  "objective": "One owner-authorized architecture/documentation amendment proposed in one PR after independent and native PASS; no product implementation, merge or AR-01 execution.",
+  "expectedOutcome": "One normative SDD addendum incorporates the approved template-scoped delta; current roadmap/status and focused documentation guards agree, accepted A-10C closure remains untouched, and operative documentation works in a fresh clone without original untracked inputs.",
+  "dependencies": [
+    {
+      "taskId": "AGTEAM-01",
+      "requiredState": "MERGED",
+      "commit": "db95f7c055217d380e88cebe50256741905d222c"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "Owner AR-00 instruction prepared 6 September 2026 and pasted in current coordinator conversation; explicitly corrects stale package A-10C status and authorizes future policy amendment only",
+    "AGENTS.md and docs/AGENT_TEAM_WORKFLOW.md",
+    "docs/VESKIFY_SDD.md with retained requirement IDs and ADR-001 through ADR-004",
+    "docs/DEVELOPMENT_GUIDE.md section 4 and native governance schemas/templates",
+    "Current roadmap owns delivery order; tracker owns status; P19 architecture and A-10C manifest are immutable historical evidence",
+    "Nine architecture-reset source inputs at the coordinator checkout, with hashes in external preflight and committed source disposition; source evidence only, never an operative dependency",
+    "Owner authorization dated 6 September 2026: AR-00 consolidated guard correction and verifier-execution repair; external owner-correction-03-authorization.txt records the narrow additional correction cycle, three tooling paths and fresh-role readiness prerequisite.",
+    "Owner PR #236 automatic-review correction authorization, recorded in /private/tmp/veskify-ar-00/owner-review-06-authorization.txt: narrow AC-03 status-timing reissue, complete default-whitespace proof and one focused correction/fresh verifier; earlier authority preserved in original-authority-03. No dependencies, other criteria, scope paths, required commands or permissions change."
+  ],
+  "ownedPaths": [
+    "AGENTS.md",
+    "README.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-sdd-docx.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/governance/task-contracts/AR/AR-00.json",
+    "docs/AR_00_APPROACH.md",
+    "docs/AR_00_IMPLEMENTATION_REPORT.md",
+    ".codex/agents/veskify_verifier.toml",
+    ".agents/skills/veskify-independent-verification/SKILL.md",
+    "docs/AGENT_TEAM_WORKFLOW.md"
+  ],
+  "allowedPaths": [
+    "AGENTS.md",
+    "README.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-sdd-docx.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/governance/task-contracts/AR/AR-00.json",
+    "docs/AR_00_APPROACH.md",
+    "docs/AR_00_IMPLEMENTATION_REPORT.md",
+    ".codex/agents/veskify_verifier.toml",
+    ".agents/skills/veskify-independent-verification/SKILL.md",
+    "docs/AGENT_TEAM_WORKFLOW.md"
+  ],
+  "forbiddenPaths": [
+    "src/**",
+    "public/**",
+    "tests/fixtures/**",
+    "tests/helpers/**",
+    "tests/integration/**",
+    "tests/unit/p10b-*.ts",
+    "tests/unit/p10b-*.tsx",
+    ".codex/config.toml",
+    ".codex/agents/veskify_worker.toml",
+    ".codex/agents/veskify_helper_a.toml",
+    ".codex/agents/veskify_helper_b.toml",
+    ".agents/skills/veskify-task-delivery/**",
+    ".github/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".env*",
+    "docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md",
+    "docs/AGTEAM*",
+    "docs/ADR-001-PUCK_EDITOR_FOUNDATION.md",
+    "docs/adr/**",
+    "docs/governance/*.json",
+    "docs/Veskify_Architecture_Reset/**"
+  ],
+  "noTouchAreas": [
+    "Never touch /Users/leo/verifyai, global configuration, protected Codex state, credentials or .env.local.",
+    "Coordinator checkout remains on main with all nine original input bytes untracked and unstaged; implementation only in assigned task worktree.",
+    "All existing historical fixtures, A-10C decision/closure/metrics, 11 frozen predecessors, product source, dependency/lockfiles and CI remain byte-identical. Agent configuration remains protected except the three exact owner-authorized verifier-policy files in ownedPaths. The original 613-path protected set remains immutable evidence: only .codex/agents/veskify_verifier.toml and .agents/skills/veskify-independent-verification/SKILL.md are explicitly excepted; the other 611 pins remain binding. docs/AGENT_TEAM_WORKFLOW.md was forbidden but was not in that original protected set.",
+    "Documentation/tooling estimate: 23 exact paths including 2 deterministic DOCX outputs, zero production files. Target at most 4000 added and 1000 deleted text lines; stop above 5500 added or 1500 deleted text lines excluding binary exports. Report gross additions/deletions as well as net.",
+    "No roadmap successor, production refactor, migration, live provider/Vesko/publication/deployment activity, automatic batches, merge, branch deletion, reset, clean, rebase or force-push.",
+    "Only the coordinator/implementer may change the three authorized verifier-policy files. The verifier must never edit reviewed source, tests, docs, configuration (including its own rules), contracts, accepted fixtures or Git/PR state. Exact allowedPaths continues to reject every other tooling path; removing overlapping blanket forbidden patterns grants only the three named additions.",
+    "The verifier may execute declared checks in its assigned isolated task worktree and create only their generated cache, temporary fixture and report outputs. For AR-00 these are worktree-local node_modules/.vite-temp/** and node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/**, temporary ar-00-check-* fixtures under the normal macOS temporary directory, and externally retained verification outputs under /private/tmp/veskify-ar-00. Coordinator retains the native verdict and reconciliation; no post-verdict implementation-report edits.",
+    "Use supported workspace-write with network_access=false and unchanged gpt-6-astra/high settings. Normal narrowly scoped approval requests are permitted only for a declared check explicitly authorized by the task owner, without blanket prefixes, global access, Full Access, new network access, new dependencies or bypass of managed/runtime policy. Workspace-write does NOT enforce source-file immutability; frozen hashes and observed actions provide integrity evidence, not a read-only-filesystem guarantee. Actual model/reasoning may be not independently observable; delegation tools may remain exposed and must not be used."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One coherent AR-00 architecture/roadmap adoption with focused governance guards; zero production changes",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Only deterministic output of existing SDD exporter; no hand edits."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Only deterministic output of existing tracker exporter; no hand edits."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Read GitHub predecessor/task ownership; git fetch origin; conditional commit/push and one PR after independent/native PASS, exactly one automatic review and no manual request.",
+      "Normal bounded non-recursive Codex team delegation: one document/tooling worker, useful read-only helpers, and a NEW independent configured verifier after all writers pause. This owner-authorized reissue grants one additional bounded consolidated correction cycle and one fresh full verification; previous exhausted cycles and FAIL/BLOCKED evidence remain historical. reviewPolicy.consolidatedCorrectionPasses=1 governs this newly authorized cycle; no further cycle is implied. openAiCallLimit=0 applies to storefront-provider calls.",
+      "Use the already installed task-worktree toolchain and packages only. The earlier frozen-lockfile bootstrap remains historical authorization; this correction cycle authorizes no dependency installation, new Python distribution, package manager, application dependency or global change."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Incorporate approved future policy into one normative spec-addendum; existing roadmap retains complete31 task outcomes/dependencies/acceptance/non-goals/retirement gates and owns order, tracker alone owns status. Retain detailed committed source disposition, evidence/gate catalogue and old-task/requirement crosswalk. Parse the roadmap dependency projection rather than add a rival machine/status graph. Scope historical B-01 statements as accepted A-10C evidence; focused current-policy checks reject contradictions and altered historical identities. Use existing deterministic exporters with only necessary cover/addendum inclusion changes.",
+    "canonicalAuthorityExtended": "SDD, roadmap and tracker under existing native contract/verification workflow; owner explicitly amends future three-concept, transient-only and 73-child execution policy while preserving accepted history.",
+    "namedCurrentConsumers": [
+      "Coordinator selecting the next eligible task",
+      "Future implementers using fresh-clone SDD/roadmap/coverage",
+      "Existing documentation validator and SDD/tracker readers"
+    ],
+    "rejectedShortcuts": [
+      "Executing stale package A-10C deprecation instructions or editing the fingerprinted P19 architecture",
+      "Copying untracked package files as required runtime/validation inputs or leaving unresolved E/T references",
+      "Adding a rival snapshot, composition DSL, component registry, status tracker or speculative host/queue/checkout",
+      "Disabling historical guards, changing their fixtures or regenerating baseline identities to make current policy pass",
+      "Locking before formatting, dynamically deriving the expected contract hash or reusing AGTEAM-01 authority/environment",
+      "Broad source refactoring or automatic successor execution during documentation adoption"
+    ],
+    "expectedFailureBehavior": "Stop on semantic delta beyond owner commission, lost historical/input bytes except the two explicit original protected-set exceptions, unexpected scope, contradictory live status, unresolved dependency/evidence references, validation failure or unavailable verifier proof. Preserve work and do not submit FAIL/BLOCKED. Owner authorizes one additional bounded consolidated guard/policy correction and one fresh full verifier run under this reissue; previous FAIL/BLOCKED results and original authorities remain unchanged. Do not reuse the blocked verifier or count file edits as active-instruction reload proof. If corrected role instructions and the actual AR-00 workspace cannot be established, stop before full verification with Corrections ready; new conversation required.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Setup predecessor is merged; exact worktree/origin/shared Git/base are verified; coordinator checkout and nine original source hashes remain preserved; no implementation occurs there.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "One incorporated normative SDD addendum covers every approved architectural delta and a decision/requirement crosswalk, with one snapshot/BrandSystem/component/PageBlueprint authority, bounded durable operations, template scope/atomic acceptance, versioned freshness, safe host resolver, two initial families, default one concept and distinct AR-08/22/28 gates; no false capability or invented host claim.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Roadmap/tracker and parsed dependency projection agree on all31 supplied outcomes across10 packages, preserving dependencies, acceptance, non-goals and retirement gates with only authorized closure/process corrections. Committed repository content represents the state effective upon explicit owner adoption/merge: AR-00 is Baseline / closed; AR-01 is Planned / exact next and not started; AR-23 remains eligible after AR-01 without visual serialization. This proposed post-merge state does not claim that the PR has merged or owner acceptance has already occurred; no follow-up status-fix commit, network lookup or branch-name detection is required. Every old planned task/retained requirement and four deferred families has honest disposition.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "A-10C is Baseline and A-10/P10B-19A remain Baseline / closed; P19/product stay Partial. Frozen P19 architecture, accepted decision/closure manifest, all historical fixtures/metrics/source and original inputs remain byte-identical. Historical B-01 next statements remain historically scoped, not current execution authority.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Focused amendment guard rejects contradictory current status/dependency ownership and altered retained historical authority. Existing historical source-hash and production-inactivity checks remain intact. Required focused adoption and unchanged closure tests, requirements/tooling and docs validation pass without relaxed expectations.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Existing SDD/tracker exporters generate synchronized DOCX and deterministic checks pass; affected formatting and native contract/identity pass. Committed operative docs and validation resolve without coordinator inputs, missing relative links, unresolved package evidence IDs or temporary-file dependencies.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "All implementation writers pause; independent configured verifier reviews complete final set including untracked/staged files, exact evidence/identity and authority-conflict map, preserving telemetry/permission limitations. Native verdict covers all criteria; unchanged exact reviewed bytes are prerequisite to conditional submission, with native reconciliation a separate gate.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "node scripts/check-architecture-reset-adoption.mjs",
+      "purpose": "Validate current-policy ownership, complete task/dependency/coverage and frozen historical identity.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Retain exact SDD requirement inventory and traceability.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Exercise existing deterministic Markdown/DOCX documentation tooling.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Check SDD DOCX matches existing exporter including incorporated amendment.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Check tracker DOCX matches existing exporter.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm docs:validate",
+      "purpose": "Run actual documentation guards including historical closure and focused adopted-policy checks.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm exec vitest run tests/unit/ar-00-architecture-reset-adoption.test.ts tests/unit/p10b-19a-10c-closure-manifest.test.ts tests/integration/p10b-19a-10c-architecture-closure.test.ts",
+      "purpose": "Focused adoption negative cases plus unchanged accepted A-10C manifest and architecture closure regressions.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm exec eslint scripts/check-architecture-reset-adoption.mjs scripts/validate-documentation.mjs scripts/export-sdd-docx.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Focused lint for changed documentation tooling/tests.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm exec prettier --check AGENTS.md README.md docs/VESKIFY_SDD.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md scripts/check-architecture-reset-adoption.mjs scripts/validate-documentation.mjs scripts/export-sdd-docx.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts docs/governance/task-contracts/AR/AR-00.json docs/AR_00_APPROACH.md docs/AR_00_IMPLEMENTATION_REPORT.md .agents/skills/veskify-independent-verification/SKILL.md docs/AGENT_TEAM_WORKFLOW.md",
+      "purpose": "All20 affected Markdown/JSON/JavaScript/TypeScript text paths including the two newly authorized policy documents; retain existing repository formatting configuration and exclusions unchanged. TOML is validated separately because installed Prettier has no TOML parser.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "git diff --check db95f7c055217d380e88cebe50256741905d222c",
+      "purpose": "Whitespace on complete tracked task changes.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "node scripts/task-governance.mjs contract --contract /private/tmp/veskify-ar-00/AR-00.json --expected-file-sha256 \"$(cat /private/tmp/veskify-ar-00/contract.sha256)\"",
+      "purpose": "Validate externally pinned native contract.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "node scripts/task-governance.mjs identity --contract /private/tmp/veskify-ar-00/AR-00.json --expected-file-sha256 \"$(cat /private/tmp/veskify-ar-00/contract.sha256)\"",
+      "purpose": "Validate complete final state and immutable branch/base/path/budget authority.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "/opt/homebrew/bin/python3.13 -c 'import pathlib,tomllib; p=pathlib.Path(\".codex/agents/veskify_verifier.toml\"); c=tomllib.loads(p.read_text()); assert c[\"name\"] == \"veskify_verifier\"; assert c[\"model\"] == \"gpt-6-astra\"; assert c[\"model_reasoning_effort\"] == \"high\"; assert c[\"sandbox_mode\"] == \"workspace-write\"; assert c[\"sandbox_workspace_write\"][\"network_access\"] is False; assert c[\"agents\"][\"enabled\"] is False; assert \"approval_policy\" not in c; assert \"writable_roots\" not in c[\"sandbox_workspace_write\"]; print(\"Verifier TOML parsed; model/effort retained, workspace-write/network-off requested, runtime approval policy inherited; effective enforcement is not proven\")'",
+      "purpose": "Parse the newly authorized role with existing Python 3.13.2 standard-library tomllib and validate scoped supported settings; inspect all three policy documents independently against owner authorization. Configuration checks do not prove active role loading, workspace or sandbox enforcement.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Frozen docs/AR_00_IMPLEMENTATION_REPORT.md records exact preflight, input hashes/source-disposition references, Node/pnpm/zip environment, pnpm docs:export:sdd and pnpm docs:export:tracker generation and required check results with exits/totals, source preservation, gross/net scope and operating limitations. No self-hash or post-verdict edits.",
+      "retention": "repository",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Externally retained native final identity and exact independent verdict plus coordinator governance reconciliation. Bind complete reviewed bytes before/after verifier and staging/commit. PR retains meaningful verdict/result beyond temporary paths. Required source hashes and operative policy reside in committed documents.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-merge",
+    "criteria": [
+      "One PR is proposed adoption; explicit later owner adoption/merge required. No merge or successor authorized in this task."
+    ]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Substantive architectural amendment beyond supplied delta or lost preserved authority/input bytes.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Unexpected path, budget, dependency, secret/permission or conflicting concurrent-work condition.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Required validation or independent verification FAIL/BLOCKED persists after the one additional owner-authorized consolidated guard/policy correction and fresh full verifier run in this reissue. All earlier FAIL/BLOCKED records remain unchanged; no further rerun is authorized.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Conditional commit/push/one PR and final report completed; no merge or AR-01 execution.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-05",
+      "condition": "Corrected active custom verifier instructions or actual assigned AR-00 worktree cannot be confirmed for a NEW verifier before full verification. Do not reuse the blocked child, assume hot reload, repeat full verification with stale rules or work around managed runtime. Report Corrections ready; new conversation required with a short task-worktree resume instruction.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-01",
+    "title": "Complete local dependency inventory and characterize the working path",
+    "eligibility": "Only after explicit AR-00 adoption/merge and a separately authorized immutable task; AR-23 becomes eligible after AR-01 but no second lane starts here."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}

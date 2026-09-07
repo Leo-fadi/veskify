@@ -26,6 +26,10 @@ const activeMarkdownFiles = [
   ".github/pull_request_template.md",
   "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+  "docs/AR_00_APPROACH.md",
+  "docs/AR_00_IMPLEMENTATION_REPORT.md",
+  "docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md",
+  "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
   "docs/P10A_PHASE_CLOSURE.md",
   "docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md",
   "docs/P10B_18_COMMERCIAL_QUALITY_AUDIT.md",
@@ -1663,7 +1667,12 @@ for (const { source, output, script, requiredXml } of exportsToValidate) {
     failures.push(`${output} is not a structurally valid DOCX archive`);
   }
 
-  const markdown = readRepositoryFile(source);
+  const markdown =
+    source === "docs/VESKIFY_SDD.md"
+      ? `${readRepositoryFile(source).trimEnd()}\n\n${readRepositoryFile(
+          "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+        ).replaceAll("](../", "](./")}`
+      : readRepositoryFile(source);
   const sourceHash = createHash("sha256").update(markdown).digest("hex");
   const customProperties = execFileSync(
     "/usr/bin/unzip",
@@ -2018,6 +2027,21 @@ for (const [path, pattern] of [
 ]) {
   if (!pattern.test(readDevx01fStatusFile(path, "utf8"))) {
     throw new Error(`${path} must mark DEVX-01G Baseline.`);
+  }
+}
+
+if (failures.length === 0) {
+  try {
+    execFileSync(
+      process.execPath,
+      [join(repositoryRoot, "scripts/check-architecture-reset-adoption.mjs")],
+      {
+        cwd: repositoryRoot,
+        stdio: "pipe",
+      },
+    );
+  } catch (error) {
+    failures.push(`AR-00 architecture-reset adoption check failed: ${error.message}`);
   }
 }
 

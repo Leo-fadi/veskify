@@ -1,5 +1,14 @@
 # Veskify
 
+> **Post-adoption planning projection:** Effective upon explicit owner adoption/merge; this
+> describes repository content and does not assert that this PR has merged or been accepted.
+> AR-00 is Baseline / closed. AR-01 is Planned — exact next task, not started.
+> The SDD addendum is normative; the roadmap owns delivery order and the
+> tracker owns status. This does not change the product's **Partial** status.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy**, superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 Veskify is the internal controlled storefront-design engine for the merchant-facing **Vesko
 Storefront Studio**. It turns approved brand/source evidence, approved presentation assets, and
 read-only canonical Vesko commerce data into a governed, editable, and explicitly publishable

@@ -64,9 +64,14 @@ Use [veskify-independent-verification](../.agents/skills/veskify-independent-ver
 Supply the locked contract, applicable repository authority, complete final diff and
 native identity, and claimed evidence. Include untracked/staged/unstaged state.
 Identify pre-existing user inputs and verify their preserved bytes; do not conceal
-them from the canonical identity. The verifier reproduces the smallest sufficient
-permitted checks and returns native criterion-level PASS, FAIL or BLOCKED without
-editing implementation. The coordinator may retain that returned verdict externally.
+them from the canonical identity. Freeze every reviewed input before checks and
+compare exact hashes afterward. The verifier executes required checks itself in
+its assigned isolated task worktree, including declared focused tests; an
+implementer's earlier result is not independent execution evidence. It may create
+only the checks' identified generated cache, temporary-fixture and report outputs,
+and returns native criterion-level PASS, FAIL or BLOCKED without editing reviewed
+inputs. The coordinator retains the returned native verdict externally and performs
+native reconciliation.
 
 A material implementation change invalidates the previous verdict. After FAIL,
 allow at most one consolidated correction and one verifier rerun under existing
@@ -78,17 +83,48 @@ when authorized; do not continuously watch CI or request a second automatic revi
 
 ## Permissions and activation
 
-Worker permissions inherit from the parent. Helpers and verifier configure
-`sandbox_mode = "read-only"`. These are configuration requests, not proof of
-effective isolation: parent runtime overrides can take precedence, and filesystem
-sandboxes do not establish read-only connector permissions. The instructions also
-prohibit file/Git/PR/connector mutations, permission changes and recursive delegation.
-Never present prompt-only restraint as enforced sandbox security.
+Worker permissions inherit from the parent. Helpers retain
+`sandbox_mode = "read-only"`. The independent verifier requests
+`sandbox_mode = "workspace-write"` and `[sandbox_workspace_write] network_access = false`
+for declared checks in its assigned isolated task worktree. Model/reasoning stay
+`gpt-6-astra`/`high`; managed/runtime approval policy is inherited. These settings
+are requests: parent runtime overrides can take precedence, and filesystem
+sandboxes do not establish connector permissions.
 
-Inspect effective client metadata when observable. If isolation or a required check
-cannot be established, report the limitation; do not grant broader permissions,
-change global configuration or issue a write probe to make the exercise pass.
-No provider/Vesko/deployment activity follows from a development-team assignment.
+Before executing a check, identify its generated output paths. Permitted writes
+are limited by instructions to the declared checks' caches, temporary fixture copies
+and assigned reports. For AR-00 they include worktree-local `node_modules/.vite-temp/**`,
+`node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/**`, normal macOS
+temporary `ar-00-check-*` fixture directories and assigned external verification
+outputs. Reviewed source, tests, docs, configuration, contracts and accepted fixtures
+remain forbidden writes. Native verdict retention/reconciliation and all Git/PR
+mutations remain coordinator-only. The verifier must never modify its own rules;
+only the coordinator/implementer may perform explicitly authorized policy changes.
+
+Normal narrowly scoped approval requests are permitted for a declared check only
+where the task owner explicitly authorized that action. This grants no global
+access, Full Access, blanket command approval, persistent prefix, new network access,
+or bypass of managed/runtime policy. If the check is still unavailable, return
+BLOCKED with the exact operation and sanitized error. Do not use workarounds,
+change global configuration, or issue a write probe to claim enforcement.
+
+**Workspace-write does not enforce source-file immutability.** Freeze reviewed inputs
+and compare their hashes after verification; hashes and observed actions demonstrate
+integrity, not a read-only filesystem. Actual model/reasoning may be not independently
+observable. Delegation tools may remain exposed despite `[agents] enabled = false`;
+the verifier must not use them. No mutating connector, provider/Vesko/deployment,
+installation, full suite, build or successor work follows from a team assignment.
+
+After verifier-policy changes, pause implementation and establish readiness with a
+new configured role: confirm its active execution/output instructions and actual
+session workspace before full verification. Do not reuse a blocked child or treat
+a changed file as proof of active instruction reload. If the current IDE cannot
+load the corrected role in the assigned worktree, stop with **Corrections ready;
+new conversation required**, and resume from a new conversation opened in that
+worktree. Do not spend a full verifier attempt on stale configuration.
+
+The AGTEAM-01 activation exercise below is retained historical setup procedure;
+its four assignments remain read-only. It does not authorize a new activation run.
 
 If the current client's role-discovery/spawn interface does not expose these roles,
 report **configured; activation pending** and stop. Start a new IDE conversation in
@@ -114,6 +150,7 @@ AGTEAM-01 specifically leaves all changes uncommitted: no push, PR or merge.
 
 Checked on 6 September 2026: [custom agents and inheritance](https://learn.chatgpt.com/docs/agent-configuration/subagents),
 [configuration keys](https://learn.chatgpt.com/docs/config-file/config-reference),
+[sandbox and approval controls](https://learn.chatgpt.com/docs/agent-approvals-security),
 [model IDs and IDE selection](https://learn.chatgpt.com/docs/models), and
 [local skills and discovery](https://developers.openai.com/codex/skills).
 Client support and account availability must still be observed locally.

@@ -311,10 +311,26 @@ const applySddVisualCorrections = (archivePath, correctedArchivePath) => {
 const temporaryDirectory = mkdtempSync(join(tmpdir(), "veskify-sdd-export-"));
 const rawOutputPath = join(temporaryDirectory, "raw.docx");
 const correctedOutputPath = join(temporaryDirectory, "corrected.docx");
+const combinedSourcePath = join(temporaryDirectory, "VESKIFY_SDD_AR_00.md");
+const sddSourcePath = join(repositoryRoot, "docs", "VESKIFY_SDD.md");
+const ar00AddendumPath = join(
+  repositoryRoot,
+  "docs",
+  "spec-addenda",
+  "AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+);
 
 try {
+  // The addendum is incorporated content, not a dangling link: deterministic exports contain it.
+  writeFileSync(
+    combinedSourcePath,
+    `${readFileSync(sddSourcePath, "utf8").trimEnd()}\n\n${readFileSync(
+      ar00AddendumPath,
+      "utf8",
+    ).replaceAll("](../", "](./")}`,
+  );
   exportMarkdownDocx({
-    sourcePath: join(repositoryRoot, "docs", "VESKIFY_SDD.md"),
+    sourcePath: combinedSourcePath,
     sourceRelativePath: "docs/VESKIFY_SDD.md",
     outputPath: rawOutputPath,
     title: "Veskify Software Design Document",

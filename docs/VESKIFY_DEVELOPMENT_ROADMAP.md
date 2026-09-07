@@ -1,5 +1,63 @@
 # Veskify Development Roadmap
 
+## AR-00 replacement-roadmap projection (effective on adoption/merge)
+
+This is the delivery-order projection of the incorporated AR-00 SDD addendum. It is not a second
+status tracker and the supplied 31-task decomposition is advisory planning rather than a permanent
+numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
+recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
+records source/evidence and old-work disposition. This repository projection takes effect upon
+explicit owner adoption/merge and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed; AR-01 is Planned — exact next task, not started.
+AR-23 is eligible after AR-01 and is not serialized behind visual work.
+
+Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
+addendum. Accepted history, functional requirements, and current capability truth remain binding.
+
+| Package | Task  | Outcome                                                 | Dependencies                      |
+| ------- | ----- | ------------------------------------------------------- | --------------------------------- |
+| P0      | AR-00 | Adopt reset without rewriting accepted history          | —                                 |
+| P0      | AR-01 | Inventory local dependencies and working path           | AR-00                             |
+| P1      | AR-02 | Separate capability metadata from renderer/diagnostics  | AR-01                             |
+| P1      | AR-03 | Extract dynamic-route authority without semantic change | AR-01                             |
+| P1      | AR-04 | Isolate legacy and acceptance compositions              | AR-02, AR-03                      |
+| P2      | AR-05 | Version executable composition in canonical state       | AR-02, AR-03                      |
+| P2      | AR-06 | Render and round-trip one composed template             | AR-05                             |
+| P2      | AR-07 | Compile template scope and final canonical assembly     | AR-04, AR-06                      |
+| P2      | AR-08 | Close foundational refactor with executable proof       | AR-07                             |
+| P3      | AR-09 | Compile independent visual identity into Design DNA v2  | AR-08                             |
+| P3      | AR-10 | Build product-first frame and homepage                  | AR-09                             |
+| P3      | AR-11 | Build product-first PDP and generic options             | AR-10                             |
+| P3      | AR-12 | Build product-first collection and search               | AR-10                             |
+| P3      | AR-13 | Complete and activate first family                      | AR-11, AR-12                      |
+| P4      | AR-14 | Build editorial-offset frame and homepage               | AR-13                             |
+| P4      | AR-15 | Complete editorial-offset commerce/support family       | AR-14                             |
+| P5      | AR-16 | Add generation stages and resumable contracts           | AR-07                             |
+| P5      | AR-17 | Add durable execution, fencing, recovery                | AR-16, AR-23                      |
+| P6      | AR-18 | Connect creative brief and template provider stages     | AR-09, AR-16                      |
+| P6      | AR-19 | Wire normal Studio generation and progress              | AR-13, AR-16, AR-18               |
+| P6      | AR-20 | Unify scoped editing and merchant protection            | AR-19, AR-15                      |
+| P7      | AR-21 | Add machine capture and bounded critique                | AR-15, AR-19                      |
+| P7      | AR-22 | Accept engine and optional concept comparison           | AR-15, AR-20, AR-21               |
+| P8      | AR-23 | Resolve host/data contract                              | AR-01                             |
+| P8      | AR-24 | Add live route resolution and scoped freshness          | AR-07, AR-23                      |
+| P8      | AR-25 | Connect trusted storage, publication, public rendering  | AR-17, AR-19, AR-24               |
+| P8      | AR-26 | Deliver localized runtime SEO/content fields            | AR-25                             |
+| P8      | AR-27 | Connect real commerce actions                           | AR-25                             |
+| P9      | AR-28 | Accept integrated pilot, recovery, isolation            | AR-17, AR-20, AR-22, AR-26, AR-27 |
+| P9      | AR-29 | Retire obsolete active generation/transports            | AR-04, AR-20, AR-22               |
+| P9      | AR-30 | Prune proof infrastructure and close reset              | AR-28, AR-29                      |
+
+The two initial enabled families are product-first commerce and editorial-offset. Campaign-modular,
+technical-comparison, warm-narrative, and restrained-gallery remain explicit deferred family
+coverage. Specialized campaign, technical-comparison, warm, gallery, deep-variant, and numerical
+topology outcomes from the prior plan remain retained/deferred backlog unless a later scoped task
+supplies its exact acceptance. AR-13/AR-15 prove only the two initial families; they do not claim
+six-family completion. AR-16/AR-18/AR-19/AR-22 replace fixed two-call and mandatory three-concept
+future policy with staged budgets, default one concept, and optional materially distinct comparison.
+AR-21 is bounded critique; preference learning remains deferred pending consent and retention policy.
+
 **Version:** 1.3.0
 
 **Baseline:** 4 September 2026, P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate
@@ -599,3 +657,813 @@ zero retry, exact runtime discovery, unique blobs and fail-closed merged-result 
 DEVX-01G closes the sprint through two comparable clean runs without changing that architecture.
 Run A reduced developer wait time from 2h6m13s to 34m27s (72.706%) while summed job time increased
 by 3m33s; no lower compute-cost claim is made. Final Run B remains merge-gated.
+
+## AR-00 complete supplied task specifications
+
+This table is the committed detailed replacement-roadmap record. The tracker alone owns status; rows below preserve supplied outcome, changes, acceptance, non-goals, and rollback detail.
+
+### AR-00 — Adopt the reset without rewriting history
+
+**Package:** P0 — Authority and baseline. **Dependencies:** —. **Planned detail:** Baseline / closed in the repository state effective upon explicit owner adoption/merge; no product implementation is implied.
+
+**Outcome:** One approved replacement direction and one exact-next authority; the old 73-child future sequence no longer blocks authorized corrections.
+
+**Changes:**
+
+- Add an incorporated AR architecture addendum, decision crosswalk and evidence boundary. Preserve permanent ADR ownership rules.
+- Preserve completed A-10C as Baseline and A-10/P10B-19A as Baseline / closed. Supersede only the stale future delivery sequence while retaining accepted A-01–A-10B2 records and historical parent limitations.
+- Amend transient-only wording to allow access-controlled operational checkpoints outside StorefrontSnapshot; separate historical zero/hash assertions from future production activation rules.
+- Retain current review/merge safeguards. Permit coherent larger tasks only through bounded, explicitly approved contract exceptions; use short task-specific deltas.
+- Synchronize current status docs and supported deterministic exports. This new task is not performed under A-10C’s incompatible zero-lock-change contract.
+
+**Acceptance:**
+
+- Repository documentation validation and exports pass when executed; no production source change, provider call or false acceptance claim.
+- Old-to-new requirement/task mapping is present. AR-01 is the sole next reset task.
+
+**Non-goals:**
+
+- No implementation, baseline regeneration, broad CI redesign, automatic merge or retroactive human approval.
+
+**Rollback / failure behavior:**
+
+- Revert the unmerged/adopted documentation delta as one unit; retained historical evidence is untouched.
+
+### AR-01 — Complete local dependency inventory and characterize the working path
+
+**Package:** P0 — Authority and baseline. **Dependencies:** AR-00. **Planned detail:** Planned / exact next; not started. Separate task authorization remains required.
+
+**Outcome:** Every path proposed for change/removal has real caller, route and compatibility evidence.
+
+**Changes:**
+
+- Enumerate TS imports/re-exports, Next route roots, dynamic imports, registry string references and supported persisted versions; include tests, public media and external publication dependencies.
+- Classify active generation, scoped editing, legacy read/replay, test-only and unresolved paths. No absence of access is treated as no persisted data.
+- Run focused current generation/lifecycle/route/conformance reports. Reconcile 16/25/1 prose versus 16/29/7 test-source expectations using executed evidence.
+- Record behavioural characterization for known-type/complexity selection, one-composite editing, expand/fold translation, accepted proposal and publication. Map frozen source guards to invariant owners.
+- Report changed-file and dependency-frontier estimates for subsequent tasks; identify safe ownership lanes.
+
+**Acceptance:**
+
+- T01 and characterization subset execute with exact results or explicit blockers; no invented test totals.
+- All 36 disposition rows resolved to exact files/exports or explicitly unavailable external dependencies; confirmed orphan removal list distinct from conditional retirement.
+- Normal-route and public-preview evidence classified correctly; no claims of product-quality validation from this audit.
+
+**Non-goals:**
+
+- No destructive code removal, new provider call or source-wide cosmetic reorganization.
+
+**Rollback / failure behavior:**
+
+- Audit changes are additive; failure leaves all product code intact.
+
+### AR-02 — Separate pure capability metadata from rendering and diagnostics
+
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Template planning can use truthful component capabilities without importing editor/runtime/audit implementations.
+
+**Changes:**
+
+- Derive pure metadata and renderer-binding entrypoints from the same definition source.
+- Preserve v2-registry’s required adapted legacy definitions; retain registry identities and current behaviour.
+- Move client-reachable callers to narrow imports in bounded groups. Keep existing type-only deterministic-selector exports type-only.
+- Add dependency boundary tests for compiler/provider/browser entrypoints and report bundle impact at the authorized build gate.
+
+**Acceptance:**
+
+- T01,T02,T21: registry definition identity and rendered observations remain equivalent; no duplicate capability inventory.
+- New compiler metadata imports have no React/Puck/Next renderer closure; runtime/client reachability checked by actual graph/build, not only string matching.
+
+**Non-goals:**
+
+- No semantic generation changes, component redesign or all-directory rename.
+
+**Rollback / failure behavior:**
+
+- Restore previous imports/exports; no persisted data changed.
+
+### AR-03 — Extract dynamic-route authority without changing semantics
+
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Migration, validation, selection, runtime resolution and editor projection have clear separate owners.
+
+**Changes:**
+
+- Extract functions behind compatible exports into adjacent modules selected from the local dependency graph.
+- Retain exact v1 route inventory, type/complexity selection, one-composite restriction and migration error behaviour during this task.
+- Keep extraction out of component registry and snapshot schema changes; prepare later versioned policy work.
+
+**Acceptance:**
+
+- T01,T06,T07 characterization is unchanged for the same inputs; existing callers compile.
+- No altered current-source hash is hidden: approved guard mapping records mechanical changes.
+
+**Non-goals:**
+
+- No new route policy, schema version, precedence change, fallback expansion or cleanup of unrelated functions.
+
+**Rollback / failure behavior:**
+
+- Revert extraction/facades; persisted bytes remain unchanged.
+
+### AR-04 — Isolate legacy and acceptance compositions from normal roots
+
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-02, AR-03. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** There is one explicit normal design entrypoint and clearly separated legacy/test composition.
+
+**Changes:**
+
+- Use AR-01 reachability to separate production dependencies from P03/P04/P9 acceptance adapters.
+- Keep active retained follow-up operations reachable until AR-20 replaces their required scopes.
+- Constrain any legacy facade to its declared operations and versions; do not create an automatic v2-to-v1 fallback.
+- Delete only already-proven orphan glue. Preserve compatible readers, media and fixtures.
+
+**Acceptance:**
+
+- T01,T16,T21: normal route still works under its configured test authority; production-disabled seams remain inaccessible in production.
+- Existing legacy registry/profile and published-artifact references still resolve.
+
+**Non-goals:**
+
+- No global deletion of legacy folders, no removal of working generation before replacement, no weakened integrated auth.
+
+**Rollback / failure behavior:**
+
+- Restore explicit composition wiring; unchanged canonical data and current generation remain usable.
+
+### AR-05 — Define versioned executable composition inside canonical state
+
+**Package:** P2 — Template execution core. **Dependencies:** AR-02, AR-03. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** One authoritative v2 composition can be represented without duplicating content, ordering or the page graph.
+
+**Changes:**
+
+- Lock compiled PageBlueprint composition over canonical section/anatomy identities and registered relationship/order/responsive choices.
+- Specify v2 section storage order versus sole layout order; preserve v1 flat/composite semantics.
+- Add explicit snapshot extension/dynamic-authority version dispatch compatible with the currently unversioned root. Do not silently infer v2 from shape.
+- Reject missing refs, unsupported relation realizations, invalid reading order and unsafe omissions. Add migration/read/unsupported-version tests.
+
+**Acceptance:**
+
+- T01,T02: supported old payloads parse identically; new authority rejects contradictions and cannot become a parallel tree.
+- Exact owner, version and fingerprint strategy is documented and ready for AR-06’s named renderer consumer.
+
+**Non-goals:**
+
+- No active family registration, full token redesign, arbitrary CSS or generic DOM model.
+
+**Rollback / failure behavior:**
+
+- Keep v2 write path disabled; v1 reader remains available. Never write new payloads then revert to a reader that cannot understand them.
+
+### AR-06 — Render and round-trip one composed template end to end
+
+**Package:** P2 — Template execution core. **Dependencies:** AR-05. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** PageBlueprint regions become visible, editable and persistable—not metadata-only architecture.
+
+**Changes:**
+
+- Implement the shared registered composition renderer for the minimal supported relation set needed by the first families; unimplemented relations fail, never silently degrade.
+- Retain generic product option state and registered commerce sub-anatomy; do not create competing variant resolvers.
+- Project composition losslessly to/from Puck and preserve it in save/history/publish compilation.
+- Use one approved/neutral representative template to prove offset/stack behaviour, mobile reading order and round trip.
+
+**Acceptance:**
+
+- T01–T04,T17: render, allowed edit, save/reload and compiled publication preserve the same composition.
+- Focused four-width captures show actual structure; tests prove unsupported choices fail before acceptance.
+- Independent verifier checks cross-layer round trip. Split into named subordinate PRs before lock if the existing hard budget is exceeded.
+
+**Non-goals:**
+
+- No full family library, new AI provider, real Vesko publishing or all-page redesign.
+
+**Rollback / failure behavior:**
+
+- Disable v2 entry for new writes; preserve compatible reader for already-created test artifacts. Revert only after confirming no accepted new payload depends on it.
+
+### AR-07 — Implement template-scoped compilation and final canonical assembly
+
+**Package:** P2 — Template execution core. **Dependencies:** AR-04, AR-06. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Individual templates compile through one authority and form one complete isolated proposal without route-sized design expansion.
+
+**Changes:**
+
+- Add template command/result artifact with explicit base identity, global-contract ref, read/write set, dependencies, exact decisions and diagnostics.
+- Reuse existing PageBlueprint, component, asset and protected-commerce validation; extract shared materialization instead of implementing a second engine.
+- For the new path, compile archetypes directly rather than reconcile/expand/fold every resource into temporary pages.
+- Assemble staged template artifacts into StorefrontSnapshot and existing proposal lifecycle; introduce truthful versioned provenance instead of pretending to be an old skill.
+
+**Acceptance:**
+
+- T01,T02,T05,T08,T09: repeated pure compilation stable; wrong scope and stale dependencies rejected; template count does not grow with product count.
+- New complete proposal accepts/undoes atomically in focused integration tests; protected commerce has no write path.
+- Legacy generation still uses its documented contract until cutover.
+
+**Non-goals:**
+
+- No durable worker, new catalog model, new publisher or all-stage visual quality claim.
+
+**Rollback / failure behavior:**
+
+- Keep legacy ingress active; disable new compilation contract for new requests while retaining any written version readers.
+
+### AR-08 — Close the foundational refactor with executable proof
+
+**Package:** P2 — Template execution core. **Dependencies:** AR-07. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** A finite reset milestone ends; visual product development resumes on a usable core.
+
+**Changes:**
+
+- Verify AR-00–07 outcomes together through the normal facade/test injection rather than a separate demo generator.
+- Execute scoped migration, template-count, Puck, renderer and publication checks; map each superseded source/zero guard.
+- Review one composed template at all required widths; report remaining host and quality gates explicitly.
+
+**Acceptance:**
+
+- Foundational completion criteria in architecture section 18 met; T01–T05,T08,T09,T21 relevant cases executed.
+- No new active path relies on unimplemented semantic capability or hidden legacy fallback.
+- No claim that all families, all legacy debt or production integration is complete.
+
+**Non-goals:**
+
+- No new feature framework or another open-ended abstraction phase.
+
+**Rollback / failure behavior:**
+
+- Keep new generation disabled if the gate fails; repair only identified regressions, preserve legacy baseline.
+
+### AR-09 — Compile independent visual identity into Design DNA v2
+
+**Package:** P3 — First complete family. **Dependencies:** AR-08. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Light/dark foundation and independent typography/surface/control choices visibly affect canonical output.
+
+**Changes:**
+
+- Add exact v1/v2 DNA union and a deterministic compiler from bounded visual preferences.
+- Intersect actual family/capability limits, approved palette/font choices and accessibility rules.
+- Consume supported foundation, hierarchy and surface/control axes through shared rendering now, not later.
+- Declare unsupported recipe dimensions rather than add placeholder motion/media flags.
+
+**Acceptance:**
+
+- T01,T03,T14: old DNA unchanged; true dark foundation with readable statuses/focus/logo treatment; counterfactual independent axes demonstrated.
+- Failed accessible palette or unsupported critical identity produces typed failure without candidate mutation.
+
+**Non-goals:**
+
+- No arbitrary fonts/CSS, separate persisted recipe, advanced motion or six visual systems at once.
+
+**Rollback / failure behavior:**
+
+- Retain v1 reader; new DNA writing gated. Preserve reader for any accepted v2 artifact.
+
+### AR-10 — Build product-first frame and homepage
+
+**Package:** P3 — First complete family. **Dependencies:** AR-09. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** A real product-first home presents approved merchandise and useful navigation with little dependence on editorial assets.
+
+**Changes:**
+
+- Register candidate v2 frame/home structure using existing safe components and canonical bindings.
+- Prove sparse/standard/rich catalogue adaptations and multiple visual identities from AR-09.
+- Keep semantic priority on product discovery; do not create a merchant-specific component.
+
+**Acceptance:**
+
+- T03,T14,T23: actual hierarchy, mobile navigation and sparse asset handling pass focused review.
+- Family remains unactivated until complete-role gate AR-13.
+
+**Non-goals:**
+
+- No claim of complete-family availability or new commerce service.
+
+**Rollback / failure behavior:**
+
+- Disable candidate registration; existing default path unaffected.
+
+### AR-11 — Build product-first PDP with complete generic options
+
+**Package:** P3 — First complete family. **Dependencies:** AR-10. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Simple, configurable and unknown product types work under one safe product-first presentation.
+
+**Changes:**
+
+- Compose gallery/purchase/specifications through supported regions while reusing option/variant logic.
+- Retain every available option group and truthful selected-variant price/availability.
+- Test unavailable media, long names, many options and missing optional facts.
+
+**Acceptance:**
+
+- T03,T07,T15,T23: no dropped options or wrong product bindings; four-width purchase hierarchy and keyboard use verified.
+- Observed variant changes come from canonical commerce, not generated copy.
+
+**Non-goals:**
+
+- No cart/checkout backend, inferred availability or product-specific persisted page.
+
+**Rollback / failure behavior:**
+
+- Disable new PDP candidate; generic legacy fallback stays available within its original contract.
+
+### AR-12 — Build product-first collection and search
+
+**Package:** P3 — First complete family. **Dependencies:** AR-10. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Browsing and query results share coherent cards and controls but retain distinct purposes.
+
+**Changes:**
+
+- Reuse canonical product cards, current search port and runtime-only query/result state.
+- Implement density/cardinality/facet layout within new composition.
+- Keep search no-results recovery and sparse collections truthful.
+
+**Acceptance:**
+
+- T03,T05,T15,T23: cards/filters operate at representative sizes and locales; no search state saved in snapshot.
+- Product-first hierarchy remains coherent with home and PDP.
+
+**Non-goals:**
+
+- No new search engine, fabricated facets or a per-collection design generation loop.
+
+**Rollback / failure behavior:**
+
+- Disable candidates; retained search semantics and data port remain unchanged.
+
+### AR-13 — Complete and activate the first full family
+
+**Package:** P3 — First complete family. **Dependencies:** AR-11, AR-12. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Product-first becomes one honest complete-store family rather than a homepage demonstration.
+
+**Changes:**
+
+- Compose relevant approved factual pages and state-specific utility presentation; reuse existing variants where fit.
+- Cover all six page-family roles with references to actual implementations and capability/evidence requirements.
+- Run complete canonical proposal/save/reload/preview/publication projection under deterministic ports.
+- Activate only this proven family in the intended capability context.
+
+**Acceptance:**
+
+- T01,T03,T04,T15,T16,T23: complete-store structure, localization, evidence and utility correctness proven.
+- Activation does not imply live model quality or Vesko staging acceptance.
+
+**Non-goals:**
+
+- No six-family activation, invented policies or expanded checkout logic.
+
+**Rollback / failure behavior:**
+
+- Deactivate new-family selection for future runs while preserving published/saved reader support.
+
+### AR-14 — Build editorial-offset frame and homepage
+
+**Package:** P4 — Structural contrast. **Dependencies:** AR-13. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** A second structure is visibly asymmetric and editorial, not the first theme with different colour.
+
+**Changes:**
+
+- Implement real offset relationships and accessible responsive order.
+- Bind approved editorial assets and missing-evidence policy; retain identity-independent visual recipes.
+- Show monochrome structure and real-asset versions against product-first.
+
+**Acceptance:**
+
+- T03,T14,T23: structural differences remain visible without colour/copy; mobile hierarchy is deliberate.
+- Dark/light style choices do not redefine family identity.
+
+**Non-goals:**
+
+- No forced editorial family on asset-poor merchants or automatic second concept for every request.
+
+**Rollback / failure behavior:**
+
+- Disable candidate structure; first complete family remains usable.
+
+### AR-15 — Complete the editorial-offset commerce and support family
+
+**Package:** P4 — Structural contrast. **Dependencies:** AR-14. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** A second commercially distinct complete family shares the same engine and truthful commerce.
+
+**Changes:**
+
+- Add gallery/editorial PDP and discovery alternatives using the existing generic commerce internals.
+- Use coherent support/utility inheritance without decorative misuse; cover all six roles.
+- Apply full meaningfulness gate across home plus at least two of collection/search/PDP.
+- Plan subordinate PDP/discovery/activation PRs before locking if the local diff exceeds scope bounds.
+
+**Acceptance:**
+
+- T03,T07,T14,T15,T23: two complete families have distinct actual topology and usable commerce; same renderer across lifecycle.
+- Compatibility failures disclose unmet facts/assets and cannot manufacture evidence.
+
+**Non-goals:**
+
+- No provider-specific family IDs, separate renderer or mandatory third design.
+
+**Rollback / failure behavior:**
+
+- Disable only second-family new selection; retained first-family and historical data remain supported.
+
+### AR-16 — Introduce generation stages and resumable execution contracts
+
+**Package:** P5 — Operational execution. **Dependencies:** AR-07. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** One orchestrator owns bounded stage execution, isolated artifacts and global design dependencies.
+
+**Changes:**
+
+- Define GenerationRun, StageAttempt, immutable artifact refs, read/write dependencies, status and budget accounting without a second accepted draft.
+- Implement orchestration against a deterministic reference repository and provider doubles.
+- Authorize resource ownership before job admission; require scope and idempotency payload equality.
+- Drive the same template compiler from synchronous/reference and worker entrypoints.
+
+**Acceptance:**
+
+- T08–T13 deterministic state-machine cases: duplicate requests, stale stage, cancellation, budget reservation and stage reuse.
+- Reference/in-memory results are not described as process-restart or distributed durability proof.
+
+**Non-goals:**
+
+- No new workflow-platform dependency, host-database assumption or automatic model retry.
+
+**Rollback / failure behavior:**
+
+- Disable new run entrypoint; pure template compiler remains usable for deterministic validation.
+
+### AR-17 — Implement durable execution with fencing and recovery
+
+**Package:** P5 — Operational execution. **Dependencies:** AR-16, AR-23. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Restarts and duplicate workers cannot lose completed design work or corrupt final application.
+
+**Changes:**
+
+- Use the actual host-approved transaction/CAS mechanism for durable run and artifact storage.
+- Implement lease/fencing token, idempotent committed stage result, cancellation fencing and bounded request admission.
+- Reserve attempts before remote calls; persist uncertain outcomes and prevent hidden rebilling/retry loops.
+- Test process restart, lease expiry, duplicate delivery, delayed completion and retention/deletion access policy.
+
+**Acceptance:**
+
+- T10,T11,T12,T13,T24 execute against a real durable adapter; no exactly-once provider billing claim.
+- Missing host transaction authority blocks this task, not AR-09–15 visual work or deterministic AR-16 tests.
+
+**Non-goals:**
+
+- No assumed Redis/Kafka/Temporal, cross-tenant artifacts or background activity outside declared budget.
+
+**Rollback / failure behavior:**
+
+- Disable worker admission, let authorized in-flight operations drain/cancel safely, retain artifacts and compatible readers.
+
+### AR-18 — Connect expressive creative-brief and template provider stages
+
+**Package:** P6 — Merchant design workflow. **Dependencies:** AR-09, AR-16. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** The model authors supported global and per-template preferences instead of selecting a completed package.
+
+**Changes:**
+
+- Add non-executable creative brief and template-stage schemas grounded in actual advertised capabilities.
+- Use hard constraints, ordered merchant priorities and transparent substitutions; stable ties are final, not design quality.
+- Declare per-run calls/tokens/attempts/corrections; reuse provider config and explicit secret boundaries.
+- Default to one concept; add no mandatory three-result response and no prebuilt full snapshots in provider input.
+
+**Acceptance:**
+
+- T11,T14,T23 with provider doubles; requests expose compact capabilities, not exact execution authority or executable code.
+- Unknown capability, refusal, malformed output and unsupported critical intent have typed outcomes with no draft change.
+- Live calls remain separately authorized evidence, not used to debug an unverified harness.
+
+**Non-goals:**
+
+- No model-selection claims, arbitrary component IDs, provider-owned permissions or hidden retry.
+
+**Rollback / failure behavior:**
+
+- Disable new provider contract; saved artifacts remain readable and deterministic tests use the same interfaces.
+
+### AR-19 — Wire the normal Studio generation lifecycle and progress
+
+**Package:** P6 — Merchant design workflow. **Dependencies:** AR-13, AR-16, AR-18. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Generate store works as one action with template progress, isolated review and exact existing lifecycle.
+
+**Changes:**
+
+- Route normal requests into the orchestrator and existing proposal transport; expose safe status/results.
+- Preserve explicit Accept/Reject/Undo/Redo/Save/Preview/Publish boundaries; no provider calls on inspection or acceptance.
+- Keep incomplete template previews isolated from active draft; preserve completed siblings on stage failure.
+- Allow deterministic/reference operation before host activation; integrated mode still requires actual trusted authority.
+
+**Acceptance:**
+
+- T09,T12,T16: open=zero calls; reject/regenerate no reset; accept atomic; undo/redo/save/reload exact.
+- AR-17/25 remain required for durable integrated production, even when local Studio journey passes.
+
+**Non-goals:**
+
+- No complete P10C editor redesign, browser-authoritative integrated save or privileged test identity.
+
+**Rollback / failure behavior:**
+
+- Disable new generation entry contract; retain accepted-version readers and previous working editor behaviour.
+
+### AR-20 — Unify scoped editing and protect merchant changes
+
+**Package:** P6 — Merchant design workflow. **Dependencies:** AR-19, AR-15. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Page/template/section edits reuse the same compiler without overwriting unrelated merchant work.
+
+**Changes:**
+
+- Wire actual existing scope router and permission semantics into normal editing.
+- Distinguish static page, reusable template, section and global-system edits; show impact before acceptance.
+- Implement merchant locks and dependency invalidation; global token changes trigger affected checks.
+- Port every retained scope needed by the pilot before retiring its legacy transport.
+
+**Acceptance:**
+
+- T04,T08,T09,T16: PDP edit leaves home unchanged; global edits disclose impact; conflicts fail without silent rebase.
+- Round trip preserves v2 composition and legacy edits remain supported within documented boundaries.
+
+**Non-goals:**
+
+- No automatic conflict rebasing or commerce/content ownership escalation.
+
+**Rollback / failure behavior:**
+
+- Disable new scope paths; do not remove old follow-up until equivalent acceptance is proven.
+
+### AR-21 — Add normal-path machine capture and bounded critique
+
+**Package:** P7 — Quality proof. **Dependencies:** AR-15, AR-19. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Basic visual defects are caught before human review without creating a separate screenshot application.
+
+**Changes:**
+
+- Capture identified surfaces/widths after asset/font settlement with safe immutable artifact references.
+- Run geometry, accessibility, image, lifecycle and cross-page checks before optional critic inference.
+- Compile any authorized critic correction as one immutable bounded successor; recompute impacted dependencies.
+- Persist safe verdict/preference evidence outside StorefrontSnapshot; capture failure is not misreported as model-design failure.
+
+**Acceptance:**
+
+- T03,T14,T20: unsupported critic commands rejected, correction/capture budget enforced, affected surfaces rechecked.
+- No output is automatically published and no hidden repair loops occur.
+
+**Non-goals:**
+
+- No learned preference model, unrestricted visual agent or product-owner-run capture manufacture.
+
+**Rollback / failure behavior:**
+
+- Disable critic calls/corrections; deterministic machine checks and manual quality review remain.
+
+### AR-22 — Accept the engine and optional concept comparison
+
+**Package:** P7 — Quality proof. **Dependencies:** AR-15, AR-20, AR-21. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Two complete families produce prompt-faithful editable stores through the ordinary product path.
+
+**Changes:**
+
+- Run zero-call harness preflight, then explicit bounded live calls for the diagnostic intent set within supported capabilities.
+- Prove independent foundation/structure/typography controls and complete-store coherence in EN/FI and four widths.
+- Support explicit one/two/three-concept requests only to the available capacity; report shortfall without padding or silent constraint relaxation.
+- Retain at least one human-approved publishable-without-structural-rebuild outcome plus reasons for rejected outputs.
+
+**Acceptance:**
+
+- T14,T15,T16,T20,T22,T23 with actual provider/human evidence; unsupported requests truthful.
+- Engine gate explicitly excludes unverified public-host, production durability and live Vesko integration.
+
+**Non-goals:**
+
+- No guaranteed third distinct family at initial two-family launch; no claim that all requests are supported.
+
+**Rollback / failure behavior:**
+
+- Keep new generation in limited acceptance mode when commercial gate fails; fix named expressive/renderer gaps, not enlarge prompts blindly.
+
+### AR-23 — Resolve the Vesko monolith hosting and data contract
+
+**Package:** P8 — Host integration. **Dependencies:** AR-01. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Architecture connects to verified host services rather than invented auth, persistence or public URLs.
+
+**Changes:**
+
+- Inspect actual monolith interfaces for tenant identity/permissions, project storage, transactions/CAS, worker execution, route/visibility data, assets and publication.
+- Choose the minimal compatible durable run adapter; define narrow snapshot/current-catalogue/history reads.
+- Document public rendering ownership and provider-safe data projection. Define precise unavailable-field blockers.
+- Record actual checkout/cart/search commands and locale/route revision contracts; no raw /puck persistence.
+
+**Acceptance:**
+
+- An executable integration-specific contract and evidence references exist, or missing interfaces are explicitly blocked.
+- No claim that the repository’s August OpenAPI audit is current live backend behaviour.
+
+**Non-goals:**
+
+- No second backend, endpoint invention, credentials in docs or full monolith refactor.
+
+**Rollback / failure behavior:**
+
+- Contract-only decision; preserve current standalone adapters. Block only dependent host tasks when evidence is missing.
+
+### AR-24 — Implement live route resolution and dependency-scoped freshness
+
+**Package:** P8 — Host integration. **Dependencies:** AR-07, AR-23. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Commerce changes do not require design regeneration or destroy unrelated design work.
+
+**Changes:**
+
+- Implement single resolver joining static route authority with canonical resource identity/visibility/handle projection.
+- Version route/resource navigation semantics; preserve v1 inventory/replay and define migration/redirect/tombstone policy.
+- Define capability-checked assignment/type/complexity/fallback precedence and current search context.
+- Separate presentation read-set conflicts from routine commerce observations; reconcile new/deleted/renamed resources independently of AI.
+
+**Acceptance:**
+
+- T01,T05,T06,T07,T09,T23: route lifecycle and option changes work; no catalogue-sized design expansion.
+- Every migration conflict is explicit; no silently dropped assignments or unapproved route renames.
+
+**Non-goals:**
+
+- No second editable route graph, fabricated stock, or automatic whole-store re-generation on product change.
+
+**Rollback / failure behavior:**
+
+- Keep v1 resolver for old releases; new v2 releases require supported v2 reader. Reverse writes only through explicit migration/restore.
+
+### AR-25 — Connect trusted server storage, publishing and public rendering
+
+**Package:** P8 — Host integration. **Dependencies:** AR-17, AR-19, AR-24. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** A fresh public request resolves a real server-held release without Studio browser state.
+
+**Changes:**
+
+- Inject real authenticated authority and permissions into normal integrated routes; retain fail-closed defaults.
+- Read requested snapshot/current context through narrow server interfaces; avoid loading every history snapshot for public requests.
+- Render released v2 composition through the same registered implementation; keep public/preview loading and action adapters separate.
+- Prove exact prepare/confirm, artifact/version/active-pointer atomicity and supported renderer-version deployment.
+
+**Acceptance:**
+
+- T09,T13,T17,T18,T24 on actual host: fresh process/browser, no IndexedDB dependency, no partial publication.
+- External delivery failure is recoverable through host-owned propagation; there is one live authority.
+
+**Non-goals:**
+
+- No browser publish, replacement checkout or unsupported old-renderer retirement.
+
+**Rollback / failure behavior:**
+
+- Disable new writes/public activation; restore via supported draft-and-republish workflow, not unsafe direct pointer manipulation.
+
+### AR-26 — Deliver localized runtime SEO and governed content fields
+
+**Package:** P8 — Host integration. **Dependencies:** AR-25. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Public metadata reflects the same route, language, approved content and commerce facts as the visible page.
+
+**Changes:**
+
+- Implement explicit locale URL/canonical/alternate policy and legacy redirect handling.
+- Project product/offer structured data from current commerce; static metadata and social imagery from approved content/assets.
+- Implement indexability, sitemaps and correct error/not-found handling; keep drafts private and non-indexable.
+- Separate design SEO defaults from authorized product-content writes.
+
+**Acceptance:**
+
+- T06,T18,T19: fresh direct URLs, language alternates, visibility and structured-data facts agree; no draft URL leaks.
+- Verify actual server/streaming metadata behaviour under supported crawlers rather than assume first-chunk layout.
+
+**Non-goals:**
+
+- No ranking guarantee, invented keywords-as-ranking-system, fake ratings or policy claims.
+
+**Rollback / failure behavior:**
+
+- Revert metadata projection version without corrupting canonical URLs; preserve agreed redirects and verified content.
+
+### AR-27 — Connect real commerce actions without building commerce again
+
+**Package:** P8 — Host integration. **Dependencies:** AR-25. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** Public purchase controls actually execute supported Vesko operations with current variant identity.
+
+**Changes:**
+
+- Wire selected-variant action and error/loading/retry UX to host-authorized commands.
+- Retain a no-op or explicit disabled action only in labelled preview contexts.
+- Verify cart/checkout handoff and error states, including stock changes and validation failures.
+
+**Acceptance:**
+
+- T07,T13,T18: actual supported shopper journey succeeds; unauthorized/mismatched variant requests fail.
+- Public store cannot silently use the preview no-op callback.
+
+**Non-goals:**
+
+- No new order, payment, tax, return or checkout engine inside Veskify.
+
+**Rollback / failure behavior:**
+
+- Disable affected public action with truthful state or revert adapter; never present a successful purchase without host confirmation.
+
+### AR-28 — Accept the integrated pilot with recovery and isolation
+
+**Package:** P9 — Pilot and retirement. **Dependencies:** AR-17, AR-20, AR-22, AR-26, AR-27. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** One real merchant store is operational, recoverable and commercially accepted on Vesko.
+
+**Changes:**
+
+- Exercise multi-tenant denial, restart, duplicate workers, cancel, failure during publication, stale assets/facts and current commerce.
+- Measure generation cost/stages, queue wait, public serving performance and error/fallback behaviour; establish justified SLOs from measurements.
+- Run fresh-session public routes, SEO and commerce journey; retain human complete-store review.
+- Record deployment/rollback, artifact retention, unsupported versions and ownership runbook.
+
+**Acceptance:**
+
+- T01,T06–T13,T17–T19,T22–T24 pass applicable real-host cases with actual results.
+- No unresolved critical commerce, tenant isolation, data-loss or publication issue; performance claims are measured, not predicted.
+
+**Non-goals:**
+
+- No automatic broad rollout, new family scope or unbudgeted provider tests.
+
+**Rollback / failure behavior:**
+
+- Keep pilot limited/disabled on failure; use tested restore-and-republish and worker admission controls.
+
+### AR-29 — Retire obsolete active generation and redundant transports
+
+**Package:** P9 — Pilot and retirement. **Dependencies:** AR-04, AR-20, AR-22. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** New normal generation/editing no longer coexists with a misleading hidden selector path.
+
+**Changes:**
+
+- Remove obsolete active v1 initial selector entrypoints and v2 expand/fold compatibility detours only where all new consumers are accepted.
+- Retain required direction/profile/component readers and old artifacts; move any remaining needed helper under clear compatibility ownership.
+- Remove superseded scope transports only after AR-20 equivalent coverage; update route/import and CI discovery evidence.
+- Attach path-by-path retirement record and explicit rollback for every removed capability.
+
+**Acceptance:**
+
+- T01,T16,T21: no dangling import/dynamic route/persisted reference; old stores remain readable and publishable under supported policy.
+- A v2 failure cannot invoke removed v1 generation as an undocumented fallback.
+
+**Non-goals:**
+
+- No wholesale bounded-storefront-synthesis or whole-storefront-generation-plan directory deletion based on naming.
+
+**Rollback / failure behavior:**
+
+- Revert removal PR if compatibility evidence fails; do not migrate stored data to compensate for an accidental deletion.
+
+### AR-30 — Prune remaining proof infrastructure and close the reset
+
+**Package:** P9 — Pilot and retirement. **Dependencies:** AR-28, AR-29. **Planned detail:** future work; tracker status controls.
+
+**Outcome:** The remaining codebase has explicit active, compatibility and test ownership with no misleading reset leftovers.
+
+**Changes:**
+
+- Remove only proof/runtime roots and static assets proven unused by source, snapshots, tests and public host.
+- Keep useful golden fixtures, source evidence and compatibility replay; replace temporary source hashes/zero counts only via mapped adopted gates.
+- Synchronize SDD/roadmap/tracker/exports and report unresolved noncritical legacy modules with owners/retirement triggers.
+- Close AR with actual engine/pilot evidence; prioritize subsequent expansion by merchant need.
+
+**Acceptance:**
+
+- T01,T21,T24: final source graph, tests and artifact readers are consistent; retained history not falsified.
+- No “all debt removed” or six-family support claim unless separately proven.
+
+**Non-goals:**
+
+- No vanity directory rewrite, evidence erasure, CI simplification by deleting tests or unsupported asset purge.
+
+**Rollback / failure behavior:**
+
+- Revert isolated cleanup changes; original historical evidence remains recoverable and release support intact.

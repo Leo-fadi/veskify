@@ -1,5 +1,11 @@
 # Veskify Capability Evidence Ledger
 
+> **AR-00 scope note:** Historical P10B-19A/A-10C evidence is retained unchanged. It is not a
+> current successor-task authority; status is owned only by the delivery tracker.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 **Audit date:** 4 September 2026
 
 **Repository baseline:** P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate

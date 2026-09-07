@@ -1,5 +1,14 @@
 # Veskify Development Delivery Tracker
 
+> **Repository status effective upon explicit owner adoption/merge:** This projection does not
+> claim that this PR has merged or that owner acceptance has occurred.
+> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Planned —
+> exact next task, not started**. AR-23 depends on AR-01 and is not serialized behind
+> visual work. This tracker owns current status; the roadmap owns dependency order.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 ## Document control
 
 | Field                       | Value                                                                                                               |
