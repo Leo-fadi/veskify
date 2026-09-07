@@ -1,5 +1,12 @@
 # Veskify Development Delivery Tracker
 
+> **AR-00 current status authority:** **Active — pending adoption/merge.** AR-01 is **Planned —
+> sole next task after AR-00 adoption/merge**. AR-23 depends on AR-01 and is not serialized behind
+> visual work. This tracker owns current status; the roadmap owns dependency order.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 ## Document control
 
 | Field                       | Value                                                                                                               |

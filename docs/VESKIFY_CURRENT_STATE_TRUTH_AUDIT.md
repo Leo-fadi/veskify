@@ -1,5 +1,12 @@
 # Veskify Current-State Truth Audit
 
+> **AR-00 scope note:** This point-in-time audit retains P10B-19A-10C's historical exact-next
+> statement as evidence of that accepted event. Current reset scheduling is projected by the
+> adopted SDD addendum, roadmap, and tracker; AR-00 is pending adoption/merge and AR-01 follows it.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 **Audit date:** 4 September 2026
 
 **Repository baseline:** P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate

@@ -1,5 +1,12 @@
 # Veskify Development Guide
 
+> **AR-00 planning projection:** pending adoption/merge, AR-00 is the active amendment and AR-01
+> is the sole next task after that gate. The roadmap owns dependency order; the tracker owns status.
+> Historical B-01 next-task statements retain only their accepted-event meaning.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 **Version:** 1.3.0
 **Aligned with:** `docs/VESKIFY_SDD.md` and `AGENTS.md`
 

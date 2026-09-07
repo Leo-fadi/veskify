@@ -161,6 +161,13 @@ Use this priority:
 
 ## 8. Task and PR workflow
 
+### 8.0 AR-00 adopted architecture policy
+
+When AR-00 is adopted, its incorporated SDD addendum governs future template-scoped compilation,
+bounded operational persistence, one-concept default, two initial families, and staged AR delivery.
+The roadmap remains the delivery-order authority and the tracker remains the sole status authority.
+Historical P10B-19A/A-10C records remain event evidence and do not schedule successor work.
+
 ### 8.1 Branch discipline
 
 - One task, one branch, one worktree and one PR.

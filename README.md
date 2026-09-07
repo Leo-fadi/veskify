@@ -1,5 +1,12 @@
 # Veskify
 
+> **Current planning projection:** AR-00 is pending adoption/merge. After that gate AR-01 is the
+> sole next reset task. The SDD addendum is normative; the roadmap owns delivery order and the
+> tracker owns status. This does not change the product's **Partial** status.
+> Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
+> future-sequence statements are **historical pre-AR future policy**, superseded by the incorporated
+> addendum; accepted history, functional requirements, and current capability truth remain binding.
+
 Veskify is the internal controlled storefront-design engine for the merchant-facing **Vesko
 Storefront Studio**. It turns approved brand/source evidence, approved presentation assets, and
 read-only canonical Vesko commerce data into a governed, editable, and explicitly publishable

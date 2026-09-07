@@ -1,5 +1,13 @@
 # Veskify Software Design Document v1.3.0
 
+> **AR-00 incorporation (pending adoption/merge):** The normative
+> [template-scoped architecture addendum](./spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md)
+> is incorporated into this SDD. It amends future delivery policy only; accepted P10B-19A/A-10C
+> authority, retained requirement IDs, and current capability claims remain unchanged.
+> Any retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, or 73-child
+> future-sequence statement is **historical pre-AR future policy** superseded by that addendum. It
+> does not weaken accepted history, binding functional requirements, or current capability truth.
+
 ## 1. Document control and revision history
 
 | Field                     | Value                                                                 |
