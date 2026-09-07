@@ -433,9 +433,7 @@ describe("post-adoption repository state and PR lifecycle", () => {
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
-      expect(tracker).toContain(
-        "**Baseline / closed.** AR-01 is **Planned —\n> exact next task, not started**",
-      );
+      expect(tracker).toContain("**Baseline / closed.** AR-01 is **Baseline / closed.**");
       expect(tracker).toContain("AR-23 depends on AR-01");
       matrixCheck(
         directory,
@@ -641,18 +639,18 @@ describe("AR-00 architecture-reset adoption guard", () => {
     }
   });
 
-  it("rejects current next-task declarations other than AR-01", () => {
+  it("rejects current next-task declarations other than AR-02", () => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "AR-01 is Planned — exact next task, not started",
-        "AR-02 is the sole next reset task",
+        "AR-02 is Planned — exact next task, not started",
+        "AR-03 is the sole next reset task",
       );
       expect(changed).not.toBe(original);
       writeFileSync(readmePath, changed);
-      expect(() => check(directory)).toThrow(/AR-02/);
+      expect(() => check(directory)).toThrow(/AR-03/);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -664,8 +662,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-01 is **Planned —\n> exact next task",
-        "AR-30 is **Planned —\n> exact next task",
+        "AR-02 is **Planned — exact next task",
+        "AR-30 is **Planned — exact next task",
       );
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
@@ -870,6 +868,41 @@ describe("AR-00 architecture-reset adoption guard", () => {
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
       expect(check(directory)).toContain("31 outcomes");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("AR-01 bounded proposed status transition", () => {
+  it.each(["AR-02", "AR-03", "AR-23", "AR-30"])(
+    "rejects premature %s closure despite dependency eligibility",
+    (task) => {
+      const directory = fixture();
+      try {
+        const path = join(directory, "README.md");
+        writeFileSync(
+          path,
+          `${readFileSync(path, "utf8")}\n## CURRENT POLICY\n\n${task} is Baseline / closed.\n`,
+        );
+        expect(() => check(directory)).toThrow(/contradictory current status/);
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    },
+  );
+  it("rejects restoring AR-01 Planned as the current accepted projection", () => {
+    const directory = fixture();
+    try {
+      const path = join(directory, "README.md");
+      const original = readFileSync(path, "utf8");
+      const changed = original.replace(
+        "AR-01 is Baseline / closed.",
+        "AR-01 is Planned — exact next task, not started.",
+      );
+      expect(changed).not.toBe(original);
+      writeFileSync(path, changed);
+      expect(() => check(directory)).toThrow(/contradictory current status/);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

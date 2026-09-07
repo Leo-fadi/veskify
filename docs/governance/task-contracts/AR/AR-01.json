@@ -1,0 +1,387 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AR",
+  "taskId": "AR-01",
+  "title": "Map refactor dependencies and characterize current behaviour",
+  "repository": {
+    "root": "/Users/leo/veskify-worktrees/ar-01-dependency-inventory",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-01-dependency-inventory",
+  "baseCommit": "82e8c3922ccc5a737fec2e18311ff7ab1a69e8ae",
+  "objective": "Execute the owner-supplied AR-01 task dated 7 September 2026: bounded inventory, measured current behaviour and first refactoring handoff, one PR after independent/native PASS; no merge or successor implementation.",
+  "expectedOutcome": "Exactly I01-I36 source-grounded primary rows, a reproducible TypeScript compiler-resolved audit, six current-behaviour groups, measured renderer-conformance findings, concrete AR-02/03 slices and AR-23 questions. Product and accepted history are unchanged.",
+  "dependencies": [
+    {
+      "taskId": "AR-00",
+      "requiredState": "MERGED",
+      "commit": "82e8c3922ccc5a737fec2e18311ff7ab1a69e8ae"
+    }
+  ],
+  "mergeOrder": 2,
+  "canonicalAuthorities": [
+    "Owner AR-01_Codex_Task.md prepared 7 September 2026, sections 1-9; copy retained externally as task-instruction.md. Explicitly authorizes only narrow current-status progression upon accepted merge.",
+    "AGENTS.md; docs/AGENT_TEAM_WORKFLOW.md; both existing project skills; docs/DEVELOPMENT_GUIDE.md section 4; native governance schemas and evidence reconciliation.",
+    "docs/VESKIFY_SDD.md and ADR-001 through ADR-004; docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md.",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md AR-01/02/03/23; tracker alone owns status.",
+    "docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md I01-I36 and T01/T21; source observations supersede advisory assumptions without changing architecture."
+  ],
+  "ownedPaths": [
+    "scripts/ar-01-inventory.mjs",
+    "tests/unit/ar-01-dependency-inventory.test.ts",
+    "tests/unit/ar-01-current-behaviour.test.ts",
+    "docs/AR_01_REFACTOR_MANIFEST.json",
+    "docs/AR_01_IMPLEMENTATION_REPORT.md",
+    "docs/AR_01_APPROACH.md",
+    "docs/governance/task-contracts/AR/AR-01.json",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx"
+  ],
+  "allowedPaths": [
+    "scripts/ar-01-inventory.mjs",
+    "tests/unit/ar-01-dependency-inventory.test.ts",
+    "tests/unit/ar-01-current-behaviour.test.ts",
+    "docs/AR_01_REFACTOR_MANIFEST.json",
+    "docs/AR_01_IMPLEMENTATION_REPORT.md",
+    "docs/AR_01_APPROACH.md",
+    "docs/governance/task-contracts/AR/AR-01.json",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx"
+  ],
+  "forbiddenPaths": [
+    "src/**",
+    "public/**",
+    "tests/fixtures/**",
+    "tests/helpers/**",
+    "tests/integration/**",
+    "tests/unit/p10*.ts",
+    "tests/unit/p10*.tsx",
+    ".agents/**",
+    ".codex/**",
+    ".github/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".env*",
+    "docs/AR_00*",
+    "docs/P10B*",
+    "docs/adr/**",
+    "docs/ADR*",
+    "docs/governance/*.json",
+    "docs/governance/task-contracts/AR/AR-00.json",
+    "docs/Veskify_Architecture_Reset/**"
+  ],
+  "noTouchAreas": [
+    "One existing configured veskify_worker is the only implementation writer; coordinator locks authority/integrates Git and performs checks, helpers return read-only findings. No recursive delegation, setup, permissions or model changes. Pause all implementation before fresh configured verifier.",
+    "Source discovery uses tracked AUDIT_BASE roots only, excludes secrets/caches/audit outputs/untracked package; never execute application modules for import discovery. Runtime reporter/test execution is separately declared.",
+    "All product source, public media, accepted fixtures, original P19/A-10C authority, historical contracts/verdicts and nine original coordinator inputs remain unchanged. Hash original inputs for integrity only; not a source-discovery dependency.",
+    "Handwritten target: <=3000 added and <=400 deleted text lines; stop above 4500 added or 700 deleted handwritten lines, zero src production changes. Generated exact file/export/import/edge facts in manifest are separately measured; decisions, tooling and tests are handwritten, not generated exemptions. Raw graph remains external. Report narrative aims <=1500 words.",
+    "Permitted generated check outputs: task node_modules/.vite-temp/**, node_modules/.vite/vitest/**, tsconfig.tsbuildinfo, ordinary macOS ar-00-check-* and ar-01-* temporary fixtures, existing exporter temp/staging outputs, and /private/tmp/veskify-ar-01/** reports and temporary disposable Git index/objects. No source edits by verifier.",
+    "Diagnostic command (coordinator and verifier each execute once, preserve actual exit/results in document evidence EVIDENCE-05, not PASS-only native commandsRun): pnpm exec vitest run tests/integration/p10b-16p-03-server-prompt-generation.test.ts tests/unit/p10b-16p-01-dynamic-commerce-route-authority.test.ts tests/unit/p10b-16p-01-dynamic-commerce-editor-state.test.ts tests/unit/p10b-16p-02b-dynamic-commerce-proposal-lifecycle.test.ts tests/unit/p10b-16p-03-canonical-generation-transition.test.ts tests/unit/history.test.ts tests/unit/draft-save.test.ts tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx tests/integration/p10b-19a-09c-publication-render-replay.test.tsx tests/unit/p10a-registry-renderer-conformance.test.ts",
+    "Diagnostic failures may qualify as pre-existing product findings only with specific source-supported cause/successor owner and unchanged source identity. New audit checks, missing local proof and unexplained execution errors remain blocking. Native commandsRun contains acceptance validation only because native PASS requires every included command to succeed. Diagnostic evidence still mandatory under AC-04/07.",
+    "Inventory reconstruction command: node scripts/ar-01-inventory.mjs --base 82e8c3922ccc5a737fec2e18311ff7ab1a69e8ae --output /private/tmp/veskify-ar-01/inventory.json. Live conformance reporter executes in tests/unit/ar-01-current-behaviour.test.ts and records IDs/classes/counts without altering reporter or historical expected totals.",
+    "Status writes only current projection lines, one small guard transition and current test matrix; AR-00 stays closed, AR-01 proposed Baseline/closed effective upon explicit merge, AR-02 Planned/exact next and unstarted, AR-03/23 eligible after AR-01. Every other status/architecture/dependency vector unchanged. Historical AR-00 evidence and detailed acceptance not rewritten.",
+    "No full suite, Playwright, browser campaign, build, live provider, Vesko, production database, publication, deployment, merge, successor implementation, reset, clean, rebase or force-push. No perpetual old audit-source hash check in CI."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One bounded AR-01 inventory/current-behaviour/handoff audit; zero product refactoring.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Reproducible existing DOCX exporter output only."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Reproducible existing DOCX exporter output only."
+      },
+      {
+        "path": "docs/AR_01_REFACTOR_MANIFEST.json",
+        "reason": "Only scanner-derived target/export/import/root/hash facts count as generated; separately report handwritten disposition/evidence/retirement/handoff fields. This is audit evidence, not a source-freeze registry."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Verify GitHub predecessor/PR ownership and fetch once; coordinator commit/push and one PR only after independent/native PASS.",
+      "Existing non-recursive configured team, one implementation writer, helpers read-only and independent verifier. Zero product-provider calls.",
+      "Frozen-lockfile bootstrap using installed pnpm only; no dependency updates or new packages."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Use installed TypeScript compiler API with actual tsconfig resolution to scan tracked base source without importing it; retain exact symbols, all relevant root/edge kinds and unresolved computed evidence. One 36-row manifest combines generated source facts with bounded evidence-based decisions. Existing tests provide diagnostic behaviour evidence; new AR-01 tests fill bounded gaps and validate scanner. Reuse existing status guard grammar/exporters for proposed merge-state closure.",
+    "canonicalAuthorityExtended": "Existing canonical registries/routes/snapshot lifecycle remain unchanged; AR-01 adds audit evidence and narrow tracker status projection under adopted AR-00.",
+    "namedCurrentConsumers": [
+      "AR-02 registry metadata/rendering implementer",
+      "AR-03 dynamic-route authority extraction implementer",
+      "AR-23 host-contract owner"
+    ],
+    "rejectedShortcuts": [
+      "Grep-only dependency reachability or executing app modules to discover imports.",
+      "Removing legacy or zero-import targets without persisted-consumer evidence.",
+      "Copying a second component registry or committing thousands of redundant graph edges.",
+      "Repairing product conformance defects or coercing diagnostic test results to claim a clean baseline.",
+      "New status store/prose parser/hidden bypass/network guard; rewriting historical source-hash fixtures."
+    ],
+    "expectedFailureBehavior": "Preserve product and history; unsupported external consumers block target retirement. Audit defects/unexplained missing proof block submission. One consolidated correction and verifier rerun; native evidence-only repair by same verifier allowed with unchanged inputs/execution identity.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Eligible unchanged product baseline: merged predecessor, exact workspace/base/remote, all protected input bytes preserved.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Exactly I01-I36 primary rows resolve exact targets/exports or concrete unavailable authority; callers, string/persisted references, roles, invariants, dispositions, successors, proof and retirement prerequisites distinguish observation from assumptions. No unsupported safe removal.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Reproducible base-bound compiler-resolved analysis covers type/value, re-export, aliases, literal/computed dynamics, routes/boundaries, symbols and persisted/string references; compact synthetic negative cases prevent unsupported removal.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "All six required behaviour groups and measured conformance IDs/classes/counts have executed evidence; reconcile historical 16/25/1 prose and 16/29/7 test expectations. New audit checks pass, specifically demonstrated pre-existing product diagnostic defects remain honest findings.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-05"],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "AR-02 and AR-03 exact entrypoints/importer changes/identities/tests/rollback and file-change estimates; disjointness based on graph, prefer sequential. AR-23 concrete host questions; historical hash guards mapped to invariant/replacement proof. No successor implementation/removal.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-05"],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Honest proposed AR-01 post-merge closure; AR-00 closed, AR-02 planned/unstarted next, AR-03/23 dependency-eligible only, no dependency/architecture/other status changes; focused current guard matrix/docs/exports/format pass.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Fresh independent verifier checks exact complete diff, regeneration, declared validation and diagnostics, and risk samples adapted legacy registry, dynamic route, persisted/publication reference, retirement candidate and every safe-remove target. Freeze before/after; complete native identity/evidence links reconcile PASS before commit/push/one PR.",
+      "verificationClass": "scope",
+      "requiredEvidence": [
+        "EVIDENCE-01",
+        "EVIDENCE-02",
+        "EVIDENCE-03",
+        "EVIDENCE-04",
+        "EVIDENCE-05"
+      ],
+      "failureBehavior": "FAIL for contradiction, unsafe disposition or missing local proof; BLOCKED for unavailable required execution; no PR until independent/native PASS."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "node scripts/ar-01-inventory.mjs --base 82e8c3922ccc5a737fec2e18311ff7ab1a69e8ae --check docs/AR_01_REFACTOR_MANIFEST.json",
+      "purpose": "Independent regeneration of compiler-resolved audit facts and manifest evidence checks.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/unit/ar-01-dependency-inventory.test.ts tests/unit/ar-01-current-behaviour.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "New scanner/adversarial cases, missing current-behaviour characterization and retained bounded policy declaration matrix. New assertions must pass, no coerced diagnostic count.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "node scripts/check-architecture-reset-adoption.mjs",
+      "purpose": "Narrow authorized proposed post-merge status with unchanged ownership, dependencies and historical pins.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Retained requirement ownership.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation/export tooling.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Existing deterministic SDD export includes status addendum.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Existing tracker export and current cover.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm docs:validate",
+      "purpose": "Required documentation/link/guard checks.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm typecheck",
+      "purpose": "Changed TypeScript test consumers; no full build.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm exec eslint scripts/ar-01-inventory.mjs scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-01-dependency-inventory.test.ts tests/unit/ar-01-current-behaviour.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Affected lint.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm exec prettier --check scripts/ar-01-inventory.mjs tests/unit/ar-01-dependency-inventory.test.ts tests/unit/ar-01-current-behaviour.test.ts docs/AR_01_REFACTOR_MANIFEST.json docs/AR_01_IMPLEMENTATION_REPORT.md docs/AR_01_APPROACH.md docs/governance/task-contracts/AR/AR-01.json README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Affected formatting, no exclusions added.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "python3 - <<'PY-CHECK'\nimport os, pathlib, subprocess, tempfile\nroot=pathlib.Path.cwd()\nwith tempfile.TemporaryDirectory(prefix=\"ar-01-diff-\") as temporary:\n    env=os.environ.copy()\n    env[\"GIT_INDEX_FILE\"]=str(pathlib.Path(temporary)/\"index\")\n    objects=pathlib.Path(temporary)/\"objects\"; objects.mkdir()\n    env[\"GIT_OBJECT_DIRECTORY\"]=str(objects)\n    env[\"GIT_ALTERNATE_OBJECT_DIRECTORIES\"]=str(pathlib.Path(subprocess.check_output([\"git\",\"rev-parse\",\"--git-path\",\"objects\"],text=True).strip()).resolve())\n    subprocess.run([\"git\",\"read-tree\",\"HEAD\"],env=env,check=True)\n    subprocess.run([\"git\",\"add\",\"-A\",\"--\",\".\"],env=env,check=True)\n    subprocess.run([\"git\",\"diff\",\"--cached\",\"--check\",\"82e8c3922ccc5a737fec2e18311ff7ab1a69e8ae\"],env=env,check=True)\nPY-CHECK",
+      "purpose": "Default-whitespace complete proposed diff including untracked files; disposable index/object store preserves real index.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "diff",
+      "description": "Preflight merged predecessor, complete native scope/diff identities and frozen protected/input hashes before and after; real index preserved.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Regenerated inventory and independent risk-based target/caller/string review; handoffs/retirement evidence.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual acceptance test/typecheck/lint commands, exits and exact totals; all new checks PASS.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "document",
+      "description": "Actual focused policy/docs/export/format execution, status ownership and dependency review.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "document",
+      "description": "Actual diagnostic command exit, exact totals and failures, source-supported findings and live conformance IDs/classes/counts; six-group behaviour map and limitations. Diagnostic records are not relabelled PASS.",
+      "retention": "pull-request",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-merge",
+    "criteria": ["Owner explicitly accepts audit PR; no merge authorized by this task."]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Unexpected scope/architecture/protected-input mutation or missing predecessor.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Handwritten/production hard budget exceeded; no silent broadening.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Independent rerun is FAIL/BLOCKED or required native proof unavailable; preserve all prior results.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "One PR submitted: stop, no merge, successor, second review request or continuous CI polling.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-02",
+    "title": "Separate pure capability metadata from rendering and diagnostics",
+    "eligibility": "Recommended only after explicit AR-01 acceptance/merge and separate task authorization. AR-03 and AR-23 also dependency-eligible then; no successor work authorized."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}

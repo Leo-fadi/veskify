@@ -7,8 +7,8 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner adoption/merge and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed; AR-01 is Planned — exact next task, not started.
+explicit owner adoption/merge of AR-01 and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed; AR-01 is Baseline / closed; AR-02 is Planned — exact next task, not started.
 AR-23 is eligible after AR-01 and is not serialized behind visual work.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
@@ -691,7 +691,7 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 
 ### AR-01 — Complete local dependency inventory and characterize the working path
 
-**Package:** P0 — Authority and baseline. **Dependencies:** AR-00. **Planned detail:** Planned / exact next; not started. Separate task authorization remains required.
+**Package:** P0 — Authority and baseline. **Dependencies:** AR-00. **Status projection:** Baseline / closed only upon explicit AR-01 acceptance/merge; the tracker controls current status.
 
 **Outcome:** Every path proposed for change/removal has real caller, route and compatibility evidence.
 

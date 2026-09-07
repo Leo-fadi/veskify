@@ -1,8 +1,9 @@
 # Veskify
 
-> **Post-adoption planning projection:** Effective upon explicit owner adoption/merge; this
+> **Post-adoption planning projection:** Effective upon explicit owner adoption/merge of AR-01; this
 > describes repository content and does not assert that this PR has merged or been accepted.
-> AR-00 is Baseline / closed. AR-01 is Planned — exact next task, not started.
+> AR-00 is Baseline / closed. AR-01 is Baseline / closed.
+> AR-02 is Planned — exact next task, not started.
 > The SDD addendum is normative; the roadmap owns delivery order and the
 > tracker owns status. This does not change the product's **Partial** status.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child

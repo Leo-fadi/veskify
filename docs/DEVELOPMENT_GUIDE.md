@@ -2,7 +2,8 @@
 
 > **Post-adoption planning projection:** This repository state takes effect upon explicit owner
 > adoption/merge; it does not assert the PR's lifecycle or owner acceptance.
-> AR-00 is Baseline / closed. AR-01 is Planned — exact next task, not started.
+> AR-00 is Baseline / closed. AR-01 is Baseline / closed.
+> AR-02 is Planned — exact next task, not started.
 > The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child

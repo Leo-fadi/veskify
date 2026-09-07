@@ -3,7 +3,8 @@
 > **AR-00 scope note:** This point-in-time audit retains P10B-19A-10C's historical exact-next
 > statement as evidence of that accepted event. Current reset scheduling is projected by the
 > SDD addendum, roadmap, and tracker. Effective upon explicit owner adoption/merge, the repository
-> projection states: AR-00 is Baseline / closed. AR-01 is Planned — exact next task, not started.
+> projection states: AR-00 is Baseline / closed. AR-01 is Baseline / closed.
+> AR-02 is Planned — exact next task, not started.
 > This projection does not assert the actual PR lifecycle or owner acceptance.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
