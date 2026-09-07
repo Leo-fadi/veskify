@@ -330,7 +330,7 @@ if (
 }
 const statusExpectation = new Map([
   ["AR-00", "Baseline"],
-  ["AR-01", "Planned"],
+  ["AR-01", "Baseline"],
   ["A-10", "Baseline"],
   ["A-10C", "Baseline"],
   ["P10B-19A-10", "Baseline"],
@@ -395,14 +395,13 @@ for (const [path, block] of allCurrentAuthorities) {
 for (const record of statusRecords) {
   const expected = statusExpectation.get(record.subject);
   const normalizedQualifier = record.qualifier.replace(/^[—/\s]+/u, "").trim();
-  const permittedQualifier =
-    record.subject === "AR-00"
-      ? /^closed$/iu
-      : record.subject === "AR-01"
-        ? /^exact next task, not started$/iu
-        : /^AR-\d{2}$/u.test(record.subject)
-          ? /^$/u
-          : /^(?:closed)?$/iu;
+  const permittedQualifier = ["AR-00", "AR-01"].includes(record.subject)
+    ? /^closed$/iu
+    : record.subject === "AR-02"
+      ? /^exact next task, not started$/iu
+      : /^AR-\d{2}$/u.test(record.subject)
+        ? /^$/u
+        : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -434,9 +433,9 @@ const nextTaskIds = (block) =>
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (declaredNext.some((id) => id !== "AR-01")) {
+  if (declaredNext.some((id) => id !== "AR-02")) {
     throw new Error(
-      `${path}: current authority assigns ${declaredNext.find((id) => id !== "AR-01")} as next`,
+      `${path}: current authority assigns ${declaredNext.find((id) => id !== "AR-02")} as next`,
     );
   }
 }
@@ -449,12 +448,13 @@ const trackerCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !trackerCurrent?.includes("AR-00 current status authority: Baseline / closed.") ||
-  !trackerCurrent.includes("AR-01 is Planned — exact next task, not started") ||
+  !trackerCurrent.includes("AR-01 is Baseline / closed.") ||
+  !trackerCurrent.includes("AR-02 is Planned — exact next task, not started") ||
   nextTaskIds(trackerCurrent).length !== 1 ||
-  nextTaskIds(trackerCurrent)[0] !== "AR-01"
+  nextTaskIds(trackerCurrent)[0] !== "AR-02"
 ) {
   throw new Error(
-    "tracker: AR-00 Baseline / closed and AR-01 Planned / exact-next not-started declarations are required",
+    "tracker: AR-00/AR-01 Baseline / closed and AR-02 Planned / exact-next not-started declarations are required",
   );
 }
 if (
@@ -470,7 +470,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed; AR-01 is Planned — exact next task, not started. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
+    "AR-00 is Baseline / closed; AR-01 is Baseline / closed; AR-02 is Planned — exact next task, not started. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
