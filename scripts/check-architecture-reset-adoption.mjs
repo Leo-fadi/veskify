@@ -340,6 +340,9 @@ const statusExpectation = new Map([
 for (let number = 2; number <= 30; number += 1) {
   statusExpectation.set(`AR-${String(number).padStart(2, "0")}`, "Planned");
 }
+statusExpectation.set("AR-02", "Partial");
+statusExpectation.set("AR-02A", "Baseline");
+statusExpectation.set("AR-03A", "Planned");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -349,17 +352,17 @@ for (const [path, block] of allCurrentAuthorities) {
     statusRecords.push({ path, subject, status, qualifier: normalizedQualifier });
   };
   for (const [, subject, status, qualifier] of block.matchAll(
-    /(?<!when )\b(AR-\d{2}|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is (?!a\b|the\b|eligible\b|not\b)([A-Za-z]+)\b([^.;]*)/giu,
+    /(?<!when )\b(AR-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is (?!a\b|the\b|eligible\b|not\b)([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     addStatus(subject, status, qualifier);
   }
   for (const [, subject, status, qualifier] of block.matchAll(
-    /\b(AR-\d{2}|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is not ([A-Za-z]+)\b([^.;]*)/giu,
+    /\b(AR-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is not ([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     if (status.toLowerCase() !== "serialized") addStatus(subject, `not ${status}`, qualifier);
   }
   for (const [, subject, status, qualifier] of block.matchAll(
-    /\b(AR-\d{2}|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) current status authority:\s*([A-Za-z]+)\b([^.;]*)/giu,
+    /\b(AR-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) current status authority:\s*([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     addStatus(subject, status, qualifier);
   }
@@ -388,20 +391,26 @@ for (const [path, block] of allCurrentAuthorities) {
   )) {
     addDependencies(subject, rawDependencies);
   }
-  for (const [, subject] of block.matchAll(/\b(AR-\d{2}) is the active amendment\b/giu)) {
+  for (const [, subject] of block.matchAll(/\b(AR-\d{2}[A-Z]?) is the active amendment\b/giu)) {
     activeAmendmentRecords.push({ path, subject });
   }
 }
 for (const record of statusRecords) {
   const expected = statusExpectation.get(record.subject);
-  const normalizedQualifier = record.qualifier.replace(/^[—/\s]+/u, "").trim();
+  const normalizedQualifier = record.qualifier.replace(/^[—:/\s]+/u, "").trim();
   const permittedQualifier = ["AR-00", "AR-01"].includes(record.subject)
     ? /^closed$/iu
     : record.subject === "AR-02"
-      ? /^exact next task, not started$/iu
-      : /^AR-\d{2}$/u.test(record.subject)
+      ? /^$/u
+      : record.subject === "AR-03"
         ? /^$/u
-        : /^(?:closed)?$/iu;
+        : record.subject === "AR-02A"
+          ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
+          : record.subject === "AR-03A"
+            ? /^exact next selected child(?: after AR-02A acceptance and merge)?$/iu
+            : /^AR-\d{2}$/u.test(record.subject)
+              ? /^$/u
+              : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -428,14 +437,14 @@ for (const [path] of allCurrentAuthorities) {
 const nextTaskIds = (block) =>
   [
     ...block.matchAll(
-      /(AR-\d{2}) is (?:(?!AR-\d{2})[^.]){0,80}?(?:sole|exact) next (?:reset )?task/giu,
+      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:sole|exact) next (?:reset )?(?:task|selected child)/giu,
     ),
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (declaredNext.some((id) => id !== "AR-02")) {
+  if (declaredNext.some((id) => id !== "AR-03A")) {
     throw new Error(
-      `${path}: current authority assigns ${declaredNext.find((id) => id !== "AR-02")} as next`,
+      `${path}: current authority assigns ${declaredNext.find((id) => id !== "AR-03A")} as next`,
     );
   }
 }
@@ -449,12 +458,14 @@ const trackerCurrent = currentAuthorities.find(([path]) =>
 if (
   !trackerCurrent?.includes("AR-00 current status authority: Baseline / closed.") ||
   !trackerCurrent.includes("AR-01 is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02 is Planned — exact next task, not started") ||
+  !trackerCurrent.includes("AR-02A is Baseline / closed.") ||
+  !trackerCurrent.includes("AR-02 is Partial;") ||
+  !trackerCurrent.includes("AR-03A is Planned — exact next selected child") ||
   nextTaskIds(trackerCurrent).length !== 1 ||
-  nextTaskIds(trackerCurrent)[0] !== "AR-02"
+  nextTaskIds(trackerCurrent)[0] !== "AR-03A"
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01 Baseline / closed and AR-02 Planned / exact-next not-started declarations are required",
+    "tracker: AR-00/AR-01/AR-02A status and AR-03A selected-child declarations are required",
   );
 }
 if (
@@ -470,7 +481,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed; AR-01 is Baseline / closed; AR-02 is Planned — exact next task, not started. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation remains. AR-03 is Planned. It is unstarted. AR-03A is Planned — exact next selected child after AR-02A acceptance and merge. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");

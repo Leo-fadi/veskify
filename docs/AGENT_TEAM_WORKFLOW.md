@@ -40,6 +40,12 @@ explicit disjoint ownership and isolated worktrees within the existing repositor
 limits; this setup creates no extra worktrees and does not expand those limits.
 Dependent branches and implementation wait for dependency merges.
 
+For an explicitly approved finite batch, the coordinator can reuse the same worktree only between
+clean, accepted sequential branch boundaries and can begin only the named eligible successor.
+Workers pause at their implementation/evidence checkpoint. The verifier executes declared checks,
+returns its native verdict, and stops before Git/PR mutation or merge. One bounded CI/review wait is
+permitted per submitted head; merge authority remains explicit.
+
 Use [veskify-task-delivery](../.agents/skills/veskify-task-delivery/SKILL.md).
 Lock the native task contract before implementation, then record the native approach,
 canonical authority, named current consumer, rejected shortcut, expected failure

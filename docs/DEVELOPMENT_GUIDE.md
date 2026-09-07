@@ -2,8 +2,9 @@
 
 > **Post-adoption planning projection:** This repository state takes effect upon explicit owner
 > adoption/merge; it does not assert the PR's lifecycle or owner acceptance.
-> AR-00 is Baseline / closed. AR-01 is Baseline / closed.
-> AR-02 is Planned — exact next task, not started.
+> AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit owner acceptance/merge.
+> AR-02 is Partial. Definition/PageBlueprint materializer isolation remains. AR-03 is Planned.
+> It is unstarted. AR-03A is Planned — exact next selected child.
 > The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
@@ -327,6 +328,12 @@ One parent sprint may deliver seven to ten child pull requests through bounded r
 The coordinator stops the sprint for a product-owner checkpoint, verifier `FAIL` or `BLOCKED`
 requiring material redesign, architecture conflict, dependency failure, scope-budget violation, CI
 failure requiring behavior changes, or unexpected canonical ownership change.
+
+An owner may approve one finite named batch as a bounded exception to separate physical worktrees:
+the coordinator reuses a single worktree serially after each accepted merge and clean checkout. This
+does not permit concurrent writers, automatic merges, successor selection, or a third child. The
+coordinator may perform one bounded review/CI wait per submitted head; every merge still requires
+explicit owner authority.
 
 ### Verification policy
 
