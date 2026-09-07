@@ -8,7 +8,11 @@ import { describe, expect, it } from "vitest";
 
 const script = resolve("scripts/ar-01-inventory.mjs");
 type InventoryFacts = {
-  exactEdges: { to?: string }[];
+  exactEdges: {
+    to?: string;
+    from: string;
+    importedNames: { name: string; local: string; typeOnly: boolean }[];
+  }[];
   unresolvedComputedReferences: unknown[];
   files: { path: string; exports: { name: string }[] }[];
   entrypoints: unknown[];
@@ -45,15 +49,17 @@ function withFixture(run: (input: FixtureInput) => void) {
     );
     write(
       "src/value.ts",
-      'throw new Error("Application source must never execute"); export const value = 1; export type Item = { id: string }; export class Model {}; export default function factory() {}\n',
+      'throw new Error("Application source must never execute"); export const value = 1; export type Item = { id: string }; export function ordinary() {} export class Model {}; export default function factory() {} export { factory };\n',
     );
     write(
       "src/barrel.ts",
-      "export * from './value'; export { value as renamed } from './value'; export type { Item } from './value';\n",
+      "export * from './value'; export * from './default-class'; export * from './default-only-class'; export * from './app/page'; export { value as renamed } from './value'; export type { Item } from './value';\n",
     );
+    write("src/default-class.ts", "export default class Capsule {} export { Capsule };\n");
+    write("src/default-only-class.ts", "export default class HiddenCapsule {}\n");
     write(
       "src/consumer.ts",
-      "import { type Item } from '@/value'; import type { Model } from './value'; import('./value'); import(name); require(moduleName); import './missing'; import 'missing-package'; type Lazy = import('./value').Item;\n",
+      "import { type Item } from '@/value'; import type { Model } from './value'; import * as values from './value'; import type * as types from './value'; import defaultValue, * as mixed from './value'; import './value'; import('./value'); import(name); require(moduleName); import './missing'; import 'missing-package'; type Lazy = import('./value').Item;\n",
     );
     write("scripts/tool.mjs", "import { value } from '../src/value'; import fs from 'node:fs';\n");
     write("src/app/page.tsx", '"use client"; export default function Page() { return null; }\n');
@@ -192,6 +198,57 @@ describe("AR-01 compiler-resolved inventory", () => {
       expect(facts.exactEdges.some((edge) => edge.to === "src/legacy.ts")).toBe(false);
       // This identity has no import consumer, but does have a stored/string consumer.
       expect((JSON.parse(consumers) as unknown[]).length).toBeGreaterThan(0);
+    });
+  });
+
+  it("records only default for default-only declarations and named exports only when explicit", () => {
+    withFixture(({ facts }) => {
+      const names = (path: string) =>
+        facts.files.find((file) => file.path === path)?.exports.map((entry) => entry.name) ?? [];
+      expect(names("src/app/page.tsx")).toEqual(["default"]);
+      expect(names("src/default-only-class.ts")).toEqual(["default"]);
+      expect(names("src/value.ts")).toEqual(
+        expect.arrayContaining(["default", "factory", "ordinary", "Model"]),
+      );
+      expect(names("src/default-class.ts")).toEqual(expect.arrayContaining(["default", "Capsule"]));
+      expect(names("src/barrel.ts")).toEqual(
+        expect.arrayContaining(["factory", "Capsule", "ordinary", "Model"]),
+      );
+      expect(names("src/barrel.ts")).not.toContain("default");
+      expect(names("src/barrel.ts")).not.toContain("HiddenCapsule");
+      expect(names("src/barrel.ts")).not.toContain("Page");
+    });
+  });
+
+  it("records namespace bindings, mixed bindings and side-effect imports without property-use analysis", () => {
+    withFixture(({ facts }) => {
+      const edge = (names: unknown[]) =>
+        facts.exactEdges.find(
+          (candidate) =>
+            candidate.from === "src/consumer.ts" &&
+            JSON.stringify(candidate.importedNames) === JSON.stringify(names),
+        );
+      expect(edge([{ name: "*", local: "values", typeOnly: false }])).toMatchObject({
+        typeOnly: false,
+      });
+      expect(edge([{ name: "*", local: "types", typeOnly: true }])).toMatchObject({
+        typeOnly: true,
+      });
+      expect(
+        edge([
+          { name: "default", local: "defaultValue", typeOnly: false },
+          { name: "*", local: "mixed", typeOnly: false },
+        ]),
+      ).toMatchObject({ typeOnly: false });
+      expect(facts.exactEdges).toContainEqual(
+        expect.objectContaining({
+          from: "src/consumer.ts",
+          specifier: "./value",
+          kind: "side-effect-import",
+          typeOnly: false,
+          importedNames: [],
+        }),
+      );
     });
   });
 

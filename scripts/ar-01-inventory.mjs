@@ -168,6 +168,10 @@ export function inventory(root, base) {
           clause?.namedBindings && ts.isNamedImports(clause.namedBindings)
             ? clause.namedBindings.elements
             : [];
+        const namespace =
+          clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)
+            ? clause.namedBindings
+            : undefined;
         const names = [
           ...(clause?.name
             ? [{ name: "default", local: clause.name.text, typeOnly: Boolean(clause.isTypeOnly) }]
@@ -177,6 +181,9 @@ export function inventory(root, base) {
             local: entry.name.text,
             typeOnly: Boolean(clause?.isTypeOnly || entry.isTypeOnly),
           })),
+          ...(namespace
+            ? [{ name: "*", local: namespace.name.text, typeOnly: Boolean(clause?.isTypeOnly) }]
+            : []),
         ];
         add(
           node,
@@ -268,7 +275,10 @@ export function inventory(root, base) {
           for (const declaration of node.declarationList.declarations)
             for (const name of declarationNames(declaration.name))
               addSymbol(name, declaration, "value");
-        else if (node.name)
+        else if (
+          node.name &&
+          !node.modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword)
+        )
           for (const name of declarationNames(node.name))
             addSymbol(
               name,
@@ -425,6 +435,7 @@ export function inventory(root, base) {
     exactStringReferences: sort(strings),
     publicMedia,
     limitations: [
+      "Namespace imports record bindings only; individual property use is not analyzed.",
       "File-level conservative value-syntax closure includes conditional imports, broad barrels and possibly erased value imports. It is not call-level execution or a bundle measurement.",
       "test/demo-only denotes reachability from those roots; a file with another role is not exclusively test code.",
       "No merchant IndexedDB, production database, host services or external publication state was accessed. Zero local references never establishes safe removal.",

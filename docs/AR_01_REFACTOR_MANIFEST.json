@@ -268,7 +268,7 @@
       "unresolved-local": 21
     },
     "typeOnlyEdges": 420,
-    "exportedSymbols": 6890,
+    "exportedSymbols": 6859,
     "stringReferences": 58198,
     "publicMedia": 42,
     "unresolvedComputedReferences": [
@@ -285,7 +285,7 @@
         "expression": "pathToFileURL(runnerPath).href"
       }
     ],
-    "fingerprint": "db17cc72b8b2ec0f06b4893e3e01c59d8244bfde8653c8b1a1cc02fadeccee6a"
+    "fingerprint": "80b9400cdf68c1bad6de8439a602292b7d103b2ccfff3d670ba97c855703f002"
   },
   "generation": "node scripts/ar-01-inventory.mjs --base 82e8c3922ccc5a737fec2e18311ff7ab1a69e8ae --output \"$AR01_EVIDENCE_DIR/inventory.json\"",
   "evidenceBoundary": {
@@ -294,7 +294,8 @@
     "externalAssumptions": "No external host or merchant persisted-data absence is assumed.",
     "unavailable": "Production Vesko identity/storage/routes/public serving/worker contract and merchant IndexedDB/databases were not accessed.",
     "regenerationPolicy": "Future tasks review/regenerate affected records; this scanner is not wired into CI as a perpetual hash guard.",
-    "roles": "Area roles are manual responsibility classifications; target staticReachability follows conservative value-syntax file closure, not call execution or measured bundle composition."
+    "roles": "Area roles are manual responsibility classifications; target staticReachability follows conservative value-syntax file closure, not call execution or measured bundle composition.",
+    "importBindings": "Namespace bindings are recorded as importedNames entries with name \"*\", the local binding, and typeOnly. Individual namespace property use is not analyzed."
   },
   "dispositionCounts": {
     "keep": 21,
@@ -1674,7 +1675,7 @@
         {
           "path": "src/components/registry/commerce-utility.tsx",
           "line": 10,
-          "observation": "Direct V1\u2192V2 adapter consumer for utility definitions."
+          "observation": "Direct V1→V2 adapter consumer for utility definitions."
         }
       ],
       "persistedOrStringReferences": [
@@ -5544,22 +5545,22 @@
         },
         {
           "path": "src/app/projects/[projectId]/history/[snapshotId]/collections/[collectionSlug]/page.tsx",
-          "exportedSymbols": ["HistoricalCollectionPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
           "path": "src/app/projects/[projectId]/history/[snapshotId]/page.tsx",
-          "exportedSymbols": ["HistoricalPreviewPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
           "path": "src/app/projects/[projectId]/history/[snapshotId]/products/[productSlug]/page.tsx",
-          "exportedSymbols": ["HistoricalProductPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
           "path": "src/app/projects/[projectId]/history/[snapshotId]/restore/page.tsx",
-          "exportedSymbols": ["RestorePage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
@@ -5569,7 +5570,7 @@
         },
         {
           "path": "src/app/projects/[projectId]/history/[snapshotId]/search/page.tsx",
-          "exportedSymbols": ["HistoricalSearchPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
@@ -5584,7 +5585,7 @@
         },
         {
           "path": "src/app/projects/[projectId]/history/page.tsx",
-          "exportedSymbols": ["HistoryPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
@@ -5599,22 +5600,22 @@
         },
         {
           "path": "src/app/projects/[projectId]/published/collections/[collectionSlug]/page.tsx",
-          "exportedSymbols": ["PublishedCollectionPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay", "test/demo-only"]
         },
         {
           "path": "src/app/projects/[projectId]/published/page.tsx",
-          "exportedSymbols": ["PublishedProjectPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
           "path": "src/app/projects/[projectId]/published/products/[productSlug]/page.tsx",
-          "exportedSymbols": ["PublishedProductPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay", "test/demo-only"]
         },
         {
           "path": "src/app/projects/[projectId]/published/search/page.tsx",
-          "exportedSymbols": ["PublishedSearchPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["compatibility/read-replay"]
         },
         {
@@ -7838,7 +7839,7 @@
         },
         {
           "path": "src/app/p10b-06-frame-proof/page.tsx",
-          "exportedSymbols": ["P10B06FrameProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7848,7 +7849,7 @@
         },
         {
           "path": "src/app/p10b-09-homepage-proof/page.tsx",
-          "exportedSymbols": ["P10B09HomepageProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7858,12 +7859,12 @@
         },
         {
           "path": "src/app/p10b-10-collection-search-proof/page.tsx",
-          "exportedSymbols": ["P10B10CollectionSearchProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
           "path": "src/app/p10b-11-pdp-proof/page.tsx",
-          "exportedSymbols": ["P10B11PdpProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7873,7 +7874,7 @@
         },
         {
           "path": "src/app/p10b-12-content-support-proof/page.tsx",
-          "exportedSymbols": ["P10B12ContentSupportProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7883,7 +7884,7 @@
         },
         {
           "path": "src/app/p10b-13-utility-proof/page.tsx",
-          "exportedSymbols": ["P10B13UtilityProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7893,7 +7894,7 @@
         },
         {
           "path": "src/app/p10b-14-premium-editorial-proof/page.tsx",
-          "exportedSymbols": ["P10B14PremiumEditorialProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7903,7 +7904,7 @@
         },
         {
           "path": "src/app/p10b-15-synthesis-proof/page.tsx",
-          "exportedSymbols": ["P10B15SynthesisProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -7913,12 +7914,12 @@
         },
         {
           "path": "src/app/p10b-16-direction-proof/page.tsx",
-          "exportedSymbols": ["P10B16DirectionProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
           "path": "src/app/p10b-16p-01-dynamic-route-proof/page.tsx",
-          "exportedSymbols": ["DynamicRouteArchetypeEditorProofPage", "default"],
+          "exportedSymbols": ["default"],
           "staticReachability": ["test/demo-only"]
         },
         {
@@ -9719,7 +9720,7 @@
         "src/application/dynamic-commerce-routes/route-selection.ts"
       ],
       "moves": [
-        "Move dynamicCommerceRouteAuthorityErrorCodes, DynamicCommerceRouteAuthorityErrorCode and DynamicCommerceRouteAuthorityError into route-errors.ts. Keep the authority fail wrapper using the imported same class; selection constructs that same class with unchanged invalid-presentation messages, avoiding a selection\u2192authority cycle.",
+        "Move dynamicCommerceRouteAuthorityErrorCodes, DynamicCommerceRouteAuthorityErrorCode and DynamicCommerceRouteAuthorityError into route-errors.ts. Keep the authority fail wrapper using the imported same class; selection constructs that same class with unchanged invalid-presentation messages, avoiding a selection→authority cycle.",
         "Move the full matching closure from authority.ts: inBoundedRange, requireUniqueHighestPriorityRule, selectProductComplexityRule, resolveProductComplexityArchetype, DynamicCommerceCollectionMatchContext, selectCollectionContextRule and resolveCollectionContextArchetype (authority.ts:775-871). Both private selector bodies are included, not just the public wrappers.",
         "Selection imports existing product-match-context.ts, canonical types and route-errors.ts. Export selectProductComplexityRule only from route-selection.ts for the retained authority.ts productTypeMappings caller (authority.ts:889); selectCollectionContextRule stays private. Authority explicitly imports that selector and the public resolvers/context/errors and re-exports only the existing public names. index.ts remains export * from authority; do not leak the internal selector through the barrel."
       ],
@@ -9829,7 +9830,7 @@
       "declaration": "sole executor textual scan, provider.createDesignIntent count and absence list",
       "affectedScope": "Prompted compiler coordinator/executor, normal handler/compositions and 14 already removed paths.",
       "realInvariant": "One normal initial facade, provider before materialization, no hidden retry/fallback or production local identity.",
-      "replacementProof": "AR01 observed provider\u2192compile\u2192execute\u2192materialize event order, unconfigured production rejection and scoped import graph tests; keep legacy absence guards where relevant.",
+      "replacementProof": "AR01 observed provider→compile→execute→materialize event order, unconfigured production rejection and scoped import graph tests; keep legacy absence guards where relevant.",
       "owner": ["AR-04", "AR-07", "AR-16", "AR-18"]
     },
     {

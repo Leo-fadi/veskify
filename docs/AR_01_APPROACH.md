@@ -35,3 +35,14 @@ the locked 4,500-addition/700-deletion hard limits. Only the manifest scanner an
 per-area target/export properties are measured as generated; DOCX bytes are
 reported separately. Exact gross counts and before/after hashes are retained in
 PR evidence. Raw graph reconstruction is documented in the report/manifest.
+
+## PR #237 review correction
+
+At reviewed head `4c887fa53cc25c38aae90d7b2cb9ccb6ea75647f`, correct only the
+existing AST visitor's default-declaration exports and namespace-import bindings.
+Use focused synthetic regressions before the fix; preserve explicit named exports,
+type/value distinctions, mixed imports and side-effect imports. Namespace records
+identify bindings, not individual property use. Regenerate source facts at the same
+audit base; keep manual dispositions unless the corrected facts require a change.
+Do not patch generated facts by hand or scan current HEAD as a shortcut. Existing
+scope, protected authorities and fail-closed submission gates remain unchanged.

@@ -19,7 +19,7 @@ absent paths; I34 retains all 42 public assets. No deletion is proposed.
 The scanner examines 1,263 tracked base paths, including 912 TS/JS files, using the
 installed TypeScript parser/resolver and actual tsconfig options/aliases. It records
 4,595 import declarations, 303 re-export declarations, 50 side-effect imports,
-10 literal dynamic imports, 420 type-only edges, and 6,890 exported-name records
+10 literal dynamic imports, 420 type-only edges, and 6,859 exported-name records
 including barrel expansion. Of 4,958 edges, 3,926 resolve locally, 717 to packages,
 293 to Node builtins, 21 remain unresolved locally and one externally. The local
 unresolved references are generated Next route declarations and stylesheet imports;
@@ -28,7 +28,9 @@ the external case is Puck CSS. Two computed dynamic imports remain explicit.
 The 58,198 unique-per-file literal-string observations are candidate reference
 evidence, not a persisted-record census. Source roles follow value-syntax closure
 from named roots; they do not establish executed production paths or bundle size.
-Type-only edges are separate; uncertain emit/tree-shaking remains explicit. Next
+Type-only edges are separate; uncertain emit/tree-shaking remains explicit. All 14
+namespace imports (12 value, two type-only) retain their local bindings, including
+the semantic compiler’s `plan` binding; individual property use is not analyzed. Next
 entrypoints, client/server directives, enclosing import conditions, tests, scripts
 and configuration roots are retained in the reconstructible raw graph. No
 application module executes during scanning. No secrets or untracked source
@@ -50,7 +52,7 @@ checked-in exact target/export records and commands support reconstruction.
 
 The predeclared diagnostic command in the [locked contract](governance/task-contracts/AR/AR-01.json)
 ran **11 existing files: 101 passed, 0 failed**. The new audit and retained status
-matrix ran **3 files: 623 passed, 0 failed**. These are focused suites, not a full
+matrix ran **3 files: 625 passed, 0 failed**. These are focused suites, not a full
 repository or commercial-quality gate.
 
 | Group                 | Executed observation and boundary                                                                                                                                                                                                                                                                                                                       |
