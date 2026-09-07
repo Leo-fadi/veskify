@@ -1,14 +1,15 @@
 # Veskify Development Roadmap
 
-## AR-00 replacement-roadmap projection (pending adoption)
+## AR-00 replacement-roadmap projection (effective on adoption/merge)
 
 This is the delivery-order projection of the incorporated AR-00 SDD addendum. It is not a second
 status tracker and the supplied 31-task decomposition is advisory planning rather than a permanent
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
-records source/evidence and old-work disposition. AR-00 is pending
-adoption/merge; AR-01 is the sole next task after that gate. AR-23 is eligible after AR-01 and is
-not serialized behind visual work.
+records source/evidence and old-work disposition. This repository projection takes effect upon
+explicit owner adoption/merge and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed; AR-01 is Planned — exact next task, not started.
+AR-23 is eligible after AR-01 and is not serialized behind visual work.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -663,7 +664,7 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 
 ### AR-00 — Adopt the reset without rewriting history
 
-**Package:** P0 — Authority and baseline. **Dependencies:** —. **Planned detail:** active pending adoption/merge; no implementation is implied.
+**Package:** P0 — Authority and baseline. **Dependencies:** —. **Planned detail:** Baseline / closed in the repository state effective upon explicit owner adoption/merge; no product implementation is implied.
 
 **Outcome:** One approved replacement direction and one exact-next authority; the old 73-child future sequence no longer blocks authorized corrections.
 
@@ -690,7 +691,7 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 
 ### AR-01 — Complete local dependency inventory and characterize the working path
 
-**Package:** P0 — Authority and baseline. **Dependencies:** AR-00. **Planned detail:** sole next task after AR-00 adoption/merge.
+**Package:** P0 — Authority and baseline. **Dependencies:** AR-00. **Planned detail:** Planned / exact next; not started. Separate task authorization remains required.
 
 **Outcome:** Every path proposed for change/removal has real caller, route and compatibility evidence.
 

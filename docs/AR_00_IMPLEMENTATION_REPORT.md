@@ -1,5 +1,83 @@
 # AR-00 implementation report
 
+## Current PR #236 automatic-review correction (review-06)
+
+The owner authorized one focused pass for discussions `r3948264645` and `r3948264658` on reviewed
+head `5bbd5888795ad227fa5708fa40f16f6515eb0ebf`. PR #236 remains open/proposed adoption at this
+report freeze. Neither owner acceptance nor merge is claimed or authorized here.
+
+### Post-adoption state and narrow authority reissue
+
+The committed tracker, current notices, guard and tracker export cover now describe repository
+state effective upon explicit owner adoption/merge: AR-00 Baseline / closed; AR-01 Planned / exact
+next, not started. Other tasks, all 31 dependency vectors and AR-23's sole AR-01 dependency remain
+unchanged. The distinction from actual PR lifecycle is explicit. A merge delivers the values
+atomically; the guard reads local documents and requires no follow-up status fix, network lookup
+or branch-name detection. Its existing shared ownership checks and historical byte protections
+remain intact. Obsolete pending/active AR-00 declarations now reject, including across all ten
+current-policy surfaces. Active-amendment declarations reject because no AR task is started.
+
+The user explicitly authorized correcting AC-03's former pending-status timing clause. The native
+contract candidate was formatted and schema-validated before repinning. Only `/acceptanceCriteria/2/requirement`
+and a new authorization-provenance entry `/canonicalAuthorities/7` changed. All other criteria,
+required commands, dependencies, paths, limits and permissions remain unchanged.
+New raw SHA-256: `e2a914bcf7a03bf90f76cbb213099a6c3979c96b8540b8cc86390cea1a78e021`.
+New canonical fingerprint: `veskify-task-contract-v1_33dae282b2f88769da4d2156ae6ad23338b15a1ec75f6778e207901f856e5d86`.
+The prior raw contract, pin and lock are preserved byte-for-byte in
+`/private/tmp/veskify-ar-00/original-authority-03/`; its raw identity remains
+`502b6164f43269bf6cfdbe6b5cc0125139d2811e5356e775137cedc9cb845cef` and its canonical identity remains
+`veskify-task-contract-v1_650a6c2c0ca6c1fc5ced06fb02bf6a9b9cb056e7db604a72a5728c7bf7a45608`. `review-06-reissue-proof.json` records the exact delta.
+All earlier verdicts, freezes and execution evidence retain their original names/identities.
+
+### Reproducible whitespace correction
+
+At the reviewed commit, the unchanged `git diff --check db95f7c055217d380e88cebe50256741905d222c`
+actually exited **2** under default Git whitespace rules. Nine new hard-break lines in the approach,
+source disposition and addendum were rejected. Prior pre-commit exit-0 records are retained, but
+those checks did not include these then-untracked files and did not establish complete whitespace
+correctness. Verifier-05's PASS remains evidence for its original identity, not proof of this fix.
+The new two-space endings are replaced by formatting-compatible paragraphs; historical meaning,
+accepted fixtures and nine original source inputs remain intact. No Git configuration, formatter
+exclusion or locked command changed.
+
+The additional complete-diff check uses a disposable index and object directory, `git read-tree HEAD`,
+`git add --all -- .`, and `git diff --cached --check` against the same task base. All operations use
+that isolated index/object store; the real index is never staged. It passes across all 23 proposed
+paths and indexes all 1,263 tracked/new repository inputs. Before/after real-index hashes and worktree
+status match. The reproducible script and results are retained as `review-06-complete-whitespace.py`
+and `review-06-complete-whitespace-before-report.json` in the external evidence directory. The
+unchanged locked whitespace command also now exits 0. The final report receives the complete check again.
+
+### Actual focused validation and freeze
+
+Both existing deterministic exports ran successfully, followed by their synchronization checks.
+The first focused test run passed 621/622 tests: one literal roadmap mutation did not change its
+fixture after sentence rewrapping. Correcting that line wrapping restored the mutation. Its failed
+record remains in `review-06-exports-and-validation.json`. The final exact locked three-file Vitest
+command passed **3 files / 622 tests** (612 adoption, 10 unchanged closure tests), with **578 matrix
+cases and zero expected/actual mismatches**. It includes acceptance of the intended merged state,
+rejection of the obsolete state restored across notices, 90 pending-state mutations across source
+placements, AR-01/02 activation, AR-23 dependencies, real/shared ownership and historical controls.
+Full final command capture: `review-06-focused-final.json`, SHA-256 `e20b34cb38ebd02fd30f37c57dabb65fc1504e991effb37782d62967165afbc1`.
+Complete source/mutation/expected/actual rows are in `review-06-coverage-matrix.json` and its Markdown
+companion. The counts describe executed checks, not a general natural-language guarantee.
+
+All thirteen required commands now have actual exit-0 results. Requirements/tooling, synchronized
+SDD/tracker DOCX, documentation, focused lint, matched-file formatting, whitespace, native contract,
+identity and existing TOML settings pass. Report-affected final checks and complete whitespace proof
+are retained separately before `review-06-final-freeze.json` binds the complete reviewed inputs.
+No typecheck, full local suite/build, installation, policy activation, permission change or AR-01 ran.
+The existing SDD Prettier exclusion and runtime telemetry/source-immutability limitations remain.
+All nine originals and 611 protected non-exceptions are preserved. The full PR retains 23 authorized
+paths and zero production changes; actual gross scope is checked against 5,500 added/1,500 deleted
+text-line hard limits. Native production limits alone do not prove those documentation limits.
+
+All writers pause after the final freeze. Fresh independent verification and coordinator native
+reconciliation against this corrected contract are required before commit/push and replies to the
+same two threads. Final verdict, delivery evidence and PR results remain external to frozen files.
+The historical reports below describe previous checkpoints; their status timing, active contract,
+PASS/FAIL and pending actions are historical context and do not override this review-06 handoff.
+
 ## Current directly reviewed ownership correction (correction-05)
 
 The owner authorized one additional two-file correction and fresh independent verification on

@@ -29,7 +29,8 @@
     "docs/DEVELOPMENT_GUIDE.md section 4 and native governance schemas/templates",
     "Current roadmap owns delivery order; tracker owns status; P19 architecture and A-10C manifest are immutable historical evidence",
     "Nine architecture-reset source inputs at the coordinator checkout, with hashes in external preflight and committed source disposition; source evidence only, never an operative dependency",
-    "Owner authorization dated 6 September 2026: AR-00 consolidated guard correction and verifier-execution repair; external owner-correction-03-authorization.txt records the narrow additional correction cycle, three tooling paths and fresh-role readiness prerequisite."
+    "Owner authorization dated 6 September 2026: AR-00 consolidated guard correction and verifier-execution repair; external owner-correction-03-authorization.txt records the narrow additional correction cycle, three tooling paths and fresh-role readiness prerequisite.",
+    "Owner PR #236 automatic-review correction authorization, recorded in /private/tmp/veskify-ar-00/owner-review-06-authorization.txt: narrow AC-03 status-timing reissue, complete default-whitespace proof and one focused correction/fresh verifier; earlier authority preserved in original-authority-03. No dependencies, other criteria, scope paths, required commands or permissions change."
   ],
   "ownedPaths": [
     "AGENTS.md",
@@ -182,7 +183,7 @@
     },
     {
       "id": "AC-03",
-      "requirement": "Roadmap/tracker and parsed dependency projection agree on all31 supplied outcomes across10 packages, preserving dependencies, acceptance, non-goals and retirement gates with only authorized closure/process corrections. AR-00 is active pending adoption/merge; AR-01 sole next after that gate; AR-23 eligible after AR-01 without visual serialization. Every old planned task/retained requirement and four deferred families has honest disposition.",
+      "requirement": "Roadmap/tracker and parsed dependency projection agree on all31 supplied outcomes across10 packages, preserving dependencies, acceptance, non-goals and retirement gates with only authorized closure/process corrections. Committed repository content represents the state effective upon explicit owner adoption/merge: AR-00 is Baseline / closed; AR-01 is Planned / exact next and not started; AR-23 remains eligible after AR-01 without visual serialization. This proposed post-merge state does not claim that the PR has merged or owner acceptance has already occurred; no follow-up status-fix commit, network lookup or branch-name detection is required. Every old planned task/retained requirement and four deferred families has honest disposition.",
       "verificationClass": "documentation",
       "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
       "failureBehavior": "FAIL for contradiction or forbidden mutation; BLOCKED for missing required evidence/access; no submission until independent and mechanical PASS."

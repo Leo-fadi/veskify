@@ -1,6 +1,8 @@
 # Veskify Software Design Document v1.3.0
 
-> **AR-00 incorporation (pending adoption/merge):** The normative
+> **AR-00 incorporation (effective upon explicit owner adoption/merge):** This specifies the
+> repository content delivered by adoption, not the actual PR lifecycle or owner acceptance.
+> The normative
 > [template-scoped architecture addendum](./spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md)
 > is incorporated into this SDD. It amends future delivery policy only; accepted P10B-19A/A-10C
 > authority, retained requirement IDs, and current capability claims remain unchanged.

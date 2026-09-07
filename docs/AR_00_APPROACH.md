@@ -1,12 +1,46 @@
 # AR-00 implementation approach
 
-**Task:** AR-00 — Adopt template-scoped architecture and replacement roadmap  
-**Locked authority:** external immutable reissue-03 contract `AR-00.json`, SHA-256 `502b6164f43269bf6cfdbe6b5cc0125139d2811e5356e775137cedc9cb845cef`  
+**Task:** AR-00 — Adopt template-scoped architecture and replacement roadmap
+
+**Locked authority:** external immutable review-06 contract `AR-00.json`, SHA-256 `e2a914bcf7a03bf90f76cbb213099a6c3979c96b8540b8cc86390cea1a78e021`
+
 **Base:** `db95f7c055217d380e88cebe50256741905d222c`
 
-## Authority and decision
+## Active PR #236 review correction
 
-Reissue-03 is the active owner-authorized bounded guard correction and verifier-policy repair.
+Reviewed head: `5bbd5888795ad227fa5708fa40f16f6515eb0ebf`. The owner authorizes one focused
+correction of the two automatic-review findings and a fresh independent verification. The PR
+remains proposed adoption; neither owner acceptance nor merge is asserted by this document.
+
+The new canonical fingerprint is `veskify-task-contract-v1_33dae282b2f88769da4d2156ae6ad23338b15a1ec75f6778e207901f856e5d86`.
+The prior external contract, raw pin and lock are preserved unchanged in
+`/private/tmp/veskify-ar-00/original-authority-03/`. `review-06-reissue-proof.json` records the
+only parsed changes: AC-03's status-timing clause and one authorization-provenance entry.
+All other criteria, dependencies, scope limits, paths, permissions and required commands remain
+unchanged. The candidate was formatted and validated with native schema tools before repinning.
+
+The tracker and current notices encode the repository state effective upon explicit owner
+adoption/merge: AR-00 Baseline / closed; AR-01 Planned / exact next, not started; other tasks
+unchanged, including AR-23's sole AR-01 dependency. The existing guard checks those committed
+values offline. The named consumer is documentation validation on the adopted repository.
+Rejected shortcuts are a follow-up status-fix commit, network or branch detection, retaining the
+obsolete pending-state assertion, and altering Git whitespace settings or formatter exclusions.
+The guard must reject obsolete pending/active state and preserve all ownership/history checks.
+There is no unresolved architectural conflict; this correction changes status timing only.
+
+The exact locked whitespace command previously missed new untracked Markdown; after the files
+were committed it reproduces exit 2 under default Git rules. New hard-break spaces become plain
+paragraphs. Complete-diff proof uses an isolated temporary Git index and object directory covering
+every tracked and untracked proposed file. It neither stages the real index nor modifies Git
+configuration. The independent verifier must reproduce this additional owner-required check.
+
+All prior results retain their original identities. The remaining authority/process history below
+is retained context; previous pending activation and submission actions are historical. No new
+permission change, activation exercise or automatic-review request is authorized.
+
+## Historical reissue-03 authority and retained architecture decision
+
+At its historical checkpoint, reissue-03 authorized the bounded guard correction and verifier-policy repair.
 Its canonical fingerprint is `veskify-task-contract-v1_650a6c2c0ca6c1fc5ced06fb02bf6a9b9cb056e7db604a72a5728c7bf7a45608`.
 All seven acceptance criteria, EVIDENCE-02=document, base commit, architectural meaning and
 approved dependencies remain unchanged; VALIDATION-07 remains byte-for-byte the same command.

@@ -1,6 +1,7 @@
 ## AR-00 — Template-scoped architecture and replacement-roadmap addendum
 
-**Status:** Normative on adoption of AR-00; incorporated into the authoritative [SDD](../VESKIFY_SDD.md).  
+**Status:** Normative upon explicit owner adoption/merge of AR-00; incorporated into the authoritative [SDD](../VESKIFY_SDD.md).
+
 **Scope:** Future architecture and delivery policy only. This addendum does not implement a capability, change accepted historical evidence, or authorize AR-01.
 
 ## 1. Authority and retained invariants
@@ -53,7 +54,7 @@ The first enabled complete families are **product-first-commerce** and **editori
 
 The [development roadmap](../VESKIFY_DEVELOPMENT_ROADMAP.md) is the delivery-order authority and contains the complete AR outcome/dependency/acceptance/non-goal/rollback plan. The [delivery tracker](../VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md) alone owns task status; this addendum and other documents are status projections.
 
-AR-00 is active pending adoption and merge. AR-01 is the sole next reset task after that gate. AR-23 depends only on AR-01 and is eligible alongside later eligible work; numeric order does not serialize it behind visual packages. AR-08 closes the foundational refactor evidence, AR-22 accepts engine quality, and AR-28 accepts the integrated pilot. Retirement occurs only after caller inventory, persisted-version support, replacement behavior, and regression evidence; names, apparent deadness, or an old hash guard are insufficient.
+The following repository state takes effect upon explicit owner adoption/merge; it does not assert the PR's actual lifecycle or owner acceptance. AR-00 is Baseline / closed. AR-01 is Planned — exact next task, not started. AR-23 depends only on AR-01 and is eligible alongside later eligible work; numeric order does not serialize it behind visual packages. AR-08 closes the foundational refactor evidence, AR-22 accepts engine quality, and AR-28 accepts the integrated pilot. Retirement occurs only after caller inventory, persisted-version support, replacement behavior, and regression evidence; names, apparent deadness, or an old hash guard are insufficient.
 
 ## 6. Requirement and evidence relationship
 
@@ -63,10 +64,14 @@ No new authoritative FR, NFR, or AC identifiers are introduced. Existing retaine
 
 The following owner-supplied target architecture is incorporated as normative future policy, with the AR-00 closure/status correction and committed-authority substitutions stated above. External W references are source references, not new verified implementation claims.
 
-**Architecture reset AR / revision 1.0 — 4 September 2026**  
-**Reviewed repository:** `Leo-fadi/veskify`  
-**Original source review base:** `f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37`; **AR-00 adoption base:** `db95f7c055217d380e88cebe50256741905d222c`  
-**Status:** Proposed replacement architecture, commissioned by the product owner. Not yet adopted in the repository and not implemented by this report.  
+**Architecture reset AR / revision 1.0 — 4 September 2026**
+
+**Reviewed repository:** `Leo-fadi/veskify`
+
+**Original source review base:** `f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37`; **AR-00 adoption base:** `db95f7c055217d380e88cebe50256741905d222c`
+
+**Historical source status (4 September 2026):** Proposed replacement architecture, commissioned by the product owner. Not yet adopted in the repository and not implemented by this report.
+
 **Evidence:** IDs are catalogued in [AR-00 source disposition](../AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md). Current facts, recommendations and unverified integration assumptions are distinguished there.
 
 ## 1. Decision

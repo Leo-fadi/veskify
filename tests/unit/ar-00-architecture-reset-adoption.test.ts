@@ -42,7 +42,7 @@ const policySurfaces = [
   ["docs/VESKIFY_SDD.md", "# Veskify Software Design Document v1.3.0\n"],
   [
     "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
-    "## AR-00 replacement-roadmap projection (pending adoption)\n",
+    "## AR-00 replacement-roadmap projection (effective on adoption/merge)\n",
   ],
   ["docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", "# Veskify Development Delivery Tracker\n"],
   ["docs/DEVELOPMENT_GUIDE.md", "## 4. Branch and PR strategy\n"],
@@ -56,6 +56,17 @@ const policySurfaces = [
   ["docs/AGENT_TEAM_WORKFLOW.md", "## Assign and deliver\n"],
 ] as const;
 const declarations = [
+  ["obsolete AR-00 pending", "AR-00 is pending adoption/merge.", /contradictory current status/],
+  [
+    "obsolete AR-00 active",
+    "AR-00 is Active — pending adoption/merge.",
+    /contradictory current status/,
+  ],
+  [
+    "obsolete AR-01 gate",
+    "AR-01 is Planned — sole next task after AR-00 adoption/merge.",
+    /contradictory current status/,
+  ],
   ["roadmap owns status", "The roadmap owns status.", /contradictory current ownership/],
   ["tracker owns order", "The tracker owns delivery order.", /contradictory current ownership/],
   [
@@ -277,8 +288,8 @@ describe("complete bounded current-policy coverage matrix", () => {
   it.each([
     [
       "addendum status wording",
+      "AR-00 is Baseline / closed.",
       "AR-00 is active pending adoption and merge.",
-      "AR-00 is Baseline.",
     ],
     [
       "addendum depends-only wording",
@@ -410,6 +421,66 @@ describe("existing delivery-ownership declarations", () => {
   });
 });
 
+describe("post-adoption repository state and PR lifecycle", () => {
+  it("accepts the intended merged state without asserting that the PR has merged", () => {
+    const directory = fixture();
+    try {
+      const tracker = readFileSync(
+        join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
+        "utf8",
+      );
+      expect(tracker).toContain("effective upon explicit owner adoption/merge");
+      expect(tracker).toContain(
+        "claim that this PR has merged or that owner acceptance has occurred",
+      );
+      expect(tracker).toContain(
+        "**Baseline / closed.** AR-01 is **Planned —\n> exact next task, not started**",
+      );
+      expect(tracker).toContain("AR-23 depends on AR-01");
+      matrixCheck(
+        directory,
+        "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+        "intended merged state; PR lifecycle separate",
+        0,
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects the former pending state restored across the current notices", () => {
+    const directory = fixture();
+    try {
+      for (const [source] of policySurfaces) {
+        const path = join(directory, source);
+        const original = readFileSync(path, "utf8");
+        writeFileSync(
+          path,
+          original
+            .replaceAll("AR-00 is Baseline / closed", "AR-00 is Active — pending adoption/merge")
+            .replace(
+              "**AR-00 current status authority:** **Baseline / closed",
+              "**AR-00 current status authority:** **Active — pending adoption/merge",
+            )
+            .replaceAll(
+              "exact next task, not started",
+              "sole next task after AR-00 adoption/merge",
+            ),
+        );
+      }
+      matrixCheck(
+        directory,
+        "all current notices",
+        "obsolete pending state restored atomically",
+        1,
+        /contradictory current status/,
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("AR-00 architecture-reset adoption guard", () => {
   it("accepts the committed policy projection", () => {
     const directory = fixture();
@@ -443,9 +514,9 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       writeFileSync(
         path,
-        readFileSync(path, "utf8").replace("Active — pending adoption/merge", "Baseline"),
+        readFileSync(path, "utf8").replace("Baseline / closed", "Active — pending adoption/merge"),
       );
-      expect(() => check(directory)).toThrow(/Active — pending adoption\/merge/);
+      expect(() => check(directory)).toThrow(/contradictory current status for AR-00/);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -542,7 +613,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "sole next task after AR-00 adoption/merge",
+        "exact next task, not started",
         "blocked; AR-02 is the sole next task after AR-00 adoption/merge",
       );
       expect(changed).not.toBe(original);
@@ -576,8 +647,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "AR-01 is the\n> sole next reset task",
-        "AR-02 is the\n> sole next reset task",
+        "AR-01 is Planned — exact next task, not started",
+        "AR-02 is the sole next reset task",
       );
       expect(changed).not.toBe(original);
       writeFileSync(readmePath, changed);
@@ -593,8 +664,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-01 is **Planned —\n> sole next task",
-        "AR-30 is **Planned —\n> sole next task",
+        "AR-01 is **Planned —\n> exact next task",
+        "AR-30 is **Planned —\n> exact next task",
       );
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
@@ -665,8 +736,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(roadmapPath, "utf8");
       const changed = original.replace(
-        "## AR-00 replacement-roadmap projection (pending adoption)",
-        "> **CURRENT POLICY:** AR-02 is Active — implementation started.\n\n## AR-00 replacement-roadmap projection (pending adoption)",
+        "## AR-00 replacement-roadmap projection (effective on adoption/merge)",
+        "> **CURRENT POLICY:** AR-02 is Active — implementation started.\n\n## AR-00 replacement-roadmap projection (effective on adoption/merge)",
       );
       expect(changed).not.toBe(original);
       writeFileSync(roadmapPath, changed);
@@ -716,10 +787,10 @@ describe("AR-00 architecture-reset adoption guard", () => {
     },
     {
       path: "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
-      anchor: "## AR-00 replacement-roadmap projection (pending adoption)",
+      anchor: "## AR-00 replacement-roadmap projection (effective on adoption/merge)",
       declaration: "AR-23 is eligible after AR-15.",
       replacement:
-        "## AR-00 replacement-roadmap projection (pending adoption)\nAR-23 is eligible after AR-15.",
+        "## AR-00 replacement-roadmap projection (effective on adoption/merge)\nAR-23 is eligible after AR-15.",
       error: /(?:duplicate|contradictory) current dependency/,
     },
   ])(
@@ -740,13 +811,13 @@ describe("AR-00 architecture-reset adoption guard", () => {
     },
   );
 
-  it("rejects another task as the active amendment while preserving the guide form", () => {
+  it.each(["AR-00", "AR-02"])("rejects %s as an active amendment after adoption", (task) => {
     const directory = fixture();
     const guidePath = join(directory, "docs/DEVELOPMENT_GUIDE.md");
     try {
       const original = readFileSync(guidePath, "utf8");
-      expect(original).toContain("AR-00 is the active amendment");
-      const changed = `${original}\n\n## CURRENT POLICY\n\nAR-02 is the active amendment.\n`;
+      expect(original).toContain("AR-00 is Baseline / closed");
+      const changed = `${original}\n\n## CURRENT POLICY\n\n${task} is the active amendment.\n`;
       expect(changed).not.toBe(original);
       writeFileSync(guidePath, changed);
       expect(() => check(directory)).toThrow(/contradictory current schedule/);

@@ -1,7 +1,9 @@
 # Veskify Development Guide
 
-> **AR-00 planning projection:** pending adoption/merge, AR-00 is the active amendment and AR-01
-> is the sole next task after that gate. The roadmap owns dependency order; the tracker owns status.
+> **Post-adoption planning projection:** This repository state takes effect upon explicit owner
+> adoption/merge; it does not assert the PR's lifecycle or owner acceptance.
+> AR-00 is Baseline / closed. AR-01 is Planned — exact next task, not started.
+> The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated

@@ -586,8 +586,10 @@ The following is the supplied per-item disposition, retained as advisory impleme
 
 E01, E15, and E17 are historical old-base/handoff source claims and remain unverified; E02–E14 and E16/E18/E19 are resolved against the committed paths named in their catalogue entries. No E or T identifier is an operative local dependency. The accepted A-10C correction supersedes the stale package status only.
 
-**Base:** `Leo-fadi/veskify@f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37`  
-**Reviewed:** 4 September 2026  
+**Base:** `Leo-fadi/veskify@f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37`
+
+**Reviewed:** 4 September 2026
+
 **This report's status:** source-level architectural review and proposed correction. No repository modifications, test execution, live provider call, live Vesko call or production deployment was performed by this deliverable.
 
 ## 1. Evidence boundary

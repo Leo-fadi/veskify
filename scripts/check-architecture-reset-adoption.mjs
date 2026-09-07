@@ -22,10 +22,7 @@ const addendum = read("docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md")
 const disposition = read("docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md");
 const sha256 = (path) => createHash("sha256").update(read(path)).digest("hex");
 
-requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", "AR-01 is the sole next task after that gate");
-requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", "Active — pending adoption/merge");
 requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", "AR-23 depends on AR-01");
-requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", "Active — pending adoption/merge");
 // Mask examples without changing line positions used by the bounded section selectors.
 const policyLines = (document) => {
   let fence;
@@ -111,7 +108,7 @@ const policySources = [
     "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
     roadmap,
     "# Veskify Development Roadmap",
-    "## AR-00 replacement-roadmap projection (pending adoption)",
+    "## AR-00 replacement-roadmap projection (effective on adoption/merge)",
     "| Package | Task  | Outcome                                                 | Dependencies                      |",
   ],
   ["docs/VESKIFY_SDD.md", sdd, "# Veskify Software Design Document v1.3.0"],
@@ -332,7 +329,7 @@ if (
   throw new Error("tracker: delivery-order authority reference changed");
 }
 const statusExpectation = new Map([
-  ["AR-00", "Active"],
+  ["AR-00", "Baseline"],
   ["AR-01", "Planned"],
   ["A-10", "Baseline"],
   ["A-10C", "Baseline"],
@@ -349,19 +346,6 @@ const activeAmendmentRecords = [];
 for (const [path, block] of allCurrentAuthorities) {
   const addStatus = (subject, status, qualifier = "") => {
     const normalizedQualifier = qualifier.trim();
-    if (subject === "AR-00" && status.toLowerCase() === "pending") {
-      if (!/^adoption\/merge\b/iu.test(normalizedQualifier)) {
-        statusRecords.push({ path, subject, status, qualifier: normalizedQualifier });
-        return;
-      }
-      statusRecords.push({
-        path,
-        subject,
-        status: "Active",
-        qualifier: "pending adoption/merge",
-      });
-      return;
-    }
     statusRecords.push({ path, subject, status, qualifier: normalizedQualifier });
   };
   for (const [, subject, status, qualifier] of block.matchAll(
@@ -410,15 +394,12 @@ for (const [path, block] of allCurrentAuthorities) {
 }
 for (const record of statusRecords) {
   const expected = statusExpectation.get(record.subject);
-  const normalizedQualifier = record.qualifier
-    .replace(/^[—/\s]+/u, "")
-    .trim()
-    .replace(/^pending adoption and merge$/iu, "pending adoption/merge");
+  const normalizedQualifier = record.qualifier.replace(/^[—/\s]+/u, "").trim();
   const permittedQualifier =
     record.subject === "AR-00"
-      ? /^pending adoption\/merge$/iu
+      ? /^closed$/iu
       : record.subject === "AR-01"
-        ? /^sole next task after AR-00 adoption\/merge$/iu
+        ? /^exact next task, not started$/iu
         : /^AR-\d{2}$/u.test(record.subject)
           ? /^$/u
           : /^(?:closed)?$/iu;
@@ -446,9 +427,11 @@ for (const [path] of allCurrentAuthorities) {
   }
 }
 const nextTaskIds = (block) =>
-  [...block.matchAll(/(AR-\d{2}) is (?:(?!AR-\d{2})[^.]){0,80}?sole next (?:reset )?task/giu)].map(
-    ([, id]) => id,
-  );
+  [
+    ...block.matchAll(
+      /(AR-\d{2}) is (?:(?!AR-\d{2})[^.]){0,80}?(?:sole|exact) next (?:reset )?task/giu,
+    ),
+  ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
   if (declaredNext.some((id) => id !== "AR-01")) {
@@ -457,21 +440,22 @@ for (const [path, block] of allCurrentAuthorities) {
     );
   }
 }
-for (const record of activeAmendmentRecords) {
-  if (record.subject !== "AR-00") {
-    throw new Error(`${record.path}: contradictory current schedule for ${record.subject}`);
-  }
+if (activeAmendmentRecords.length > 0) {
+  const record = activeAmendmentRecords[0];
+  throw new Error(`${record.path}: contradictory current schedule for ${record.subject}`);
 }
 const trackerCurrent = currentAuthorities.find(([path]) =>
   path.endsWith("DELIVERY_TRACKER.md"),
 )?.[1];
 if (
-  !trackerCurrent?.includes("AR-00 current status authority: Active — pending adoption/merge.") ||
-  !trackerCurrent.includes("AR-01 is Planned — sole next task after AR-00 adoption/merge") ||
+  !trackerCurrent?.includes("AR-00 current status authority: Baseline / closed.") ||
+  !trackerCurrent.includes("AR-01 is Planned — exact next task, not started") ||
   nextTaskIds(trackerCurrent).length !== 1 ||
   nextTaskIds(trackerCurrent)[0] !== "AR-01"
 ) {
-  throw new Error("tracker: AR-00 active status and AR-01 sole-next declaration are required");
+  throw new Error(
+    "tracker: AR-00 Baseline / closed and AR-01 Planned / exact-next not-started declarations are required",
+  );
 }
 if (
   dependencyRecords.filter(
@@ -486,7 +470,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is pending adoption/merge; AR-01 is the sole next task after that gate. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
+    "AR-00 is Baseline / closed; AR-01 is Planned — exact next task, not started. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
