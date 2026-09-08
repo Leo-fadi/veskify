@@ -421,15 +421,15 @@ describe("existing delivery-ownership declarations", () => {
   });
 });
 
-describe("post-adoption repository state and PR lifecycle", () => {
-  it("accepts the intended merged state without asserting that the PR has merged", () => {
+describe("post-pilot repository state and PR lifecycle", () => {
+  it("accepts the intended candidate state without asserting that the PR has merged", () => {
     const directory = fixture();
     try {
       const tracker = readFileSync(
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02A");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-03A");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -601,14 +601,14 @@ describe("AR-00 architecture-reset adoption guard", () => {
     }
   });
 
-  it("rejects the verifier tracker next-task status and gate mutation", () => {
+  it("rejects the verifier tracker pilot-closure status mutation", () => {
     const directory = fixture();
     const trackerPath = join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-03A is **Planned — exact next selected child**",
-        "AR-03A is **Planned — blocked selected child**",
+        "AR-03A is **Baseline / closed upon explicit owner acceptance/merge**",
+        "AR-03A is **Baseline / blocked upon explicit owner acceptance/merge**",
       );
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
@@ -635,14 +635,17 @@ describe("AR-00 architecture-reset adoption guard", () => {
     }
   });
 
-  it("rejects current next-task declarations other than AR-03A", () => {
+  it.each([
+    "AR-30 is the exact next selected child after the pilot.",
+    "AR-30 is the selected successor after the pilot.",
+  ])("rejects a current successor declaration after the pilot: %s", (successor) => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "AR-03A is the exact\n> next selected child after",
-        "AR-30 is the exact\n> next selected child after",
+        "The pilot has no selected successor; remaining AR-02 work is future planning only.",
+        successor,
       );
       expect(changed).not.toBe(original);
       writeFileSync(readmePath, changed);
@@ -652,14 +655,14 @@ describe("AR-00 architecture-reset adoption guard", () => {
     }
   });
 
-  it("parses rather than blacklists a different wrong next task", () => {
+  it("parses rather than blacklists a different forbidden successor", () => {
     const directory = fixture();
     const trackerPath = join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-03A is **Planned — exact next selected child",
-        "AR-30 is **Planned — exact next selected child",
+        "The pilot has no selected successor; remaining AR-02 work is future planning only.",
+        "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
       writeFileSync(trackerPath, changed);
@@ -873,8 +876,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
   });
 });
 
-describe("AR-01 bounded proposed status transition", () => {
-  it.each(["AR-02", "AR-03", "AR-03A", "AR-23", "AR-30"])(
+describe("AR-03A bounded proposed status transition", () => {
+  it.each(["AR-02", "AR-03", "AR-23", "AR-30"])(
     "rejects premature %s closure despite dependency eligibility",
     (task) => {
       const directory = fixture();

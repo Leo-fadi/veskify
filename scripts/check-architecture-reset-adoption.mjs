@@ -342,7 +342,8 @@ for (let number = 2; number <= 30; number += 1) {
 }
 statusExpectation.set("AR-02", "Partial");
 statusExpectation.set("AR-02A", "Baseline");
-statusExpectation.set("AR-03A", "Planned");
+statusExpectation.set("AR-03", "Partial");
+statusExpectation.set("AR-03A", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -407,7 +408,7 @@ for (const record of statusRecords) {
         : record.subject === "AR-02A"
           ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
           : record.subject === "AR-03A"
-            ? /^exact next selected child(?: after AR-02A acceptance and merge)?$/iu
+            ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
             : /^AR-\d{2}$/u.test(record.subject)
               ? /^$/u
               : /^(?:closed)?$/iu;
@@ -437,14 +438,14 @@ for (const [path] of allCurrentAuthorities) {
 const nextTaskIds = (block) =>
   [
     ...block.matchAll(
-      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:sole|exact) next (?:reset )?(?:task|selected child)/giu,
+      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:(?:sole|exact) next (?:reset )?(?:task|selected child)|selected successor)/giu,
     ),
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (declaredNext.some((id) => id !== "AR-03A")) {
+  if (declaredNext.length > 0) {
     throw new Error(
-      `${path}: current authority assigns ${declaredNext.find((id) => id !== "AR-03A")} as next`,
+      `${path}: current authority assigns ${declaredNext[0]} as next after the pilot`,
     );
   }
 }
@@ -460,13 +461,11 @@ if (
   !trackerCurrent.includes("AR-01 is Baseline / closed.") ||
   !trackerCurrent.includes("AR-02A is Baseline / closed.") ||
   !trackerCurrent.includes("AR-02 is Partial;") ||
-  !trackerCurrent.includes("AR-03A is Planned — exact next selected child") ||
-  nextTaskIds(trackerCurrent).length !== 1 ||
-  nextTaskIds(trackerCurrent)[0] !== "AR-03A"
+  !trackerCurrent.includes("AR-03 is Partial;") ||
+  !trackerCurrent.includes("AR-03A is Baseline / closed upon explicit owner acceptance/merge") ||
+  nextTaskIds(trackerCurrent).length !== 0
 ) {
-  throw new Error(
-    "tracker: AR-00/AR-01/AR-02A status and AR-03A selected-child declarations are required",
-  );
+  throw new Error("tracker: AR-00/AR-01/AR-02A/AR-03/AR-03A status and pilot closure are required");
 }
 if (
   dependencyRecords.filter(
@@ -481,7 +480,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation remains. AR-03 is Planned. It is unstarted. AR-03A is Planned — exact next selected child after AR-02A acceptance and merge. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed upon explicit owner acceptance/merge. The pilot has no selected successor; remaining AR-02 work is future planning only. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");

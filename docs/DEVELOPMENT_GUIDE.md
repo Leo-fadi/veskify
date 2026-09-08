@@ -1,10 +1,10 @@
 # Veskify Development Guide
 
-> **Post-adoption planning projection:** This repository state takes effect upon explicit owner
+> **Post-pilot planning projection:** This repository state takes effect upon explicit owner
 > adoption/merge; it does not assert the PR's lifecycle or owner acceptance.
 > AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit owner acceptance/merge.
-> AR-02 is Partial. Definition/PageBlueprint materializer isolation remains. AR-03 is Planned.
-> It is unstarted. AR-03A is Planned — exact next selected child.
+> AR-02 is Partial. Definition/PageBlueprint materializer isolation remains. AR-03 is Partial.
+> Route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed upon explicit owner acceptance/merge. The pilot has no selected successor; remaining AR-02 work is future planning only.
 > The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child

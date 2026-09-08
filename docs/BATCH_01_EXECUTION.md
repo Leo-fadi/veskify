@@ -10,6 +10,8 @@ status authority; this file records no mutable task status.
 
 AR-02A evidence is its [contract](governance/task-contracts/AR/AR-02A.json),
 [approach](AR_02A_APPROACH.md), and [implementation report](AR_02A_IMPLEMENTATION_REPORT.md).
+The AR-03A evidence is its [contract](governance/task-contracts/AR/AR-03A.json),
+[approach](AR_03A_APPROACH.md), and [implementation report](AR_03A_IMPLEMENTATION_REPORT.md).
 The clean boundary ends prior worker/verifier turns and requires clean index, tracked, and untracked
 state before a fresh worker/verifier reads AR-03A's new contract.
 
