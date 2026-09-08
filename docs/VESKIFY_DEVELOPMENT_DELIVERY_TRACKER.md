@@ -1,11 +1,11 @@
 # Veskify Development Delivery Tracker
 
-> **Candidate status effective upon explicit owner acceptance/merge of AR-02B:** This projection does not
+> **Candidate status effective upon explicit owner acceptance/merge of AR-02C:** This projection does not
 > claim that this PR has merged or that owner acceptance has occurred.
-> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed upon explicit owner acceptance/merge.**
+> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed.** AR-02C is **Baseline / closed upon explicit owner acceptance/merge.**
 > AR-02 is **Partial**; definition/materializer isolation remains. AR-03 is **Partial**; route resolution, editor, migration, and expand/fold isolation remain.
-> AR-03A is **Baseline / closed.** AR-02C is **Planned / unstarted.** AR-02C is the **exact next selected child**. AR-23 depends on AR-01 and is not serialized behind
-> visual work. This tracker owns current status; the roadmap owns dependency order.
+> AR-03A is **Baseline / closed.** AR-23 is **Planned / unstarted**. AR-23 depends on AR-01 and is not serialized behind
+> visual work. No third child is selected. This tracker owns current status; the roadmap owns dependency order.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
@@ -26,12 +26,12 @@ Implementation status and evidence level are separate. A task is not done becaus
 or partial implementation exists. The checkbox changes only when the task's complete outcome and
 required evidence are accepted.
 
-| Child  | Parent | Bounded outcome and evidence                                                                                                                                | Status effective on AR-02B acceptance/merge |
-| ------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| AR-02A | AR-02  | Separate live renderer observation and composition; [contract](governance/task-contracts/AR/AR-02A.json), [report](AR_02A_IMPLEMENTATION_REPORT.md)         | **Baseline / closed**                       |
-| AR-02B | AR-02  | Extract renderer-free deterministic conformance evaluation; [contract](governance/task-contracts/AR/AR-02B.json), [report](AR_02B_IMPLEMENTATION_REPORT.md) | **Baseline / closed** upon acceptance/merge |
-| AR-03A | AR-03  | Extract route matching and errors; [contract](governance/task-contracts/AR/AR-03A.json), [report](AR_03A_IMPLEMENTATION_REPORT.md)                          | **Baseline / closed**                       |
-| AR-02C | AR-02  | Extract utility metadata and remove the supported-vocabulary renderer edge                                                                                  | **Planned / unstarted**                     |
+| Child  | Parent | Bounded outcome and evidence                                                                                                                                                | Status effective on AR-02C acceptance/merge |
+| ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| AR-02A | AR-02  | Separate live renderer observation and composition; [contract](governance/task-contracts/AR/AR-02A.json), [report](AR_02A_IMPLEMENTATION_REPORT.md)                         | **Baseline / closed**                       |
+| AR-02B | AR-02  | Extract renderer-free deterministic conformance evaluation; [contract](governance/task-contracts/AR/AR-02B.json), [report](AR_02B_IMPLEMENTATION_REPORT.md)                 | **Baseline / closed**                       |
+| AR-03A | AR-03  | Extract route matching and errors; [contract](governance/task-contracts/AR/AR-03A.json), [report](AR_03A_IMPLEMENTATION_REPORT.md)                                          | **Baseline / closed**                       |
+| AR-02C | AR-02  | Extract utility metadata and remove the supported-vocabulary renderer edge; [contract](governance/task-contracts/AR/AR-02C.json), [report](AR_02C_IMPLEMENTATION_REPORT.md) | **Baseline / closed** upon acceptance/merge |
 
 ## Overall phase checklist
 
