@@ -7,12 +7,11 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner acceptance/merge of AR-03A and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit
+explicit owner acceptance/merge of AR-02B and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed upon explicit
 owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation
 remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain.
-AR-03A is Baseline / closed upon explicit owner acceptance/merge. The pilot has no selected successor;
-remaining AR-02 work is future planning only. AR-23 is eligible after AR-01 and is not serialized behind visual work.
+AR-03A is Baseline / closed. AR-02C is the exact next selected child. AR-23 is eligible after AR-01 and is not serialized behind visual work.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated

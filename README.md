@@ -1,8 +1,8 @@
 # Veskify
 
-> **Post-pilot planning projection:** Effective upon explicit owner acceptance/merge of AR-03A; this
+> **Post-AR-02B planning projection:** Effective upon explicit owner acceptance/merge of AR-02B; this
 > describes repository content and does not assert that this PR has merged or been accepted.
-> AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02 is Partial; definition/PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed upon owner acceptance/merge. The pilot has no selected successor; remaining AR-02 work is future planning only.
+> AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed upon owner acceptance/merge. AR-02 is Partial; definition/PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-02C is the exact next selected child.
 > The SDD addendum is normative; the roadmap owns delivery order and the
 > tracker owns status. This does not change the product's **Partial** status.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
