@@ -342,6 +342,8 @@ for (let number = 2; number <= 30; number += 1) {
 }
 statusExpectation.set("AR-02", "Partial");
 statusExpectation.set("AR-02A", "Baseline");
+statusExpectation.set("AR-02B", "Baseline");
+statusExpectation.set("AR-02C", "Planned");
 statusExpectation.set("AR-03", "Partial");
 statusExpectation.set("AR-03A", "Baseline");
 const statusRecords = [];
@@ -407,11 +409,15 @@ for (const record of statusRecords) {
         ? /^$/u
         : record.subject === "AR-02A"
           ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-          : record.subject === "AR-03A"
+          : record.subject === "AR-02B"
             ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-            : /^AR-\d{2}$/u.test(record.subject)
-              ? /^$/u
-              : /^(?:closed)?$/iu;
+            : record.subject === "AR-02C"
+              ? /^unstarted$/iu
+              : record.subject === "AR-03A"
+                ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
+                : /^AR-\d{2}$/u.test(record.subject)
+                  ? /^$/u
+                  : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -443,9 +449,9 @@ const nextTaskIds = (block) =>
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (declaredNext.length > 0) {
+  if (declaredNext.some((id) => id !== "AR-02C")) {
     throw new Error(
-      `${path}: current authority assigns ${declaredNext[0]} as next after the pilot`,
+      `${path}: current authority assigns ${declaredNext.find((id) => id !== "AR-02C")} as next`,
     );
   }
 }
@@ -460,12 +466,16 @@ if (
   !trackerCurrent?.includes("AR-00 current status authority: Baseline / closed.") ||
   !trackerCurrent.includes("AR-01 is Baseline / closed.") ||
   !trackerCurrent.includes("AR-02A is Baseline / closed.") ||
+  !trackerCurrent.includes("AR-02B is Baseline / closed upon explicit owner acceptance/merge") ||
   !trackerCurrent.includes("AR-02 is Partial;") ||
   !trackerCurrent.includes("AR-03 is Partial;") ||
-  !trackerCurrent.includes("AR-03A is Baseline / closed upon explicit owner acceptance/merge") ||
-  nextTaskIds(trackerCurrent).length !== 0
+  !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
+  !trackerCurrent.includes("AR-02C is Planned / unstarted") ||
+  JSON.stringify(nextTaskIds(trackerCurrent)) !== JSON.stringify(["AR-02C"])
 ) {
-  throw new Error("tracker: AR-00/AR-01/AR-02A/AR-03/AR-03A status and pilot closure are required");
+  throw new Error(
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-03/AR-03A status and AR-02C selection are required",
+  );
 }
 if (
   dependencyRecords.filter(
@@ -480,7 +490,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed upon explicit owner acceptance/merge. The pilot has no selected successor; remaining AR-02 work is future planning only. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; definition and PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-02C is the exact next selected child. AR-23 is eligible after AR-01 and is not serialized behind visual work.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
