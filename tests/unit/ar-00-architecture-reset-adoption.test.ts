@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02B");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02C");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -638,12 +638,12 @@ describe("AR-00 architecture-reset adoption guard", () => {
   it.each([
     "AR-30 is the exact next selected child after the pilot.",
     "AR-30 is the selected successor after the pilot.",
-  ])("rejects a successor other than AR-02C: %s", (successor) => {
+  ])("rejects any newly selected successor after AR-02C: %s", (successor) => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
-      const changed = original.replace("AR-02C is the exact next selected child.", successor);
+      const changed = original.replace("no third child is selected.", successor);
       expect(changed).not.toBe(original);
       writeFileSync(readmePath, changed);
       expect(() => check(directory)).toThrow(/AR-30/);
@@ -658,7 +658,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-02C is the **exact next selected child**.",
+        "No third child is selected.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
@@ -873,8 +873,8 @@ describe("AR-00 architecture-reset adoption guard", () => {
   });
 });
 
-describe("AR-02B bounded proposed status transition", () => {
-  it.each(["AR-02", "AR-02C", "AR-03", "AR-23", "AR-30"])(
+describe("AR-02C bounded proposed status transition", () => {
+  it.each(["AR-02", "AR-03", "AR-23", "AR-30"])(
     "rejects premature %s closure despite dependency eligibility",
     (task) => {
       const directory = fixture();

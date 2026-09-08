@@ -9,8 +9,13 @@ import {
   homepagePromotionDefinition,
   homepageTrustDefinition,
 } from "./homepage-commerce";
-import { commerceUtilityDefinition } from "./commerce-utility";
+import { commerceUtilityMetadata } from "./commerce-utility-metadata";
 import { contentSupportDefinition } from "./content-support";
+
+const commerceUtilityVocabulary: Readonly<{
+  allowedPageTypes: readonly PageType[];
+  variants: readonly string[];
+}> = commerceUtilityMetadata;
 
 function registeredVariants(definition: Readonly<{ variants: readonly { id: string }[] }>) {
   return definition.variants.map(({ id }) => id);
@@ -112,8 +117,8 @@ export const supportedSectionManifest = {
     variants: ["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"] as const,
   },
   commerceUtility: {
-    allowedPageTypes: commerceUtilityDefinition.allowedPageTypes,
-    variants: commerceUtilityDefinition.variants,
+    allowedPageTypes: commerceUtilityVocabulary.allowedPageTypes,
+    variants: commerceUtilityVocabulary.variants,
   },
   homepageHero: {
     allowedPageTypes: registeredPageTypes(homepageHeroDefinition),

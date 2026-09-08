@@ -1,5 +1,6 @@
-import { z } from "zod";
-import { resolveLocalizedText, localizedTextSchema } from "@/domain/shared";
+import type { z } from "zod";
+import { resolveLocalizedText } from "@/domain/shared";
+import type { localizedTextSchema } from "@/domain/shared/schemas";
 import { defineComponent, type StorefrontRenderContext } from "./contract";
 import type { CommerceUtilityActionId } from "@/domain/commerce-utility";
 import { ResponsiveStorefrontImage } from "@/components/storefront/responsive-storefront-image";
@@ -8,17 +9,14 @@ import {
   responsiveExecutionDataAttributes,
 } from "@/components/storefront/responsive-execution";
 import { adaptV1ComponentDefinitionToV2 } from "./v2-compatibility";
+import {
+  commerceUtilityContentSchema,
+  commerceUtilityMetadata,
+  commerceUtilityPropsSchema,
+} from "./commerce-utility-metadata";
 import styles from "@/components/storefront/commerce-utility.module.css";
 
-const variants = [
-  "cart",
-  "checkoutBoundary",
-  "noResults",
-  "emptyState",
-  "recoverableError",
-  "notFound",
-  "loading",
-] as const;
+export { commerceUtilityContentSchema, commerceUtilityPropsSchema };
 
 const labels = (context: StorefrontRenderContext) =>
   context.activeLocale === "fi"
@@ -71,23 +69,11 @@ const money = (amount: number, currency: "EUR", context: StorefrontRenderContext
     maximumFractionDigits: 2,
   }).format(amount);
 
-function utilityResponsiveAttributes(variant: (typeof variants)[number]) {
+function utilityResponsiveAttributes(variant: (typeof commerceUtilityMetadata.variants)[number]) {
   const anatomy = currentCommerceUtilityDefinition.commercialAnatomy;
   if (!anatomy) throw new Error("Commerce utility requires registered responsive anatomy.");
   return responsiveExecutionDataAttributes(resolveResponsiveExecutionAuthority(anatomy, variant));
 }
-
-export const commerceUtilityContentSchema = z
-  .object({
-    heading: localizedTextSchema,
-    body: localizedTextSchema,
-  })
-  .strict();
-export const commerceUtilityPropsSchema = z
-  .object({
-    summaryPlacement: z.enum(["inline", "aside"]).default("aside"),
-  })
-  .strict();
 
 function supports(context: StorefrontRenderContext, action: CommerceUtilityActionId) {
   return Boolean(
@@ -368,7 +354,7 @@ function UtilityUnavailablePresentation({
 }: {
   content: z.infer<typeof commerceUtilityContentSchema>;
   context: StorefrontRenderContext;
-  variant: (typeof variants)[number];
+  variant: (typeof commerceUtilityMetadata.variants)[number];
 }) {
   const copy = labels(context);
   const heading =
@@ -673,20 +659,7 @@ const runtimeKindByVariant = {
 } as const;
 
 export const commerceUtilityDefinition = defineComponent({
-  type: "commerceUtility",
-  label: "Commerce utility presentation",
-  allowedPageTypes: ["cart", "checkout", "content"],
-  variants,
-  defaultVariant: "cart",
-  contentSchema: commerceUtilityContentSchema,
-  propsSchema: commerceUtilityPropsSchema,
-  defaultContent: {
-    heading: { en: "Storefront status", fi: "Kaupan tila" },
-    body: { en: "Review the current storefront state.", fi: "Tarkista kaupan nykyinen tila." },
-  },
-  defaultProps: { summaryPlacement: "aside" },
-  editorFields: {},
-  protectedFields: { readOnlyPaths: ["*"] },
+  ...commerceUtilityMetadata,
   validateContext: ({ variant, context }) => {
     if (
       context.commerceUtilityRuntime &&
