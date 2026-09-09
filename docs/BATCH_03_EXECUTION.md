@@ -1,8 +1,10 @@
 # BATCH-03 execution
 
-AR-02D is accepted history. AR-02E is the second approved child of the finite BATCH-03 queue. Its
-renderer-free collection and product metadata leaves preserve existing runtime definitions and
-behavior. On accepted merge, only AR-02E closes and AR-02F becomes selected.
+AR-02D and AR-02E are accepted history. AR-02F is the final approved child: the existing
+V2 definition/instance registry adapts shared metadata without loading legacy rendering.
+On its accepted merge, only F and this finite batch close; no successor child is selected.
+See the [F contract](governance/task-contracts/AR/AR-02F.json), [approach](AR_02F_APPROACH.md)
+and [implementation report](AR_02F_IMPLEMENTATION_REPORT.md) for exact scope and evidence.
 
 The owner's 9 September autonomous continuation grants conditional publication and merge authority
 for this existing D/E/F queue. Its amendment and direct message are retained externally under
@@ -11,7 +13,8 @@ preserved. Every final head still requires independent/native PASS, one complete
 green required CI and an authority record before expected-head-protected merge; no further routine
 owner reply is required. This authorizes no fourth task or broader roadmap execution.
 
-AR-02 and AR-03 remain Partial. AR-23 remains independently eligible and unstarted. BATCH-01 and
-BATCH-02 remain historical evidence. The live V2 registry still loads the legacy renderer registry
-at this intermediate point; AR-02F owns removing that dependency. Utility-profile, manifest/template
-and live conformance-wrapper runtime dependencies remain.
+AR-02 and AR-03 remain Partial. AR-23 remains independently eligible and unstarted.
+BATCH-01/02, earlier contracts, original inputs and prior evidence remain preserved.
+The capability manifest still reaches rendering through utility-profile/template composition;
+the live conformance wrapper and renderer bindings remain intentional runtime consumers.
+This batch makes no visual-quality or measured bundle-size claim.
