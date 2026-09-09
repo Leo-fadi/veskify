@@ -12,13 +12,25 @@ import {
   contentSupportDefinition,
   contentSupportInstanceValidationContracts,
 } from "./content-support";
-import { veskifyLegacyComponentRegistry } from "./legacy-registry";
+import { aurumHeroMetadata } from "./aurum-hero-metadata";
+import { collectionMetadataDefinitions } from "./collection-metadata";
+import { commerceUtilityMetadata } from "./commerce-utility-metadata";
+import { homepageMetadataDefinitions } from "./homepage-metadata";
+import { productMetadataDefinitions } from "./product-metadata";
 import { adaptV1ComponentRegistryToV2 } from "./v2-compatibility";
+
+const v1MetadataAdapterInput = {
+  ...homepageMetadataDefinitions,
+  ...collectionMetadataDefinitions,
+  ...productMetadataDefinitions,
+  commerceUtility: commerceUtilityMetadata,
+  hero: aurumHeroMetadata,
+} as const;
 
 export const veskifyComponentDefinitionsV2 = [
   ...adaptV1ComponentRegistryToV2(
     Object.fromEntries(
-      Object.entries(veskifyLegacyComponentRegistry).filter(
+      Object.entries(v1MetadataAdapterInput).filter(
         ([type]) =>
           type !== "dynamicCollectionCommerce" &&
           type !== "dynamicProductDetail" &&

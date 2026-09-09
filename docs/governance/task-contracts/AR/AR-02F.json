@@ -1,0 +1,434 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AR",
+  "taskId": "AR-02F",
+  "title": "Adapt V2 definitions from renderer-free shared metadata",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-02f-v2-metadata-adaptation",
+  "baseCommit": "d9647c84523c6b26d10cf025dcfccbed541c3c7d",
+  "objective": "Complete only BATCH-03 child 3 in the original checkout: remove the existing V2 definition/instance-registry leaf dependency on legacy rendering by adapting accepted shared metadata, preserving canonical definitions, validation, replay and rendering. Standing explicit owner authorization conditionally permits the final verified merge after all separate quality gates.",
+  "expectedOutcome": "The complete v2-registry.ts runtime closure is renderer-free while public V2 definitions, adapter semantics and instance validation remain identical. Accepted merge closes only AR-02F and BATCH-03; no fourth child is selected. AR-02/03 remain Partial and AR-23 eligible/unstarted.",
+  "dependencies": [
+    {
+      "taskId": "AR-01",
+      "requiredState": "MERGED",
+      "commit": "4734abdc2849bb60ee0af78fcf696b71c298209c"
+    },
+    {
+      "taskId": "AR-02D",
+      "requiredState": "MERGED",
+      "commit": "020692efb9705ee5619efe8ba88020c7ab3ad034"
+    },
+    {
+      "taskId": "AR-02E",
+      "requiredState": "MERGED",
+      "commit": "d9647c84523c6b26d10cf025dcfccbed541c3c7d"
+    }
+  ],
+  "mergeOrder": 3,
+  "canonicalAuthorities": [
+    "Owner-approved BATCH-03 runbook SHA-256 d74e1fcfedf81a2d0f3d57dc34a7f6202e86208924600b9d35fdd13ddcf8144b and retained autonomous-authorization-01 amendment SHA-256 eaff65eee7862c9d5f181ea3752e0fc2a67ec4da2b4a12a8800d214b083ade17 with direct owner message SHA-256 4a9ba5d1810bdbc22206af97dc009844f61e89edc36ee9d2eca8bc4a3e870498 explicitly authorize exactly D/E/F through gated merges and closeout. This supersedes repeat manual approval timing only; native explicit authority and all quality controls remain enabled.",
+    "AGENTS.md; docs/DEVELOPMENT_GUIDE.md section 4; docs/AGENT_TEAM_WORKFLOW.md; both project skills and unchanged native governance schemas.",
+    "docs/VESKIFY_SDD.md sections 3-4, 7, 10.5, 10.12, 10.18; FR-102/107/109/110/111/112/119/121/123, NFR-101/108/109, AC-106 through AC-112 and AC-129/130/133/136; ADR-001 through ADR-004 and incorporated AR-00 addendum. Canonical StorefrontSnapshot, component declarations and read-only commerce remain authoritative.",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md complete AR-02 acceptance including T-01/T-02/T-21 owns delivery order; docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md alone owns status. AR-01 manifest and accepted AR-02A/B/C/D/E reports are retained evidence, not replacement scheduling authority.",
+    "Merged AR-02E PR #243: approved head 8b8ce090f44855bb6af0067f01f00daa0032b2b0, actual merge/base d9647c84523c6b26d10cf025dcfccbed541c3c7d. Preflight-04 complete observation captured before any repository edit; attempt01/02/03 retained without rewriting.",
+    "/Users/leo/veskify-batch-runs/BATCH-03/AR-02F/support-hashes.json SHA-256 50edb027e64d89443f689fd7256070c14fcf183c7b780b8b03d284f1ccbe12e2",
+    "/Users/leo/veskify-batch-runs/BATCH-03/AR-02F/baseline-observation.json SHA-256 1bd4a769de736691c1a8bd06e7d471926126f9cb9f3bba3db8b44434d66f4fe6",
+    "/Users/leo/veskify-batch-runs/BATCH-03/AR-02F/check-integrity.py SHA-256 b3938d733aa6a94fe80ab6dcdf681081b00300540228aee0de1a3cfee53df4c0",
+    "/Users/leo/veskify-batch-runs/BATCH-03/AR-02F/preflight.json SHA-256 52663d1de36d6da5fde039040536456e01fc5ee0fe2ce8a4f6ec566662f750da"
+  ],
+  "ownedPaths": [
+    "src/components/registry/v2-registry.ts",
+    "tests/unit/ar-02f-v2-metadata-adaptation.test.ts",
+    "docs/AR_02F_APPROACH.md",
+    "docs/AR_02F_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-02F.json",
+    "docs/BATCH_03_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx"
+  ],
+  "allowedPaths": [
+    "src/components/registry/v2-registry.ts",
+    "tests/unit/ar-02f-v2-metadata-adaptation.test.ts",
+    "docs/AR_02F_APPROACH.md",
+    "docs/AR_02F_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-02F.json",
+    "docs/BATCH_03_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json"
+  ],
+  "forbiddenPaths": [
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "AGENTS.md",
+    "docs/AGENT_TEAM_WORKFLOW.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".env*",
+    "public/**",
+    "tests/fixtures/**",
+    "docs/AR_00_*",
+    "docs/AR_01_*",
+    "docs/AR_02A_*",
+    "docs/AR_03A_*",
+    "docs/BATCH_01_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-00.json",
+    "docs/governance/task-contracts/AR/AR-01.json",
+    "docs/governance/task-contracts/AR/AR-02A.json",
+    "docs/governance/task-contracts/AR/AR-03A.json",
+    "docs/governance/*.json",
+    "scripts/lib/task-governance/**",
+    "scripts/task-governance.mjs",
+    "scripts/ar-01-inventory.mjs",
+    "src/domain/**",
+    "src/application/**",
+    "src/integrations/**",
+    "src/components/registry/index.ts",
+    "src/components/registry/registry.ts",
+    "src/components/registry/legacy-registry.ts",
+    "src/components/registry/capability-manifest.ts",
+    "src/components/registry/renderer-observation.ts",
+    "src/components/registry/live-renderer-conformance.ts",
+    "src/components/registry/contract.ts",
+    "src/components/registry/v2-compatibility.ts",
+    "src/components/registry/renderer-conformance*.ts",
+    "tests/helpers/ar-02-runtime-import-closure.ts",
+    "tests/unit/ar-02a-renderer-observation-boundary.test.ts",
+    "tests/unit/ar-02b-renderer-free-conformance.test.ts",
+    "tests/unit/p10b-13-commerce-utility-presentation.test.tsx",
+    "tests/unit/p10b-03-component-anatomy-contract.test.ts",
+    "tests/unit/p10a-generated-component-capability-manifest.test.ts",
+    "docs/AR_02B_*",
+    "docs/governance/task-contracts/AR/AR-02B.json",
+    "docs/AR_02C_*",
+    "docs/governance/task-contracts/AR/AR-02C.json",
+    "docs/BATCH_02_EXECUTION.md",
+    "src/components/registry/commerce-utility.tsx",
+    "src/components/registry/commerce-utility-metadata.ts",
+    "src/components/registry/supported-vocabulary.ts",
+    "src/components/registry/dynamic-commerce-bridge.tsx",
+    "tests/unit/ar-02c-utility-metadata.test.ts",
+    "tests/unit/homepage-registry.test.tsx",
+    "tests/unit/component-platform.test.ts",
+    "tests/unit/p10b-09-commercial-homepage-profile-library.test.tsx",
+    "tests/unit/p10b-06-commercial-shared-frame-families.test.tsx",
+    "tests/unit/p10a-registry-renderer-conformance.test.ts",
+    "docs/AR_02D_*",
+    "docs/governance/task-contracts/AR/AR-02D.json",
+    "src/components/registry/homepage.tsx",
+    "src/components/registry/aurum-hero.tsx",
+    "src/components/registry/homepage-metadata.ts",
+    "src/components/registry/aurum-hero-metadata.ts",
+    "tests/unit/ar-02d-homepage-metadata.test.ts",
+    "docs/AR_02E_*",
+    "docs/governance/task-contracts/AR/AR-02E.json",
+    "src/components/registry/collection.tsx",
+    "src/components/registry/product.tsx",
+    "src/components/registry/collection-metadata.ts",
+    "src/components/registry/product-metadata.ts",
+    "tests/unit/ar-02e-commerce-metadata.test.ts",
+    "tests/helpers/ar-02-legacy-metadata-observation.ts"
+  ],
+  "noTouchAreas": [
+    "The nine originals in allowedPaths are presence only, never write/staging ownership. Preserve exact pinned bytes and untracked status; no deletion, ignore, move or staging.",
+    "All unowned tracked files, previous branches/worktrees, user work and all prior evidence/contracts remain unchanged. Original checkout only; no agent/settings/permission edits. One implementation writer; coordinator alone mutates Git/PR state.",
+    "Only v2-registry.ts changes in production. No adapter/factory/schema/metadata/runtime-renderer/legacy-registry/public-barrel/manifest/fixture/source-lock/utility-profile/template changes. No second registry, snapshot, DSL or JSON capability authority.",
+    "No UI redesign, measured bundle-size or parent-completion claim. The capability manifest template-profile path and intentional live conformance wrapper remain legitimate renderer-bearing compositions.",
+    "Declared generated outputs only: existing node_modules/.vite-temp/** and node_modules/.vite/** caches, tsconfig.tsbuildinfo, existing exporter staging and two DOCX exports, temporary ar-00-check-* and ar-02b-runtime-* fixtures, ar-02f-diff-* disposable indexes/objects, /private/tmp/veskify-batch-03/ar-02f/final-observation.json and assigned implementer/verifier reports in AR-02F scratch/external roots. Preserve all pinned baselines/harnesses. Verifier must not edit reviewed inputs, documentary contract, source DOCX or real Git index.",
+    "No agent writes to Git configuration. The preflight integrity check pins its exact starting bytes; it may observe only an IDE-added current F branch vscode-merge-base=origin/main block when removing that exact block in memory recovers the pinned hash. All other config bytes must match; no file rewrite or permission change is authorized. Documentary contract and approach are coordinator-owned and immutable after lock."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One canonical concern and exactly one production file: feed the existing V2 adapter shared metadata in the unchanged effective order. Production additions count honestly; target 1000/eight files, hard 1500/twelve with literal one-file scope stricter. Handwritten additions target 1500, hard2500; deletions hard1500; report target800 words. Only two existing DOCX exports excluded.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic documentation export, generated only by its existing exporter when its owned authoritative source changes."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic documentation export, generated only by its existing exporter when its owned authoritative source changes."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Coordinator GitHub observation/fetch and independently verified commit/push/one public AR-02F PR, one automatic review and bounded CI under standing direct owner authorization. Merge commit only for final exact verified head after all gates, with expected-head protection and no override. No verifier network, provider/Vesko/image/publication/deployment activity."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Replace only the legacy-registry import/input in v2-registry.ts with direct accepted homepage, hero, collection, product and utility metadata imports. Assemble local adapter input in original effective order, excluding native home types by homepageCommerceDefinitions.some; omit dynamic bridge imports because the original expression excluded them. Keep the existing adaptV1ComponentRegistryToV2 call/algorithm, adapted prefix, native suffix references/order and createComponentRegistryV2 validation composition unchanged.",
+    "canonicalAuthorityExtended": "Existing shared ComponentMetadata declarations and ComponentDefinitionV2 registry remain sole authority. The unchanged native V1-to-V2 adapter materializes canonical V2 definitions; metadata is not another executable registry.",
+    "namedCurrentConsumers": [
+      "Existing v2-registry definitions/instance registry consumed by homepage/content-support bridges, dynamic storefront renderers, capability manifest, renderer observation and live conformance.",
+      "Existing application generation/runtime authorities and stored snapshot/publication replay consumers of the same V2 public API."
+    ],
+    "rejectedShortcuts": [
+      "Importing legacy renderers and filtering after import; duplicating a global metadata registry or generated JSON snapshot.",
+      "Copying native homepage type IDs, changing adapter semantics or dropping stored versions/dynamic native validation to simplify composition.",
+      "Changing utility profiles/template materializers or source locks, masking unresolved edges, broadening type assertions or adding a second traversal helper."
+    ],
+    "expectedFailureBehavior": "Unknown component/version, malformed content/props and protected bindings keep existing rejection. Any definition/order/fingerprint, replay/render, callback identity or baseline discrepancy blocks submission. Unresolved/renderer-bearing V2 closure outside sole allowed edit is a blocker. Rollback restores the prior legacy import/expression without persisted changes.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Original root/base/branch, D/E accepted merges and absence of another owning PR are verified. Nine originals remain untracked/hash-identical; unowned sources/prior evidence/work preserved. Exactly one production path and literal ancillary scope/budgets hold.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for discrepancy or missing proof; BLOCKED only for unavailable required evidence/execution. Preserve state and stop before submission until independent/native PASS."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Existing V2 leaf imports accepted metadata directly in exact effective legacy ordering; dynamic bridges remain absent from adapted input, native homepage exclusions use homepageCommerceDefinitions authority. The existing adapter call/API/algorithm, public V2 exports, complete ordered native suffix object references and instance-validation callback composition stay unchanged. No duplicate authority or renderer import merely for filtering.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for discrepancy or missing proof; BLOCKED only for unavailable required evidence/execution. Preserve state and stop before submission until independent/native PASS."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Complete pre-edit preflight-04 observation equals final bytes (3064032 bytes, SHA-256 1bd4a769de736691c1a8bd06e7d471926126f9cb9f3bba3db8b44434d66f4fe6). Test-only actual legacy registry with original exclusions yields complete identical ordered adapted prefix; verify schemas, versions, labels, variants, bindings, protected fields, renderer metadata and fingerprints, native types exactly once. Complete manifest/AR-02A observations, stored-version replay and representative EN/FI rendering remain unchanged.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for discrepancy or missing proof; BLOCKED only for unavailable required evidence/execution. Preserve state and stop before submission until independent/native PASS."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Resolve the entire v2-registry.ts runtime import/re-export graph using unchanged AR-02B helper, inspect package/unresolved edges and erased types. No legacy/runtime registry, renderer TSX/JSX, React/ReactDOM, CSS, Next UI, Puck or acceptance composition. Native validation successes and unknown component/version, malformed content/props and protected-binding failures preserve behavior. Existing direct consumers compile and required native rendering, A09B historical render and A09C publication render replay tests pass.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for discrepancy or missing proof; BLOCKED only for unavailable required evidence/execution. Preserve state and stop before submission until independent/native PASS."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Minimal merge-effective projections close only AR-02F and finite BATCH-03 and select no fourth child. D/E and BATCH-01/02 remain accepted historical records; AR-02/03 Partial, AR-23 independently eligible/unstarted. State exact V2 boundary success while retaining utility-profile/manifest/template and live conformance-wrapper limitations. Existing status grammar/guards and deterministic tracker cover/body and SDD exports agree.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-04"],
+      "failureBehavior": "FAIL for discrepancy or missing proof; BLOCKED only for unavailable required evidence/execution. Preserve state and stop before submission until independent/native PASS."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Pause all writers; fresh configured verifier in original workspace freezes complete inputs/index and independently executes every declared check. Native reconciliation PASS precedes committing/pushing exact reviewed content. One automatic review and final-head/base CI including validate remain separate gates. Before merge record standing owner authorization against exact task/head/scope and all gates; expected-head merge without override needs no new routine reply. Then preserve evidence, safely synchronize original checkout and stop after closeout.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for discrepancy or missing proof; BLOCKED only for unavailable required evidence/execution. Preserve state and stop before submission until independent/native PASS."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-02f-v2-metadata-adaptation.test.ts tests/unit/ar-02e-commerce-metadata.test.ts tests/unit/ar-02d-homepage-metadata.test.ts tests/unit/ar-02c-utility-metadata.test.ts tests/unit/ar-02b-renderer-free-conformance.test.ts tests/unit/ar-02a-renderer-observation-boundary.test.ts tests/unit/component-platform.test.ts tests/unit/p10b-03-component-anatomy-contract.test.ts tests/unit/p10a-registry-renderer-conformance.test.ts tests/unit/p10a-generated-component-capability-manifest.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx tests/integration/p10b-19a-09c-publication-render-replay.test.tsx tests/unit/homepage-commerce.test.tsx tests/unit/dynamic-collection-commerce.test.tsx tests/unit/dynamic-product-detail.test.tsx tests/unit/dynamic-product-detail-integration.test.tsx tests/unit/p10b-12-content-support-page-families.test.tsx tests/integration/collection-renderer.test.tsx tests/integration/product-page-rendering.test.tsx tests/integration/storefront-commerce-route-integration.test.tsx",
+      "purpose": "New V2 boundary/parity/native reference/validation tests; accepted metadata boundaries, complete conformance/manifest, native rendering, A09B/A09C render replay and current no-successor status guard.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "AR02F_REPEATABLE_OBSERVATION_OUTPUT=/private/tmp/veskify-batch-03/ar-02f/final-observation.json pnpm exec vitest run --config /private/tmp/veskify-batch-03/ar-02f/preflight-04/observation.config.ts",
+      "purpose": "Run the unchanged pre-edit observation harness against current source, writing complete final bytes for comparison.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-03/AR-02F/check-integrity.py",
+      "purpose": "Check pinned support, originals/prior evidence/unowned sources, complete baseline equality, handwritten scope, complete whitespace including new files and real-index preservation.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "node scripts/check-architecture-reset-adoption.mjs",
+      "purpose": "Verify exact merge-effective child progression and retained parent/AR-23 states.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Verify retained requirement coverage.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Verify documentation tooling coverage.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Verify deterministic current SDD export.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Verify deterministic tracker export.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:validate",
+      "purpose": "Validate repository documentation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm typecheck",
+      "purpose": "Verify declaration inference and existing consumer compile compatibility.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm exec eslint src/components/registry/v2-registry.ts tests/unit/ar-02f-v2-metadata-adaptation.test.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Focused lint of owned source, tests and controls.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm exec prettier --check src/components/registry/v2-registry.ts tests/unit/ar-02f-v2-metadata-adaptation.test.ts docs/AR_02F_APPROACH.md docs/AR_02F_IMPLEMENTATION_REPORT.md docs/governance/task-contracts/AR/AR-02F.json docs/BATCH_03_EXECUTION.md README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Check all owned handwritten files at their repository paths, including documentary contract.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Complete native diff identity, pinned contract/support and scope/original/prior-evidence preservation; frozen verifier input/index hashes and unchanged-result proof.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Pinned complete pre-edit/final observation bytes, exact old/new ordered adaptation and render/validation parity, resolved V2 runtime closure and canonical native references.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual implementer and independent focused Vitest/observation totals, typecheck and focused lint commands with exit results; meaningful negative cases and input immutability.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "command",
+      "description": "Current projection checks, documentation/requirements/tooling and deterministic SDD/tracker checks, affected-file formatting and actual exit results.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-merge",
+    "criteria": [
+      "Verify retained direct owner standing authorization for AR-02F against actual owning public PR, exact final verified head, unchanged scope, completed D/E predecessors, independent/native PASS, completed single automatic review/resolved findings and green final-head/base CI including validate. Record those facts then use expected-head protected merge commit without override; no additional routine owner reply required."
+    ]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Any canonical conflict, source-lock intersection requiring edits, out-of-scope path, permission expansion, budget hard-stop breach or semantic contract change.",
+      "action": "STOP",
+      "owner": "architecture-owner"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Unresolved/renderer-bearing metadata closure or changed baseline behavior, dropped exports/schema identity, unknown input change or unsupported evidence claim.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Independent substantive correction plus one rerun exhausted; one formatting-only correction per child is allowed only with original bytes retained, identical parsed JSON and canonical fingerprint, fixed replacement raw pin and final independent verification. No semantic reissue.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Single automatic-review correction exhausted or per-head CI/review wait reaches 90 minutes or 30 observations (minimum three minutes apart, final single observation within allowance before timeout). No review rerequest or successful-CI restart.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-05",
+      "condition": "Stop if standing authority cannot be bound to the exact final AR-02F head/scope and all gates, if a managed action denial remains, or when F merges and preserved original checkout is synchronized and batch closeout reported. No fourth child or full-parent completion.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "BATCH-03-CLOSEOUT",
+    "title": "Preserve evidence and synchronize the original checkout; then stop",
+    "eligibility": "Delivery bookkeeping only after the authorized verified AR-02F merge. No implementation child/branch/PR is selected or authorized. Future batch work requires separately defined scope and direct owner launch."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
