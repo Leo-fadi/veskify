@@ -23,6 +23,7 @@ import {
   type PageBlueprintV2RegionRelationshipKind,
 } from "@/application/storefront-templates";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry";
+import { readRetainedSource } from "../helpers/ar-02-retained-source-transition";
 
 type StructuralPageFamilyId =
   "home" | "collection" | "search" | "product-detail" | "content-support" | "utility";
@@ -975,7 +976,7 @@ describe("P10B-19A-03 forbidden authority and zero reachability", () => {
     });
   });
 
-  it("keeps every registered v1 PageBlueprint byte/semantic authority locked", () => {
+  it("keeps registered v1 semantics and the verified-successor historical source aggregate locked", () => {
     const pagePlans = listExecutablePageBlueprintProfiles();
     expect(pagePlans).toHaveLength(53);
     expect(pagePlans.every((pagePlan) => pagePlan.profile?.version === "1.0.0")).toBe(true);
@@ -1000,7 +1001,17 @@ describe("P10B-19A-03 forbidden authority and zero reachability", () => {
     v1AuthorityFiles.forEach((path) => {
       sourceHash.update(path, "utf8");
       sourceHash.update("\0", "utf8");
-      sourceHash.update(readFileSync(resolve(repositoryRoot, path)));
+      sourceHash.update(
+        readRetainedSource({
+          repositoryRoot,
+          recordsPath: "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+          sourcePath: path,
+          expectedHistoricalSha256:
+            path === "src/application/storefront-templates/commercial-utility-profiles.ts"
+              ? "cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0"
+              : undefined,
+        }),
+      );
       sourceHash.update("\0", "utf8");
     });
     expect(sourceHash.digest("hex")).toBe(

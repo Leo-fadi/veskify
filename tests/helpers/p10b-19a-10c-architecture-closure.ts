@@ -15,6 +15,7 @@ import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storef
 import { structuralStorefrontCrossPageRelationshipKinds, structuralStorefrontFamilyIds, structuralStorefrontPageFamilyIds } from "@/domain/structural-storefront-family";
 
 import { parseStrictJson } from "../../scripts/lib/task-governance/index.js";
+import { readRetainedSource } from "./ar-02-retained-source-transition";
 // prettier-ignore
 import { readRetainedInventory, retainedInventoryPath, type RetainedInventory } from "./p10b-19a-10a-retained-matrix-inventory";
 // prettier-ignore
@@ -246,7 +247,18 @@ const parseJson = (bytes: Buffer) => parseStrictJson(bytes.toString("utf8"));
 
 export function verifyFrozenPredecessorBytes() {
   const ordered = [...frozenFiles].sort((left, right) => compare(left.path, right.path));
-  ordered.forEach(({ path: file, sha256: expected }) => readRepository(file, expected));
+  // Historical predecessor identities: the reviewed A-10A successor verifies its archive;
+  // the other ten predecessors still require their original current-source bytes.
+  ordered.forEach(({ path: file, sha256: expected }) =>
+    file === "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts"
+      ? readRetainedSource({
+          repositoryRoot,
+          recordsPath: "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+          sourcePath: file,
+          expectedHistoricalSha256: expected,
+        })
+      : readRepository(file, expected),
+  );
   const evidence = {
     fileCount: ordered.length,
     pathSetFingerprint: canonicalValueFingerprint(ordered.map(({ path: file }) => file)),

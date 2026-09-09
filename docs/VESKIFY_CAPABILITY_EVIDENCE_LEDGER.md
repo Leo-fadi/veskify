@@ -2,6 +2,10 @@
 
 > **AR-00 scope note:** Historical P10B-19A/A-10C evidence is retained unchanged. It is not a
 > current successor-task authority; status is owned only by the delivery tracker.
+> AR-02G preserves the original utility-profile source archive and historical hash while verifying
+> its metadata-only current successor. Of 76 A-10 source identities, 75 current raw hashes remain
+> unchanged and one has this explicit transition; historical aggregate constants remain unchanged.
+> See [AR-02G evidence](AR_02G_IMPLEMENTATION_REPORT.md) and the [BATCH-04 mapping](BATCH_04_EXECUTION.md).
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

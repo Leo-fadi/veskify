@@ -7,7 +7,6 @@ import { gunzipSync } from "node:zlib";
 import { z } from "zod";
 
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
-import { readRetainedSource } from "./ar-02-retained-source-transition";
 
 export const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 // prettier-ignore
@@ -72,14 +71,7 @@ export function retainedInventoryFingerprint(
 export function verifyProtectedSources(inventory: RetainedInventory): void {
   protectedAuthorities(inventory).forEach(({ path: authorityPath, sha256: expected }) => {
     existing(authorityPath, "Protected authority");
-    const actual = sha256(
-      readRetainedSource({
-        repositoryRoot,
-        recordsPath: "tests/fixtures/ar-02-retained-source-transitions.v1.json",
-        sourcePath: authorityPath,
-        expectedHistoricalSha256: expected,
-      }),
-    );
+    const actual = sha256(readFileSync(path.join(repositoryRoot, authorityPath)));
     if (actual !== expected)
       throw new Error(
         `Protected source hash mismatch: ${authorityPath}; expected ${expected}; actual ${actual}.`,

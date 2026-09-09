@@ -54,11 +54,17 @@ The first enabled complete families are **product-first-commerce** and **editori
 
 The [development roadmap](../VESKIFY_DEVELOPMENT_ROADMAP.md) is the delivery-order authority and contains the complete AR outcome/dependency/acceptance/non-goal/rollback plan. The [delivery tracker](../VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md) alone owns task status; this addendum and other documents are status projections.
 
-The candidate status projection takes effect upon explicit owner acceptance/merge of AR-02F; it does not assert the PR's actual lifecycle or owner acceptance. AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-23 depends only on AR-01 and is not serialized behind visual work. AR-23 is eligible alongside later eligible work. AR-23 remains unstarted. BATCH-03 has no successor child. AR-08 closes the foundational refactor evidence, AR-22 accepts engine quality, and AR-28 accepts the integrated pilot. Retirement occurs only after caller inventory, persisted-version support, replacement behavior, and regression evidence; names, apparent deadness, or an old hash guard are insufficient.
+The candidate status projection takes effect upon explicit owner acceptance/merge of AR-02G; it does not assert the PR's actual lifecycle or owner acceptance. AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-23 depends only on AR-01 and is not serialized behind visual work. AR-23 is eligible alongside later eligible work. AR-23 remains unstarted. BATCH-03 is complete. AR-02H is the sole next reset task, eligible only after AR-02G acceptance/merge. AR-08 closes the foundational refactor evidence, AR-22 accepts engine quality, and AR-28 accepts the integrated pilot. Retirement occurs only after caller inventory, persisted-version support, replacement behavior, and regression evidence; names, apparent deadness, or an old hash guard are insufficient.
 
 ## 6. Requirement and evidence relationship
 
 No new authoritative FR, NFR, or AC identifiers are introduced. Existing retained requirements remain mapped by the source-disposition record. The accepted P10B-19A architecture, A-10C decision and closure manifest, historical fixtures, metrics, and protected source remain historical authority with their original identities. Historical B-01 “next” statements describe the accepted A-10C event only; they do not schedule current work after this addendum.
+
+The specifically owner-authorized AR-02G utility-profile source transition preserves original
+source bytes and historical hashes while verifying its fixed current successor and unchanged
+behavior. A test-only reader serves the verified archive only to explicitly historical aggregates;
+untransitioned paths retain current raw equality. This exception does not change historical
+inventories, accepted goldens or inactivity controls. See [BATCH-04](../BATCH_04_EXECUTION.md).
 
 ## Complete supplied target architecture
 

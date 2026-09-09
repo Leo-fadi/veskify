@@ -16,6 +16,7 @@ import {
   pageBlueprintV2RegionAssetRequirementsSchema,
 } from "@/application/storefront-templates";
 import { assetRoleSchema, assetRoleValues, type AssetRole } from "@/domain/shared";
+import { readRetainedSource } from "../helpers/ar-02-retained-source-transition";
 
 const expectedAssetRoles = [
   "logo",
@@ -631,7 +632,7 @@ describe("P10B-19A-04 forbidden authority and zero reachability", () => {
     });
   });
 
-  it("keeps A-03 structural, dispatch and registered v1 authority byte-identical", () => {
+  it("keeps A-03 structural/dispatch bytes and verified-successor historical v1 aggregate locked", () => {
     const repositoryRoot = resolve(process.cwd());
     expect(
       createHash("sha256")
@@ -672,7 +673,17 @@ describe("P10B-19A-04 forbidden authority and zero reachability", () => {
     v1AuthorityFiles.forEach((path) => {
       sourceHash.update(path, "utf8");
       sourceHash.update("\0", "utf8");
-      sourceHash.update(readFileSync(resolve(repositoryRoot, path)));
+      sourceHash.update(
+        readRetainedSource({
+          repositoryRoot,
+          recordsPath: "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+          sourcePath: path,
+          expectedHistoricalSha256:
+            path === "src/application/storefront-templates/commercial-utility-profiles.ts"
+              ? "cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0"
+              : undefined,
+        }),
+      );
       sourceHash.update("\0", "utf8");
     });
     expect(sourceHash.digest("hex")).toBe(

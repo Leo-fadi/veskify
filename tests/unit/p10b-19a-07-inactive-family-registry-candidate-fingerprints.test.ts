@@ -40,6 +40,7 @@ import {
   type StructuralStorefrontFamilyId,
 } from "@/domain/structural-storefront-family/identity";
 import { isStructuralStorefrontFamilySelectable } from "@/domain/structural-storefront-family/lifecycle";
+import { readRetainedSource } from "../helpers/ar-02-retained-source-transition";
 
 const approvedProtectedAuthorityFingerprint =
   "sha256:21ef43c86f36bd9967fb4b8caf59039bc6b0dc0909d45d51dd81a666c6dddd03";
@@ -318,7 +319,17 @@ function fingerprintProtectedAuthority(repositoryRoot: string): string {
   for (const path of files) {
     hash.update(path);
     hash.update("\0");
-    hash.update(readFileSync(resolve(repositoryRoot, path)));
+    hash.update(
+      readRetainedSource({
+        repositoryRoot,
+        recordsPath: "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+        sourcePath: path,
+        expectedHistoricalSha256:
+          path === "src/application/storefront-templates/commercial-utility-profiles.ts"
+            ? "cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0"
+            : undefined,
+      }),
+    );
     hash.update("\0");
   }
 
@@ -1135,7 +1146,7 @@ describe("P10B-19A-07 forbidden later authority", () => {
 });
 
 describe("P10B-19A-07 architecture and inactivity boundary", () => {
-  it("keeps A-01 through A-06 and current v1/runtime authority byte-identical", () => {
+  it("keeps A-01 through A-06 and verified-successor historical/runtime authority locked", () => {
     expect(fingerprintProtectedAuthority(resolve(process.cwd()))).toBe(
       approvedProtectedAuthorityFingerprint,
     );

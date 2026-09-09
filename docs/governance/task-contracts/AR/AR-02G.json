@@ -1,0 +1,430 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AR",
+  "taskId": "AR-02G",
+  "title": "Remove the utility renderer edge from template capability metadata",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-02g-template-capability-boundary",
+  "baseCommit": "9bdc045042ec8b1be27b971f5651a02edaf98468",
+  "objective": "Deliver only BATCH-04 child G: use accepted utility metadata for existing profile variant validation, with the explicitly authorized historical-source transition. Preserve all current behavior and historical records. Direct owner standing approval permits verified public submission and a protected conditional merge.",
+  "expectedOutcome": "Utility profiles, template registry and generated capability manifest no longer reach rendering; all full pre-edit/final profile, definition, materialization, render, conformance and replay observations match. Only G closes; H becomes eligible after its verified merge. AR-02/03 remain Partial.",
+  "dependencies": [
+    {
+      "taskId": "AR-01",
+      "requiredState": "MERGED",
+      "commit": "4734abdc2849bb60ee0af78fcf696b71c298209c"
+    },
+    {
+      "taskId": "AR-02F",
+      "requiredState": "MERGED",
+      "commit": "9bdc045042ec8b1be27b971f5651a02edaf98468"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "Direct BATCH04 runbook SHA256 ace1ab08a04f83c31aed078911499919323e058e28d94d80548a5600fecee4ae and retained standing-authorization-01 owner-message SHA256 a99f1a35eb4c921ed44b0d0f42423d6e7ffb92ed552120149b9a858dc680501f. Authorizes G/H only with exactsource transitions and all gated public submission/merges; native explicitMergeAuthorityRequired stays true.",
+    "AGENTS.md; DEVELOPMENT_GUIDE section4; AGENT_TEAM_WORKFLOW; both project skills; current native schemas.",
+    "SDD sections4/7 and incorporated AR00 addendum: canonical PageBlueprint/ComponentDefinitionV2/StorefrontSnapshot/read-only commerce; FR102/109/110/120, NFR101/109; ADR001-004.",
+    "Roadmap full AR02 T01/T02/T21 acceptance owns order; tracker alone owns status; AR01 historicalGuardHandoff and accepted F report retained. Original historical source and A10 inventory/closure authority are not rewritten.",
+    "/Users/leo/veskify-batch-runs/BATCH-04/AR-02G/support-hashes.json SHA-256 484626957b8b418dd3133a091be7743364dddf97af78662e31aa97327df5d2ca. Contains complete preflight-02 baseline SHA-256 717daec93a8db692989e468efd6208f1f55fd2861f3415f563c9182ce1e87020 (2463080 bytes), unchanged baseline harness/config, original guard/source provenance, approach and integrity checker. Preliminary preflight-01 is preserved but does not replace the complete baseline.",
+    "Owner-authorized semantic amendment01: continuation SHA256 0d7256241ef0689dbf57088d9d4d65d21b1672d9791e80fa0c690bf8ea9b300c; owner-message SHA256 df99a154d31158b301ee44a0f2810e370035ed7395446fd13c19816ffe4fff71; support-hashes SHA256 f50815a415ac2b83431bb221b5290f168d0db140fd2905753b8145f55146277c, retained in /Users/leo/veskify-batch-runs/BATCH-04/AR-02G/amendment-01. Original contract raw990a9e88b943ffc5dcfc9c320af2595995cd77ba6d2c8569a71564b2c3382490 and canonical7bf69d78bbe0823e3864a5cade71e6869837131a4e213098c487f08736f15ce2, lock/support and BLOCKED01 remain unchanged. Same task/branch/base; actual replacement raw/canonical identities differ. No implementation restart."
+  ],
+  "ownedPaths": [
+    "src/application/storefront-templates/commercial-utility-profiles.ts",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/fixtures/ar-02g/commercial-utility-profiles.pre-ar-02g.ts.txt",
+    "tests/unit/ar-02g-template-capability-boundary.test.ts",
+    "tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts",
+    "tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts",
+    "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+    "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts",
+    "docs/AR_02G_APPROACH.md",
+    "docs/AR_02G_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-02G.json",
+    "docs/BATCH_04_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "tests/helpers/p10b-19a-10c-architecture-closure.ts",
+    "tests/fixtures/ar-02g/p10b-19a-10a-retained-matrix-inventory.pre-ar-02g.ts.txt",
+    "tests/unit/ar-02g-closure-transition.test.ts"
+  ],
+  "allowedPaths": [
+    "src/application/storefront-templates/commercial-utility-profiles.ts",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/fixtures/ar-02g/commercial-utility-profiles.pre-ar-02g.ts.txt",
+    "tests/unit/ar-02g-template-capability-boundary.test.ts",
+    "tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts",
+    "tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts",
+    "tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+    "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts",
+    "docs/AR_02G_APPROACH.md",
+    "docs/AR_02G_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-02G.json",
+    "docs/BATCH_04_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "tests/helpers/p10b-19a-10c-architecture-closure.ts",
+    "tests/fixtures/ar-02g/p10b-19a-10a-retained-matrix-inventory.pre-ar-02g.ts.txt",
+    "tests/unit/ar-02g-closure-transition.test.ts"
+  ],
+  "forbiddenPaths": [
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "AGENTS.md",
+    "docs/AGENT_TEAM_WORKFLOW.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".env*",
+    "public/**",
+    "src/domain/**",
+    "src/components/**",
+    "src/integrations/**",
+    "tests/fixtures/p10*",
+    "tests/fixtures/ar-02h/**",
+    "docs/governance/*.json",
+    "scripts/lib/task-governance/**",
+    "scripts/task-governance.mjs",
+    "scripts/ar-01-inventory.mjs",
+    "tests/helpers/ar-02-runtime-import-closure.ts",
+    "tests/helpers/ar-02-legacy-metadata-observation.ts",
+    "src/application/bounded-storefront-synthesis/direction-contract.ts",
+    "src/application/prompted-storefront-design-intent/semantic-request.ts",
+    "docs/AR_00_*",
+    "docs/AR_01_*",
+    "docs/AR_02A_*",
+    "docs/AR_02B_*",
+    "docs/AR_02C_*",
+    "docs/AR_02D_*",
+    "docs/AR_02E_*",
+    "docs/AR_02F_*",
+    "docs/AR_03A_*",
+    "docs/governance/task-contracts/AR/AR-00.json",
+    "docs/governance/task-contracts/AR/AR-01.json",
+    "docs/governance/task-contracts/AR/AR-02A.json",
+    "docs/governance/task-contracts/AR/AR-02B.json",
+    "docs/governance/task-contracts/AR/AR-02C.json",
+    "docs/governance/task-contracts/AR/AR-02D.json",
+    "docs/governance/task-contracts/AR/AR-02E.json",
+    "docs/governance/task-contracts/AR/AR-02F.json",
+    "docs/governance/task-contracts/AR/AR-03A.json",
+    "docs/BATCH_01_EXECUTION.md",
+    "docs/BATCH_02_EXECUTION.md",
+    "docs/BATCH_03_EXECUTION.md"
+  ],
+  "noTouchAreas": [
+    "The nine original allowed paths are presence only: no editing, staging, tracking, deletion, move or ignore. Preserve unrelated work, all previous branches/worktrees and all original/prior evidence.",
+    "One production file only. Change its renderer import to commerceUtilityMetadata and the necessary sound readonly string[] view of the same variants tuple. No copy, any, double assertion, algorithm, schema, signature, errors, defaults, variants, runtime renderer, registry, manifest or materializer changes.",
+    "Only the four named G historical source readers may change their source read/hash and accurate assertion descriptions. Preserve all live inactivity/reachability, schema/version/behavior checks. Original A-10 inventories, closure manifest, hashes, accepted goldens and old contracts/reports remain unchanged. Archive G source verbatim as non-executable .ts.txt; do not add H archive/transition yet. Semantic amendment01 adds only the exact A-10A helper archive/record and A-10C predecessor-reader branch. Preserve all eleven original frozenFiles entries/hashes; other ten direct readRepository checks, global reader and current readRetainedInventory execution remain. No changes to accepted A-10C tests/closure fixture or any further pin. Current A-10A helper raw01d8f531a70f622938ea67a0863b33c48b158e99fbdc8f26277ffa8bfd2ac182 remains fixed through G/H.",
+    "The test-only transition reader (target <=180 lines) permits only the two owner-named production paths plus tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts, validates strict unique records and regular relative non-symlink files, requires original/archive and fixed literal current successor raw pins, and never normalizes source or computes its expected successor from tested bytes. Every untransitioned path retains current raw hash checking. Archive bytes feed explicitly historical aggregates only.",
+    "One writer and coordinator-only Git/PR mutation. No agent/config/permission changes. Current-branch IDE vscode-merge-base bookkeeping may be observed if exact in-memory removal recovers the preserved hash; never rewrite config. Original workspace only, no new worktree, no third task.",
+    "Declared generated outputs: existing node_modules/.vite-temp/** and node_modules/.vite/** caches, tsconfig.tsbuildinfo, existing exporter staging and two deterministic DOCX outputs; macOS ar-00-check-* and ar-02b-runtime-* fixtures; temporary ar-02-retained-source-* negative fixtures and ar-02g-diff-* disposable index/objects; assigned /private/tmp/veskify-batch-04/ar-02g reports/observation outputs. Reviewed inputs, original archives, pinned baselines and real Git index are forbidden verifier writes.",
+    "This continuation changes only the nine literal paths in pinned amendment01/incremental-paths.json relative to the frozen blocked implementation. Preserve all other existing G implementation bytes. Additional archive195 lines counts as text. No imports/execution of archives or A-10A/A-10C from the transition reader; no cycle, generic test-directory allowance, global readRepository relaxation or cached closure substitution.",
+    "Declared amended check outputs additionally include amendment01 implementer/verifier report directories; normal Vitest mock state (no checkout mutation); existing /private/tmp/veskify-p10b-19a-09b-final-replay-comparison.json and /private/tmp/veskify-p10b-19a-09c-final-publication-comparison.json temporary replay reports, whose previous bytes are retained. Never enable VESKIFY_A10C_WRITE_PRE_GATE or VESKIFY_A10C_WRITE_FINAL."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "Exactly one production file, <=100 production additions plus deletions; original native production targets/hard limits unchanged. Overall handwritten additions target1950/hard3100 and deletions hard1600. Increment relative to blocked-01 is target450/hard600 additions and hard100 deletions including the195-line helper archive. Only existing two DOCX exclusions. Transition reader target180 lines and reports target800 words. Owner semantic amendment01 authorizes this bounded increase only.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic documentation export, generated only by its existing exporter when its owned authoritative source changes."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic documentation export, generated only by its existing exporter when its owned authoritative source changes."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Coordinator GitHub fetch/observation, verified commits/push, one public G PR and one automatic review, bounded review/CI up to90minutes/30observations minimum3minutes apart, final exact-head/base gates then expected-head-protected merge commit under retained standing authority. No override, second review request, verifier network, provider/Vesko/image/deployment/publication call."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Read commerceUtilityMetadata.variants from its existing leaf; use a sound readonly string[] view without copying for defaultVariant membership. Preserve utility profile algorithms exactly. Add one test-only strict source-transition reader/record and verbatim non-executable G archive, adapting only the four approved historical hash readers while retaining old aggregate constants. Prove current behavior separately with full pre-edit/final observation and scoped tests. Amendment01 preserves the original A-10A helper as non-executable data and verifies its fixed current successor; only the A-10C predecessor branch for that exact path reads verified historical bytes, while current A-10A validation still executes.",
+    "canonicalAuthorityExtended": "Existing commerce-utility-metadata.ts remains sole variant authority; existing utility profile, template registry, V2 and capability manifest owners remain canonical. Test transition records express reviewed current-source succession, not replacement product or historical authority.",
+    "namedCurrentConsumers": [
+      "validateCommercialUtilityProfileLibrary; existing template registry and capability manifest metadata readers",
+      "Existing utility materializer and prompted capability-projection/request leaves; historical A-03/A-04/A-07/A-10 source guards",
+      "A-10C verifyFrozenPredecessorBytes and createClosureCandidate; ten unrelated predecessors retain current raw equality."
+    ],
+    "rejectedShortcuts": [
+      "Copying variants, broadening accepted values or replacing validation with a no-op; importing then filtering rendering.",
+      "Rehashing old inventories/aggregate goldens, blanket allow-drift rules, wildcard transitions, normalized hashes reported as raw current hashes, or post-edit baselines mislabeled pre-edit.",
+      "A second scanner/manifest/profile library, broader template/materializer edits, new status framework, full parent completion or visual/bundle claims."
+    ],
+    "expectedFailureBehavior": "Unknown/stale/malformed utility authority retains identical errors and unchanged inputs. Source reader rejects current/archive/pin/path/record corruption and leaves unrelated raw-source protection active. Any unexpected renderer/execution edge or extra frozen-record write blocks scope. Rollback coherently reverts G import plus its archive/reader/guard adaptation; no persisted representation changes.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Original root/base/branch and merged PR244 exacthead verified; nine originals untracked/hash-identical, unowned inputs/858 prior evidence files and existing branches/worktrees preserved. Exactly one production and literal ancillary paths; budgets and sanitized submission hold.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Only utility import and necessary same-array readonly string[] view change. Complete utility-profile/template-registry/capability-manifest runtime closures exclude renderer TSX/CSS, React/ReactDOM, Next/Puck/UI, legacy runtime registry, acceptance and complete-store execution. Reuse unchanged AR-02B resolver; inspect erased types, all package/unresolved edges and downstream utility materializer/capability-projection/request changes without modifying them.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Full pinned pre-edit/final observations match exact values/fingerprints: six utility profiles/getters/freezing, 53 profiles,29V2 definitions/manifest entries, complete materialization,EN/FI rendering,33 registrations/52 existing findings. Preserve versions,slots,frames,signatures,transform relationships/errors and immutable inputs. Historical preview/publication replay and current utility actions/loading/mismatch pass. Semantic bb645147d5be601a9d1f46a4c6bfdd18111183aee0c151ddeff22d020b6e5871 and historical aggregate068da1456be8921ec1014bc10701f629be5afb770910efb0fe91a86c75b9167b remain unchanged. Compare all 2463080 baseline bytes at SHA-256 717daec93a8db692989e468efd6208f1f55fd2861f3415f563c9182ce1e87020; graph observations are separately retained because this task intentionally changes graph reachability.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "G archive equals original230line source and rawcacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0 at base9bdc045. Strict test-only record binds exact path/task/archive/base/original and fixed literal final successor raw pin. Validate current successor before returning historical archive for old aggregates. Untransitioned files keep original current equality; records only permit G/H, G adds only G. Altered current source, missing/altered archive, wrong historical/successor pin, unknown/duplicate/malformed/path-escaping/symlink record and unrelated protected edit all fail in temporary fixtures. Unsupported variant, stale signature, invalid frame/transform and malformed library preserve errors. Reinstated runtime renderer edge must fail dependency tests.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Minimal merge-effective projections close only G and select H under BATCH04; BATCH01/02/03 remain complete history, AR02/03 Partial and AR23 eligible/unstarted. Explain original versus current successor hashes and accurate remaining compiler/materializer/semantic-request boundaries. Existing parser/status guard and deterministic tracker cover/body/SDD exports agree. No new architecture, generic governance or parent-completion claim.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-04"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Pause writers; configured independent verifier confirms active root/output restrictions, freezes complete input/index bytes and actually executes every declared check. Native reconciliation PASS binds exact complete diff before commit/push. One automatic review and exact final head/base CI including validate remain separate gates; record standing owner authorization for exact PR/head before protected merge without override/newroutineapproval. Preserve evidence, safely synchronize original main and only then begin H.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Authorized semantic amendment preserves original contract/lock/fingerprint/BLOCKED01/support; machine-readable exact comparison and new fixed raw/canonical pin bind sameGbranch/base. Archive original195-line A-10A helper SHA256 b100d6e3bff1c7cb3e25c83d886b991a7e95e9a231b1d6c0a98d0dc59c940073 and verify fixed current successor01d8f531a70f622938ea67a0863b33c48b158e99fbdc8f26277ffa8bfd2ac182. Only A-10C exact predecessor branch uses historical reader; all eleven old hashes/evidence fingerprints and other ten raw checks remain. Current A-10A validation executes. Existing A-10C suites actually collect/pass; full closure fixture raw757c0febf40da2e893f99795dc12bbf1e5bf933fe55b326cab512f80f35d67b1 and candidate/decision/closure/plan/limitations unchanged. Actual reader tests reject altered current helper, missing/tampered archive, wrong historical/successor pins, unrelated predecessor edits, unknown/duplicate/path-escaping records and symlink substitution, without checkout corruption. Incremental and overall budgets hold; further unapproved pins stop.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for discrepancy or unsupported proof; preserve inputs. BLOCKED only for unavailable required evidence/action. No submission before independent/native PASS."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-02g-template-capability-boundary.test.ts tests/unit/ar-02f-v2-metadata-adaptation.test.ts tests/unit/ar-02a-renderer-observation-boundary.test.ts tests/unit/ar-02c-utility-metadata.test.ts tests/unit/p10a-registry-renderer-conformance.test.ts tests/unit/p10a-generated-component-capability-manifest.test.ts tests/unit/p10b-13-commerce-utility-presentation.test.tsx tests/unit/storefront-templates.test.ts tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/unit/p10b-19a-10c-closure-manifest.test.ts tests/integration/p10b-19a-10c-architecture-closure.test.ts tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx tests/integration/p10b-19a-09c-publication-render-replay.test.tsx tests/unit/ar-00-architecture-reset-adoption.test.ts tests/unit/ar-02g-closure-transition.test.ts",
+      "purpose": "New G boundary/behavior/transition adversarial tests, required historical guards, unchanged current capability/utility behavior and A09B/C replay. Includes amendment actual A-10C collection/closure and adversarial reader proof; long unchanged A-10A matrix runs separately in VALIDATION-13 for clear failure isolation, without dropping coverage.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "AR02G_REPEATABLE_OBSERVATION_OUTPUT=/private/tmp/veskify-batch-04/ar-02g/final-observation.json pnpm exec vitest run --config /private/tmp/veskify-batch-04/ar-02g/preflight-02/observation.config.ts",
+      "purpose": "Unchanged pinned pre-edit observation harness reproduces complete current values for byte comparison.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-04/AR-02G/amendment-01/check-integrity.py",
+      "purpose": "Pinned support, originals/prior evidence/unowned sources, complete observation equality, scope and default-whitespace over entire diff including new archive using temporary index only. Also verifies original G evidence, unchanged pre-amendment implementation outside nine paths and incremental600/100 plus overall3100/1600 handwritten budgets.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "node scripts/check-architecture-reset-adoption.mjs",
+      "purpose": "Verify exact merge-effective child progression and retained parent/AR-23 states.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Verify retained requirement coverage.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Verify documentation tooling coverage.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Verify deterministic current SDD export.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Verify deterministic tracker export.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:validate",
+      "purpose": "Validate repository documentation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm typecheck",
+      "purpose": "Verify declaration inference and existing consumer compile compatibility.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm exec eslint src/application/storefront-templates/commercial-utility-profiles.ts tests/helpers/ar-02-retained-source-transition.ts tests/unit/ar-02g-template-capability-boundary.test.ts tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs tests/helpers/p10b-19a-10c-architecture-closure.ts tests/unit/ar-02g-closure-transition.test.ts",
+      "purpose": "Focused lint all changed code/guards/test-only helpers.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm exec prettier --check src/application/storefront-templates/commercial-utility-profiles.ts tests/helpers/ar-02-retained-source-transition.ts tests/fixtures/ar-02-retained-source-transitions.v1.json tests/unit/ar-02g-template-capability-boundary.test.ts tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts docs/AR_02G_APPROACH.md docs/AR_02G_IMPLEMENTATION_REPORT.md docs/governance/task-contracts/AR/AR-02G.json docs/BATCH_04_EXECUTION.md README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs tests/helpers/p10b-19a-10c-architecture-closure.ts tests/unit/ar-02g-closure-transition.test.ts",
+      "purpose": "Format all owned handwritten source/docs/record including documentary contract; archive raw bytes deliberately untouched.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts",
+      "purpose": "Execute the complete existing A-10A retained source/126-case semantic matrix suite on final amended inputs; not replaced by prior1021 passes.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Complete native diff identity, pinned contract/support and scope/original/prior-evidence preservation; frozen verifier input/index hashes and unchanged-result proof.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Pinned complete pre-edit/final profile/definition/manifest/materialization/render/conformance observations, exact runtime roots and package edges, original archived versus fixed current successor raw identities and strict source-transition negative controls. Include exact historical eleven-entry closure evidence, unchanged closure fixture, current A-10A successor execution and amendment failure controls.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual implementer and independent focused Vitest/observation totals, typecheck and focused lint commands with exit results; meaningful negative cases and input immutability.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "command",
+      "description": "Current projection checks, documentation/requirements/tooling and deterministic SDD/tracker checks, affected-file formatting and actual exit results.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-merge",
+    "criteria": [
+      "Bind retained direct BATCH04 owner launch/runbook to exact G owning public PR/final verified head/base, unchanged authorized scope and source transition, independent/native PASS, one completed automatic review/resolved findings and green required CI including validate. Record then merge with expected-head protection/no override; no new routine owner reply."
+    ]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Workspace collision, unknown inputs, out-of-scope source/guard/frozen-record write, canonical/behavior conflict, source hash mismatch, unresolved closure or hard-budget breach.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Independent substantive correction plus one rerun exhausted; one formatting-only contract correction requires original retained/identical parsed content and canonical identity/fixed replacementrawpin and independent finalverification. One explicitly owner-approved semantic reissue is amendment01 on the sameGbranch/base, preserving originals and recording changed identities; no further semantic reissue is authorized. Earlier implementer collection failure is not an independent attempt. Normal first verification plus the existing one correction/rerun allowance remains.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Single automatic-review correction exhausted or per-head90minute/30observation limit reached, minimum3minutes apart and final observation within allowance. No successfulCI restart or secondreviewrequest.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Standing authority cannot bind exact finalhead/base/gates, managed action denial remains, or both G/H and batch closeout complete. No thirdtask or furtherroadmap execution.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-02H",
+    "title": "Narrow semantic request imports to the original schema owners",
+    "eligibility": "Only after verified G merge, stopped writer and safe synchronization of original checkout. Separate preflight/immutable contract/branch/PR under the same direct owner standing conditional authority. No thirdtask."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
