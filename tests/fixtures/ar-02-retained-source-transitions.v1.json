@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "transitions": [
+    {
+      "taskId": "AR-02G",
+      "path": "src/application/storefront-templates/commercial-utility-profiles.ts",
+      "baseCommit": "9bdc045042ec8b1be27b971f5651a02edaf98468",
+      "originalSha256": "cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0",
+      "archivePath": "tests/fixtures/ar-02g/commercial-utility-profiles.pre-ar-02g.ts.txt",
+      "successorSha256": "f363ed045cb0c974efa0eb8aa497037ff143a36cc125bf63c200a49d95af462c"
+    },
+    {
+      "taskId": "AR-02G",
+      "path": "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts",
+      "baseCommit": "9bdc045042ec8b1be27b971f5651a02edaf98468",
+      "originalSha256": "b100d6e3bff1c7cb3e25c83d886b991a7e95e9a231b1d6c0a98d0dc59c940073",
+      "archivePath": "tests/fixtures/ar-02g/p10b-19a-10a-retained-matrix-inventory.pre-ar-02g.ts.txt",
+      "successorSha256": "01d8f531a70f622938ea67a0863b33c48b158e99fbdc8f26277ffa8bfd2ac182"
+    }
+  ]
+}

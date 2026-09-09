@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { commerceUtilityMetadata } from "@/components/registry/commerce-utility-metadata";
+import { commerceUtilityDefinition } from "@/components/registry/commerce-utility";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import { getCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import {
@@ -201,8 +201,7 @@ export function validateCommercialUtilityProfileLibrary(
     if (!authority || !slot || slot.sectionType !== "commerceUtility" || plan.slots.length !== 1)
       throw new Error("Commercial utility profiles require the registered utility component.");
     authority.compatibleSharedFrameProfileIds.forEach(getCommercialSharedFrameProfile);
-    const variants: readonly string[] = commerceUtilityMetadata.variants;
-    if (!variants.includes(slot.defaultVariant))
+    if (!commerceUtilityDefinition.variants.includes(slot.defaultVariant))
       throw new Error("Commercial utility profile selects an unregistered variant.");
     authority.responsiveArchitecture.forEach((entry) =>
       entry.transformationIds.forEach((id) => {
