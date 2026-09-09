@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02D");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02E");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -638,13 +638,13 @@ describe("AR-00 architecture-reset adoption guard", () => {
   it.each([
     "AR-30 is the exact next selected child after the pilot.",
     "AR-30 is the selected successor after the pilot.",
-  ])("rejects any successor other than AR-02E after AR-02D: %s", (successor) => {
+  ])("rejects any successor other than AR-02F after AR-02E: %s", (successor) => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "AR-02E is the selected successor after AR-02D acceptance;",
+        "AR-02F is the selected successor after AR-02E acceptance.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -661,7 +661,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "AR-02E is the selected successor after AR-02D acceptance;",
+        "AR-02F is the selected successor after AR-02E acceptance.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);

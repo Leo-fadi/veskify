@@ -59,7 +59,11 @@ export function observeLegacyMetadata({
           variant,
           locale,
           html: renderToStaticMarkup(
-            definition.render(section(definition, variant), context(locale), "home"),
+            definition.render(
+              section(definition, variant),
+              context(locale),
+              definition.allowedPageTypes[0],
+            ),
           ),
         })),
       ),
