@@ -1,8 +1,10 @@
 import { z } from "zod";
-import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system/contract";
-import { commercialCollectionSearchProfileIdSchema } from "@/application/storefront-templates/commercial-collection-search-profiles";
-import { commercialHomepageProfileIdSchema } from "@/application/storefront-templates/commercial-homepage-profiles";
-import { commercialPdpProfileIdSchema } from "@/application/storefront-templates/commercial-pdp-profiles";
+import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system";
+import {
+  commercialCollectionSearchProfileIdSchema,
+  commercialHomepageProfileIdSchema,
+  commercialPdpProfileIdSchema,
+} from "@/application/storefront-templates";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import {
   canonicalValueFingerprint,

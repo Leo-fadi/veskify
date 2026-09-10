@@ -1,11 +1,11 @@
 # Veskify Development Delivery Tracker
 
-> **Candidate status effective upon explicit owner acceptance/merge of AR-02G:** This projection does not
+> **Candidate status effective upon explicit owner acceptance/merge of AR-02H:** This projection does not
 > claim that this PR has merged or that owner acceptance has occurred.
-> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed.** AR-02C is **Baseline / closed.** AR-02D is **Baseline / closed.** AR-02E is **Baseline / closed.** AR-02F is **Baseline / closed.** AR-02G is **Baseline / closed upon explicit owner acceptance/merge.**
+> **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed.** AR-02C is **Baseline / closed.** AR-02D is **Baseline / closed.** AR-02E is **Baseline / closed.** AR-02F is **Baseline / closed.** AR-02G is **Baseline / closed.** AR-02H is **Baseline / closed upon explicit owner acceptance/merge.**
 > AR-02 is **Partial**; remaining consumer/materializer isolation remains. AR-03 is **Partial**; route resolution, editor, migration, and expand/fold isolation remain.
 > AR-03A is **Baseline / closed.** AR-23 is **Planned / unstarted**. AR-23 depends on AR-01 and is not serialized behind
-> visual work. BATCH-03 is complete. AR-02H is the sole next reset task, eligible only after AR-02G acceptance/merge. This tracker owns current status; the roadmap owns dependency order.
+> visual work. BATCH-03 is complete. BATCH-04 is complete upon H acceptance/merge. No next reset task is selected. This tracker owns current status; the roadmap owns dependency order.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
@@ -26,7 +26,7 @@ Implementation status and evidence level are separate. A task is not done becaus
 or partial implementation exists. The checkbox changes only when the task's complete outcome and
 required evidence are accepted.
 
-| Child  | Parent | Bounded outcome and evidence                                                                                                                                                                  | Status effective on AR-02G acceptance/merge |
+| Child  | Parent | Bounded outcome and evidence                                                                                                                                                                  | Status effective on AR-02H acceptance/merge |
 | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | AR-02A | AR-02  | Separate live renderer observation and composition; [contract](governance/task-contracts/AR/AR-02A.json), [report](AR_02A_IMPLEMENTATION_REPORT.md)                                           | **Baseline / closed**                       |
 | AR-02B | AR-02  | Extract renderer-free deterministic conformance evaluation; [contract](governance/task-contracts/AR/AR-02B.json), [report](AR_02B_IMPLEMENTATION_REPORT.md)                                   | **Baseline / closed**                       |
@@ -35,8 +35,8 @@ required evidence are accepted.
 | AR-02D | AR-02  | Extract homepage and hero renderer-free metadata; [contract](governance/task-contracts/AR/AR-02D.json), [report](AR_02D_IMPLEMENTATION_REPORT.md)                                             | **Baseline / closed**                       |
 | AR-02E | AR-02  | Extract collection and product renderer-free metadata; [contract](governance/task-contracts/AR/AR-02E.json), [report](AR_02E_IMPLEMENTATION_REPORT.md)                                        | **Baseline / closed**                       |
 | AR-02F | AR-02  | Adapt V2 definitions from shared renderer-free metadata; [contract](governance/task-contracts/AR/AR-02F.json), [report](AR_02F_IMPLEMENTATION_REPORT.md)                                      | **Baseline / closed**                       |
-| AR-02G | AR-02  | Renderer-free template capability boundary and explicit utility historical-source transition; [contract](governance/task-contracts/AR/AR-02G.json), [report](AR_02G_IMPLEMENTATION_REPORT.md) | **Baseline / closed** upon acceptance/merge |
-| AR-02H | AR-02  | Narrow semantic-request schema imports; second named child in [BATCH-04](BATCH_04_EXECUTION.md), eligible after G merge                                                                       | **Planned / unstarted**                     |
+| AR-02G | AR-02  | Renderer-free template capability boundary and explicit utility historical-source transition; [contract](governance/task-contracts/AR/AR-02G.json), [report](AR_02G_IMPLEMENTATION_REPORT.md) | **Baseline / closed**                       |
+| AR-02H | AR-02  | Semantic request boundary and explicit direction historical-source transition; [contract](governance/task-contracts/AR/AR-02H.json), [report](AR_02H_IMPLEMENTATION_REPORT.md)                | **Baseline / closed** upon acceptance/merge |
 
 ## Overall phase checklist
 

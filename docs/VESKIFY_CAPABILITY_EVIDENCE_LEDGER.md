@@ -6,6 +6,9 @@
 > its metadata-only current successor. Of 76 A-10 source identities, 75 current raw hashes remain
 > unchanged and one has this explicit transition; historical aggregate constants remain unchanged.
 > See [AR-02G evidence](AR_02G_IMPLEMENTATION_REPORT.md) and the [BATCH-04 mapping](BATCH_04_EXECUTION.md).
+> AR-02H preserves the original direction source and all G transitions while narrowing semantic
+> request preparation to its existing schema owners. Exact requests, errors and replay remain;
+> see [AR-02H evidence](AR_02H_IMPLEMENTATION_REPORT.md). Full compiler/materializer isolation remains.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

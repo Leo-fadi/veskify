@@ -327,7 +327,9 @@ function fingerprintProtectedAuthority(repositoryRoot: string): string {
         expectedHistoricalSha256:
           path === "src/application/storefront-templates/commercial-utility-profiles.ts"
             ? "cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0"
-            : undefined,
+            : path === "src/application/bounded-storefront-synthesis/direction-contract.ts"
+              ? "f62ab54f221d084a0f593d2a090feca7ba9ddce4f9d23dcf8688960f4d8d1b28"
+              : undefined,
       }),
     );
     hash.update("\0");
