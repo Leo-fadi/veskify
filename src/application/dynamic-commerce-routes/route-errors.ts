@@ -22,3 +22,11 @@ export class DynamicCommerceRouteAuthorityError extends Error {
     this.name = "DynamicCommerceRouteAuthorityError";
   }
 }
+
+export function failDynamicCommerceRouteAuthority(
+  code: DynamicCommerceRouteAuthorityErrorCode,
+  message: string,
+  cause?: unknown,
+): never {
+  throw new DynamicCommerceRouteAuthorityError(code, message, cause ? { cause } : undefined);
+}

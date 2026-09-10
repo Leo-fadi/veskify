@@ -9,6 +9,10 @@
 > AR-02H preserves the original direction source and all G transitions while narrowing semantic
 > request preparation to its existing schema owners. Exact requests, errors and replay remain;
 > see [AR-02H evidence](AR_02H_IMPLEMENTATION_REPORT.md). Full compiler/materializer isolation remains.
+> AR-03B separates renderer-free presentation construction and the existing narrow historical
+> compatibility from the route facade. Public migration, errors and rendered behavior remain
+> unchanged; see [AR-03B evidence](AR_03B_IMPLEMENTATION_REPORT.md). Route resolution and editor
+> composition remain in the facade until their separately verified extraction.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

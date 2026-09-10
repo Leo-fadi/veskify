@@ -1,3 +1,26 @@
+import {
+  GENERIC_PDP_ARCHETYPE_ID,
+  collectionArchetypeId,
+  productArchetypeId,
+  type LegacyDynamicPresentationEntry,
+  collectionPresentation,
+  productPresentation,
+  createCollectionArchetype,
+  createProductArchetype,
+} from "./archetype-presentation";
+import { migrateP10B18B03PresentationAuthority } from "./presentation-compatibility";
+import {
+  type DynamicCommerceMigrationDecision,
+  type DynamicCommerceMigrationResult,
+  DynamicCommerceMigrationError,
+} from "./migration-contract";
+import { projectSectionStyleOverrides } from "./presentation-style";
+import { failDynamicCommerceRouteAuthority as fail } from "./route-errors";
+export {
+  DynamicCommerceMigrationError,
+  type DynamicCommerceMigrationDecision,
+  type DynamicCommerceMigrationResult,
+} from "./migration-contract";
 import { z } from "zod";
 import {
   getCommercialCollectionSearchProfile,
@@ -14,11 +37,6 @@ import {
   selectProductComplexityRule,
   type DynamicCommerceCollectionMatchContext,
 } from "./route-selection";
-import {
-  DynamicCommerceRouteAuthorityError,
-  type DynamicCommerceRouteAuthorityErrorCode,
-} from "./route-errors";
-
 export {
   dynamicCommerceRouteAuthorityErrorCodes,
   DynamicCommerceRouteAuthorityError,
@@ -36,15 +54,10 @@ export {
 import {
   dynamicCollectionCommerceBridgeContentSchema,
   dynamicCollectionCommerceContentSchema,
-  dynamicCollectionCommerceDefaultContent,
-  dynamicCollectionCommerceDefaultProps,
-  dynamicCollectionCommerceDefaultStyleOverrides,
   dynamicCollectionCommercePropsSchema,
   dynamicCollectionCommerceStyleOverridesSchema,
   dynamicProductDetailBridgeContentSchema,
   dynamicProductDetailContentSchema,
-  dynamicProductDetailDefaultContent,
-  dynamicProductDetailDefaultStyleOverrides,
   dynamicProductDetailPropsSchema,
   dynamicProductDetailStyleOverridesSchema,
   veskifyComponentDefinitionsV2,
@@ -69,8 +82,6 @@ import {
   storefrontSnapshotSchema,
   type DynamicCommerceCollectionSearchArchetype,
   type DynamicCommerceCollectionContextRule,
-  type DynamicCommerceApprovedAssetSelection,
-  type DynamicCommerceComponentPresentation,
   type DynamicCommercePresentationAuthority,
   type DynamicCommerceProductComplexityRule,
   type DynamicCommerceRouteInventoryEntry,
@@ -80,65 +91,6 @@ import {
   type SectionInstance,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
-
-const COLLECTION_PROFILE_TO_ARCHETYPE = {
-  "collection-editorial-discovery": "archetype_collection_editorial",
-  "collection-catalogue-comparison": "archetype_collection_comparison",
-  "collection-campaign-led-discovery": "archetype_collection_campaign",
-  "collection-dense-search": "archetype_collection_search_dense",
-} as const;
-
-const PDP_PROFILE_TO_ARCHETYPE = {
-  "pdp-standard-commerce": "archetype_pdp_standard",
-  "pdp-high-consideration": "archetype_pdp_high_consideration",
-  "pdp-gallery-led": "archetype_pdp_gallery",
-  "pdp-variant-led": "archetype_pdp_configurable",
-} as const;
-
-const GENERIC_PDP_ARCHETYPE_ID = "archetype_pdp_generic_fallback" as const;
-
-export type DynamicCommerceMigrationDecision = Readonly<{
-  code:
-    | "missing-route-identity"
-    | "missing-catalogue-identity"
-    | "missing-profile-identity"
-    | "unknown-profile"
-    | "unknown-commerce-identity"
-    | "invalid-route-namespace"
-    | "route-family-component-mismatch"
-    | "invalid-legacy-schema"
-    | "unsupported-legacy-layout"
-    | "conflicting-legacy-presentation"
-    | "conflicting-product-type-mapping"
-    | "dynamic-parent-reference";
-  routeIds: readonly string[];
-  message: string;
-}>;
-
-export type DynamicCommerceMigrationResult =
-  | Readonly<{
-      status: "current";
-      snapshot: StorefrontSnapshot;
-      authority: DynamicCommercePresentationAuthority;
-    }>
-  | Readonly<{
-      status: "migrated";
-      snapshot: StorefrontSnapshot;
-      authority: DynamicCommercePresentationAuthority;
-      migratedRouteCount: number;
-    }>
-  | Readonly<{
-      status: "requires-decision";
-      snapshot: StorefrontSnapshot;
-      decisions: readonly DynamicCommerceMigrationDecision[];
-    }>;
-
-export class DynamicCommerceMigrationError extends Error {
-  constructor(readonly decisions: readonly DynamicCommerceMigrationDecision[]) {
-    super("Legacy dynamic-commerce pages require an explicit migration decision.");
-    this.name = "DynamicCommerceMigrationError";
-  }
-}
 
 export const dynamicCommerceDesignSelectionSchema = z
   .object({
@@ -186,24 +138,6 @@ export class DynamicCommerceDesignSelectionError extends Error {
   }
 }
 
-function fail(
-  code: DynamicCommerceRouteAuthorityErrorCode,
-  message: string,
-  cause?: unknown,
-): never {
-  throw new DynamicCommerceRouteAuthorityError(code, message, cause ? { cause } : undefined);
-}
-
-function collectionArchetypeId(profileId: string): string {
-  return (
-    COLLECTION_PROFILE_TO_ARCHETYPE[profileId as keyof typeof COLLECTION_PROFILE_TO_ARCHETYPE] ?? ""
-  );
-}
-
-function productArchetypeId(profileId: string): string {
-  return PDP_PROFILE_TO_ARCHETYPE[profileId as keyof typeof PDP_PROFILE_TO_ARCHETYPE] ?? "";
-}
-
 export function registeredDynamicCommerceCollectionArchetypeId(profileId: string): string {
   const archetypeId = collectionArchetypeId(profileId);
   if (!archetypeId) {
@@ -214,530 +148,6 @@ export function registeredDynamicCommerceCollectionArchetypeId(profileId: string
 
 export function dynamicCommerceRouteSectionId(routeId: string, archetypeId: string): string {
   return idSchema.parse(`section_${routeId}_${archetypeId}`);
-}
-
-type LegacyDynamicPresentationEntry = Readonly<{
-  page: PageModel;
-  section: SectionInstance;
-}>;
-
-function compactApprovedAssetSelections(
-  entries: readonly LegacyDynamicPresentationEntry[],
-  expectedComponent: "dynamicCollectionCommerce" | "dynamicProductDetail",
-): DynamicCommerceApprovedAssetSelection[] {
-  const definition = veskifyComponentDefinitionsV2.find(({ type }) => type === expectedComponent);
-  if (!definition) {
-    return fail(
-      "invalid-presentation",
-      `Registered ${expectedComponent} approved-asset authority is unavailable.`,
-    );
-  }
-  const routeSelections = entries.map(({ page, section }) => {
-    if (section.component !== expectedComponent) {
-      return fail(
-        "invalid-presentation",
-        "A compact dynamic-commerce asset selection targets the wrong component family.",
-      );
-    }
-    return (section.approvedAssetPlacements ?? [])
-      .map((placement) => {
-        const slot = definition.assetSlots.find(({ id }) => id === placement.assetSlotId);
-        if (!slot || !slot.acceptedRoles.includes(placement.role)) {
-          return fail(
-            "invalid-presentation",
-            "An approved dynamic-commerce asset is incompatible with its registered slot.",
-          );
-        }
-        const presentation = (section.approvedAssetPresentations ?? []).find(
-          (candidate) =>
-            candidate.assetId === placement.assetId &&
-            candidate.asset.id === placement.assetId &&
-            candidate.role === placement.role &&
-            candidate.revision === placement.assetRevision &&
-            candidate.materialFingerprint === placement.materialFingerprint,
-        );
-        if (
-          placement.pageId !== page.id ||
-          placement.componentId !== section.id ||
-          placement.componentType !== section.component ||
-          !presentation
-        ) {
-          return fail(
-            "invalid-presentation",
-            "A dynamic-commerce approved asset has incomplete canonical placement authority.",
-          );
-        }
-        return {
-          assetSlotId: placement.assetSlotId,
-          assetId: placement.assetId,
-          role: placement.role,
-          assetRevision: placement.assetRevision,
-          materialFingerprint: placement.materialFingerprint,
-          sourceReferenceId: placement.sourceReferenceId,
-          ...(placement.sourceProvenanceKind
-            ? { sourceProvenanceKind: placement.sourceProvenanceKind }
-            : {}),
-          ...(placement.placementContext ? { placementContext: placement.placementContext } : {}),
-          ...(placement.placementPurpose ? { placementPurpose: placement.placementPurpose } : {}),
-          ...(placement.reusePolicy ? { reusePolicy: placement.reusePolicy } : {}),
-          ...(placement.affinity ? { affinity: placement.affinity } : {}),
-          ...(placement.responsiveSourceAssetIds
-            ? { responsiveSourceAssetIds: [...placement.responsiveSourceAssetIds] }
-            : {}),
-          required: placement.required,
-          presentation: structuredClone(presentation),
-        } satisfies DynamicCommerceApprovedAssetSelection;
-      })
-      .sort(
-        (left, right) =>
-          left.assetSlotId.localeCompare(right.assetSlotId) ||
-          left.assetId.localeCompare(right.assetId),
-      );
-  });
-  const reusable = routeSelections[0] ?? [];
-  const reusableFingerprints = new Set(
-    reusable
-      .filter((selection) =>
-        routeSelections.every((selections) =>
-          selections.some(
-            (candidate) => canonicalValueString(candidate) === canonicalValueString(selection),
-          ),
-        ),
-      )
-      .map((selection) => canonicalValueString(selection)),
-  );
-  const routesWithNonReusableRequiredAssets = entries.flatMap(({ page }, index) =>
-    (routeSelections[index] ?? []).some(
-      (selection) =>
-        selection.required && !reusableFingerprints.has(canonicalValueString(selection)),
-    )
-      ? [page.id]
-      : [],
-  );
-  if (routesWithNonReusableRequiredAssets.length > 0) {
-    throw new DynamicCommerceMigrationError([
-      {
-        code: "conflicting-legacy-presentation",
-        routeIds: routesWithNonReusableRequiredAssets,
-        message:
-          "Routes sharing one archetype have required approved assets that are not reusable across every route.",
-      },
-    ]);
-  }
-  return reusable
-    .filter((selection) => reusableFingerprints.has(canonicalValueString(selection)))
-    .map((selection) => structuredClone(selection));
-}
-
-function collectionPresentation(
-  profileId: string,
-  legacySection?: SectionInstance,
-  approvedAssetSelections: readonly DynamicCommerceApprovedAssetSelection[] = [],
-): DynamicCommerceComponentPresentation {
-  const plan = getCommercialCollectionSearchProfile(profileId);
-  const authority = plan?.profile?.commercialCollectionSearch;
-  if (!plan?.profile || !authority) fail("stale-profile", "Collection profile is unavailable.");
-  const materialized = materializeExecutablePageBlueprint({
-    pagePlan: plan,
-    componentDefinitions: veskifyComponentDefinitionsV2,
-    availableBindingCategories: ["collection", "productList"],
-  });
-  const slot = materialized.slots[0];
-  if (!slot || slot.component !== "dynamicCollectionCommerce") {
-    fail("stale-profile", "Collection profile has no canonical dynamic component slot.");
-  }
-  let content = structuredClone(dynamicCollectionCommerceDefaultContent);
-  if (legacySection) {
-    const {
-      collectionId: _collectionId,
-      productIds: _productIds,
-      canonicalRevision: _canonicalRevision,
-      ...presentationContent
-    } = legacySection.content;
-    void _collectionId;
-    void _productIds;
-    void _canonicalRevision;
-    content = dynamicCollectionCommerceContentSchema.parse(presentationContent);
-  }
-  const parsedProps = dynamicCollectionCommercePropsSchema.parse(
-    legacySection?.props ?? {
-      ...dynamicCollectionCommerceDefaultProps,
-      gridDensity: authority.gridDensity,
-      cardVariant: authority.productCardAnatomyId,
-      filterLayout: authority.filterLayout,
-      conciseAttributeLimit:
-        authority.productCardAnatomyId === "standard"
-          ? 3
-          : authority.productCardAnatomyId === "horizontal"
-            ? 2
-            : authority.productCardAnatomyId === "imageFirst"
-              ? 1
-              : 0,
-      showChildCollections: authority.childCollectionTreatment !== "omit",
-    },
-  );
-  if (legacySection && parsedProps.cardVariant !== authority.productCardAnatomyId) {
-    fail(
-      "invalid-presentation",
-      "The legacy collection product-card anatomy conflicts with its registered profile.",
-    );
-  }
-  return {
-    slotId: slot.slotId,
-    component: "dynamicCollectionCommerce",
-    variant: legacySection?.variant ?? slot.variant,
-    anatomyId: authority.productCardAnatomyId,
-    visible: legacySection?.visible ?? true,
-    content,
-    props: structuredClone(parsedProps),
-    styleOverrides: structuredClone(
-      legacySection?.styleOverrides ?? dynamicCollectionCommerceDefaultStyleOverrides,
-    ),
-    boundedParameters: structuredClone(slot.boundedParameters),
-    approvedAssetSelections: approvedAssetSelections.map((selection) => structuredClone(selection)),
-  };
-}
-
-function productPresentation(
-  profileId: string,
-  legacySection?: SectionInstance,
-  approvedAssetSelections: readonly DynamicCommerceApprovedAssetSelection[] = [],
-): DynamicCommerceComponentPresentation {
-  const plan = getCommercialPdpProfile(profileId);
-  const authority = plan?.profile?.commercialProductDetail;
-  if (!plan?.profile || !authority) fail("stale-profile", "PDP profile is unavailable.");
-  const materialized = materializeExecutablePageBlueprint({
-    pagePlan: plan,
-    componentDefinitions: veskifyComponentDefinitionsV2,
-    availableBindingCategories: ["product"],
-  });
-  const slot = materialized.slots[0];
-  if (!slot || slot.component !== "dynamicProductDetail") {
-    fail("stale-profile", "PDP profile has no canonical dynamic component slot.");
-  }
-  let content = structuredClone(dynamicProductDetailDefaultContent);
-  if (legacySection) {
-    const {
-      productId: _productId,
-      relatedProductIds: _relatedProductIds,
-      canonicalRevision: _canonicalRevision,
-      ...presentationContent
-    } = legacySection.content;
-    void _productId;
-    void _relatedProductIds;
-    void _canonicalRevision;
-    content = dynamicProductDetailContentSchema.parse(presentationContent);
-  }
-  const parsedProps = dynamicProductDetailPropsSchema.parse(
-    legacySection?.props ?? {
-      ...authority.dynamicProductDetailProps,
-      relatedCardVariant: authority.relatedProductCardAnatomyId,
-    },
-  );
-  if (legacySection && parsedProps.relatedCardVariant !== authority.relatedProductCardAnatomyId) {
-    fail(
-      "invalid-presentation",
-      "The legacy related-product-card anatomy conflicts with its registered profile.",
-    );
-  }
-  return {
-    slotId: slot.slotId,
-    component: "dynamicProductDetail",
-    variant: legacySection?.variant ?? slot.variant,
-    anatomyId: authority.relatedProductCardAnatomyId,
-    visible: legacySection?.visible ?? true,
-    content,
-    props: structuredClone(parsedProps),
-    styleOverrides: structuredClone(
-      legacySection?.styleOverrides ?? dynamicProductDetailDefaultStyleOverrides,
-    ),
-    boundedParameters: structuredClone(slot.boundedParameters),
-    approvedAssetSelections: approvedAssetSelections.map((selection) => structuredClone(selection)),
-  };
-}
-
-function createCollectionArchetype(
-  profileId: string,
-  legacyEntries: readonly LegacyDynamicPresentationEntry[] = [],
-  supportsSearch = ["collection-catalogue-comparison", "collection-dense-search"].includes(
-    profileId,
-  ),
-): DynamicCommerceCollectionSearchArchetype {
-  const plan = getCommercialCollectionSearchProfile(profileId);
-  const profile = plan?.profile;
-  const authority = profile?.commercialCollectionSearch;
-  if (!plan || !profile || !authority) {
-    return fail("stale-profile", `Collection profile ${profileId} is unavailable.`);
-  }
-  const materialized = materializeExecutablePageBlueprint({
-    pagePlan: plan,
-    componentDefinitions: veskifyComponentDefinitionsV2,
-    availableBindingCategories: ["collection", "productList"],
-  });
-  const id = collectionArchetypeId(profileId);
-  if (!id) return fail("stale-profile", `Collection profile ${profileId} has no archetype ID.`);
-  return {
-    id,
-    archetypeVersion: DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION,
-    family: "collection-search" as const,
-    supportedContexts: supportsSearch
-      ? (["collection", "search"] as const)
-      : (["collection"] as const),
-    profile: {
-      profileId,
-      profileVersion: profile.version,
-      fingerprint: materialized.fingerprint,
-    },
-    compatibleSharedFrameProfileIds: [...authority.compatibleSharedFrameProfileIds],
-    defaultSharedFrameProfileId: authority.defaultSharedFrameProfileId,
-    designDnaNarrowing: structuredClone(authority.designDnaNarrowing),
-    componentPresentations: [
-      collectionPresentation(
-        profileId,
-        legacyEntries[0]?.section,
-        compactApprovedAssetSelections(legacyEntries, "dynamicCollectionCommerce"),
-      ),
-    ],
-    responsivePosture: authority.responsiveArchitecture,
-    artDirectionPosture: {
-      imagePosture: authority.designDnaNarrowing.imagePosture[0],
-      ratio: "natural",
-      crop: authority.designDnaNarrowing.imagePosture[0] === "contained" ? "contain" : "editorial",
-      overlay: "none",
-    },
-    fallbackBehavior: "use-family-fallback",
-    commerceBindingPolicy: "runtime-collection-membership",
-  };
-}
-
-const P10B18B03_LEGACY_COLLECTION_PROFILES = {
-  "collection-catalogue-comparison": {
-    profileFingerprint:
-      "page-blueprint-v1_1822_47ab13e9edd6bdd344b0511153f7a96d81c99a9d74e4ce06872102f30c77b3f9",
-    responsivePosture: [
-      {
-        breakpoint: "mobile",
-        viewport: 375,
-        transformationIds: [
-          "comparisonFilterDisclosure",
-          "comparisonGridReflow",
-          "compactSimplify",
-        ],
-      },
-      {
-        breakpoint: "tablet",
-        viewport: 768,
-        transformationIds: ["comparisonFilterDisclosure", "comparisonGridReflow"],
-      },
-      {
-        breakpoint: "desktop",
-        viewport: 1024,
-        transformationIds: ["comparisonGridReflow"],
-      },
-      {
-        breakpoint: "wide",
-        viewport: 1440,
-        transformationIds: ["comparisonGridReflow"],
-      },
-    ],
-  },
-  "collection-dense-search": {
-    profileFingerprint:
-      "page-blueprint-v1_1876_ba5bddba871565c4c64444103318ba535c16149ff9fb38300e91687abc565a0e",
-    responsivePosture: [
-      {
-        breakpoint: "mobile",
-        viewport: 375,
-        transformationIds: ["denseFilterDisclosure", "denseGridReflow", "compactSimplify"],
-      },
-      {
-        breakpoint: "tablet",
-        viewport: 768,
-        transformationIds: ["denseFilterDisclosure", "denseGridReflow", "compactSimplify"],
-      },
-      {
-        breakpoint: "desktop",
-        viewport: 1024,
-        transformationIds: ["denseGridReflow"],
-      },
-      {
-        breakpoint: "wide",
-        viewport: 1440,
-        transformationIds: ["denseGridReflow"],
-      },
-    ],
-  },
-} as const;
-
-const p10b18b03LegacyCollectionPropsSchema = dynamicCollectionCommercePropsSchema.omit({
-  conciseAttributeLimit: true,
-});
-
-function migrateP10B18B03CollectionArchetype(
-  archetype: DynamicCommerceCollectionSearchArchetype,
-): DynamicCommerceCollectionSearchArchetype {
-  const sorted = (values: readonly string[]) => [...values].sort();
-  const normalizedDesignDnaNarrowing = (value: {
-    spacingDensity: readonly string[];
-    surfaceDepth: readonly string[];
-    imagePosture: readonly string[];
-  }) => ({
-    spacingDensity: sorted(value.spacingDensity),
-    surfaceDepth: sorted(value.surfaceDepth),
-    imagePosture: sorted(value.imagePosture),
-  });
-  const profileId = archetype.profile.profileId;
-  const legacy =
-    P10B18B03_LEGACY_COLLECTION_PROFILES[
-      profileId as keyof typeof P10B18B03_LEGACY_COLLECTION_PROFILES
-    ];
-  if (!legacy || archetype.profile.fingerprint !== legacy.profileFingerprint) return archetype;
-
-  const current = createCollectionArchetype(profileId);
-  const presentation = archetype.componentPresentations[0];
-  const currentPresentation = current.componentPresentations[0];
-  if (
-    archetype.id !== current.id ||
-    archetype.archetypeVersion !== current.archetypeVersion ||
-    archetype.family !== "collection-search" ||
-    archetype.profile.profileVersion !== current.profile.profileVersion ||
-    canonicalValueString(sorted(archetype.supportedContexts)) !==
-      canonicalValueString(sorted(current.supportedContexts)) ||
-    canonicalValueString(sorted(archetype.compatibleSharedFrameProfileIds)) !==
-      canonicalValueString(sorted(current.compatibleSharedFrameProfileIds)) ||
-    archetype.defaultSharedFrameProfileId !== current.defaultSharedFrameProfileId ||
-    canonicalValueString(normalizedDesignDnaNarrowing(archetype.designDnaNarrowing)) !==
-      canonicalValueString(normalizedDesignDnaNarrowing(current.designDnaNarrowing)) ||
-    canonicalValueString(archetype.responsivePosture) !==
-      canonicalValueString(legacy.responsivePosture) ||
-    canonicalValueString(archetype.artDirectionPosture) !==
-      canonicalValueString(current.artDirectionPosture) ||
-    archetype.fallbackBehavior !== current.fallbackBehavior ||
-    archetype.componentPresentations.length !== 1 ||
-    !presentation ||
-    !currentPresentation ||
-    presentation.slotId !== currentPresentation.slotId ||
-    presentation.component !== "dynamicCollectionCommerce" ||
-    presentation.variant !== currentPresentation.variant ||
-    presentation.anatomyId !== "compact" ||
-    canonicalValueString(presentation.boundedParameters) !==
-      canonicalValueString(currentPresentation.boundedParameters)
-  ) {
-    return archetype;
-  }
-
-  const content = dynamicCollectionCommerceContentSchema.safeParse(presentation.content);
-  const props = p10b18b03LegacyCollectionPropsSchema.safeParse(presentation.props);
-  const styleOverrides = dynamicCollectionCommerceStyleOverridesSchema.safeParse(
-    presentation.styleOverrides,
-  );
-  const currentProps = dynamicCollectionCommercePropsSchema.parse(currentPresentation.props);
-  const conciseAttributeLimit = currentProps.conciseAttributeLimit;
-  const currentAnatomyId = currentPresentation.anatomyId;
-  if (
-    !content.success ||
-    !props.success ||
-    !styleOverrides.success ||
-    props.data.cardVariant !== "compact" ||
-    conciseAttributeLimit === undefined ||
-    currentAnatomyId === undefined
-  ) {
-    return archetype;
-  }
-
-  return {
-    ...structuredClone(current),
-    componentPresentations: [
-      {
-        ...structuredClone(currentPresentation),
-        visible: presentation.visible,
-        content: structuredClone(content.data),
-        props: {
-          ...structuredClone(props.data),
-          cardVariant: currentAnatomyId,
-          conciseAttributeLimit,
-        },
-        styleOverrides: structuredClone(styleOverrides.data),
-        approvedAssetSelections: (presentation.approvedAssetSelections ?? []).map((selection) =>
-          structuredClone(selection),
-        ),
-      },
-    ],
-  };
-}
-
-function migrateP10B18B03PresentationAuthority(
-  authority: DynamicCommercePresentationAuthority,
-): Readonly<{ authority: DynamicCommercePresentationAuthority; migrated: boolean }> {
-  const collectionSearchArchetypes = authority.collectionSearchArchetypes.map((archetype) =>
-    migrateP10B18B03CollectionArchetype(archetype),
-  );
-  const migrated = collectionSearchArchetypes.some(
-    (archetype, index) =>
-      canonicalValueString(archetype) !==
-      canonicalValueString(authority.collectionSearchArchetypes[index]),
-  );
-  if (!migrated) return { authority, migrated: false };
-  const { authorityFingerprint: _authorityFingerprint, ...material } = authority;
-  void _authorityFingerprint;
-  return {
-    authority: createDynamicCommercePresentationAuthority({
-      ...structuredClone(material),
-      authorityRevision: authority.authorityRevision + 1,
-      collectionSearchArchetypes,
-    }),
-    migrated: true,
-  };
-}
-
-function createProductArchetype(
-  profileId: string,
-  legacyEntries: readonly LegacyDynamicPresentationEntry[] = [],
-  generic = false,
-): DynamicCommerceProductDetailArchetype {
-  const plan = getCommercialPdpProfile(profileId);
-  const profile = plan?.profile;
-  const authority = profile?.commercialProductDetail;
-  if (!plan || !profile || !authority) {
-    return fail("stale-profile", `PDP profile ${profileId} is unavailable.`);
-  }
-  const materialized = materializeExecutablePageBlueprint({
-    pagePlan: plan,
-    componentDefinitions: veskifyComponentDefinitionsV2,
-    availableBindingCategories: ["product"],
-  });
-  const id = generic ? GENERIC_PDP_ARCHETYPE_ID : productArchetypeId(profileId);
-  if (!id) return fail("stale-profile", `PDP profile ${profileId} has no archetype ID.`);
-  return {
-    id,
-    archetypeVersion: DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION,
-    family: "product-detail" as const,
-    profile: {
-      profileId,
-      profileVersion: profile.version,
-      fingerprint: materialized.fingerprint,
-    },
-    compatibleSharedFrameProfileIds: [...authority.compatibleSharedFrameProfileIds],
-    defaultSharedFrameProfileId: authority.defaultSharedFrameProfileId,
-    designDnaNarrowing: structuredClone(authority.designDnaNarrowing),
-    componentPresentations: [
-      productPresentation(
-        profileId,
-        legacyEntries[0]?.section,
-        compactApprovedAssetSelections(legacyEntries, "dynamicProductDetail"),
-      ),
-    ],
-    responsivePosture: authority.responsiveArchitecture,
-    artDirectionPosture: {
-      imagePosture: authority.designDnaNarrowing.imagePosture[0],
-      ratio: authority.designDnaNarrowing.imagePosture[0] === "contained" ? "portrait" : "natural",
-      crop: authority.designDnaNarrowing.imagePosture[0] === "contained" ? "contain" : "editorial",
-      overlay: "none",
-    },
-    fallbackBehavior: "use-family-fallback",
-    optionArchitecture: "generic-canonical-options",
-    commerceBindingPolicy: "runtime-protected-product",
-  };
 }
 
 function sectionFingerprint(profileId: string, section: SectionInstance): string {
@@ -2328,26 +1738,6 @@ function pageAuthority(
     navigationAreas: [],
     evidenceReferences: [],
   };
-}
-
-function projectSectionStyleOverrides(
-  styleOverrides:
-    DynamicCommerceComponentPresentation["styleOverrides"] | SectionInstance["styleOverrides"],
-): SectionInstance["styleOverrides"] {
-  if (!styleOverrides) return undefined;
-  const { surfaceTreatment, ...allowed } = styleOverrides as NonNullable<
-    DynamicCommerceComponentPresentation["styleOverrides"]
-  >;
-  if (surfaceTreatment === "soft") {
-    if (allowed.surface && allowed.surface !== "surface") {
-      return fail(
-        "invalid-presentation",
-        "Soft surface treatment conflicts with the explicit section surface.",
-      );
-    }
-    return { ...allowed, surface: "surface" };
-  }
-  return Object.keys(allowed).length > 0 ? allowed : undefined;
 }
 
 function routeSection(

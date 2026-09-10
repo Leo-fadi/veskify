@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02H");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-03B");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -640,13 +640,13 @@ describe("AR-00 architecture-reset adoption guard", () => {
     "AR-30 is the selected successor after the pilot.",
     "AR-02F is the selected successor after the pilot.",
     "AR-02H is the selected successor after the pilot.",
-  ])("rejects a successor after the final H child: %s", (successor) => {
+  ])("rejects a successor outside the approved B-to-C dependency: %s", (successor) => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete upon H acceptance/merge. No next reset task is selected.",
+        "BATCH-03 is complete. BATCH-04 is complete. AR-03C is the sole next task after AR-03B acceptance/merge and safe main synchronization. BATCH-05 selects no third task.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -663,7 +663,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete upon H acceptance/merge. No next reset task is selected.",
+        "BATCH-03 is complete. BATCH-04 is complete. AR-03C is the sole next task after AR-03B acceptance/merge and safe main synchronization. BATCH-05 selects no third task.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
