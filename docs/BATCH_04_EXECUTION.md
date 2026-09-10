@@ -8,7 +8,7 @@ eligible and unstarted. No third child or automatic later batch is authorized.
 | Child  | Boundary                                                                                                      | Historical-source transition                                                                                               |
 | ------ | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | AR-02G | Utility profiles, template registry and generated capability manifest read metadata without utility rendering | `commercial-utility-profiles.ts`: original archive/raw hash retained; reviewed metadata-import successor separately pinned |
-| AR-02H | Original direction/profile schema owners feed semantic request preparation without execution barrels          | `direction-contract.ts`: separately preflighted and archived only after G merge; no H implementation in G                  |
+| AR-02H | Original direction/profile schema owners feed semantic request preparation without execution barrels          | `direction-contract.ts`: original archive/raw hash retained; reviewed leaf-import successor separately pinned              |
 
 G changes only the utility-profile metadata import and same-array readonly variants view in
 production. Its test-only transition record/reader and four approved A-03/A-04/A-07/A-10 source
@@ -20,6 +20,12 @@ the replacement contract has new raw and canonical identities, with a +600/-100 
 accepted inventory/golden data and live inactivity/reachability checks stay unchanged. Every
 untransitioned protected path retains its current raw hash check. A current successor pin proves
 reviewed integrity; full behavior and replay comparisons prove equivalence separately.
+
+[AR-02H approach](AR_02H_APPROACH.md), [contract](governance/task-contracts/AR/AR-02H.json) and
+[implementation report](AR_02H_IMPLEMENTATION_REPORT.md) cover the final request boundary. H adds
+only its direction tuple/archive, the A-09A historical reader and the explicitly authorized A-07
+direction-pin argument; both accepted G tuples and the
+A-10A/A-10C helper source remain unchanged.
 
 [AR-02G approach](AR_02G_APPROACH.md), [contract](governance/task-contracts/AR/AR-02G.json) and
 [implementation report](AR_02G_IMPLEMENTATION_REPORT.md) describe the bounded delivery. Immutable

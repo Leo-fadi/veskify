@@ -1,4 +1,4 @@
-import { coordinatedStorefrontDirectionIdSchema } from "@/application/bounded-storefront-synthesis";
+import { coordinatedStorefrontDirectionIdSchema } from "@/application/bounded-storefront-synthesis/direction-contract";
 import {
   canonicalValueFingerprint,
   commercialSharedFrameProfileIdSchema,

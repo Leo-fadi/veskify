@@ -5,6 +5,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readRetainedSource } from "../helpers/ar-02-retained-source-transition";
 
 import {
   LEGACY_V1_COORDINATED_DIRECTION_REPLAY_ALIAS_REGISTRY_SCHEMA_VERSION,
@@ -648,12 +649,18 @@ describe("P10B-19A-09A executable replay fingerprint identity", () => {
 });
 
 describe("P10B-19A-09A no-inference, no-v2 and runtime isolation boundaries", () => {
-  it("keeps current direction, narrowing, execution and barrel source authority byte-identical", () => {
-    const authorityRoot = resolve(process.cwd(), "src/application/bounded-storefront-synthesis");
+  it("preserves historical direction identity with its verified current successor and unchanged other sources", () => {
     Object.entries(expectedProtectedV1SourceHashes).forEach(([name, expected]) => {
       expect(
         createHash("sha256")
-          .update(readFileSync(join(authorityRoot, name)))
+          .update(
+            readRetainedSource({
+              repositoryRoot: process.cwd(),
+              recordsPath: "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+              sourcePath: `src/application/bounded-storefront-synthesis/${name}`,
+              expectedHistoricalSha256: expected,
+            }),
+          )
           .digest("hex"),
       ).toBe(expected);
     });

@@ -16,6 +16,14 @@
       "originalSha256": "b100d6e3bff1c7cb3e25c83d886b991a7e95e9a231b1d6c0a98d0dc59c940073",
       "archivePath": "tests/fixtures/ar-02g/p10b-19a-10a-retained-matrix-inventory.pre-ar-02g.ts.txt",
       "successorSha256": "01d8f531a70f622938ea67a0863b33c48b158e99fbdc8f26277ffa8bfd2ac182"
+    },
+    {
+      "taskId": "AR-02H",
+      "path": "src/application/bounded-storefront-synthesis/direction-contract.ts",
+      "baseCommit": "49d7f666d825b236eb042d21c1f7b5146979eebb",
+      "originalSha256": "f62ab54f221d084a0f593d2a090feca7ba9ddce4f9d23dcf8688960f4d8d1b28",
+      "archivePath": "tests/fixtures/ar-02h/direction-contract.pre-ar-02h.ts.txt",
+      "successorSha256": "f38de9d89c4b5793ba8ad77e4c9e490bb4dc309699da559f23c02a926ece0509"
     }
   ]
 }
