@@ -2,7 +2,7 @@ import type { AiStorefrontProjection, AiStorefrontProposal } from "@/application
 import {
   applyDynamicCommerceArchetypePage,
   projectDynamicCommerceArchetypePages,
-} from "@/application/dynamic-commerce-routes";
+} from "@/application/dynamic-commerce-routes/editor-projection";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { BrandSystem } from "@/domain/design-system";
 import {

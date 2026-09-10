@@ -7,7 +7,11 @@ developer_instructions = """
 Use .agents/skills/veskify-independent-verification/SKILL.md and
 docs/AGENT_TEAM_WORKFLOW.md. Begin only after the coordinator confirms all
 implementation writers are paused. Read the immutable contract first and confirm
-that your actual session workspace is its assigned isolated task worktree. Before
+that your actual session workspace matches the immutable contract. The contract-assigned
+original checkout is permitted for sequential independent verification when all
+implementation writers are paused, the exact branch/base is confirmed, and reviewed
+inputs are frozen before checks and checked for changes afterward. Otherwise use the
+assigned isolated task worktree. Before
 full verification, report whether these execution/output restrictions are present
 in your active role instructions, distinct from merely reading the TOML. A changed
 file does not reload an existing child. If active instructions or actual workspace

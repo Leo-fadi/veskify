@@ -353,6 +353,7 @@ statusExpectation.set("AR-03", "Partial");
 statusExpectation.set("AR-03A", "Baseline");
 statusExpectation.set("AR-03B", "Baseline");
 statusExpectation.set("AR-03C", "Baseline");
+statusExpectation.set("AR-03D", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -424,7 +425,7 @@ for (const record of statusRecords) {
                 ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
                 : ["AR-02E", "AR-02F", "AR-02G", "AR-02H"].includes(record.subject)
                   ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-                  : ["AR-03A", "AR-03B", "AR-03C"].includes(record.subject)
+                  : ["AR-03A", "AR-03B", "AR-03C", "AR-03D"].includes(record.subject)
                     ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
                     : record.subject === "AR-23"
                       ? /^unstarted$/iu
@@ -462,7 +463,14 @@ const nextTaskIds = (block) =>
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (declaredNext.length > 0) {
+  if (
+    declaredNext.some((id) => id !== "AR-03E") ||
+    (declaredNext.length > 0 &&
+      (declaredNext.length !== 1 ||
+        !block.includes(
+          "AR-03E is the exact next selected child after AR-03D merges and safe synchronization.",
+        )))
+  ) {
     throw new Error(`${path}: current authority assigns ${declaredNext[0]} as next`);
   }
 }
@@ -488,18 +496,20 @@ if (
   !trackerCurrent.includes("AR-03 is Partial;") ||
   !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
   !trackerCurrent.includes("AR-03B is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-03C is Baseline / closed upon explicit owner acceptance/merge.") ||
   !trackerCurrent.includes(
-    "BATCH-05 is complete upon AR-03C acceptance/merge and safe closeout.",
+    "AR-03C is Baseline / closed. AR-03D is Baseline / closed upon explicit owner acceptance/merge.",
   ) ||
-  !trackerCurrent.includes("No next reset task is selected.") ||
+  !trackerCurrent.includes("BATCH-05 is complete.") ||
+  !trackerCurrent.includes(
+    "AR-03E is the exact next selected child after AR-03D merges and safe synchronization.",
+  ) ||
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
-  !trackerCurrent.includes("BATCH-05 selects no third task.") ||
-  nextTaskIds(trackerCurrent).length !== 0
+  !trackerCurrent.includes("BATCH-06 selects no third task.") ||
+  JSON.stringify(nextTaskIds(trackerCurrent)) !== JSON.stringify(["AR-03E"])
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-03B/AR-03C closure and no successor are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-03D conditional closure and bounded AR-03E successor are required",
   );
 }
 if (
@@ -515,7 +525,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; runtime validation/projection/resolution are isolated; editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete upon AR-03C acceptance/merge and safe closeout. No next reset task is selected. BATCH-05 selects no third task.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; runtime validation/projection/resolution and authoring are isolated; migration and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
