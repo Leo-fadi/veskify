@@ -6,7 +6,7 @@ status; the roadmap owns dependency order. BATCH-04 remains completed history.
 | Order | Child                                     | Authorized outcome                                                                                                | Dependency                                  |
 | ----- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | 1     | [AR-03B](AR_03B_IMPLEMENTATION_REPORT.md) | Existing presentation builders, historical compatibility and migration/style support in four renderer-free leaves | Accepted PR246 merge                        |
-| 2     | AR-03C                                    | Current-authority validation, route projection/resolution and four preview import cutovers                        | B's verified merge and safe synchronization |
+| 2     | [AR-03C](AR_03C_IMPLEMENTATION_REPORT.md) | Current-authority validation, route projection/resolution and four preview import cutovers                        | B's verified merge and safe synchronization |
 
 Each child has its own branch, immutable native contract and public PR. The owner
 authorizes independent/native verification, one automatic review, bounded CI and
@@ -15,9 +15,10 @@ at clean accepted boundaries. No third task or automatic next batch is selected.
 
 B preserves the original facade, profile fingerprints, single error constructors,
 exact two-profile compatibility and asset/style behavior. It leaves full migration,
-route resolution, selection, editor and expansion composition in that facade. C's
-accepted outcome will establish the runtime route entrypoint; broader AR-02/03 work
-remains Partial. No new visual quality or measured bundle reduction is claimed.
+route resolution, selection, editor and expansion composition in that facade at B's boundary.
+C establishes the runtime route entrypoint and four preview import cutovers; full migration,
+selection/application, editor and expansion remain in the facade. Broader AR-02/03 work
+remains Partial. The batch closes only after C's gated merge and safe synchronization. No new visual quality or measured bundle reduction is claimed.
 
 External BATCH-05 records retain the actual-base observations, original-input and
 prior-evidence hashes, immutable contracts, exact diff/verdict/native identities,

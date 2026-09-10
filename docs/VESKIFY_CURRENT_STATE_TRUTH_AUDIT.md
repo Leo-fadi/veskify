@@ -2,11 +2,11 @@
 
 > **AR-00 scope note:** This point-in-time audit retains P10B-19A-10C's historical exact-next
 > statement as evidence of that accepted event. Current reset scheduling is projected by the
-> SDD addendum, roadmap, and tracker. Effective upon explicit owner acceptance/merge of AR-03B, the repository
+> SDD addendum, roadmap, and tracker. Effective upon explicit owner acceptance/merge of AR-03C, the repository
 > projection states: AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline /
 > closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer/materializer isolation
-> remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain.
-> AR-03A is Baseline / closed. AR-03B is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. AR-03C is the sole next task after AR-03B acceptance/merge and safe main synchronization. BATCH-05 selects no third task.
+> remains. AR-03 is Partial; runtime validation/projection/resolution are isolated; editor, migration, and expand/fold isolation remain.
+> AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete upon AR-03C acceptance/merge and safe closeout. No next reset task is selected. BATCH-05 selects no third task.
 > This projection does not assert the actual PR lifecycle or owner acceptance.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated

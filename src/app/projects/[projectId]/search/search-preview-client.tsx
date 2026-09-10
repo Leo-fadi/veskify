@@ -9,7 +9,7 @@ import {
   type StorefrontProductSearchPort,
   type StorefrontSearchRequestV1,
 } from "@/application/storefront-search";
-import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes/route-resolution";
 import { createStorefrontRenderContext, type StorefrontRenderContext } from "@/components/registry";
 import { StorefrontSearchCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import type { ProductNavigationIntent } from "@/components/storefront/dynamic-collection-commerce";

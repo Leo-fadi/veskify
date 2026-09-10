@@ -7,8 +7,8 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner acceptance/merge of AR-03B and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. AR-03C is the sole next task after AR-03B acceptance/merge and safe main synchronization. BATCH-05 selects no third task.
+explicit owner acceptance/merge of AR-03C and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; runtime validation/projection/resolution are isolated; editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete upon AR-03C acceptance/merge and safe closeout. No next reset task is selected. BATCH-05 selects no third task.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -751,12 +751,13 @@ the parent acceptance below still requires remaining consumer/materializer isola
 ### AR-03 — Extract dynamic-route authority without changing semantics
 
 **Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Partial;
-route resolution, editor, migration, and expand/fold isolation remain. The accepted
+runtime validation/projection/resolution are isolated; editor, migration, and expand/fold isolation remain. The accepted
 [AR-03A child](governance/task-contracts/AR/AR-03A.json) extracted route matching and errors without
 changing semantics. [AR-03B](AR_03B_IMPLEMENTATION_REPORT.md) separates presentation construction,
-exact historical compatibility and shared migration/style support. AR-03C is selected only after
-B acceptance/merge and safe synchronization. This sequence does not change the parent dependency
-on AR-01; tracker status controls.
+exact historical compatibility and shared migration/style support. [AR-03C](AR_03C_IMPLEMENTATION_REPORT.md)
+separates current validation and route projection/resolution, with four preview clients using the
+narrow entrypoint. Full migration, editor and expand/fold isolation remain. This sequence does not
+change the parent dependency on AR-01; tracker status controls. No successor is selected.
 
 **Outcome:** Migration, validation, selection, runtime resolution and editor projection have clear separate owners.
 
