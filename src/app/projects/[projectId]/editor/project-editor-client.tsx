@@ -58,7 +58,7 @@ import {
 } from "@/domain/storefront";
 import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import type { CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
-import { projectDynamicCommerceArchetypePages } from "@/application/dynamic-commerce-routes";
+import { projectDynamicCommerceArchetypePages } from "@/application/dynamic-commerce-routes/editor-projection";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,

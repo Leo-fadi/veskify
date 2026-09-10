@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-03C");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-03D");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -640,13 +640,15 @@ describe("AR-00 architecture-reset adoption guard", () => {
     "AR-30 is the selected successor after the pilot.",
     "AR-02F is the selected successor after the pilot.",
     "AR-02H is the selected successor after the pilot.",
-  ])("rejects a successor after the final BATCH-05 child: %s", (successor) => {
+    "AR-03E is the exact next selected child before AR-03D merges.",
+    "AR-03E is the selected successor without safe synchronization.",
+  ])("rejects an unauthorized successor in BATCH-06: %s", (successor) => {
     const directory = fixture();
     const readmePath = join(directory, "README.md");
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete upon AR-03C acceptance/merge and safe closeout. No next reset task is selected. BATCH-05 selects no third task.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -663,7 +665,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete upon AR-03C acceptance/merge and safe closeout. No next reset task is selected. BATCH-05 selects no third task.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);

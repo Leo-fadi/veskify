@@ -1,0 +1,426 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "BATCH-06",
+  "taskId": "AR-03D",
+  "title": "Design selection and editor boundary",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-03d-authoring-boundary",
+  "baseCommit": "078ed3ca6ca61e5792969840507f2a3c5015f76d",
+  "objective": "Relocate unchanged design-selection contracts/operations and archetype editor operations into three renderer-free owners and cut over the three named current consumers.",
+  "expectedOutcome": "Studio archetype editing and deterministic design selection retain current behavior, errors, canonical state and public API while their actual consumers use explicit owners. AR-03 and AR-02 remain Partial.",
+  "dependencies": [
+    {
+      "taskId": "AR-03C",
+      "requiredState": "MERGED",
+      "commit": "078ed3ca6ca61e5792969840507f2a3c5015f76d"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "AGENTS.md; docs/DEVELOPMENT_GUIDE.md section4; docs/AGENT_TEAM_WORKFLOW.md; both existing Veskify skills; native governance schemas.",
+    "docs/VESKIFY_SDD.md and incorporated docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md; ADR-001..004; retained FR-102/110/111 and AC-110/114/126/128/133/138.",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md original AR-03 acceptance and original T01/T06/T07 definitions; tracker is sole status authority. D is bounded child, no parent closure.",
+    "Accepted AR-03A/B/C owners and reports; current authority/route-resolution/presentation/profile materializer remain legitimate dependencies, no new competing truth.",
+    "Direct owner BATCH-06 authorization and exact preserved runbook at /Users/leo/veskify-batch-runs/BATCH-06/AR-03D/preflight-01/owner-runbook.md sha256 61215840dbfac1b55baaeb4d07a977c56fab71e3a84ec474c1a8cbdc15c1dec4",
+    "Actual pre-edit preservation and observations at /Users/leo/veskify-batch-runs/BATCH-06/AR-03D/preflight-01; pinned support-hashes.json lists exact immutable harness, baseline and procedure identities. Original input bytes are preservation-only, although included in full native diff identity.",
+    "Direct owner continuation authorization retained in /Users/leo/veskify-batch-runs/BATCH-06/AR-03D/workspace-amendment-01/before.json; exact wording-changes.json plus checked before/after hashes. Original raw contract 5dc6d08fb288ef6021924d85588d2c1dcc888a100ade7fb54074c253cd3a8260 and canonical veskify-task-contract-v1_b789f311aa3cecf22ad8a0523cff2977fba4990a0fa957c263b9289f1b7fd280 remain immutable at their original path. Replacement is a semantic contract/support amendment, not formatting-only."
+  ],
+  "ownedPaths": [
+    "src/application/dynamic-commerce-routes/authority.ts",
+    "src/application/whole-storefront-generation-plan/planner.ts",
+    "src/app/projects/[[]projectId[]]/editor/editor-draft-state.ts",
+    "src/app/projects/[[]projectId[]]/editor/project-editor-client.tsx",
+    "src/application/dynamic-commerce-routes/design-selection-contract.ts",
+    "src/application/dynamic-commerce-routes/design-selection.ts",
+    "src/application/dynamic-commerce-routes/editor-projection.ts",
+    "tests/unit/ar-03d-authoring-boundary.test.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/AR_03D_APPROACH.md",
+    "docs/AR_03D_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-03D.json",
+    "docs/BATCH_06_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    ".codex/agents/veskify_verifier.toml",
+    ".agents/skills/veskify-independent-verification/SKILL.md",
+    "docs/AGENT_TEAM_WORKFLOW.md"
+  ],
+  "allowedPaths": [
+    "src/application/dynamic-commerce-routes/authority.ts",
+    "src/application/whole-storefront-generation-plan/planner.ts",
+    "src/app/projects/[[]projectId[]]/editor/editor-draft-state.ts",
+    "src/app/projects/[[]projectId[]]/editor/project-editor-client.tsx",
+    "src/application/dynamic-commerce-routes/design-selection-contract.ts",
+    "src/application/dynamic-commerce-routes/design-selection.ts",
+    "src/application/dynamic-commerce-routes/editor-projection.ts",
+    "tests/unit/ar-03d-authoring-boundary.test.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/AR_03D_APPROACH.md",
+    "docs/AR_03D_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-03D.json",
+    "docs/BATCH_06_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    ".codex/agents/veskify_verifier.toml",
+    ".agents/skills/veskify-independent-verification/SKILL.md",
+    "docs/AGENT_TEAM_WORKFLOW.md"
+  ],
+  "forbiddenPaths": [
+    ".github/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.ts",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/fixtures/**",
+    "tests/helpers/**"
+  ],
+  "noTouchAreas": [
+    "Only seven named production paths. Move existing declarations unchanged with their private closure; same schema/error objects through explicit compatibility exports, index.ts unchanged. No private helper public barrel additions. New leaves have no old facade cycle, renderer/React/Puck/Next, full snapshot migration/expansion, full-store executor, storage or publication edge.",
+    "Planner redirects only design-selection schema/type/functions; current-authority materialization stays on facade until E. Editor files redirect only existing project/apply imports; preserve every other import, argument, hook, JSX and state operation. AST body baseline proves all 31 original declarations and unrelated consumer statements unchanged.",
+    "Preserve strict parsing, first-failure type/code/message/cause, weaker source-authority replay context versus full snapshot/catalogue validation, canonical commerce and route inventory; all source inputs immutable. Editor preserves collection filtering/product iteration asymmetry, representatives, missing routes, frame errors, one composite, unknown page no-op, approved assets, raw equivalent styles and revision semantics.",
+    "Originals, historical contracts/reports, fixture hashes, A-07/A-09/A-10 source archives/transition readers and accepted evidence unchanged. No historical rebaseline, BATCH05 rerun, parent AR-03 closure, AR-02 closure, new family/version/policy, provider/Vesko/publication or deployment.",
+    "Exact7 production paths overrides native default8/12. Handwritten additions target2500/hard3400, deletions hard1800; moved code counted. Reports target800words. Only two named deterministic DOCX excluded. No optional new helper selected. Narrow status/progression/export changes only; no historical prose rewrite.",
+    "Original workspace only; one coordinator writer, existing read-only helper roles, stopped implementation for independent original-workspace verification. The explicit workspace-wording amendment in the three named role/skill/workflow files is the only agent-setting exception. Models, reasoning, sandbox, network, approval policy, tool permissions and independent verification requirements stay unchanged. No new worktree/window/clone, permission expansion, dependency download or original node_modules mutation.",
+    "Final verification freezes all source/contract/support and original inputs with actual Git state before/after; Git lifecycle operations are separate recorded transitions. Preserve local raw config. Only exact current-child single IDE vscode-merge-base=origin/main and normal upstream remote=origin/merge=refs/heads/codex/ar-03d-authoring-boundary additions may be normalized against original bytes, bound to fixed base/head; unknown changes block. No include traversal or secret inspection.",
+    "Declared generated outputs: existing node_modules/.cache and .vite caches, tsconfig.tsbuildinfo; task-local scratch observation/metadata JSON, logs, reports, synthetic config fixtures, native identity/verdict outputs; deterministic exporter temporary directories. Preserve normal A-09B/C prior reports before unchanged tests write /private/tmp/veskify-p10b-19a-09b-final-replay-comparison.json and /private/tmp/veskify-p10b-19a-09c-final-publication-comparison.json. No A-10C artifact-writing flags.",
+    "Build exports are explicit base Git public source plus fixed hash-listed owned overlays in /private/tmp/veskify-batch-06/ar-03d/builds/{candidate-01,candidate-02,candidate-03,final-01,final-02}/export. Exclude .git/.env/private inputs/evidence/caches; offline frozen-lock install from existing store inside export only. Max3 coordinator+2 verifier build invocations; fresh final independent pnpm build:webpack and unchanged pnpm build:check:storefront-budgets mandatory. Export node_modules/.next/tsbuildinfo/cache and next-env.d.ts generated production hash7b550dda9686c16f36a17bf9051d5dbf31e98555b30d114ac49fc49a1e712651 allowed; other input bytes frozen. All6 exact raw/gzip/headroom, unchanged algorithm and limits including search1655000/475000. Comparable retained C output keeps original provenance. One measured import/re-export correction within7paths only if needed; no arbitrary minifier experiments.",
+    "One consolidated substantive correction and one verifier rerun; one response to the single automatic review with fresh independent/native verification after material edits. One preapproved clerical reissue only for parsed-identical formatting, the two exact A-09 report destinations, or literal escaping of already owned paths. Preserve all old identities/evidence; no semantic scope widening.",
+    "Autonomous PR/merge authorization conditional on final independent/native PASS, single automatic review and all required exact-head/base CI including build budgets/validate. Record standing authority/head/base before expected-head protected merge without override. Per submitted head 90min/30 observations at least180sec apart including final observation. No second review request. D merge and safe original-checkout synchronization precede E; no third task.",
+    "Owner-authorized semantic workspace support amendment: only exact recorded workspace wording in .codex/agents/veskify_verifier.toml, .agents/skills/veskify-independent-verification/SKILL.md and docs/AGENT_TEAM_WORKFLOW.md. Original checkout permitted for sequential independent verification with all writers paused, exact branch/base confirmed and reviewed inputs frozen/compared afterward. Fresh configured child must confirm actual workspace and active corrected instructions before independent execution; no incompatible-session reuse or policy bypass. Same D branch/base, product/test implementation unchanged. Include wording alignment in D PR; confirm verifier readiness before E implementation. Preserve original contracts, locks and BLOCKED/native FAIL evidence. Previous evidence never relabeled under replacement contract. No product acceptance/budget/permissions changes.",
+    "Amendment-local active support/output root /private/tmp/veskify-batch-06/ar-03d/workspace-amendment-01; evidence root /Users/leo/veskify-batch-runs/BATCH-06/AR-03D/workspace-amendment-01. Original D support, all baselines, first candidate build and unused original final export remain preserved. Fresh final build now uses /private/tmp/veskify-batch-06/ar-03d/workspace-amendment-01/builds/final-01/export with unchanged preparation/build policy. Build counts do not reset: one coordinator build already consumed, zero independent builds consumed; total at most3 coordinator/2verifier remains. No coordinator build rerun required for wording-only support changes. New native identity/output/log/freeze paths and existing task-report updates only."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One existing dynamic-commerce authoring authority split into contract, selection and editor owners with exact three consumer cutovers.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic SDD/tracker DOCX exporter only."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic SDD/tracker DOCX exporter only."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Authorized GitHub origin fetch/PR/review/CI queries and commit/push/public PR update/expected-head merge for this child only under standing owner authorization. No live provider/Vesko or publication."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Mechanical declaration relocation with direct existing owners, explicit compatibility forwarding, and import-only named consumer cutovers; compare original AST bodies/public exports plus serialized pre-edit behavior.",
+    "canonicalAuthorityExtended": "Existing dynamicCommercePresentation inside StorefrontSnapshot; no new aggregate or route graph.",
+    "namedCurrentConsumers": [
+      "src/application/whole-storefront-generation-plan/planner.ts",
+      "src/app/projects/[projectId]/editor/editor-draft-state.ts",
+      "src/app/projects/[projectId]/editor/project-editor-client.tsx"
+    ],
+    "rejectedShortcuts": [
+      "Keep new leaves backed by authority facade; duplicate schema/error; strengthen source-only replay validation; make product loop imitate collection filtering; recapture post-change baseline; narrow unrelated planner registry imports or relax bundle limits."
+    ],
+    "expectedFailureBehavior": "Preserve original first failure, clone/alias and no-partial-state behavior; coherent revert of extraction and consumer cutovers needs no persisted migration.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Three complete new runtime closures and actual imports meet exact graph scope; all original public value/type names, schema/error/function identities and private visibility preserved.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Full baseline/final selection validation, source-only replay, authority materialization/application and editor project/apply are identical for supported fixtures; exact fingerprints and inputs preserved.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Missing/stale authority, catalogue/current identities/type coverage, invalid/fallback archetypes/rules/contexts/frames and editor invalid/unknown pages preserve first errors and nonmutation. Asset and style/no-op/revision semantics remain unchanged.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Existing normal generation ordering, proposal/accept/undo/redo lifecycle, search/preview and retained v1/publication replays execute unchanged. No provider calls or accepted evidence regeneration.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Exact seven production paths and narrow ancillary scope, budgets, all original/prior inputs, native identity, support/config integrity and declaration/consumer AST parity hold. The exact three-file workspace wording alignment preserves all other role settings and independence requirements; active corrected instructions and original workspace readiness confirmed before independent execution.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Complete metadata/conformance observations and affected historical source/closure guards preserve accepted values; unrelated predecessors unchanged.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Final independently executed production build and unchanged budget checker pass all six ceilings with exact measurements; fixed public-source export/toolchain and source integrity proven.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    },
+    {
+      "id": "AC-08",
+      "requirement": "Current docs and deterministic exports honestly describe bounded D outcome, conditional integration and E next only after merge; AR-03 and AR-02 remain Partial.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for a concrete discrepancy; BLOCKED for missing required proof. Preserve actual evidence and stop within the approved correction budget."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-03d-authoring-boundary.test.ts tests/unit/ar-03a-route-selection-boundary.test.ts tests/unit/ar-03b-presentation-support.test.ts tests/unit/ar-03c-route-resolution-boundary.test.ts tests/unit/p10b-16p-01-dynamic-commerce-route-authority.test.ts tests/unit/p10b-16p-01-dynamic-commerce-editor-state.test.ts tests/unit/editor-draft-state.test.ts tests/unit/p10b-16p-02b-dynamic-commerce-selection.test.ts tests/unit/p10b-16p-02b-dynamic-commerce-proposal-lifecycle.test.ts tests/unit/whole-storefront-proposal-lifecycle.test.ts tests/unit/whole-storefront-generation-plan.test.ts tests/unit/p10b-16p-02b-generation-plan-slot-overrides.test.ts tests/unit/p10b-16p-06-dynamic-search-binding.test.ts tests/unit/p10b-16p-04j-commerce-presentation-safety.test.ts",
+      "purpose": "Focused authoring/route/editor/planner/selection and canonical proposal lifecycle; no full suite.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/integration/p10b-16p-03-server-prompt-generation.test.ts tests/integration/p10b-16p-04f-semantic-lifecycle.test.ts tests/integration/p9r-01-whole-storefront-orchestrator.test.ts tests/integration/p9r-02-shared-homepage-generation.test.tsx tests/integration/p10b-16p-01-dynamic-commerce-preview.test.tsx tests/integration/p10b-16p-06-search-routes.test.tsx",
+      "purpose": "Mocked normal generation ordering, canonical lifecycle and preview/search consumers.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run tests/unit/ar-02f-v2-metadata-adaptation.test.ts tests/unit/ar-02g-template-capability-boundary.test.ts tests/unit/ar-02h-semantic-request-boundary.test.ts tests/unit/ar-02b-renderer-free-conformance.test.ts tests/unit/ar-02g-closure-transition.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts tests/unit/p10b-19a-04-page-blueprint-v2-asset-role-contract.test.ts tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts tests/unit/p10b-19a-06-page-blueprint-v2-omission-substitution-fallback-contract.test.ts tests/unit/p9-03d-design-capability-reachability.test.ts tests/unit/p10b-16p-05a-production-path-architecture.test.ts",
+      "purpose": "Accepted metadata/conformance/transition and five affected source assumptions; current status guards.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts -t 'strictly locks the complete safe inventory|retains fresh-clone A-09 baseline identities|keeps all nine production authorities inactive|is discovered once'",
+      "purpose": "Retained source/closure inventory only; original two unselected matrix tests remain skipped, no artifact flags.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm exec vitest run tests/integration/p10b-19a-09b-historical-v1-render-replay.test.tsx tests/integration/p10b-19a-09c-publication-render-replay.test.tsx",
+      "purpose": "Unchanged v1/render/publication replay, normal outputs already preserved.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "env AR03D_ROUTE_OUTPUT=/private/tmp/veskify-batch-06/ar-03d/route-final.json AR03D_ROUTE_COMPARE_BASELINE=/private/tmp/veskify-batch-06/ar-03d/preflight-01/route-baseline.json AR03D_SELECTION_OUTPUT=/private/tmp/veskify-batch-06/ar-03d/selection-final.json AR03D_SELECTION_COMPARE_BASELINE=/private/tmp/veskify-batch-06/ar-03d/preflight-01/selection-baseline-complete.json pnpm exec vitest run --config /private/tmp/veskify-batch-06/ar-03d/preflight-01/observation.config.ts",
+      "purpose": "Pinned full pre-edit/final route/render, selection/editor and structured-error parity.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "env AR02G_REPEATABLE_OBSERVATION_OUTPUT=/private/tmp/veskify-batch-06/ar-03d/metadata-final.json pnpm exec vitest run --config /private/tmp/veskify-batch-04/ar-02g/preflight-02/observation.config.ts",
+      "purpose": "Existing complete metadata/conformance observation, only D output.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "cmp /private/tmp/veskify-batch-06/ar-03d/preflight-01/metadata-baseline.json /private/tmp/veskify-batch-06/ar-03d/metadata-final.json",
+      "purpose": "Exact full metadata/render/conformance parity.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm typecheck",
+      "purpose": "Repository typecheck; declared tsconfig cache only.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm exec eslint src/application/dynamic-commerce-routes/authority.ts src/application/whole-storefront-generation-plan/planner.ts 'src/app/projects/[projectId]/editor/editor-draft-state.ts' 'src/app/projects/[projectId]/editor/project-editor-client.tsx' src/application/dynamic-commerce-routes/design-selection-contract.ts src/application/dynamic-commerce-routes/design-selection.ts src/application/dynamic-commerce-routes/editor-projection.ts tests/unit/ar-03d-authoring-boundary.test.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Focused lint only.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm exec prettier --check src/application/dynamic-commerce-routes/authority.ts src/application/whole-storefront-generation-plan/planner.ts 'src/app/projects/[projectId]/editor/editor-draft-state.ts' 'src/app/projects/[projectId]/editor/project-editor-client.tsx' src/application/dynamic-commerce-routes/design-selection-contract.ts src/application/dynamic-commerce-routes/design-selection.ts src/application/dynamic-commerce-routes/editor-projection.ts tests/unit/ar-03d-authoring-boundary.test.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs docs/AR_03D_APPROACH.md docs/AR_03D_IMPLEMENTATION_REPORT.md docs/governance/task-contracts/AR/AR-03D.json docs/BATCH_06_EXECUTION.md README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md .agents/skills/veskify-independent-verification/SKILL.md docs/AGENT_TEAM_WORKFLOW.md",
+      "purpose": "Affected formatting only.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "node /private/tmp/veskify-batch-06/ar-03d/ast-integrity.mjs check",
+      "purpose": "All original declaration bodies/public names and unrelated consumer statements unchanged.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "python3 /private/tmp/veskify-batch-06/ar-03d/workspace-amendment-01/check-integrity.py",
+      "purpose": "Native contract/complete identity; originals/prior evidence/nonowned/support/config, scope and whitespace including untracked task files.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "pnpm docs:validate",
+      "purpose": "Current docs/requirements/tooling and deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Current docs/requirements/tooling and deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Current docs/requirements/tooling and deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Current docs/requirements/tooling and deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-18",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Current docs/requirements/tooling and deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-19",
+      "command": "pnpm exec tsc --project /private/tmp/veskify-batch-06/ar-03d/preflight-01/harness-tsconfig.json --noEmit",
+      "purpose": "Strict pinned harness check; incremental false.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-20",
+      "command": "python3 /private/tmp/veskify-batch-06/ar-03d/workspace-amendment-01/build-support.py build final-01",
+      "purpose": "Fresh independent final Webpack/unchanged budgets in amendment-local exact-source export. One earlier coordinator candidate build remains original evidence; no build-budget reset.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-21",
+      "command": "python3 /private/tmp/veskify-batch-06/ar-03d/workspace-amendment-01/check-wording.py",
+      "purpose": "Exact authorized wording from preserved originals, parsed TOML remainder/settings unchanged, all prior implementation and evidence outside amendment preserved. Synthetic altered setting/extra wording negative controls use in-memory bytes only.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-03", "EVIDENCE-04"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Native locked identity, complete diff, preserved inputs/support and scope proof; only sanitized hashes, raw config stays private.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Pre-edit/final full observation and AST/public API parity, boundary semantics and independent production build all-six exact measurements.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual independent focused command executions, exact exits/totals/skips, typecheck/lint and meaningful negative behavior.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "command",
+      "description": "Formatting/whitespace and current documentation/requirements/tooling/deterministic export evidence.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Any unresolved authority/scope/identity drift, missing proof, failed unchanged bundle gate without permitted bounded repair, persistent managed denial, or exhausted correction/CI budget.",
+      "action": "STOP",
+      "owner": "architecture-owner"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-03E",
+    "title": "Legacy conversion and AR-03 parent exit evidence",
+    "eligibility": "Only after verified D expected-head merge and safe synchronization in original checkout under standing BATCH-06 authority."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}

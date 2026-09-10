@@ -72,8 +72,12 @@ native identity, and claimed evidence. Include untracked/staged/unstaged state.
 Identify pre-existing user inputs and verify their preserved bytes; do not conceal
 them from the canonical identity. Freeze every reviewed input before checks and
 compare exact hashes afterward. The verifier executes required checks itself in
-its assigned isolated task worktree, including declared focused tests; an
-implementer's earlier result is not independent execution evidence. It may create
+its contract-assigned checkout, including declared focused tests; an implementer's
+earlier result is not independent execution evidence. The contract-assigned original
+checkout is permitted for sequential independent verification when all implementation
+writers are paused, the exact branch/base is confirmed, and reviewed inputs are frozen
+before checks and checked for changes afterward. Otherwise use the assigned isolated
+task worktree. It may create
 only the checks' identified generated cache, temporary-fixture and report outputs,
 and returns native criterion-level PASS, FAIL or BLOCKED without editing reviewed
 inputs. The coordinator retains the returned native verdict externally and performs
@@ -92,7 +96,7 @@ when authorized; do not continuously watch CI or request a second automatic revi
 Worker permissions inherit from the parent. Helpers retain
 `sandbox_mode = "read-only"`. The independent verifier requests
 `sandbox_mode = "workspace-write"` and `[sandbox_workspace_write] network_access = false`
-for declared checks in its assigned isolated task worktree. Model/reasoning stay
+for declared checks in its contract-assigned checkout. Model/reasoning stay
 `gpt-6-astra`/`high`; managed/runtime approval policy is inherited. These settings
 are requests: parent runtime overrides can take precedence, and filesystem
 sandboxes do not establish connector permissions.
@@ -125,7 +129,7 @@ After verifier-policy changes, pause implementation and establish readiness with
 new configured role: confirm its active execution/output instructions and actual
 session workspace before full verification. Do not reuse a blocked child or treat
 a changed file as proof of active instruction reload. If the current IDE cannot
-load the corrected role in the assigned worktree, stop with **Corrections ready;
+load the corrected role in the contract-assigned checkout, stop with **Corrections ready;
 new conversation required**, and resume from a new conversation opened in that
 worktree. Do not spend a full verifier attempt on stale configuration.
 

@@ -34,10 +34,10 @@ import {
 } from "@/domain/component-platform";
 import {
   dynamicCommerceDesignSelectionSchema,
-  materializeCurrentDynamicCommercePresentationAuthority,
-  validateDynamicCommerceDesignSelection,
   type DynamicCommerceDesignSelection,
-} from "@/application/dynamic-commerce-routes";
+} from "@/application/dynamic-commerce-routes/design-selection-contract";
+import { validateDynamicCommerceDesignSelection } from "@/application/dynamic-commerce-routes/design-selection";
+import { materializeCurrentDynamicCommercePresentationAuthority } from "@/application/dynamic-commerce-routes";
 import { canonicalLocaleOrder } from "@/domain/shared";
 import {
   canonicalValueFingerprint,

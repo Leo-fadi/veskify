@@ -11,9 +11,12 @@ parallel verdict format. Resolve authority paths from the repository root.
 
 Require the coordinator to pause every implementation writer and supply the
 contract path/raw SHA-256, base/HEAD/branch, complete native diff identity and
-claimed evidence. Confirm that the actual session workspace is the assigned isolated
-task worktree and that the current execution/output policy loaded in the active
-custom role. Reading a changed TOML does not prove a running child reloaded it.
+claimed evidence. Confirm that the actual session workspace matches the immutable
+contract and that the current execution/output policy loaded in the active custom
+role. The contract-assigned original checkout is permitted for sequential independent
+verification when all implementation writers are paused, the exact branch/base is
+confirmed, and reviewed inputs are frozen before checks and checked for changes
+afterward. Otherwise use the assigned isolated task worktree. Reading a changed TOML does not prove a running child reloaded it.
 After policy changes, use a new configured verifier; stop before full verification
 if its active instructions or workspace cannot be confirmed. Inspect all changed
 paths, including untracked work, and distinguish pre-existing user inputs without
@@ -28,8 +31,8 @@ references. Do not run undeclared full suites, provider/Vesko calls or deploymen
 
 Execute the declared checks yourself, including required focused test commands;
 coordinator or implementer results do not establish independent test execution.
-The verifier requests `workspace-write` with network access disabled in its assigned
-worktree. It may create only the checks' identified generated cache, temporary-fixture
+The verifier requests `workspace-write` with network access disabled in its contract-assigned
+checkout. It may create only the checks' identified generated cache, temporary-fixture
 and report outputs. The assignment must name those output paths before execution.
 
 Never edit reviewed source, tests, docs, configuration, contracts or accepted
