@@ -6,7 +6,7 @@ import {
   dynamicCommerceRouteForCollection,
   dynamicCommerceRouteForProduct,
   resolveDynamicCommerceRoutePage,
-} from "@/application/dynamic-commerce-routes";
+} from "@/application/dynamic-commerce-routes/route-resolution";
 import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type CollectionCommerceRoutePresentation,

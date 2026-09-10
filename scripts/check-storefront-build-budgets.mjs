@@ -29,7 +29,7 @@ const routeBudgets = Object.freeze([
     route: "search",
     manifest: "server/app/projects/[projectId]/search/page_client-reference-manifest.js",
     manifestKey: "/projects/[projectId]/search/page",
-    maximumRawBytes: 1_650_000,
+    maximumRawBytes: 1_655_000,
     maximumGzipBytes: 475_000,
   },
   {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes/route-resolution";
 import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type ProductCommerceRoutePresentation,

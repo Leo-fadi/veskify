@@ -16,11 +16,6 @@ import {
 } from "./migration-contract";
 import { projectSectionStyleOverrides } from "./presentation-style";
 import { failDynamicCommerceRouteAuthority as fail } from "./route-errors";
-export {
-  DynamicCommerceMigrationError,
-  type DynamicCommerceMigrationDecision,
-  type DynamicCommerceMigrationResult,
-} from "./migration-contract";
 import { z } from "zod";
 import {
   getCommercialCollectionSearchProfile,
@@ -30,13 +25,71 @@ import {
   getCommercialPdpProfile,
   listCommercialPdpProfiles,
 } from "@/application/storefront-templates/commercial-pdp-profiles";
-import { materializeExecutablePageBlueprint } from "@/application/storefront-templates/profile-materializer";
 import {
   resolveCollectionContextArchetype,
-  resolveProductComplexityArchetype,
   selectProductComplexityRule,
   type DynamicCommerceCollectionMatchContext,
 } from "./route-selection";
+import {
+  dynamicCollectionCommerceBridgeContentSchema,
+  dynamicCollectionCommercePropsSchema,
+  dynamicProductDetailBridgeContentSchema,
+  dynamicProductDetailPropsSchema,
+} from "@/components/registry";
+import {
+  catalogueDisplayModelSchema,
+  type CatalogueDisplayModel,
+  type CollectionDisplayModel,
+} from "@/domain/catalogue";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
+import { idSchema } from "@/domain/shared";
+import {
+  DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION,
+  canonicalValueFingerprint,
+  canonicalValueString,
+  createDynamicCommercePresentationAuthority,
+  dynamicCommercePresentationAuthoritySchema,
+  dynamicCommerceRouteInventoryEntrySchema,
+  isDynamicCommerceArchetypeCompatibleWithSharedFrame,
+  storefrontSnapshotSchema,
+  type DynamicCommerceCollectionSearchArchetype,
+  type DynamicCommerceCollectionContextRule,
+  type DynamicCommercePresentationAuthority,
+  type DynamicCommerceProductComplexityRule,
+  type DynamicCommerceRouteInventoryEntry,
+  type DynamicCommerceProductDetailArchetype,
+  type PageModel,
+  type SectionInstance,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
+import {
+  assertCurrentArchetype,
+  validateCurrentDynamicCommercePresentationAuthority,
+  exactAuthority,
+} from "./current-authority";
+import {
+  type ResolvedDynamicCommerceRoutePage,
+  resolveDynamicCommerceRoutePage,
+} from "./route-resolution";
+export { validateCurrentDynamicCommercePresentationAuthority } from "./current-authority";
+export {
+  dynamicCommerceRouteSectionId,
+  type DynamicCommerceSearchRuntimeBinding,
+} from "./route-projection";
+export {
+  type ResolvedDynamicCommerceRoutePage,
+  type DynamicCommerceRuntimeBindingPolicy,
+  resolveDynamicCommerceRuntimeBindingPolicy,
+  resolveDynamicCommerceRoutePage,
+  dynamicCommerceRouteForProduct,
+  dynamicCommerceRouteForCollection,
+} from "./route-resolution";
+
+export {
+  DynamicCommerceMigrationError,
+  type DynamicCommerceMigrationDecision,
+  type DynamicCommerceMigrationResult,
+} from "./migration-contract";
 export {
   dynamicCommerceRouteAuthorityErrorCodes,
   DynamicCommerceRouteAuthorityError,
@@ -51,46 +104,6 @@ export {
   createDynamicCommerceProductMatchContext,
   type DynamicCommerceProductMatchContext,
 } from "./product-match-context";
-import {
-  dynamicCollectionCommerceBridgeContentSchema,
-  dynamicCollectionCommerceContentSchema,
-  dynamicCollectionCommercePropsSchema,
-  dynamicCollectionCommerceStyleOverridesSchema,
-  dynamicProductDetailBridgeContentSchema,
-  dynamicProductDetailContentSchema,
-  dynamicProductDetailPropsSchema,
-  dynamicProductDetailStyleOverridesSchema,
-  veskifyComponentDefinitionsV2,
-} from "@/components/registry";
-import {
-  catalogueDisplayModelSchema,
-  type CatalogueDisplayModel,
-  type CollectionDisplayModel,
-} from "@/domain/catalogue";
-import { canonicalProductTypePresentationId } from "@/domain/product-card";
-import { idSchema } from "@/domain/shared";
-import {
-  DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION,
-  PAGE_FAMILY_AUTHORITY_VERSION,
-  SITE_MAP_SHARED_FRAME,
-  canonicalValueFingerprint,
-  canonicalValueString,
-  createDynamicCommercePresentationAuthority,
-  dynamicCommercePresentationAuthoritySchema,
-  dynamicCommerceRouteInventoryEntrySchema,
-  isDynamicCommerceArchetypeCompatibleWithSharedFrame,
-  storefrontSnapshotSchema,
-  type DynamicCommerceCollectionSearchArchetype,
-  type DynamicCommerceCollectionContextRule,
-  type DynamicCommercePresentationAuthority,
-  type DynamicCommerceProductComplexityRule,
-  type DynamicCommerceRouteInventoryEntry,
-  type DynamicCommerceProductDetailArchetype,
-  type PageFamilyAuthority,
-  type PageModel,
-  type SectionInstance,
-  type StorefrontSnapshot,
-} from "@/domain/storefront";
 
 export const dynamicCommerceDesignSelectionSchema = z
   .object({
@@ -144,10 +157,6 @@ export function registeredDynamicCommerceCollectionArchetypeId(profileId: string
     return fail("stale-profile", `Collection profile ${profileId} has no archetype ID.`);
   }
   return archetypeId;
-}
-
-export function dynamicCommerceRouteSectionId(routeId: string, archetypeId: string): string {
-  return idSchema.parse(`section_${routeId}_${archetypeId}`);
 }
 
 function sectionFingerprint(profileId: string, section: SectionInstance): string {
@@ -1500,533 +1509,6 @@ export function applyDynamicCommerceDesignSelection(
   return result;
 }
 
-function assertCurrentArchetype(
-  snapshot: StorefrontSnapshot,
-  archetype: DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype,
-  enforceSelectedFrame = true,
-) {
-  const plan =
-    archetype.family === "collection-search"
-      ? getCommercialCollectionSearchProfile(archetype.profile.profileId)
-      : getCommercialPdpProfile(archetype.profile.profileId);
-  if (!plan?.profile || plan.profile.version !== archetype.profile.profileVersion) {
-    fail("stale-profile", "The dynamic route references a stale PageBlueprint profile.");
-  }
-  const materialized = materializeExecutablePageBlueprint({
-    pagePlan: plan,
-    componentDefinitions: veskifyComponentDefinitionsV2,
-    availableBindingCategories:
-      archetype.family === "collection-search" ? ["collection", "productList"] : ["product"],
-  });
-  const profileAuthority =
-    archetype.family === "collection-search"
-      ? plan.profile.commercialCollectionSearch
-      : plan.profile.commercialProductDetail;
-  const semanticFrameIds = (values: readonly string[]) => [...values].sort();
-  const semanticDesignDnaNarrowing = (value: {
-    spacingDensity: readonly string[];
-    surfaceDepth: readonly string[];
-    imagePosture: readonly string[];
-  }) => ({
-    spacingDensity: [...value.spacingDensity].sort(),
-    surfaceDepth: [...value.surfaceDepth].sort(),
-    imagePosture: [...value.imagePosture].sort(),
-  });
-  const registeredImagePosture = profileAuthority?.designDnaNarrowing.imagePosture[0];
-  const expectedArtDirectionPosture = registeredImagePosture
-    ? archetype.family === "collection-search"
-      ? {
-          imagePosture: registeredImagePosture,
-          ratio: "natural",
-          crop: registeredImagePosture === "contained" ? "contain" : "editorial",
-          overlay: "none",
-        }
-      : {
-          imagePosture: registeredImagePosture,
-          ratio: registeredImagePosture === "contained" ? "portrait" : "natural",
-          crop: registeredImagePosture === "contained" ? "contain" : "editorial",
-          overlay: "none",
-        }
-    : undefined;
-  if (
-    materialized.fingerprint !== archetype.profile.fingerprint ||
-    !profileAuthority ||
-    canonicalValueString(semanticFrameIds(profileAuthority.compatibleSharedFrameProfileIds)) !==
-      canonicalValueString(semanticFrameIds(archetype.compatibleSharedFrameProfileIds)) ||
-    profileAuthority.defaultSharedFrameProfileId !== archetype.defaultSharedFrameProfileId ||
-    canonicalValueString(semanticDesignDnaNarrowing(profileAuthority.designDnaNarrowing)) !==
-      canonicalValueString(semanticDesignDnaNarrowing(archetype.designDnaNarrowing)) ||
-    canonicalValueString(profileAuthority.responsiveArchitecture) !==
-      canonicalValueString(archetype.responsivePosture) ||
-    canonicalValueString(expectedArtDirectionPosture) !==
-      canonicalValueString(archetype.artDirectionPosture) ||
-    archetype.fallbackBehavior !== "use-family-fallback"
-  ) {
-    fail("stale-profile", "The dynamic route archetype no longer matches registered authority.");
-  }
-  if (
-    archetype.componentPresentations.length !== materialized.slots.length ||
-    archetype.componentPresentations.some((presentation, index) => {
-      const selection = plan.profile!.componentSelections[index];
-      const slot = materialized.slots[index];
-      const expectedAnatomyId =
-        archetype.family === "collection-search" &&
-        profileAuthority &&
-        "productCardAnatomyId" in profileAuthority
-          ? profileAuthority.productCardAnatomyId
-          : archetype.family === "product-detail" &&
-              profileAuthority &&
-              "relatedProductCardAnatomyId" in profileAuthority
-            ? profileAuthority.relatedProductCardAnatomyId
-            : undefined;
-      return (
-        slot?.slotId !== presentation.slotId ||
-        slot.component !== presentation.component ||
-        selection?.slotId !== presentation.slotId ||
-        !selection.variants.includes(presentation.variant) ||
-        (plan.slots[index]?.required === true && !presentation.visible) ||
-        presentation.anatomyId !== expectedAnatomyId ||
-        canonicalValueString(presentation.boundedParameters) !==
-          canonicalValueString(slot.boundedParameters)
-      );
-    })
-  ) {
-    fail(
-      "invalid-presentation",
-      "The dynamic route archetype does not match its registered PageBlueprint presentation.",
-    );
-  }
-  try {
-    for (const presentation of archetype.componentPresentations) {
-      const definition = veskifyComponentDefinitionsV2.find(
-        ({ type }) => type === presentation.component,
-      );
-      if (!definition) {
-        fail("invalid-presentation", "The dynamic route component definition is unavailable.");
-      }
-      for (const selection of presentation.approvedAssetSelections ?? []) {
-        const slot = definition.assetSlots.find(({ id }) => id === selection.assetSlotId);
-        if (!slot || !slot.acceptedRoles.includes(selection.role)) {
-          fail(
-            "invalid-presentation",
-            "The dynamic route approved asset selection is outside current registered authority.",
-          );
-        }
-      }
-      if (archetype.family === "collection-search") {
-        dynamicCollectionCommerceContentSchema.parse(presentation.content);
-        const props = dynamicCollectionCommercePropsSchema.parse(presentation.props);
-        if (props.cardVariant !== presentation.anatomyId) {
-          fail(
-            "invalid-presentation",
-            `The collection product-card anatomy ${props.cardVariant} does not match its executable presentation ${presentation.anatomyId} for ${archetype.profile.profileId}.`,
-          );
-        }
-        if (presentation.styleOverrides) {
-          dynamicCollectionCommerceStyleOverridesSchema.parse(presentation.styleOverrides);
-        }
-      } else {
-        dynamicProductDetailContentSchema.parse(presentation.content);
-        const props = dynamicProductDetailPropsSchema.parse(presentation.props);
-        if (props.relatedCardVariant !== presentation.anatomyId) {
-          fail(
-            "invalid-presentation",
-            `The related-product-card anatomy ${props.relatedCardVariant} does not match its executable presentation ${presentation.anatomyId} for ${archetype.profile.profileId}.`,
-          );
-        }
-        if (presentation.styleOverrides) {
-          dynamicProductDetailStyleOverridesSchema.parse(presentation.styleOverrides);
-        }
-      }
-      projectSectionStyleOverrides(presentation.styleOverrides);
-    }
-  } catch (cause) {
-    fail(
-      "invalid-presentation",
-      "The dynamic route archetype fails its registered component schema.",
-      cause,
-    );
-  }
-  if (
-    enforceSelectedFrame &&
-    snapshot.sharedFrame &&
-    !isDynamicCommerceArchetypeCompatibleWithSharedFrame(archetype, snapshot.sharedFrame.profileId)
-  ) {
-    fail(
-      "incompatible-shared-frame",
-      "The dynamic route archetype is incompatible with the current frame.",
-    );
-  }
-}
-
-/**
- * Validates the complete compact authority against the current executable
- * PageBlueprint and component registry contracts without materializing route
- * commerce bindings.
- */
-export function validateCurrentDynamicCommercePresentationAuthority(
-  snapshot: StorefrontSnapshot,
-): void {
-  if (!snapshot.dynamicCommercePresentation) return;
-  const authority = exactAuthority(snapshot);
-  for (const archetype of authority.collectionSearchArchetypes) {
-    assertCurrentArchetype(snapshot, archetype, false);
-  }
-  for (const archetype of authority.productDetailArchetypes) {
-    assertCurrentArchetype(snapshot, archetype, false);
-  }
-  const selectedArchetypeIds = new Set([
-    ...authority.collectionRouteMappings.map(({ archetypeId }) => archetypeId),
-    ...authority.collectionContextRules.map(({ archetypeId }) => archetypeId),
-    authority.searchArchetypeId,
-    authority.fallbacks.collectionArchetypeId,
-    authority.fallbacks.searchArchetypeId,
-    authority.fallbacks.productDetailArchetypeId,
-    ...authority.productTypeMappings.map(({ archetypeId }) => archetypeId),
-    ...authority.productComplexityRules.map(({ archetypeId }) => archetypeId),
-  ]);
-  for (const archetypeId of selectedArchetypeIds) {
-    const archetype = [
-      ...authority.collectionSearchArchetypes,
-      ...authority.productDetailArchetypes,
-    ].find(({ id }) => id === archetypeId);
-    if (!archetype) {
-      fail("unknown-archetype", "The dynamic route selection references an unavailable archetype.");
-    }
-    assertCurrentArchetype(snapshot, archetype);
-  }
-}
-
-function exactAuthority(snapshot: StorefrontSnapshot): DynamicCommercePresentationAuthority {
-  if (!snapshot.dynamicCommercePresentation) {
-    return fail(
-      "missing-authority",
-      "This snapshot has no dynamic-commerce presentation authority.",
-    );
-  }
-  const parsed = dynamicCommercePresentationAuthoritySchema.safeParse(
-    snapshot.dynamicCommercePresentation,
-  );
-  if (!parsed.success)
-    return fail("stale-authority", "Dynamic-commerce authority is invalid.", parsed.error);
-  return migrateP10B18B03PresentationAuthority(parsed.data).authority;
-}
-
-function pageAuthority(
-  snapshot: StorefrontSnapshot,
-  archetype: DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype,
-  commerceContext: PageFamilyAuthority["commerceContext"],
-): PageFamilyAuthority {
-  const localeCoverage = [
-    ...new Set(snapshot.pages.flatMap((page) => page.pageFamily?.localeCoverage ?? [])),
-  ];
-  return {
-    familyId:
-      archetype.family === "product-detail"
-        ? "product-detail"
-        : commerceContext.kind === "search"
-          ? "search-results"
-          : "collection",
-    familyVersion: PAGE_FAMILY_AUTHORITY_VERSION,
-    profileId: archetype.profile.profileId,
-    profileVersion: archetype.profile.profileVersion,
-    localeCoverage: localeCoverage.length > 0 ? localeCoverage : ["en"],
-    sharedFrameId: SITE_MAP_SHARED_FRAME.id,
-    sharedFrameVersion: SITE_MAP_SHARED_FRAME.version,
-    commerceContext,
-    commerceOperationAuthority: "read-only-presentation",
-    navigationAreas: [],
-    evidenceReferences: [],
-  };
-}
-
-function routeSection(
-  archetype: DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype,
-  route: DynamicCommerceRouteInventoryEntry,
-  catalogue: CatalogueDisplayModel,
-  projection: "runtime" | "editor" | undefined,
-  searchBinding?: DynamicCommerceSearchRuntimeBinding,
-  publicProductRouteIds: ReadonlySet<string> = new Set(),
-): SectionInstance {
-  const presentation = archetype.componentPresentations[0];
-  if (!presentation) return fail("invalid-presentation", "The selected archetype is empty.");
-  const revision = `canonical-commerce-${canonicalValueFingerprint(catalogue)}`;
-  const approvedAssetSelections = presentation.approvedAssetSelections ?? [];
-  const sectionId =
-    projection === "editor"
-      ? `section_${archetype.id}`
-      : dynamicCommerceRouteSectionId(route.id, archetype.id);
-  const approvedAssetPlacements = approvedAssetSelections.map((selection) => ({
-    type: "PLACE_APPROVED_SOURCE_ASSET" as const,
-    pageId: projection === "editor" ? archetype.id : route.id,
-    componentId: sectionId,
-    componentType: presentation.component,
-    assetSlotId: selection.assetSlotId,
-    assetId: selection.assetId,
-    role: selection.role,
-    assetRevision: selection.assetRevision,
-    materialFingerprint: selection.materialFingerprint,
-    sourceReferenceId: selection.sourceReferenceId,
-    ...(selection.sourceProvenanceKind
-      ? { sourceProvenanceKind: selection.sourceProvenanceKind }
-      : {}),
-    ...(selection.placementContext ? { placementContext: selection.placementContext } : {}),
-    ...(selection.placementPurpose ? { placementPurpose: selection.placementPurpose } : {}),
-    ...(selection.reusePolicy ? { reusePolicy: selection.reusePolicy } : {}),
-    ...(selection.affinity ? { affinity: selection.affinity } : {}),
-    ...(selection.responsiveSourceAssetIds
-      ? { responsiveSourceAssetIds: [...selection.responsiveSourceAssetIds] }
-      : {}),
-    required: selection.required,
-  }));
-  const approvedAssetPresentations = approvedAssetSelections.map(({ presentation: asset }) =>
-    structuredClone(asset),
-  );
-  if (route.kind === "product" && archetype.family === "product-detail") {
-    const relatedProductIds = route.relatedProductIds ?? [];
-    if (
-      relatedProductIds.some(
-        (relatedProductId) => !catalogue.products.some(({ id }) => id === relatedProductId),
-      )
-    ) {
-      return fail(
-        "unknown-commerce-identity",
-        "A protected related-product binding is unavailable in the current catalogue.",
-      );
-    }
-    return {
-      id: sectionId,
-      component: "dynamicProductDetail",
-      variant: presentation.variant,
-      visible: presentation.visible,
-      content: {
-        ...structuredClone(presentation.content),
-        productId: route.productId,
-        // This is an exact protected runtime binding retained from canonical
-        // materialization or migration. Never infer relations from catalogue
-        // order or place them in editable archetype design state.
-        relatedProductIds: [...relatedProductIds],
-        canonicalRevision: revision,
-      },
-      props: structuredClone(presentation.props),
-      styleOverrides: structuredClone(projectSectionStyleOverrides(presentation.styleOverrides)),
-      approvedAssetPlacements,
-      approvedAssetPresentations,
-    };
-  }
-  if (route.kind === "collection" && archetype.family === "collection-search") {
-    const collection = catalogue.collections.find(({ id }) => id === route.collectionId);
-    if (!collection)
-      return fail("unknown-commerce-identity", "The route collection is unavailable.");
-    return {
-      id: sectionId,
-      component: "dynamicCollectionCommerce",
-      variant: presentation.variant,
-      visible: presentation.visible,
-      content: {
-        ...structuredClone(presentation.content),
-        collectionId: collection.id,
-        productIds: [...collection.productIds],
-        canonicalRevision: revision,
-      },
-      props: structuredClone(presentation.props),
-      styleOverrides: structuredClone(projectSectionStyleOverrides(presentation.styleOverrides)),
-      approvedAssetPlacements,
-      approvedAssetPresentations,
-    };
-  }
-  if (route.kind === "search" && archetype.family === "collection-search") {
-    if (!searchBinding) {
-      return fail(
-        "unknown-commerce-identity",
-        "Search presentation requires an exact transient canonical search-result projection.",
-      );
-    }
-    if (searchBinding.canonicalRevision !== revision) {
-      return fail(
-        "stale-authority",
-        "The transient search result revision no longer matches the canonical catalogue.",
-      );
-    }
-    if (new Set(searchBinding.resultProductIds).size !== searchBinding.resultProductIds.length) {
-      return fail("invalid-presentation", "Transient search result identities must be unique.");
-    }
-    for (const productId of searchBinding.resultProductIds) {
-      if (!catalogue.products.some(({ id }) => id === productId)) {
-        return fail(
-          "unknown-commerce-identity",
-          "A transient search result is unavailable in the current catalogue.",
-        );
-      }
-      if (!publicProductRouteIds.has(productId)) {
-        return fail(
-          "unknown-commerce-identity",
-          "A transient search result has no current public product route authority.",
-        );
-      }
-    }
-    return {
-      id: sectionId,
-      component: "dynamicCollectionCommerce",
-      variant: presentation.variant,
-      visible: presentation.visible,
-      content: {
-        ...structuredClone(presentation.content),
-        productIds: [...searchBinding.resultProductIds],
-        canonicalRevision: revision,
-      },
-      props: structuredClone(presentation.props),
-      styleOverrides: structuredClone(projectSectionStyleOverrides(presentation.styleOverrides)),
-      approvedAssetPlacements,
-      approvedAssetPresentations,
-    };
-  }
-  return fail(
-    "unknown-archetype",
-    "The selected archetype does not match the dynamic route family.",
-  );
-}
-
-export type ResolvedDynamicCommerceRoutePage = Readonly<{
-  route: DynamicCommerceRouteInventoryEntry;
-  archetype: DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype;
-  page: PageModel;
-}>;
-
-/**
- * Exact runtime-only product membership for the single persisted search route. This binding is
- * derived from the current catalogue by StorefrontProductSearchPort and is never snapshot state.
- */
-export type DynamicCommerceSearchRuntimeBinding = Readonly<{
-  canonicalRevision: string;
-  resultProductIds: readonly string[];
-}>;
-
-export type DynamicCommerceRuntimeBindingPolicy =
-  "runtime-collection-membership" | "runtime-search-results";
-
-/**
- * The persisted v1 field describes the collection half of a shared collection/search archetype.
- * Runtime execution is truthfully discriminated by the selected route context without changing
- * historical snapshot or compiled-artifact fingerprints.
- */
-export function resolveDynamicCommerceRuntimeBindingPolicy(
-  archetype: DynamicCommerceCollectionSearchArchetype,
-  context: "collection" | "search",
-): DynamicCommerceRuntimeBindingPolicy {
-  if (!archetype.supportedContexts.includes(context)) {
-    return fail(
-      "unknown-archetype",
-      `The selected collection/search archetype does not support ${context} runtime binding.`,
-    );
-  }
-  return context === "search" ? "runtime-search-results" : "runtime-collection-membership";
-}
-
-type DynamicCommerceRouteResolutionInput = Readonly<{
-  snapshot: StorefrontSnapshot;
-  catalogue: CatalogueDisplayModel;
-  route?: string;
-  routeId?: string;
-  searchBinding?: DynamicCommerceSearchRuntimeBinding;
-}> &
-  (
-    | Readonly<{ projection: "editor"; archetypeId?: string }>
-    | Readonly<{ projection?: "runtime"; archetypeId?: never }>
-  );
-
-export function resolveDynamicCommerceRoutePage(
-  input: DynamicCommerceRouteResolutionInput,
-): ResolvedDynamicCommerceRoutePage {
-  const authority = exactAuthority(input.snapshot);
-  const route = authority.routeInventory.find((candidate) =>
-    input.routeId ? candidate.id === input.routeId : candidate.route === input.route,
-  );
-  if (!route) return fail("unknown-route", "The requested dynamic commerce route is unavailable.");
-  // Runtime selection is always recomputed from the snapshot's canonical
-  // route/type mappings. A caller may select a different registered archetype
-  // only while explicitly projecting that archetype into the editor.
-  let archetypeId = input.projection === "editor" ? input.archetypeId : undefined;
-  if (!archetypeId && route.kind === "collection") {
-    archetypeId =
-      authority.collectionRouteMappings.find(({ routeId }) => routeId === route.id)?.archetypeId ??
-      authority.fallbacks.collectionArchetypeId;
-  }
-  if (!archetypeId && route.kind === "search") archetypeId = authority.searchArchetypeId;
-  if (!archetypeId && route.kind === "product") {
-    const product = input.catalogue.products.find(({ id }) => id === route.productId);
-    if (!product) return fail("unknown-commerce-identity", "The route product is unavailable.");
-    const knownType = authority.productTypeMappings.some(
-      ({ productTypeId }) =>
-        productTypeId === canonicalProductTypePresentationId(product.productType),
-    );
-    archetypeId = knownType
-      ? resolveProductComplexityArchetype({ product, rules: authority.productComplexityRules })
-      : authority.fallbacks.productDetailArchetypeId;
-  }
-  const archetype =
-    authority.collectionSearchArchetypes.find(({ id }) => id === archetypeId) ??
-    authority.productDetailArchetypes.find(({ id }) => id === archetypeId);
-  if (!archetype)
-    return fail("unknown-archetype", "The selected dynamic-commerce archetype is unavailable.");
-  if (route.kind === "search" && archetype.family === "collection-search") {
-    resolveDynamicCommerceRuntimeBindingPolicy(archetype, "search");
-  }
-  assertCurrentArchetype(input.snapshot, archetype);
-  const product =
-    route.kind === "product"
-      ? input.catalogue.products.find(({ id }) => id === route.productId)
-      : undefined;
-  const collection =
-    route.kind === "collection"
-      ? input.catalogue.collections.find(({ id }) => id === route.collectionId)
-      : undefined;
-  if (route.kind === "product" && !product)
-    return fail("unknown-commerce-identity", "The route product is unavailable.");
-  if (route.kind === "collection" && !collection)
-    return fail("unknown-commerce-identity", "The route collection is unavailable.");
-  const commerceContext: PageFamilyAuthority["commerceContext"] =
-    route.kind === "product"
-      ? { kind: "product", productId: route.productId }
-      : route.kind === "collection"
-        ? { kind: "collection", collectionId: route.collectionId }
-        : { kind: "search" };
-  const title = product?.title ?? collection?.title ?? ({ en: "Search", fi: "Haku" } as const);
-  const description =
-    product?.description ??
-    collection?.description ??
-    ({ en: "Search the storefront catalogue.", fi: "Hae verkkokaupan valikoimasta." } as const);
-  return {
-    route: structuredClone(route),
-    archetype: structuredClone(archetype),
-    page: {
-      id: input.projection === "editor" ? archetype.id : route.id,
-      type: route.kind === "product" ? "product" : "collection",
-      slug: route.route,
-      title: structuredClone(title),
-      seo: product?.seo ?? {
-        title: structuredClone(title),
-        metaDescription: structuredClone(description),
-      },
-      pageFamily: pageAuthority(input.snapshot, archetype, commerceContext),
-      sections: [
-        routeSection(
-          archetype,
-          route,
-          input.catalogue,
-          input.projection,
-          input.searchBinding,
-          new Set(
-            authority.routeInventory.flatMap((candidate) =>
-              candidate.kind === "product" ? [candidate.productId] : [],
-            ),
-          ),
-        ),
-      ],
-    },
-  };
-}
-
 export type DynamicCommerceEditorProjection = ResolvedDynamicCommerceRoutePage &
   Readonly<{ representativeRouteId: string }>;
 
@@ -2201,22 +1683,4 @@ export function expandDynamicCommerceRoutePages(
   const { dynamicCommercePresentation: _authority, ...legacy } = snapshot;
   void _authority;
   return storefrontSnapshotSchema.parse({ ...legacy, pages, navigation });
-}
-
-export function dynamicCommerceRouteForProduct(
-  snapshot: StorefrontSnapshot,
-  productId: string,
-): string | undefined {
-  return snapshot.dynamicCommercePresentation?.routeInventory.find(
-    (route) => route.kind === "product" && route.productId === productId,
-  )?.route;
-}
-
-export function dynamicCommerceRouteForCollection(
-  snapshot: StorefrontSnapshot,
-  collectionId: string,
-): string | undefined {
-  return snapshot.dynamicCommercePresentation?.routeInventory.find(
-    (route) => route.kind === "collection" && route.collectionId === collectionId,
-  )?.route;
 }
