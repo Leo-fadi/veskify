@@ -1,10 +1,10 @@
 # Veskify Development Guide
 
-> **Post-AR-02H planning projection:** This repository state takes effect upon explicit owner
+> **Post-AR-03B planning projection:** This repository state takes effect upon explicit owner
 > adoption/merge; it does not assert the PR's lifecycle or owner acceptance.
-> AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed upon explicit owner acceptance/merge.
+> AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed.
 > AR-02 is Partial. Remaining consumer/PageBlueprint materializer isolation remains. AR-03 is Partial.
-> Route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete upon H acceptance/merge. No next reset task is selected.
+> Route resolution, editor, migration, and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. AR-03C is the sole next task after AR-03B acceptance/merge and safe main synchronization. BATCH-05 selects no third task.
 > The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
