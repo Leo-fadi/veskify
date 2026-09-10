@@ -31,3 +31,12 @@ three minutes apart. One automatic review correction is permitted; material chan
 require fresh independent/native proof. A merge record binds the standing owner
 grant, exact final head and base to all passed gates. No override or routine new
 approval checkpoint is introduced.
+
+C's search raw-budget amendment is explicitly owner-approved: 1,650,000 becomes
+1,655,000 bytes, while search gzip stays 475,000 and all other budgets and measurement
+logic remain unchanged. The owner accepts the measured small regression; this is not
+a bundle optimization. C's submitted application source is preserved. The rejected import
+candidate, original contracts and failed old-budget CI remain historical evidence.
+Fresh independent/native verification includes real-checker boundary controls and one
+final production build; the amended head must pass new CI, including production budgets
+and `validate`, before the existing conditional protected merge and batch closeout.

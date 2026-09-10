@@ -37,9 +37,32 @@ bytes. It changes only the config assertion, associated support pin and provenan
 17 synthetic cases challenge the actual config/support/protected-input assertions.
 The original checker, support lock, contract identities and BLOCKED evidence remain
 retained locally. Raw config and private evidence are excluded from public submission.
-All six functional criteria, existing 17 commands, scope, budgets and merge gates are
-unchanged; one declared synthetic support-regression command is added. Replacement
-contract raw SHA-256 is `4fbbc59ce430062b2ebf5f69c924e6c5405a047fe8ddce66a639ab7c52822cbc`.
+At that support amendment, all six functional criteria, existing 17 commands, scope,
+budgets and merge gates stayed unchanged; one synthetic support-regression command was added.
+Its retained contract raw SHA-256 is
+`4fbbc59ce430062b2ebf5f69c924e6c5405a047fe8ddce66a639ab7c52822cbc`.
+
+The subsequent controlled build comparison measured search raw bytes at 1,649,964 on
+B's accepted base and 1,651,496 on submitted C. Original CI measured 1,651,498, exceeding
+the old 1,650,000 ceiling. All other route budgets and search gzip passed. Local search
+gzip increased from 449,067 to 449,612 bytes. Local macOS/Node 24.18.0 measurements are
+distinct from Ubuntu/Node 24.20.0 CI. Emitted module repartitioning is consistent with
+the shared increase; the exact compiler restriction was not established. One import
+candidate worsened the local result by 24 bytes and was restored.
+
+The owner explicitly accepts this regression and authorizes only search's raw ceiling
+to increase to 1,655,000 bytes. This is a budget-policy amendment, not an optimization:
+5,000 additional permitted bytes, about 0.303%, leave 3,502 bytes over the original CI
+observation. Search gzip remains 475,000; the other five raw/gzip budgets and the entire
+checker algorithm are unchanged. All application source matches submitted C. Prior
+contracts, locks, diagnostic outputs and failed CI remain preserved.
+
+The active semantic successor requires fresh independent execution of the original
+functional validations, synthetic tests of the actual checker at/over the new ceiling
+and unchanged failure controls, and one fresh final Webpack build with exact six-route
+measurements. Original results above keep their historical identities. New proof,
+native reconciliation and final-head CI are recorded separately before gated delivery.
+The original automatic review applies to the submitted head; no second request is made.
 
 The nine original inputs, 1,495 prior evidence files, accepted B support and all
 unrelated tracked files remain unchanged. Historical source archives, aggregate
