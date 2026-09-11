@@ -1,5 +1,5 @@
-import { storefrontTemplateDefinitions } from "@/application/storefront-templates";
-import { storefrontDesignSystemV1 } from "@/application/storefront-design-system";
+import { storefrontTemplateDefinitions } from "@/application/storefront-templates/registry";
+import { storefrontDesignSystemV1 } from "@/application/storefront-design-system/registry";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import { wholeStorefrontRecipeContextSchema, type WholeStorefrontRecipeContext } from "./contract";
 

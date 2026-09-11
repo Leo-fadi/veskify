@@ -2,7 +2,7 @@ import { ZodError } from "zod";
 import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
-} from "@/application/storefront-design-system";
+} from "@/application/storefront-design-system/token-refinement";
 import {
   acceptWholeStorefrontPlanningResult,
   createWholeStorefrontGenerationPlan,

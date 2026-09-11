@@ -1,7 +1,7 @@
 import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
-} from "@/application/storefront-design-system";
+} from "@/application/storefront-design-system/token-refinement";
 import {
   getExecutablePageBlueprintProfile,
   getCommercialCollectionSearchProfile,
@@ -57,17 +57,17 @@ import {
   type WholeStorefrontPageBlueprintSelectionOverride,
   WholeStorefrontGenerationPlanError,
 } from "./contract";
-import { selectStorefrontDesignDirection } from "@/application/storefront-design-system";
-import { getComponentDefinition } from "@/components/registry";
+import { selectStorefrontDesignDirection } from "@/application/storefront-design-system/registry";
+import { getHomepagePlanningDefaults } from "./homepage-planning-defaults";
 import {
   dynamicCollectionCommerceBridgeContentSchema,
   dynamicProductDetailBridgeContentSchema,
-} from "@/components/registry/dynamic-commerce-bridge";
+} from "@/components/registry/dynamic-commerce-bridge-contract";
 import {
   homepageCommerceBridgeComponentNames,
   homepageCommerceBridgeDefaults,
   type HomepageCommerceBridgeComponent,
-} from "@/components/registry/homepage-commerce-bridge";
+} from "@/components/registry/homepage-commerce-bridge-metadata";
 import {
   homepageCollectionNavigationPropsSchema,
   homepageFeaturedCollectionsPropsSchema,
@@ -91,12 +91,14 @@ import {
   resolveCommercialHomepageEvidenceAvailability,
   resolveCommercialHomepageProfileSlots,
   resolveCommercialHomepageSlotItemCardinality,
-  type CommercialCollectionSearchProfileAuthority,
   type CommercialCollectionSearchProfileId,
   type CommercialHomepageProfileId,
   type CommercialPdpProfileId,
-} from "@/application/storefront-templates";
-import type { CommercialProductDetailProfileAuthority } from "@/application/storefront-templates/contract";
+} from "@/application/storefront-templates/registry";
+import type {
+  CommercialCollectionSearchProfileAuthority,
+  CommercialProductDetailProfileAuthority,
+} from "@/application/storefront-templates/contract";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -1580,7 +1582,7 @@ function mappedBrandStoryPresentation(
       approvedAssetId: approvedAsset.assetId,
       facts: [],
     },
-    props: structuredClone(getComponentDefinition("brandStory").defaultProps),
+    props: structuredClone(getHomepagePlanningDefaults("brandStory").defaultProps),
     assetAssignments: [
       {
         slotId: "brandStoryMedia",
@@ -1717,7 +1719,7 @@ function authoritativeHomepageProfileComponents(input: {
   const selectedComponents: WholeStorefrontGenerationPlan["pagePlans"][number]["components"] =
     materialization.slots.flatMap((slot) => {
       const definition = definitionFor(definitions, slot.component);
-      const legacyDefinition = getComponentDefinition(slot.component);
+      const legacyDefinition = getHomepagePlanningDefaults(slot.component);
       if (
         (slot.component === "header" || slot.component === "footer") &&
         (planningInput.draft.sharedFrame !== undefined ||
