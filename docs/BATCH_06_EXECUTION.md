@@ -3,10 +3,10 @@
 The owner authorizes two sequential children in the original checkout. The tracker
 owns status; the roadmap owns dependency order. BATCH-05 is completed history.
 
-| Order | Child                                     | Bounded outcome                                                                                                 | Dependency                                                      |
-| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 1     | [AR-03D](AR_03D_IMPLEMENTATION_REPORT.md) | Selection contracts/operations and editor owner; three current consumer cutovers                                | Accepted PR248 merge `078ed3ca6ca61e5792969840507f2a3c5015f76d` |
-| 2     | AR-03E                                    | Legacy migration and two distinct route projections; remaining named consumers; conditional AR-03 exit evidence | D's verified merge and safe synchronization                     |
+| Order | Child                                     | Bounded outcome                                                                                                 | Dependency                                                                               |
+| ----- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 1     | [AR-03D](AR_03D_IMPLEMENTATION_REPORT.md) | Selection contracts/operations and editor owner; three current consumer cutovers                                | Accepted PR248 merge `078ed3ca6ca61e5792969840507f2a3c5015f76d`                          |
+| 2     | [AR-03E](AR_03E_IMPLEMENTATION_REPORT.md) | Legacy migration and two distinct route projections; remaining named consumers; conditional AR-03 exit evidence | Accepted PR249 merge `9ff3f3770c58e7906eb632a0d3dd302bc1ab3716` and safe synchronization |
 
 Each child has a separate branch, locked native contract and public PR. One writer
 pauses for independent verification of the complete diff, followed by native
@@ -31,3 +31,10 @@ full behavior comparisons, exact six-route raw/gzip measurements and compact rev
 transitions. Raw Git configuration remains private. Git lifecycle bookkeeping is
 recorded separately from the final source/support freeze. No new workspace, dependency
 download, deployment, fourth architectural concern or third task is authorized.
+
+D merged through PR249 at `9ff3f3770c58e7906eb632a0d3dd302bc1ab3716`. E uses the
+owner-approved nine production paths, including one shared bridge-schema owner, and
+one exact correction to D's planner import assertion. The initial E contract and
+blockers remain preserved beside its semantic successor. The [parent evidence map](AR_03_BOUNDARY_ACCEPTANCE.md)
+supports conditional AR-03 closure only after independent confirmation and E merge.
+After safe synchronization and external closeout, this batch stops without a successor.

@@ -16,7 +16,11 @@
 > projection/resolution in three narrow owners, used by four preview clients. Full migration,
 > selection/application, editor and expansion composition remained in the facade at C's boundary.
 > [AR-03D evidence](AR_03D_IMPLEMENTATION_REPORT.md) covers selection and editor owners with
-> three named consumer cutovers; full migration and expansion remain. AR-02/03 remain Partial.
+> three named consumer cutovers; full migration and expansion remained at D's boundary.
+> [AR-03E evidence](AR_03E_IMPLEMENTATION_REPORT.md) separates legacy migration and the two transient
+> projections, preserving bridge schema identity. The [parent evidence map](AR_03_BOUNDARY_ACCEPTANCE.md)
+> supports conditional AR-03 closure upon E acceptance/merge; future live-sync behavior remains
+> separately scoped. AR-02 remains Partial.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

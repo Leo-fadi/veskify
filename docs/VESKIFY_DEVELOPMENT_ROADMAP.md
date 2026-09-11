@@ -7,8 +7,8 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner acceptance/merge of AR-03D and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Partial; runtime validation/projection/resolution and authoring are isolated; migration and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.
+explicit owner acceptance/merge of AR-03E and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Baseline / closed upon explicit owner acceptance/merge; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete upon AR-03E acceptance/merge and safe closeout. No next reset task is selected. BATCH-06 selects no third task.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -750,15 +750,17 @@ the parent acceptance below still requires remaining consumer/materializer isola
 
 ### AR-03 — Extract dynamic-route authority without changing semantics
 
-**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Partial;
-runtime validation/projection/resolution and authoring are isolated; migration and expand/fold isolation remain. The accepted
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Baseline / closed
+upon explicit owner acceptance/merge of AR-03E; see the [parent evidence map](AR_03_BOUNDARY_ACCEPTANCE.md). The accepted
 [AR-03A child](governance/task-contracts/AR/AR-03A.json) extracted route matching and errors without
 changing semantics. [AR-03B](AR_03B_IMPLEMENTATION_REPORT.md) separates presentation construction,
 exact historical compatibility and shared migration/style support. [AR-03C](AR_03C_IMPLEMENTATION_REPORT.md)
 separates current validation and route projection/resolution, with four preview clients using the
 narrow entrypoint. [AR-03D](AR_03D_IMPLEMENTATION_REPORT.md) separates selection and editor operations
-and redirects their three named consumers. Migration and expand/fold isolation remain for AR-03E
-after D merges. This sequence does not change the parent dependency on AR-01; tracker status controls.
+and redirects their three named consumers. [AR-03E](AR_03E_IMPLEMENTATION_REPORT.md) separates legacy
+migration and transient expansion/reconciliation, preserving the later fold. Its approved schema
+amendment moves only existing bridge schemas into one metadata owner with unchanged compatibility
+exports. This sequence does not change the parent dependency on AR-01; tracker status controls.
 
 **Outcome:** Migration, validation, selection, runtime resolution and editor projection have clear separate owners.
 
