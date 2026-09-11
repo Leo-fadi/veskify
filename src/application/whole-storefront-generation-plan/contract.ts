@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
+import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes/design-selection-contract";
 import { storefrontDesignDirectionComponentSelectionsSchema } from "@/application/storefront-design-system/contract";
 import { approvedGenerationAssetContextSchema } from "@/application/ai-storefront-generation/approved-asset-context";
 import {
@@ -21,11 +21,9 @@ import {
   canonicalValueFingerprint,
   storefrontSnapshotSchema,
 } from "@/domain/storefront";
-import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates";
-import {
-  registeredTokenRefinementPlanSchema,
-  storefrontDesignSystemV1Schema,
-} from "@/application/storefront-design-system";
+import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates/contract";
+import { registeredTokenRefinementPlanSchema } from "@/application/storefront-design-system/token-refinement";
+import { storefrontDesignSystemV1Schema } from "@/application/storefront-design-system/contract";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import {
   commercialHomepageProfileAuthoritySchema,

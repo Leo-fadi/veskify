@@ -349,6 +349,7 @@ statusExpectation.set("AR-02E", "Baseline");
 statusExpectation.set("AR-02F", "Baseline");
 statusExpectation.set("AR-02G", "Baseline");
 statusExpectation.set("AR-02H", "Baseline");
+statusExpectation.set("AR-02I", "Baseline");
 statusExpectation.set("AR-03", "Baseline");
 statusExpectation.set("AR-03A", "Baseline");
 statusExpectation.set("AR-03B", "Baseline");
@@ -424,7 +425,7 @@ for (const record of statusRecords) {
               ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
               : record.subject === "AR-02D"
                 ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-                : ["AR-02E", "AR-02F", "AR-02G", "AR-02H"].includes(record.subject)
+                : ["AR-02E", "AR-02F", "AR-02G", "AR-02H", "AR-02I"].includes(record.subject)
                   ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
                   : ["AR-03A", "AR-03B", "AR-03C", "AR-03D", "AR-03E"].includes(record.subject)
                     ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
@@ -486,22 +487,23 @@ if (
   !trackerCurrent.includes("AR-02F is Baseline / closed.") ||
   !trackerCurrent.includes("AR-02G is Baseline / closed.") ||
   !trackerCurrent.includes("AR-02H is Baseline / closed") ||
+  !trackerCurrent.includes("AR-02I is Baseline / closed upon explicit owner acceptance/merge.") ||
   !trackerCurrent.includes("AR-02 is Partial;") ||
-  !trackerCurrent.includes("AR-03 is Baseline / closed upon explicit owner acceptance/merge;") ||
+  !trackerCurrent.includes("AR-03 is Baseline / closed;") ||
   !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
   !trackerCurrent.includes("AR-03B is Baseline / closed.") ||
   !trackerCurrent.includes(
-    "AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed upon explicit owner acceptance/merge.",
+    "AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed.",
   ) ||
   !trackerCurrent.includes("BATCH-05 is complete.") ||
   !trackerCurrent.includes("No next reset task is selected.") ||
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
-  !trackerCurrent.includes("BATCH-06 selects no third task.") ||
+  !trackerCurrent.includes("BATCH-07 selects no additional task.") ||
   nextTaskIds(trackerCurrent).length !== 0
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-03/AR-03E conditional closure and no successor are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02I conditional closure and no successor are required",
   );
 }
 if (
@@ -517,7 +519,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer and PageBlueprint materializer isolation remains. AR-03 is Baseline / closed upon explicit owner acceptance/merge; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete upon AR-03E acceptance/merge and safe closeout. No next reset task is selected. BATCH-06 selects no third task.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; remaining metadata consumers are mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete upon AR-02I acceptance/merge and safe closeout. No next reset task is selected. BATCH-07 selects no additional task.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");

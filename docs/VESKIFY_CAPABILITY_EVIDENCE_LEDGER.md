@@ -8,7 +8,7 @@
 > See [AR-02G evidence](AR_02G_IMPLEMENTATION_REPORT.md) and the [BATCH-04 mapping](BATCH_04_EXECUTION.md).
 > AR-02H preserves the original direction source and all G transitions while narrowing semantic
 > request preparation to its existing schema owners. Exact requests, errors and replay remain;
-> see [AR-02H evidence](AR_02H_IMPLEMENTATION_REPORT.md). Full compiler/materializer isolation remains.
+> see [AR-02H evidence](AR_02H_IMPLEMENTATION_REPORT.md). The remaining metadata-consumer frontier is mapped in [AR-02 evidence](AR_02_BOUNDARY_ACCEPTANCE.md).
 > AR-03B separates renderer-free presentation construction and the existing narrow historical
 > compatibility from the route facade. Public migration, errors and rendered behavior remain
 > unchanged; see [AR-03B evidence](AR_03B_IMPLEMENTATION_REPORT.md).
@@ -19,8 +19,9 @@
 > three named consumer cutovers; full migration and expansion remained at D's boundary.
 > [AR-03E evidence](AR_03E_IMPLEMENTATION_REPORT.md) separates legacy migration and the two transient
 > projections, preserving bridge schema identity. The [parent evidence map](AR_03_BOUNDARY_ACCEPTANCE.md)
-> supports conditional AR-03 closure upon E acceptance/merge; future live-sync behavior remains
-> separately scoped. AR-02 remains Partial.
+> supports accepted AR-03 closure after PR250; future live-sync behavior remains
+> separately scoped. AR-02 remains Partial. [AR-02I evidence](AR_02I_IMPLEMENTATION_REPORT.md) isolates
+> the existing planner, contract, recipe and provider roots while identifying remaining metadata consumers.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

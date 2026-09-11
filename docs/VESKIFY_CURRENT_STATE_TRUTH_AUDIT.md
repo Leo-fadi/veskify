@@ -2,11 +2,10 @@
 
 > **AR-00 scope note:** This point-in-time audit retains P10B-19A-10C's historical exact-next
 > statement as evidence of that accepted event. Current reset scheduling is projected by the
-> SDD addendum, roadmap, and tracker. Effective upon explicit owner acceptance/merge of AR-03E, the repository
+> SDD addendum, roadmap, and tracker. Effective upon explicit owner acceptance/merge of AR-02I, the repository
 > projection states: AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline /
-> closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02 is Partial; remaining consumer/materializer isolation
-> remains. AR-03 is Baseline / closed upon explicit owner acceptance/merge; original same-input characterization and separate ownership are verified.
-> AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete upon AR-03E acceptance/merge and safe closeout. No next reset task is selected. BATCH-06 selects no third task.
+> closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; remaining metadata consumers are mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified.
+> AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete upon AR-02I acceptance/merge and safe closeout. No next reset task is selected. BATCH-07 selects no additional task.
 > This projection does not assert the actual PR lifecycle or owner acceptance.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
