@@ -37,7 +37,7 @@ import {
   type DynamicCommerceDesignSelection,
 } from "@/application/dynamic-commerce-routes/design-selection-contract";
 import { validateDynamicCommerceDesignSelection } from "@/application/dynamic-commerce-routes/design-selection";
-import { materializeCurrentDynamicCommercePresentationAuthority } from "@/application/dynamic-commerce-routes";
+import { materializeCurrentDynamicCommercePresentationAuthority } from "@/application/dynamic-commerce-routes/legacy-migration";
 import { canonicalLocaleOrder } from "@/domain/shared";
 import {
   canonicalValueFingerprint,

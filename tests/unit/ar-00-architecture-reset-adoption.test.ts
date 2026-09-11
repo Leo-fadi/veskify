@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-03D");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-03E");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -648,7 +648,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete upon AR-03E acceptance/merge and safe closeout. No next reset task is selected. BATCH-06 selects no third task.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -665,7 +665,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete upon AR-03E acceptance/merge and safe closeout. No next reset task is selected. BATCH-06 selects no third task.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
@@ -886,6 +886,18 @@ describe("AR-02C bounded proposed status transition", () => {
     (task) => {
       const directory = fixture();
       try {
+        if (task === "AR-03") {
+          const path = join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
+          const original = readFileSync(path, "utf8");
+          const changed = original.replace(
+            "AR-03 is **Baseline / closed upon explicit owner acceptance/merge**;",
+            "AR-03 is **Baseline / closed**;",
+          );
+          expect(changed).not.toBe(original);
+          writeFileSync(path, changed);
+          expect(() => check(directory)).toThrow(/AR-03\/AR-03E conditional closure/);
+          return;
+        }
         const path = join(directory, "README.md");
         writeFileSync(
           path,

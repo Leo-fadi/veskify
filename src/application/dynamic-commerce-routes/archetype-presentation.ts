@@ -397,3 +397,11 @@ export function createProductArchetype(
     commerceBindingPolicy: "runtime-protected-product",
   };
 }
+
+export function registeredDynamicCommerceCollectionArchetypeId(profileId: string): string {
+  const archetypeId = collectionArchetypeId(profileId);
+  if (!archetypeId) {
+    return fail("stale-profile", `Collection profile ${profileId} has no archetype ID.`);
+  }
+  return archetypeId;
+}

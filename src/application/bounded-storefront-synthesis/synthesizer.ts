@@ -24,9 +24,9 @@ import type { ContentSupportFactAuthority } from "@/application/content-support-
 import type { PageFactEvidenceAuthority } from "@/application/storefront-site-map";
 import {
   dynamicCommerceDesignSelectionSchema,
-  validateDynamicCommerceDesignSelection,
   type DynamicCommerceDesignSelection,
-} from "@/application/dynamic-commerce-routes";
+} from "@/application/dynamic-commerce-routes/design-selection-contract";
+import { validateDynamicCommerceDesignSelection } from "@/application/dynamic-commerce-routes/design-selection";
 import {
   applyCommercialSharedFrame,
   canonicalValueFingerprint,

@@ -148,7 +148,7 @@ describe("AR-03D authoring ownership", () => {
         dynamicCommerceDesignSelectionSchema: "design-selection-contract",
         DynamicCommerceDesignSelection: "design-selection-contract",
         validateDynamicCommerceDesignSelection: "design-selection",
-        materializeCurrentDynamicCommercePresentationAuthority: "",
+        materializeCurrentDynamicCommercePresentationAuthority: "legacy-migration",
       },
     ],
     [

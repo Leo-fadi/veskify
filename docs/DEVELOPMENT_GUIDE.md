@@ -1,10 +1,10 @@
 # Veskify Development Guide
 
-> **Post-AR-03D planning projection:** This repository state takes effect upon explicit owner
+> **Post-AR-03E planning projection:** This repository state takes effect upon explicit owner
 > adoption/merge; it does not assert the PR's lifecycle or owner acceptance.
 > AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed.
-> AR-02 is Partial. Remaining consumer/PageBlueprint materializer isolation remains. AR-03 is Partial.
-> Runtime validation/projection/resolution and authoring are isolated; migration and expand/fold isolation remain. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 continues with AR-03E after AR-03D merges and safe synchronization. AR-03E is the exact next selected child after AR-03D merges and safe synchronization. BATCH-06 selects no third task.
+> AR-02 is Partial. Remaining consumer/PageBlueprint materializer isolation remains. AR-03 is Baseline / closed upon explicit owner acceptance/merge.
+> Original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed upon explicit owner acceptance/merge. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete upon AR-03E acceptance/merge and safe closeout. No next reset task is selected. BATCH-06 selects no third task.
 > The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child

@@ -1,12 +1,9 @@
-import { z } from "zod";
 import {
-  dynamicCollectionCommerceContentSchema,
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
   dynamicCollectionCommercePropsSchema,
 } from "./dynamic-collection-commerce";
 import {
-  dynamicProductDetailContentSchema,
   dynamicProductDetailDefaultContent,
   dynamicProductDetailDefaultProps,
   dynamicProductDetailPropsSchema,
@@ -20,9 +17,15 @@ import {
   relatedProductsDefinition,
 } from "./product";
 import { defineComponent } from "./contract";
-import { idSchema } from "@/domain/shared";
+import {
+  dynamicCollectionCommerceBridgeContentSchema,
+  dynamicProductDetailBridgeContentSchema,
+} from "./dynamic-commerce-bridge-contract";
+export {
+  dynamicCollectionCommerceBridgeContentSchema,
+  dynamicProductDetailBridgeContentSchema,
+} from "./dynamic-commerce-bridge-contract";
 
-const canonicalRevisionSchema = z.string().trim().min(1).max(240);
 const dynamicCollectionCommerceBridgeVariants = [
   "standard",
   "editorial",
@@ -55,14 +58,6 @@ const legacyProductGridVariantByCollectionVariant: Readonly<
   campaignLedDiscovery: "editorial",
   denseSearch: "compact",
 };
-
-export const dynamicCollectionCommerceBridgeContentSchema = dynamicCollectionCommerceContentSchema
-  .extend({
-    collectionId: idSchema,
-    productIds: z.array(idSchema),
-    canonicalRevision: canonicalRevisionSchema,
-  })
-  .strict();
 
 export const dynamicCollectionCommerceBridgeDefinition = defineComponent({
   type: "dynamicCollectionCommerce",
@@ -146,14 +141,6 @@ export const dynamicCollectionCommerceBridgeDefinition = defineComponent({
     </>
   ),
 });
-
-export const dynamicProductDetailBridgeContentSchema = dynamicProductDetailContentSchema
-  .extend({
-    productId: idSchema,
-    relatedProductIds: z.array(idSchema),
-    canonicalRevision: canonicalRevisionSchema,
-  })
-  .strict();
 
 export const dynamicProductDetailBridgeDefinition = defineComponent({
   type: "dynamicProductDetail",
