@@ -1,9 +1,9 @@
+import { getExecutablePageBlueprintProfile } from "@/application/storefront-templates/registry";
 import {
-  getExecutablePageBlueprintProfile,
   runtimeComponentForPageBlueprintComponent,
   type ExecutablePageBlueprintMaterialization,
-} from "@/application/storefront-templates";
-import { veskifyComponentCapabilityManifest } from "@/components/registry";
+} from "@/application/storefront-templates/profile-materializer";
+import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import type {
   commercialDesignGrammarVersion,
   CommercialGrammarLayer,

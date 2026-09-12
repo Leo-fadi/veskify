@@ -1,73 +1,71 @@
 # AR-02 boundary acceptance evidence
 
-AR-02 remains **Partial**. This map explains the remaining acceptance gap; the
-delivery tracker remains the status authority. AR-03 stays closed after accepted
-PR250; AR-02I is accepted in PR251. J closes only its assigned provider boundary,
-conditional on independent verification and the authorized review, CI and merge gates.
+AR-02 remains **Partial**. K completes its four named production paths, but independent
+verification found a further metadata-only compiler consumer with a renderer dependency.
+Child success and parent closure are separate decisions. The tracker remains the status
+authority; AR-03 stays closed. Retained predecessor evidence keeps its original provenance.
 
 The original [AR-02 acceptance](VESKIFY_DEVELOPMENT_ROADMAP.md#ar-02--separate-pure-capability-metadata-from-rendering-and-diagnostics)
 requires truthful template capabilities without editor/runtime/audit imports,
 shared definition ownership, preserved adapted legacy definitions and identities,
-bounded client import cutovers, dependency tests and actual bundle proof. T01,
-T02 and T21 retain their original legacy replay, composition-integrity and
-safe-removal meanings. Passing J’s seven pure roots does not establish complete parent exit.
+bounded actual consumer cutovers, dependency tests and bundle proof. T01 retains
+legacy parse/read/render/publication behavior without write-back; T02 preserves
+resolved references and rejects impossible composition; T21 protects live importers,
+routes and supported persisted dependencies. These requirements are unchanged.
 
-| Original concern                               | Existing ownership and evidence                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Metadata and renderer bindings share authority | A separates live renderer observations; B owns deterministic conformance; C–E extract utility/homepage/commerce metadata; F derives V2 adapters from those same definitions. Registry compatibility exports remain. I moves the existing homepage bridge names, variants and already-normalized defaults into `homepage-commerce-bridge-metadata.ts`, importing the original schemas and V2 definitions. Identity tests compare the old and new entrypoints.               |
-| Actual planner/provider consumption            | G separates template capability metadata; H narrows semantic-request consumption. I narrows the existing `whole-storefront-generation-plan/{planner,contract,recipe-context,provider}.ts` and adds `homepage-planning-defaults.ts`. The unchanged closure helper resolves all six I roots, including re-exports, type erasure and external dependencies. Tests reject renderer/JSX/CSS/React/Puck/Next/editor/audit/full-store execution edges; only Zod remains external. |
-| No second capability inventory                 | Planning defaults derive from existing homepage/hero metadata and bridge values. The full 18-component domain, including header/footer before their skip, announcement/newsletter and legacy brand story, matches runtime normalization. Unknown/prototype names fail; each request receives fresh values. Supplied V2 definitions and instance validation remain authoritative.                                                                                           |
-| Same inputs and supported callers              | The actual-base harness retains 94 complete planning/provider cases, including 72 direction/profile/frame/media combinations. Final observations compare complete recipes, targets, plans, validations, defaults, errors and fingerprints, with source nonmutation. Existing planning/provider/commercial-profile/proposal/lifecycle tests and unchanged D/E assertions cover named consumers.                                                                             |
-| T01 legacy and render parity                   | Unchanged A-09B/A-09C tests replay supported historical and publication rendering. Existing report files are copied before those tests write their declared destinations. Complete retained metadata/render/conformance observations are compared byte-for-byte; old results are not relabeled as new execution.                                                                                                                                                           |
-| T02 composition integrity                      | Existing blueprint asset/responsive/omission-substitution checks and plan/slot-override/lifecycle cases preserve reference, region, order, binding and impossible-input rejection. No layout graph, schema or default inventory is introduced.                                                                                                                                                                                                                             |
-| T21 safe removal and historical integrity      | Original moved declarations and remaining consumer statements are compared against base `ddca96fb79e9ab03692e0fe79dfd202ef8c83d76`. Compatibility exports and live callers remain. A-07/A-09/A-10 source readers, aggregate expectations, archives and accepted transition records are unchanged. No component or supported persisted dependency is removed.                                                                                                               |
-| Actual client/build evidence                   | The fresh corrected coordinator build passes all six unchanged budgets. Search is 1,653,098 raw / 450,276 gzip bytes, with 1,902 / 24,724 bytes headroom. This is slightly larger than the comparable accepted E build, not an optimization claim. A separate fresh independent build is required before delivery. Source/toolchain identities, emitted chunks/manifests and exact per-route measurements are retained externally.                                         |
+| Original concern                       | Ownership and evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared metadata and renderer authority | A separates live renderer observations; B owns deterministic conformance; C–E extract existing utility/homepage/commerce metadata; F derives V2 adaptations from those definitions. G separates template capabilities, H semantic-request consumption, and I the actual planner/recipe/provider roots. Compatibility identities and adapted legacy definitions remain. Their accepted reports retain original provenance.                                                                                                                                         |
+| Provider descriptions and schemas      | Accepted J, PR252, derives all 29 runtime descriptions from existing groups in override order. Three bridges consume the same source values. Existing operation/proposal schemas move unchanged to one owner; compatibility entrypoints expose the same instances. Its actual OpenAI prompt and component-contract projection have pure runtime closures.                                                                                                                                                                                                         |
+| Actual skill and grammar consumers     | K moves existing capability queries to `capability-knowledge-core.ts`; actual `governed-skill-packages.ts` uses that core. Actual `commercial-design-grammar.ts` imports the manifest, template registry and pure profile materializer directly. Complete runtime/re-export/type-erasure/installed-package closure checks cover all three roots. No second manifest or skill inventory exists.                                                                                                                                                                    |
+| Same inputs, identities and failures   | K's actual-base pre-edit capture retains 8,870 complete capability queries, selections, bounded parameters, provider-safe contexts, package/alias fingerprints and outcomes, grammar categories/materializations/errors and default/custom inventories. Full final comparison is byte-identical. Declaration comparison preserves every moved query and inventory projection plus all grammar/package nonimport bodies. Shared public singleton/error/schema identities and injected package consumers remain.                                                    |
+| T01 legacy and render parity           | Applicable A–J boundary tests, current-behavior characterization and unchanged A-09A/B/C replays protect retained canonical/render/publication observations. Previous replay reports are preserved before unchanged tests write their declared destinations. K does not change renderer bodies, persisted schemas, fixtures or historical readers.                                                                                                                                                                                                                |
+| T02 composition integrity              | Existing capability/package, grammar, operation/proposal, atomic storefront application and lifecycle tests retain profile/slot/component/variant/binding validation, order and scope checks. Grammar still validates complete materialization fingerprints and current slot selections before inheritance/compatibility resolution. No topology, region graph or competing page representation is introduced.                                                                                                                                                    |
+| T21 safe removal                       | Old capability facade and package/grammar exports remain. Typecheck and real consumer regressions cover the moved declarations; complete source integrity protects all nonowned dependencies. A-07/A-09/A-10 hashes, archives, aggregate expectations and accepted source transitions are unchanged. The existing inventory command discloses two unselected historical cases; no assertion or supported dependency is removed.                                                                                                                                   |
+| Actual client/build proof              | J's independently executed final build passed all six unchanged budgets; search measured 1,654,471 raw / 450,631 gzip bytes. K's early candidate passes all six limits; search is 1,654,458 raw / 450,623 gzip bytes, with 542 raw bytes headroom. The first independent final build passes all six limits (search 1,654,456 raw / 450,619 gzip); the documentary correction requires a fresh final recheck with its own source/toolchain/chunk identities. Bundle ceilings and measurement algorithm remain unchanged; separation is not a size-reduction claim. |
 
-The preceding table retains I's implementation-stage evidence and original build
-measurements as historical context. J adds one source leaf shared by the three
-bridges and a descriptive lookup derived from existing groups in runtime override
-order. All 29 keys, fields, labels and variant references remain identical.
-Operation/proposal schemas, including the existing homepage redesign intent
-schema, move unchanged to one owner; compatibility entrypoints expose the same
-instances. J's actual prompt and component-contract projection use these owners.
+The four previously named descriptive reads now have explicit owners and consumers:
 
-J's pre-edit observations cover 241 complete prompts, 18 request outcomes and 210
-actual component-validation calls. Final comparisons preserve bytes, optional
-fields, grants, assets, fingerprints and terminal errors. Seven complete runtime
-closures cover these actual consumers and their owners. The full request wrapper
-remains mixed because it still performs contextual permission canonicalization,
-real component validation and executable planner/lifecycle composition.
+| Read                                                | Actual owner and consumer                                                                                                      |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| OpenAI operation-prompt vocabulary                  | `integrations/ai/openai/prompt.ts` uses shared component descriptions and the pure AI-provider schema leaf (J).                |
+| Storefront component-contract projection            | The real `ai-storefront-generation/request-builder.ts` invokes `component-contract-projection.ts` at the original point (J).   |
+| Skill capability manifest/profile/component queries | Actual governed packages import `design-skills/capability-knowledge-core.ts`, which reads the canonical manifest directly (K). |
+| Commercial grammar/profile metadata                 | Actual `commercial-design-grammar.ts` uses `capability-manifest.ts`, template `registry.ts` and `profile-materializer.ts` (K). |
 
-J's complete candidate Webpack build passes all six unchanged budgets. Search is
-1,654,469 raw / 450,633 gzip bytes, leaving 531 / 24,367 bytes headroom. This is a
-small increase from I, not an optimization claim. A separately executed fresh
-independent final build remains mandatory. J's declaration comparisons use its
-actual base `fc82fea163486262ba7cf6a4eb252243309404bc`; the earlier I base and evidence
-above are not relabeled. Historical A-07/A-09/A-10 pins and transitions remain
-unchanged, with new applicable replay execution retained separately.
+Two mixed compatibility operations remain visible. The inventory facade calls the
+real `designSkillRegistry.list()`; that registry contains the existing executable
+skills, and its constructor validates declared components through the runtime
+registry. No-argument and supplied-registry tests trace actual calls and preserve
+sorted immutable inventory behavior. The facade is not a pure proof root.
 
-The following metadata-only dependency problems remain for K's approved scope.
-They prevent claiming complete original parent acceptance at J:
+The storefront request wrapper still invokes
+`canonicalizeAiStorefrontPermissionGrants(..., target, context)`, which performs
+actual registered `definition.validate` calls. It also retains executable planning
+and lifecycle composition. J's retained 241 prompt cases, 18 request outcomes and
+210 validation calls prove that those checks survived; K reruns the applicable J
+boundary tests. Its isolated description projection does not make the entire
+request wrapper pure. Renderer/editor adapters, materialization, proposal execution
+and publishing continue to use their runtime authorities.
 
-| Consumer and import edge                                                                               | Actual operation and remaining gap                                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `application/design-skills/capability-knowledge.ts` → broad component registry manifest                | Reads manifest versions/fingerprints, profile/component/variant/page-type and binding/asset metadata to build capability knowledge. It does not need rendering for that projection; its manifest import remains broad. |
-| `application/design-skills/commercial-design-grammar.ts` → broad registry manifest and template barrel | Resolves commercial grammar/categories and registered component variants for materialized profile slots. The metadata/profile queries still acquire broader template/registry dependencies.                            |
+Independent verification corrected the preflight's incomplete residual inventory.
+`prompted-storefront-design-compiler/semantic-capability-features.ts` imports
+`getCommercialCollectionSearchProfile`, `getCommercialHomepageProfile` and
+`getCommercialPdpProfile` through `storefront-templates/index.ts`. Its actual
+consumer, `semantic-compatibility-resolution.ts`, invokes metadata-to-feature/axis
+projection during semantic selection. This is a descriptive operation, not runtime
+component validation. The resolved runtime chain continues through template
+`materializer.ts`, component registry `index.ts`, `registry.ts`, `legacy-registry.ts`
+and `commerce-utility.tsx` (with CSS).
 
-The actual `design-skills/governed-skill-packages.ts` queries also still import the
-mixed capability facade. K must narrow that consumer while preserving package
-validation and real default/custom registry inventory behavior. These are approved
-K targets, not a claim that every broader root is metadata-only. Registry rendering, live renderer
-observations, complete-store materialization, synthesis, proposal/lifecycle and
-publication execution legitimately use runtime behavior. The template
-`materializer.ts` invokes definition validation; the separate
-`profile-materializer.ts` is deterministic metadata projection. Classification must
-follow the operation rather than the module name.
+This blocks the original AR-02 outcome and compiler-metadata acceptance requiring
+no React/Puck/Next renderer closure, even though the named K roots pass. Each getter's
+defining profile module already has a renderer-free closure. The minimal missing
+change is a separately scoped import cutover to those existing owners, with complete
+boundary and parity proof. It is outside K's four production paths and is not
+implemented or scheduled here. No original acceptance clause is reduced.
 
-The independent verifier assesses the complete original acceptance and this residual
-classification against the final diff and executable evidence. No new commercial
-quality, live Vesko synchronization or publication readiness is claimed. AR-04/AR-05
-remain blocked by the Partial AR-02 parent; AR-06 depends on AR-05, AR-08 remains
-incomplete, and AR-23 remains independently eligible and unstarted. BATCH-08 authorizes J then K. K starts only after J merges and safe synchronization;
-its independent verifier must assess the complete original parent acceptance and
-report any remaining gap. No third implementation task is authorized.
+AR-04/AR-05 remain dependency-blocked and unstarted; AR-06 depends on AR-05. AR-23 remains
+independently eligible and unstarted. AR-03 stays closed; AR-08 remains incomplete.
+No visual improvement, design-family activation, live Vesko synchronization or
+production publication readiness is claimed.
