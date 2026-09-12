@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   designOperationSchema,
   proposalValidationResultSchema,
-} from "@/application/design-operations";
+} from "@/application/design-operations/contract";
 import type { StorefrontRenderContext } from "@/components/registry";
 import type { RegisteredComponentType } from "@/components/registry/registry";
 import type { BrandSystem } from "@/domain/design-system";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { designOperationSchema } from "@/application/design-operations";
+import { designOperationSchema } from "@/application/design-operations/contract";
 import { localeSchema, localizedTextSchema } from "@/domain/shared";
 import { brandSystemSchema } from "@/domain/design-system";
 import { pageModelSchema, type PageModel } from "@/domain/storefront";
@@ -7,7 +7,7 @@ import {
   designOperationTypeSchema,
   designSkillScopeSchema,
   type DesignSkillScope,
-} from "@/application/design-skills";
+} from "@/application/design-skills/contract";
 import type { StorefrontRenderContext } from "@/components/registry";
 
 export const aiProviderTargetSchema = z

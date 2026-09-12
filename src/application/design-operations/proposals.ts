@@ -1,32 +1,20 @@
-import { z } from "zod";
+import type { z } from "zod";
 import { validateRegisteredPage } from "@/components/registry";
 import { localizedTextSchema } from "@/domain/shared";
 import { pageModelSchema, type PageModel } from "@/domain/storefront";
 import {
   applyDesignOperations,
-  designOperationSchema,
   generateHomepageRedesign,
   type DesignOperation,
   type DesignOperationContext,
 } from "./operations";
-
-export const proposalValidationResultSchema = z
-  .object({ valid: z.boolean(), errors: z.array(z.string()) })
-  .strict();
-export const designProposalSchema = z
-  .object({
-    id: z.string().regex(/^proposal_[a-f0-9]{8}$/),
-    originalPage: pageModelSchema,
-    proposedPage: pageModelSchema,
-    operations: z.array(designOperationSchema),
-    summary: localizedTextSchema,
-    validation: proposalValidationResultSchema,
-    status: z.enum(["pending", "accepted", "rejected"]),
-  })
-  .strict();
-
-export type ProposalValidationResult = z.infer<typeof proposalValidationResultSchema>;
-export type DesignProposal = z.infer<typeof designProposalSchema>;
+import { designOperationSchema, designProposalSchema, type DesignProposal } from "./contract";
+export {
+  proposalValidationResultSchema,
+  designProposalSchema,
+  type ProposalValidationResult,
+  type DesignProposal,
+} from "./contract";
 
 function stableHash(value: string) {
   let hash = 0x811c9dc5;

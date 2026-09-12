@@ -22,6 +22,9 @@
 > supports accepted AR-03 closure after PR250; future live-sync behavior remains
 > separately scoped. AR-02 remains Partial. [AR-02I evidence](AR_02I_IMPLEMENTATION_REPORT.md) isolates
 > the existing planner, contract, recipe and provider roots while identifying remaining metadata consumers.
+> [AR-02J evidence](AR_02J_IMPLEMENTATION_REPORT.md) isolates the actual operation prompt and component
+> descriptions while retaining contextual permission/component validation. AR-02 remains Partial
+> pending the approved K boundary and complete independent parent assessment.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

@@ -1,3 +1,4 @@
+import { homepageCommerceBridgeDescriptions } from "./component-description-sources";
 import { z } from "zod";
 import type {
   CollectionPresentationContext,
@@ -401,8 +402,8 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
     propsSchema: input.propsSchema,
     defaultContent: input.defaultContent,
     defaultProps: input.defaultProps,
-    editorFields: {},
-    protectedFields: { readOnlyPaths: ["catalogue", "navigation", "bindings", "assetAssignments"] },
+    editorFields: homepageCommerceBridgeDescriptions[input.component].editorFields,
+    protectedFields: homepageCommerceBridgeDescriptions[input.component].protectedFields,
     renderer: ({
       sectionId,
       variant,
@@ -477,7 +478,7 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
 export const homepageCommerceBridgeDefinitions = {
   homepageHero: bridge({
     component: "homepageHero",
-    label: "Homepage hero",
+    label: homepageCommerceBridgeDescriptions.homepageHero.label,
     contentSchema: homepageHeroContentSchema,
     propsSchema: homepageHeroPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageHero.content,
@@ -485,7 +486,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepageFeaturedCollections: bridge({
     component: "homepageFeaturedCollections",
-    label: "Featured collections",
+    label: homepageCommerceBridgeDescriptions.homepageFeaturedCollections.label,
     contentSchema: homepageFeaturedCollectionsContentSchema,
     propsSchema: homepageFeaturedCollectionsPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageFeaturedCollections.content,
@@ -493,7 +494,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepageFeaturedProducts: bridge({
     component: "homepageFeaturedProducts",
-    label: "Featured products",
+    label: homepageCommerceBridgeDescriptions.homepageFeaturedProducts.label,
     contentSchema: homepageFeaturedProductsContentSchema,
     propsSchema: homepageFeaturedProductsPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageFeaturedProducts.content,
@@ -501,7 +502,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepageCollectionNavigation: bridge({
     component: "homepageCollectionNavigation",
-    label: "Collection navigation",
+    label: homepageCommerceBridgeDescriptions.homepageCollectionNavigation.label,
     contentSchema: homepageCollectionNavigationContentSchema,
     propsSchema: homepageCollectionNavigationPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageCollectionNavigation.content,
@@ -509,7 +510,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepagePromotion: bridge({
     component: "homepagePromotion",
-    label: "Promotional content",
+    label: homepageCommerceBridgeDescriptions.homepagePromotion.label,
     contentSchema: homepagePromotionContentSchema,
     propsSchema: homepagePromotionPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepagePromotion.content,
@@ -517,7 +518,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepageTrust: bridge({
     component: "homepageTrust",
-    label: "Trust and support",
+    label: homepageCommerceBridgeDescriptions.homepageTrust.label,
     contentSchema: homepageTrustContentSchema,
     propsSchema: homepageTrustPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageTrust.content,
@@ -525,7 +526,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepageEditorial: bridge({
     component: "homepageEditorial",
-    label: "Editorial storytelling",
+    label: homepageCommerceBridgeDescriptions.homepageEditorial.label,
     contentSchema: homepageEditorialContentSchema,
     propsSchema: homepageEditorialPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageEditorial.content,
@@ -533,7 +534,7 @@ export const homepageCommerceBridgeDefinitions = {
   }),
   homepageProof: bridge({
     component: "homepageProof",
-    label: "Evidence-grounded proof",
+    label: homepageCommerceBridgeDescriptions.homepageProof.label,
     contentSchema: homepageProofContentSchema,
     propsSchema: homepageProofPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageProof.content,

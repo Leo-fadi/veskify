@@ -1,4 +1,8 @@
 import {
+  type dynamicCollectionCommerceBridgeVariants,
+  dynamicCommerceBridgeDescriptions,
+} from "./component-description-sources";
+import {
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
   dynamicCollectionCommercePropsSchema,
@@ -26,17 +30,6 @@ export {
   dynamicProductDetailBridgeContentSchema,
 } from "./dynamic-commerce-bridge-contract";
 
-const dynamicCollectionCommerceBridgeVariants = [
-  "standard",
-  "editorial",
-  "compact",
-  "gallery",
-  "editorialDiscovery",
-  "catalogueComparison",
-  "campaignLedDiscovery",
-  "denseSearch",
-] as const;
-
 /**
  * The legacy bridge composes the legacy product grid while canonical collection
  * rendering is handled by the v2 component. New canonical variants therefore
@@ -60,10 +53,10 @@ const legacyProductGridVariantByCollectionVariant: Readonly<
 };
 
 export const dynamicCollectionCommerceBridgeDefinition = defineComponent({
-  type: "dynamicCollectionCommerce",
-  label: "Dynamic collection commerce",
+  type: dynamicCommerceBridgeDescriptions.dynamicCollectionCommerce.type,
+  label: dynamicCommerceBridgeDescriptions.dynamicCollectionCommerce.label,
   allowedPageTypes: ["collection"],
-  variants: dynamicCollectionCommerceBridgeVariants,
+  variants: dynamicCommerceBridgeDescriptions.dynamicCollectionCommerce.variants,
   defaultVariant: "standard",
   contentSchema: dynamicCollectionCommerceBridgeContentSchema,
   propsSchema: dynamicCollectionCommercePropsSchema,
@@ -74,16 +67,8 @@ export const dynamicCollectionCommerceBridgeDefinition = defineComponent({
     canonicalRevision: "canonical-commerce-default",
   },
   defaultProps: dynamicCollectionCommerceDefaultProps,
-  editorFields: {},
-  protectedFields: {
-    readOnlyPaths: [
-      "collectionId",
-      "productIds",
-      "canonicalRevision",
-      "catalogue.collections",
-      "catalogue.products",
-    ],
-  },
+  editorFields: dynamicCommerceBridgeDescriptions.dynamicCollectionCommerce.editorFields,
+  protectedFields: dynamicCommerceBridgeDescriptions.dynamicCollectionCommerce.protectedFields,
   validateContext: ({ content, context }) => {
     if (!context.catalogue.collections.some((item) => item.id === content.collectionId)) {
       throw new Error(`Unknown collection reference: ${content.collectionId}.`);
@@ -143,10 +128,10 @@ export const dynamicCollectionCommerceBridgeDefinition = defineComponent({
 });
 
 export const dynamicProductDetailBridgeDefinition = defineComponent({
-  type: "dynamicProductDetail",
-  label: "Dynamic product detail",
+  type: dynamicCommerceBridgeDescriptions.dynamicProductDetail.type,
+  label: dynamicCommerceBridgeDescriptions.dynamicProductDetail.label,
   allowedPageTypes: ["product"],
-  variants: ["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"] as const,
+  variants: dynamicCommerceBridgeDescriptions.dynamicProductDetail.variants,
   defaultVariant: "balanced",
   contentSchema: dynamicProductDetailBridgeContentSchema,
   propsSchema: dynamicProductDetailPropsSchema,
@@ -157,10 +142,8 @@ export const dynamicProductDetailBridgeDefinition = defineComponent({
     canonicalRevision: "canonical-commerce-default",
   },
   defaultProps: dynamicProductDetailDefaultProps,
-  editorFields: {},
-  protectedFields: {
-    readOnlyPaths: ["productId", "relatedProductIds", "canonicalRevision", "catalogue.products"],
-  },
+  editorFields: dynamicCommerceBridgeDescriptions.dynamicProductDetail.editorFields,
+  protectedFields: dynamicCommerceBridgeDescriptions.dynamicProductDetail.protectedFields,
   validateContext: ({ content, context }) => {
     const products = new Set(context.catalogue.products.map((item) => item.id));
     if (!products.has(content.productId)) {
