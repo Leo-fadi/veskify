@@ -1,4 +1,4 @@
-import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system";
+import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system/contract";
 import { assetRoleSchema, commerceBindingSourceTypeSchema } from "@/domain/component-platform";
 import { idSchema, localeSchema } from "@/domain/shared";
 import { canonicalValueFingerprint, pageTypeSchema } from "@/domain/storefront";
@@ -8,7 +8,7 @@ import {
   SkillCapabilityKnowledgeError,
   type SkillCapabilityKnowledgeConsumer,
   type SkillCapabilityManifestReference,
-} from "./capability-knowledge";
+} from "./capability-knowledge-core";
 
 const fingerprintSchema = z.string().trim().min(1).max(240);
 const versionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);

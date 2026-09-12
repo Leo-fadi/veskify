@@ -23,8 +23,11 @@
 > separately scoped. AR-02 remains Partial. [AR-02I evidence](AR_02I_IMPLEMENTATION_REPORT.md) isolates
 > the existing planner, contract, recipe and provider roots while identifying remaining metadata consumers.
 > [AR-02J evidence](AR_02J_IMPLEMENTATION_REPORT.md) isolates the actual operation prompt and component
-> descriptions while retaining contextual permission/component validation. AR-02 remains Partial
-> pending the approved K boundary and complete independent parent assessment.
+> descriptions while retaining contextual permission/component validation. [AR-02K evidence](AR_02K_IMPLEMENTATION_REPORT.md)
+> isolates actual governed capability and grammar consumers while preserving real default inventory.
+> Complete original AR-02 acceptance remains incomplete: semantic-capability-features.ts still reads profile metadata
+> through the renderer-bearing template barrel. AR-02 remains Partial; the exact edge is in the parent evidence map.
+> AR-03 remains closed. AR-04/AR-05 remain dependency-blocked and unstarted; AR-06 depends on AR-05.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
