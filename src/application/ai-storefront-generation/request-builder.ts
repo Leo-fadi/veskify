@@ -8,7 +8,7 @@ import {
 } from "@/application/ai-storefront";
 import type { AiOperationPermissionGrant } from "@/application/ai-provider";
 import { designSkillRegistry, protectedDesignPaths } from "@/application/design-skills";
-import { getComponentDefinition } from "@/components/registry";
+import { projectStorefrontComponentContracts } from "./component-contract-projection";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { canonicalLocaleOrder } from "@/domain/shared";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
@@ -237,27 +237,7 @@ export function buildAiStorefrontProviderRequest(
         .sections.find((section) => section.id === targetSection.sectionId)!,
     ),
   }));
-  const componentContracts = [
-    ...new Set(plan.sectionTargets.map((sectionTarget) => sectionTarget.componentType)),
-  ]
-    .sort((left, right) => left.localeCompare(right))
-    .map((componentType) => {
-      const definition = getComponentDefinition(componentType);
-      const operationTypes = plan.sectionTargets
-        .filter((targetSection) => targetSection.componentType === componentType)
-        .flatMap((targetSection) => targetSection.operationTypes);
-      return {
-        componentType,
-        variants: [...definition.variants],
-        approvedStyleFields: [
-          ...(operationTypes.includes("CHANGE_SECTION_VARIANT") ? (["variant"] as const) : []),
-          ...(operationTypes.includes("CHANGE_BACKGROUND") ? (["background"] as const) : []),
-          ...(operationTypes.includes("CHANGE_TYPOGRAPHY") ? (["typography"] as const) : []),
-          ...(operationTypes.includes("CHANGE_DENSITY") ? (["density"] as const) : []),
-          ...(operationTypes.includes("CHANGE_SHAPE") ? (["shape"] as const) : []),
-        ],
-      };
-    });
+  const componentContracts = projectStorefrontComponentContracts(plan);
   const requestId =
     command.correlationRequestId ??
     `storefront_request_${canonicalValueFingerprint({

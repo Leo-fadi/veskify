@@ -1,5 +1,8 @@
-import { aiOperationRequestSchema, type AiOperationRequest } from "@/application/ai-provider";
-import { getComponentDefinition } from "@/components/registry";
+import {
+  aiOperationRequestSchema,
+  type AiOperationRequest,
+} from "@/application/ai-provider/contract";
+import { getComponentDescription } from "@/components/registry/component-descriptions";
 
 const protectedFields = [
   "price",
@@ -50,7 +53,7 @@ function promptSafeSection(
   request: AiOperationRequest,
   section: AiOperationRequest["page"]["sections"][number],
 ) {
-  const definition = getComponentDefinition(section.component);
+  const definition = getComponentDescription(section.component);
   const operationTypes = sectionOperationTypes(request, section.id);
   const content: Record<string, unknown> = {};
   const props: Record<string, unknown> = {};
@@ -109,7 +112,7 @@ function approvedComponentVocabulary(request: AiOperationRequest) {
   return [...permitted.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([componentType, operations]) => {
-      const definition = getComponentDefinition(componentType);
+      const definition = getComponentDescription(componentType);
       return {
         componentType,
         label: definition.label,

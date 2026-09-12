@@ -1,4 +1,9 @@
 import {
+  contentSupportBridgeDescription,
+  contentSupportBridgeVariants,
+  type ContentSupportBridgeComponent,
+} from "./component-description-sources";
+import {
   componentInstanceV2Schema,
   type ComponentInstanceV2,
   type ComponentProjectionContext,
@@ -33,7 +38,6 @@ import {
   contentSupportDefinition,
   contentSupportPropsSchema,
   contentSupportStyleOverridesSchema,
-  contentSupportVariantSchema,
   type ContentSupportProps,
   type ContentSupportStyleOverrides,
 } from "./content-support";
@@ -41,14 +45,13 @@ import { homepageEditorialDefinition, homepagePromotionDefinition } from "./home
 import { veskifyComponentRegistryV2 } from "./v2-registry";
 import styles from "@/components/storefront/content-support.module.css";
 
-export const contentSupportBridgeComponentNames = ["contentSupport"] as const;
-export type ContentSupportBridgeComponent = (typeof contentSupportBridgeComponentNames)[number];
+export {
+  contentSupportBridgeComponentNames,
+  contentSupportBridgeVariants,
+  type ContentSupportBridgeComponent,
+} from "./component-description-sources";
+const firstVariant = contentSupportBridgeVariants[0];
 
-const variants = contentSupportVariantSchema.options;
-const firstVariant = variants[0];
-if (!firstVariant) throw new Error("Content/support requires registered variants.");
-
-export const contentSupportBridgeVariants = [firstVariant, ...variants.slice(1)] as const;
 export const contentSupportBridgeDefaults = {
   contentSupport: {
     content: contentSupportDefaultContent,
@@ -1500,24 +1503,17 @@ export function validateContentSupportPageDocuments(
 
 export const contentSupportBridgeDefinitions = {
   contentSupport: defineComponent({
-    type: "contentSupport",
-    label: "Content and support",
+    type: contentSupportBridgeDescription.type,
+    label: contentSupportBridgeDescription.label,
     allowedPageTypes: [...contentSupportDefinition.supportedPageTypes],
-    variants: contentSupportBridgeVariants,
+    variants: contentSupportBridgeDescription.variants,
     defaultVariant: firstVariant,
     contentSchema: contentSupportContentSchema,
     propsSchema: contentSupportPropsSchema,
     defaultContent: contentSupportBridgeDefaults.contentSupport.content,
     defaultProps: contentSupportBridgeDefaults.contentSupport.props,
-    editorFields: {},
-    protectedFields: {
-      readOnlyPaths: [
-        "content.factDocumentId",
-        "bindings.supportFacts",
-        "bindings.campaignAction",
-        "assets.*.provenance",
-      ],
-    },
+    editorFields: contentSupportBridgeDescription.editorFields,
+    protectedFields: contentSupportBridgeDescription.protectedFields,
     validateContext: ({
       sectionId,
       variant,
