@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02K");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02L");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );
@@ -650,7 +650,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete upon AR-02K acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete upon AR-02L acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -667,7 +667,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete upon AR-02K acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete upon AR-02L acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
@@ -882,13 +882,13 @@ describe("AR-00 architecture-reset adoption guard", () => {
   });
 });
 
-describe("AR-02K bounded proposed status transition", () => {
-  it.each(["AR-02", "AR-02K", "AR-23", "AR-30"])(
+describe("AR-02L bounded proposed status transition", () => {
+  it.each(["AR-02", "AR-02L", "AR-23", "AR-30"])(
     "rejects premature %s closure despite dependency eligibility",
     (task) => {
       const directory = fixture();
       try {
-        if (task === "AR-02K") {
+        if (task === "AR-02L") {
           const path = join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
           const original = readFileSync(path, "utf8");
           const changed = original.replace(

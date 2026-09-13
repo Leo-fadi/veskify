@@ -1,9 +1,7 @@
 import type { BoundedStorefrontSynthesisSelectionNarrowing } from "@/application/bounded-storefront-synthesis";
-import {
-  getCommercialCollectionSearchProfile,
-  getCommercialHomepageProfile,
-  getCommercialPdpProfile,
-} from "@/application/storefront-templates";
+import { getCommercialCollectionSearchProfile } from "@/application/storefront-templates/commercial-collection-search-profiles";
+import { getCommercialHomepageProfile } from "@/application/storefront-templates/commercial-homepage-profiles";
+import { getCommercialPdpProfile } from "@/application/storefront-templates/commercial-pdp-profiles";
 import type { DesignDna } from "@/domain/design-system";
 import { canonicalValueFingerprint, getCommercialSharedFrameProfile } from "@/domain/storefront";
 
