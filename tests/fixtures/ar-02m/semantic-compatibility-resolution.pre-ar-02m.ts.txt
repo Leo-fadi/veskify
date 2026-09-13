@@ -2,11 +2,12 @@ import {
   CompatibleCoordinatedDirectionCandidateBudgetError,
   listCompatibleCoordinatedDirectionFactorizedCandidates,
   resolveCompatibleCoordinatedDirectionPostureFactors,
+  type BoundedStorefrontSynthesisSelectionNarrowing,
   type CompatibleCoordinatedDirectionFactorizedCandidate,
   type CompatibleCoordinatedDirectionNarrowingInput,
   type CompatibleCoordinatedDirectionPostureFactors,
-} from "@/application/bounded-storefront-synthesis/compatible-direction-selections";
-import { registeredBrandSystemForDirection } from "@/application/storefront-design-system/registered-brand-system";
+} from "@/application/bounded-storefront-synthesis";
+import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
 import {
   DERIVED_SEMANTIC_CAPABILITY_INDEX_V1,
   semanticStorefrontDesignIntentFingerprint,
@@ -18,7 +19,6 @@ import {
 } from "@/application/prompted-storefront-design-intent/semantic-contract";
 import { resolveBrandSystemDesignDna } from "@/domain/design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
-import type { BoundedStorefrontSynthesisSelectionNarrowing } from "@/application/bounded-storefront-synthesis/contract";
 import {
   semanticExactInfluenceAxesFor,
   semanticFeaturesFor,

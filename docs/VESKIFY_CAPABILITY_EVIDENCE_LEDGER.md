@@ -3,8 +3,8 @@
 > **AR-00 scope note:** Historical P10B-19A/A-10C evidence is retained unchanged. It is not a
 > current successor-task authority; status is owned only by the delivery tracker.
 > AR-02G preserves the original utility-profile source archive and historical hash while verifying
-> its metadata-only current successor. Of 76 A-10 source identities, 75 current raw hashes remain
-> unchanged and one has this explicit transition; historical aggregate constants remain unchanged.
+> its metadata-only successor. At G's accepted boundary, 75 of 76 A-10 current raw source hashes
+> were unchanged and one had that explicit transition; historical aggregate constants remain unchanged.
 > See [AR-02G evidence](AR_02G_IMPLEMENTATION_REPORT.md) and the [BATCH-04 mapping](BATCH_04_EXECUTION.md).
 > AR-02H preserves the original direction source and all G transitions while narrowing semantic
 > request preparation to its existing schema owners. Exact requests, errors and replay remain;
@@ -20,16 +20,18 @@
 > [AR-03E evidence](AR_03E_IMPLEMENTATION_REPORT.md) separates legacy migration and the two transient
 > projections, preserving bridge schema identity. The [parent evidence map](AR_03_BOUNDARY_ACCEPTANCE.md)
 > supports accepted AR-03 closure after PR250; future live-sync behavior remains
-> separately scoped. AR-02 remains Partial. [AR-02I evidence](AR_02I_IMPLEMENTATION_REPORT.md) isolates
+> separately scoped. [AR-02I evidence](AR_02I_IMPLEMENTATION_REPORT.md) isolates
 > the existing planner, contract, recipe and provider roots while identifying remaining metadata consumers.
 > [AR-02J evidence](AR_02J_IMPLEMENTATION_REPORT.md) isolates the actual operation prompt and component
 > descriptions while retaining contextual permission/component validation. [AR-02K evidence](AR_02K_IMPLEMENTATION_REPORT.md)
 > isolates actual governed capability and grammar consumers while preserving real default inventory.
 > [AR-02L evidence](AR_02L_IMPLEMENTATION_REPORT.md) narrows the actual feature getters to their defining leaves.
-> Complete original AR-02 acceptance remains incomplete: coordinated-direction schema, validation and
-> candidate metadata still reach rendering through broad barrels. AR-02 remains Partial; the connected
-> residual and actual operations are recorded in the parent evidence map.
-> AR-03 remains closed. AR-04/AR-05 remain dependency-blocked and unstarted; AR-06 depends on AR-05.
+> [AR-02M evidence](AR_02M_IMPLEMENTATION_REPORT.md) narrows coordinated schemas, direction validation,
+> candidate eligibility and the actual semantic resolver together, retaining four exact historical
+> source archives and fixed original hashes. Original G/H transitions and aggregate expectations remain.
+> Complete original AR-02 acceptance is assessed in the parent evidence map; closure takes effect
+> only upon independent verification and accepted AR-02M merge. AR-03 remains closed.
+> AR-04/AR-05 are eligible / unstarted after that merge; AR-06 remains dependent on AR-05.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.

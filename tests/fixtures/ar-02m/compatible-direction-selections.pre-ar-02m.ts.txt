@@ -1,12 +1,12 @@
-import { resolveApprovedAssetPlacement } from "@/application/ai-storefront-generation/approved-asset-placement-authority";
-import { getCommercialCollectionSearchProfile as collectionProfile } from "@/application/storefront-templates/commercial-collection-search-profiles";
+import { resolveApprovedAssetPlacement } from "@/application/ai-storefront-generation";
 import {
+  getCommercialCollectionSearchProfile as collectionProfile,
   getCommercialHomepageProfile as homepageProfile,
+  getCommercialPdpProfile as pdpProfile,
+  getExecutablePageBlueprintProfile as executableProfile,
   resolveCommercialHomepageEvidenceAvailability as homepageEvidence,
   resolveCommercialHomepageProfileSlots as resolveHomepageSlots,
-} from "@/application/storefront-templates/commercial-homepage-profiles";
-import { getCommercialPdpProfile as pdpProfile } from "@/application/storefront-templates/commercial-pdp-profiles";
-import { getExecutablePageBlueprintProfile as executableProfile } from "@/application/storefront-templates/registry";
+} from "@/application/storefront-templates";
 import {
   canonicalValueFingerprint as fingerprint,
   isDynamicCommerceArchetypeCompatibleWithSharedFrame as supportsSharedFrame,
