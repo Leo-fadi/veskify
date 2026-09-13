@@ -52,9 +52,7 @@ describe("AR-02L actual semantic feature metadata", () => {
 
   it("rejects the old barrel in an isolated fixture without editing the production root", () => {
     const before = readFileSync(featureRoot, "utf8");
-    const scratch = process.env.CI
-      ? join(tmpdir(), "veskify-batch-09/ar-02l/temp-fixtures")
-      : "/private/tmp/veskify-batch-09/ar-02l/temp-fixtures";
+    const scratch = join(tmpdir(), "veskify-batch-09/ar-02l/temp-fixtures");
     mkdirSync(scratch, { recursive: true });
     const fixture = join(mkdtempSync(join(scratch, "old-barrel-")), "control.ts");
     writeFileSync(
