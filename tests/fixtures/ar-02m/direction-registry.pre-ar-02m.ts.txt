@@ -1,6 +1,8 @@
-import { getCommercialCollectionSearchProfile } from "@/application/storefront-templates/commercial-collection-search-profiles";
-import { getCommercialHomepageProfile } from "@/application/storefront-templates/commercial-homepage-profiles";
-import { getCommercialPdpProfile } from "@/application/storefront-templates/commercial-pdp-profiles";
+import {
+  getCommercialCollectionSearchProfile,
+  getCommercialHomepageProfile,
+  getCommercialPdpProfile,
+} from "@/application/storefront-templates";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import type { CanonicalProductCardAnatomyId } from "@/domain/product-card";
 import { canonicalValueFingerprint, getCommercialSharedFrameProfile } from "@/domain/storefront";

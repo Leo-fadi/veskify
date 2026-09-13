@@ -1,13 +1,15 @@
 import { z } from "zod";
-import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system/contract";
-import { commercialCollectionSearchProfileIdSchema } from "@/application/storefront-templates/commercial-collection-search-profiles";
-import { commercialHomepageProfileIdSchema } from "@/application/storefront-templates/commercial-homepage-profiles";
-import { commercialPdpProfileIdSchema } from "@/application/storefront-templates/commercial-pdp-profiles";
+import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system";
+import {
+  commercialCollectionSearchProfileIdSchema,
+  commercialHomepageProfileIdSchema,
+  commercialPdpProfileIdSchema,
+} from "@/application/storefront-templates";
 import {
   canonicalValueFingerprint,
   commercialSharedFrameProfileIdSchema,
 } from "@/domain/storefront";
-import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes/design-selection-contract";
+import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
 import {
   wholeStorefrontApprovedAssetRoleSelectionsSchema,
   wholeStorefrontPageBlueprintSelectionOverridesSchema,

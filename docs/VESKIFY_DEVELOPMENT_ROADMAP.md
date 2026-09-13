@@ -7,8 +7,8 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner acceptance/merge of AR-02L and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Partial; the coordinated-direction metadata dependency remains mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete upon AR-02L acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
+explicit owner acceptance/merge of AR-02M and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Baseline / closed upon explicit owner acceptance/merge; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04/AR-05 are eligible / unstarted after that merge; AR-06 remains dependent on AR-05. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete upon AR-02M acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -718,23 +718,16 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 
 ### AR-02 — Separate pure capability metadata from rendering and diagnostics
 
-**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Partial;
-the remaining coordinated-direction metadata path is mapped in AR_02_BOUNDARY_ACCEPTANCE.md; tracker status controls.
+**Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Baseline / closed
+upon independently verified AR-02M acceptance/merge; the tracker controls status.
 
-The approved [AR-02A child](governance/task-contracts/AR/AR-02A.json) separates live renderer
-observation and report composition with unchanged observed behavior. It is a preparatory slice;
-the parent acceptance below still requires remaining metadata-consumer isolation. See its
-[implementation report](AR_02A_IMPLEMENTATION_REPORT.md) and the [BATCH-01 queue](BATCH_01_EXECUTION.md).
-
-[AR-02I](AR_02I_IMPLEMENTATION_REPORT.md) isolates the existing planner/recipe/provider roots. The
-[parent evidence map](AR_02_BOUNDARY_ACCEPTANCE.md) identifies out-of-scope metadata consumers that
-remain after I. [AR-02J](AR_02J_IMPLEMENTATION_REPORT.md) isolates actual provider descriptions and
-schema consumption. [AR-02K](AR_02K_IMPLEMENTATION_REPORT.md) isolates the actual governed-package
-and grammar consumers while preserving the real default inventory facade. Complete original
-parent acceptance remains incomplete. [AR-02L](AR_02L_IMPLEMENTATION_REPORT.md) narrows the feature
-getters to existing leaves, while coordinated-direction schemas, validation and candidate metadata
-still reach renderer-bearing barrels; the parent map records the connected residual. AR-04/AR-05 remain dependency-blocked and unstarted;
-AR-06 depends on AR-05. AR-03 stays closed.
+Accepted A-L slices preserve shared definitions, renderer observations, adapted legacy identities,
+actual planner/provider/skill/grammar consumers and semantic feature metadata. Their original reports
+retain their provenance, including L's explicit evidence recovery. [AR-02M](AR_02M_IMPLEMENTATION_REPORT.md)
+narrows the connected schema, direction registry, candidate eligibility and actual semantic resolver
+imports together. The [parent evidence map](AR_02_BOUNDARY_ACCEPTANCE.md) assesses the complete original
+acceptance below; closure requires independent verification and accepted merge. AR-03 stays closed.
+AR-04/AR-05 are eligible / unstarted after that merge; AR-06 remains dependent on AR-05.
 
 **Outcome:** Template planning can use truthful component capabilities without importing editor/runtime/audit implementations.
 

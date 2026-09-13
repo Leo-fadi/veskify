@@ -329,7 +329,17 @@ function fingerprintProtectedAuthority(repositoryRoot: string): string {
             ? "cacb58d5debc5b00367b68df6b503335082d7a37549742d967116388b525d3f0"
             : path === "src/application/bounded-storefront-synthesis/direction-contract.ts"
               ? "f62ab54f221d084a0f593d2a090feca7ba9ddce4f9d23dcf8688960f4d8d1b28"
-              : undefined,
+              : path === "src/application/bounded-storefront-synthesis/contract.ts"
+                ? "39dc68a8484c6c9ce70dfb271ed5c25261dba31aa0b2801741bf439bb1d71784"
+                : path === "src/application/bounded-storefront-synthesis/direction-registry.ts"
+                  ? "89bc33413448fadb73a56385c4e9cd1b12ca6b23e1022eb0e5cbf4e6c0605ca1"
+                  : path ===
+                      "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts"
+                    ? "ff2af5f1cee5458e633e476cfc8bf2ffbbeb3e8ed6b451cb46f9219614db96dc"
+                    : path ===
+                        "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts"
+                      ? "0defde83c5531069f5c1091c5918220b702e1869469f0000822deec70e7530bb"
+                      : undefined,
       }),
     );
     hash.update("\0");

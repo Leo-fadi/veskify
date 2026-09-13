@@ -106,19 +106,21 @@ describe("AR-02L actual semantic feature metadata", () => {
     }
   });
 
-  it("keeps actual resolver/influence callers and discloses the unresolved metadata chain", () => {
+  it("keeps actual resolver/influence callers within the reconciled metadata boundary", () => {
     const resolver =
       "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts";
     expect(owners(resolver).semanticFeaturesFor).toBe("./semantic-capability-features");
     expect(owners(resolver).semanticExactInfluenceAxesFor).toBe("./semantic-capability-features");
     expect(owners(resolver).listCompatibleCoordinatedDirectionFactorizedCandidates).toBe(
-      "@/application/bounded-storefront-synthesis",
+      "@/application/bounded-storefront-synthesis/compatible-direction-selections",
     );
     expect(
       owners("src/application/bounded-storefront-synthesis/direction-registry.ts")
         .getCommercialHomepageProfile,
-    ).toBe("@/application/storefront-templates");
-    expect(() => resolveRuntimeImportClosure(resolver)).toThrow(/commerce-utility\.module\.css/u);
+    ).toBe("@/application/storefront-templates/commercial-homepage-profiles");
+    const closure = resolveRuntimeImportClosure(resolver);
+    expect(closure.runtimePaths.filter((path) => forbidden.test(path))).toEqual([]);
+    expect(closure.externalRuntimeImports.map(({ specifier }) => specifier)).toEqual(["zod"]);
   });
 
   it("preserves the complete supported observation domain, failures, axes and immutability", () => {

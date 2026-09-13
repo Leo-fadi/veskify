@@ -7,6 +7,10 @@ const paths = [
   "src/application/storefront-templates/commercial-utility-profiles.ts",
   "src/application/bounded-storefront-synthesis/direction-contract.ts",
   "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts",
+  "src/application/bounded-storefront-synthesis/contract.ts",
+  "src/application/bounded-storefront-synthesis/direction-registry.ts",
+  "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+  "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts",
 ] as const;
 const authorities = [
   {
@@ -33,10 +37,42 @@ const authorities = [
     archivePath: "tests/fixtures/ar-02h/direction-contract.pre-ar-02h.ts.txt",
     successorSha256: "f38de9d89c4b5793ba8ad77e4c9e490bb4dc309699da559f23c02a926ece0509",
   },
+  {
+    taskId: "AR-02M",
+    path: paths[3],
+    baseCommit: "0743d63b706a61501eab366752540503ad367044",
+    originalSha256: "39dc68a8484c6c9ce70dfb271ed5c25261dba31aa0b2801741bf439bb1d71784",
+    archivePath: "tests/fixtures/ar-02m/synthesis-contract.pre-ar-02m.ts.txt",
+    successorSha256: "79f8521e808fe48d42ff085f2c1d3e847a460ee981560383be4c41b1e69d2f85",
+  },
+  {
+    taskId: "AR-02M",
+    path: paths[4],
+    baseCommit: "0743d63b706a61501eab366752540503ad367044",
+    originalSha256: "89bc33413448fadb73a56385c4e9cd1b12ca6b23e1022eb0e5cbf4e6c0605ca1",
+    archivePath: "tests/fixtures/ar-02m/direction-registry.pre-ar-02m.ts.txt",
+    successorSha256: "71df379d776efa940334356987ed6b8a9c72d9c8f2f8f26c15ce66f51be092d4",
+  },
+  {
+    taskId: "AR-02M",
+    path: paths[5],
+    baseCommit: "0743d63b706a61501eab366752540503ad367044",
+    originalSha256: "ff2af5f1cee5458e633e476cfc8bf2ffbbeb3e8ed6b451cb46f9219614db96dc",
+    archivePath: "tests/fixtures/ar-02m/compatible-direction-selections.pre-ar-02m.ts.txt",
+    successorSha256: "dafd8210fb868797d7ba8ae48b948b5f816e68627bff0d47433d9cb764dbdcbe",
+  },
+  {
+    taskId: "AR-02M",
+    path: paths[6],
+    baseCommit: "0743d63b706a61501eab366752540503ad367044",
+    originalSha256: "0defde83c5531069f5c1091c5918220b702e1869469f0000822deec70e7530bb",
+    archivePath: "tests/fixtures/ar-02m/semantic-compatibility-resolution.pre-ar-02m.ts.txt",
+    successorSha256: "22efb180825d76f39de79661bd7be4e6642cc857ca0073bf0a0def01383b6383",
+  },
 ] as const;
 const recordSchema = z
   .object({
-    taskId: z.enum(["AR-02G", "AR-02H"]),
+    taskId: z.enum(["AR-02G", "AR-02H", "AR-02M"]),
     path: z.enum(paths),
     baseCommit: z.string().regex(/^[a-f0-9]{40}$/u),
     originalSha256: z.string().regex(/^[a-f0-9]{64}$/u),
@@ -47,7 +83,12 @@ const recordSchema = z
   .superRefine((value, context) => {
     if (
       (value.taskId === "AR-02G" && value.path !== paths[0] && value.path !== paths[2]) ||
-      (value.taskId === "AR-02H" && value.path !== paths[1])
+      (value.taskId === "AR-02H" && value.path !== paths[1]) ||
+      (value.taskId === "AR-02M" &&
+        value.path !== paths[3] &&
+        value.path !== paths[4] &&
+        value.path !== paths[5] &&
+        value.path !== paths[6])
     )
       context.addIssue({ code: "custom", message: "Transition task and path do not match." });
   });
