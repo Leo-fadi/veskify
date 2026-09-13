@@ -1,0 +1,390 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "BATCH-09",
+  "taskId": "AR-02L",
+  "title": "Renderer-free semantic-feature metadata boundary",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-02l-semantic-feature-boundary",
+  "baseCommit": "85bd4d36c63f4ff9b49f7fa5111f010a96a494f4",
+  "objective": "Narrow only three semantic feature profile-getter imports to their existing defining leaves; preserve all declarations and actual resolver behavior.",
+  "expectedOutcome": "Feature operations have a complete renderer-free closure with identical observations. Independently assess complete original AR02 acceptance; retained coordinated-direction metadata residual means Partial, AR03 remains closed.",
+  "dependencies": [
+    {
+      "taskId": "AR-02K",
+      "requiredState": "MERGED",
+      "commit": "85bd4d36c63f4ff9b49f7fa5111f010a96a494f4"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "AGENTS.md; docs/DEVELOPMENT_GUIDE.md section4; docs/AGENT_TEAM_WORKFLOW.md; both Veskify skills; native contract/verdict schemas. SDD sections4/6/7, ADR001..004, incorporated AR addendum and unchanged original AR02/T01/T02/T21. Tracker is status authority.",
+    "Direct autonomous BATCH-09 owner instruction and /Users/leo/Downloads/BATCH-09_Codex_Runbook.md SHA256 14d0e974003647231089dcc0b020c9a622b0d4cf075eb8cf392127ba82ce0583. Only original checkout; accepted PR253 verified; no owning L PR; branch created at exact reviewed main.",
+    "Original pre-lock authority/closure summaries survive; original scratch ADVISORY and preparation payloads are unavailable. inventory.json lists exact recovered copies and explicit missing artifacts without attributing cause. No production/current assertion/historical source-pin change.",
+    "Original pre-edit311-case capture SHA25636a432b6e901d3d7896adb291627d946e9292b51a249765518c4a24078eb3628 is unavailable; retained original lock/hash/summary/incident are preserved. Explicit owner evidence-recovery amendment authorizes ONE new base/candidate comparison from exact Git base85bd4d36c63f4ff9b49f7fa5111f010a96a494f4 using the same independently reviewed surviving observation helper. Coverage remains311 cases,159 candidates,18 profile-role entries,7 terminal failures,8drivers/14axes. Baseline generated from historical source FIRST, never candidate expectations; new results are not original pre-edit evidence.",
+    "Fresh configured verifier active original-checkout sequential/readiness confirmed; independent review of actual replacement coverage/support before execution. Owner authorizes complete standalone native verdict at /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01/independent-01/independent-verdict.json; coordinator retains complete bytes verbatim and reconciles. Configured Astra/high; actual runtime model/effort not independently observable.",
+    "Surviving original contract/raw lock/canonical fingerprint/support-hashes and incident remain immutable under parent evidence directory. Replacement support manifest, inventory and all authoritative scripts/baselines/exports/logs/chunks/manifests/proof are persistent under /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01. No temporary-only authoritative copy; unavailable older scratch artifacts are explicitly disclosed, not rewritten as preserved or recreated historical evidence.",
+    "Direct owner BOUNDED AR-02L EVIDENCE RECOVERY AND REVALIDATION authorization: same branch/base semantic amendment for evidence only; no product/test expectation/budget/security changes. Original raw e4311645d1ea5cb8423b9586dec301f40e17703c676731d67a1ee8871bd2f74f and canonical veskify-task-contract-v1_51912bf19806de7caeaedb79b1f8b15e716348798a384e53a62b06842c9ab033 retained (domain veskify-task-contract-v1).",
+    "Single bounded evidence-link/loader correction after native BLOCKED SHA256c52370396404c9fbf3856fb0e24210843a30e7e7d09c43b6546790cd6d865ae6: external-root Vitest setup could not load,0tests/0baseline captures/0candidate captures. Preserve prior recovery contract raw9852d318d9090e1cd8d9faf77ff23cb4c4ee24699713c42eac97a3c5c50c9be4, canonical veskify-task-contract-v1_3c3a3d6320a3e9c9b2eecda2c3849bbaac8d348ba45452c354ed699b3f51fc32 and all support/freeze/failure records. Replacement collection-only loader check and same single pending capture pair use each exact source export cwd, original unchanged vitest.config.ts and export-local locked Vitest; no source/fixture/config/expectation change or capture/build counter reset."
+  ],
+  "ownedPaths": [
+    "src/application/prompted-storefront-design-compiler/semantic-capability-features.ts",
+    "tests/unit/ar-02l-semantic-feature-boundary.test.ts",
+    "tests/helpers/ar-02l-semantic-feature-observation.ts",
+    "docs/AR_02L_APPROACH.md",
+    "docs/AR_02L_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-02L.json",
+    "docs/BATCH_09_EXECUTION.md",
+    "docs/AR_02_BOUNDARY_ACCEPTANCE.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx"
+  ],
+  "allowedPaths": [
+    "src/application/prompted-storefront-design-compiler/semantic-capability-features.ts",
+    "tests/unit/ar-02l-semantic-feature-boundary.test.ts",
+    "tests/helpers/ar-02l-semantic-feature-observation.ts",
+    "docs/AR_02L_APPROACH.md",
+    "docs/AR_02L_IMPLEMENTATION_REPORT.md",
+    "docs/governance/task-contracts/AR/AR-02L.json",
+    "docs/BATCH_09_EXECUTION.md",
+    "docs/AR_02_BOUNDARY_ACCEPTANCE.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json"
+  ],
+  "forbiddenPaths": [
+    ".git/**",
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.*",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/fixtures/**"
+  ],
+  "noTouchAreas": [
+    "Only production path src/application/prompted-storefront-design-compiler/semantic-capability-features.ts may change: replace grouped template barrel import by three imports to existing commercial-collection-search-profiles, commercial-homepage-profiles and commercial-pdp-profiles leaves. Every non-import declaration including private functions byte-identical; synthesis import remains type-only. Preserve8drivers/14axes/profile order/errors/freeze/sort/fingerprints/nonmutation; no new module or abstraction.",
+    "Production target<20 added+deleted lines, hard60 total; exactly1existing production file. All handwritten target1000/hard1800 additions, hard600deletions, excluding only2DOCX files. Optional observation helper target180/hard250lines, required because no existing helper records this domain. Implementation report<=600words. All source paths not explicitly owned unchanged; no resolver/schema/profile/materializer/renderer/component/provider/persistence/config/CI edit.",
+    "Use unchanged tests/helpers/ar-02-runtime-import-closure.ts; no new scanner. Full feature/reexport/installed-package closure and old-barrel isolated fixture negative control; actual resolver residual separately reported, not claimed pure. Preserve identity through old getter exports and full profile observations.",
+    "Preserve all nine originals, surviving contracts/locks/verdicts/summaries/hashes/replays/archives/transitions and incident. Missing artifacts explicitly listed in inventory; no reconstructed/generated file described as an original. No golden generation/artifact-writing flags. Preserve existing A09B/C report bytes before unchanged integration tests write /private/tmp/veskify-p10b-19a-09b-final-replay-comparison.json and /private/tmp/veskify-p10b-19a-09c-final-publication-comparison.json; copy resulting required reports persistently. Two original inventory cases remain unselected.",
+    "Declared authoritative outputs under /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01: originals/recovered/private records, proposed/reviewed support, contract/lock/support identities, inventory/amendment/freeze/native/verdict, observations/{base.json,candidate.json,comparison.json,logs,input bindings}, exports/{base-01,candidate-replacement-01,final-01}/export and identity/log/toolchain/chunk/manifest/budget proofs, validation/independent-NN and replays/attempt-NN, delivery/closeout. Normal original node_modules/.vite*/.cache and tsconfig.tsbuildinfo permitted; TMPDIR points to persistent recovery/tmp so test old-barrel fixtures persist. A09 generated report destinations unchanged and copied persistently. Only declared check outputs during verifier; no reviewed source/test/doc/config/contract writes. Successor corrected support/contract/lock/loader/observations/validation/native/freeze/verdict/final-build records live under /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01. Exactly two additional test-only harness copies are permitted in each prior base-01/candidate-replacement-01 export: tests/unit/ar02l-recovery-observation.test.ts and tests/helpers/ar02l-recovery-observation.ts, identical copies of persistently reviewed support. They are separately manifested harness overlays, not Git-base source or production changes. Original export source/config/fixture bytes and old source identities remain unchanged. The two collection-only loader commands execute no observations and produce persistent logs before the single approved observation pair.",
+    "Git bookkeeping only exact branch codex/ar-02l-semantic-feature-boundary vscode-merge-base=origin/main and paired remote=origin/merge=refs/heads/codex/ar-02l-semantic-feature-boundary additions with fixed before/after provenance. No arbitrary Git config changes/includes or raw config publication. No rebase/force/reset/clean/stash/new worktree/window/permission weakening/setup/deployment/other task.",
+    "Previous build counters preserved:1coordinator candidate completed before scratch loss;0independent;0infrastructure replacements. Owner authorizes at most1additional coordinator production build genuinely needed to replace unavailable required candidate proof, label candidate-replacement-01. Then pending independent final-01 within existing allowance; original overall correction/infrastructure counters not reset. ONE new historical-base/candidate observation pair, captured base FIRST by independent verifier after coverage review; no recapture experiment. Exact old base source export is test-only, no baseline production build. Unchanged6route ceilings/checker. Sequential builds with retained active/completed marker and current capacity checks; retained5184MiB including2GiB reserve before materialization,4320MiB after source/deps are already allocated, no fixed6/15GiB gate. The authorized replacement coordinator build is now completed PASS; cumulative coordinator builds2 including original, independent0. Prior final-01 export was prepared but never built and remains retained. Only pending independent final build uses the corrected persistent final export; no additional coordinator build or infrastructure replacement is authorized by this correction.",
+    "New nonGit exports from exact public Git base plus explicitly owned overlays only; base observation export has zero candidate overlays and every source checked against Git blob. No .git/.env/private originals/old caches. Offline frozen export-local dependencies from existing store only; no downloads/new versions/original dependency writes. Source/toolchain/lock and dependency symlink containment checked before observations/build. No further deletion or cleanup, including new dependency/cache copies; retain authoritative source and emitted proof persistently. No VerifyAI inspection. Generated export next-env.d.ts hash7b550dda9686c16f36a17bf9051d5dbf31e98555b30d114ac49fc49a1e712651 permitted.",
+    "Independent/native PASS before reviewed commit/push/one public owningPR. Verifier reviews replacement coverage/support before execution, executes declared final checks and authors complete standalone native verdict; coordinator retains verbatim, never assembles fragments or relabels prior execution. This explicit same-branch/base evidence-only semantic amendment preserves prior raw/canonical identities and records changed JSON pointers/new identities. No product/acceptance weakening, historical fabrication or implementation restart. One consolidated implementation correction/rerun remains unchanged. Persistent managed denial stops; no bypass. This is the one bounded support-link correction and verifier rerun following the retained zero-test setup BLOCKED result. Old contracts/support identities are preserved in place; only necessary evidence-path/documentary references change. If this correction cannot establish proof, stop with evidence rather than further repair cycles.",
+    "Exactly1automatic review, no second request; one bounded findings response. Perhead90minutes/30CIobservations>=180s; all exact final-head required checks including budgets/validate PASS. Record standing direct owner authorization bound to exact PR/head/base then expected-head protected merge without override; safe main synchronization and BATCH09closeout only.",
+    "AR02 parent remains Partial for connected coordinated-direction metadata path: synthesis contract profile-ID schemas, direction-registry profile/anatomy validation, compatible-direction candidate/asset eligibility, and semantic resolver broad synthesis forwarding. This is metadata, not materialization; no weak acceptance/reclassification. Exact chains/operations/original clause must remain visible. AR03closed; AR04/05blocked/unstarted; AR06depends05. Final verifier reassesses unchanged original acceptance; no future implementation or visual/livecommerce/production-readiness claims."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One existing semantic feature import boundary; stricter1file/60churn and handwritten1800add/600delete enforced by pinned support.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic synchronized documentation export only."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic synchronized documentation export only."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Coordinator-only authorized origin fetch, reviewed Git push/public PR/review/CI queries and expected-head merge in Leo-fadi/veskify. No package downloads or live provider/Vesko/publication."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Use three existing defining leaves for the actual semantic feature module; retain every non-import byte and existing consumer calls.",
+    "canonicalAuthorityExtended": "Existing shared commercial profile definitions and canonical domain fingerprints.",
+    "namedCurrentConsumers": [
+      "semantic-compatibility-resolution.ts projectionFor and deriveSemanticCapabilityIndex",
+      "semantic-influence-authority.ts"
+    ],
+    "rejectedShortcuts": [
+      "Unused pure parallel entrypoint would leave the actual consumer unchanged.",
+      "Copied schemas/profiles or weakened validation would duplicate authority or change behavior.",
+      "Calling remaining direction metadata execution to claim parent closure would weaken original acceptance."
+    ],
+    "expectedFailureBehavior": "Exact same terminal error classes/messages/order and immutable values; no input or merchant-state mutation.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Complete renderer-free feature runtime/reexport/installed-package closure, old-barrel control rejection, exact defining getter ownership and shared compatibility function identity.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Complete311 NEW historical-source/base-to-preserved-candidate observations byte-identical using one identical reviewed harness, exact original Git base exported and captured first; all18profile-role entries,159actual candidates,8drivers/14axes,7terminal failures, inputs/fingerprints/immutability preserved. Not the missing original pre-edit capture; explicit owner amendment changes evidence provenance only.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Unknown profile/frame references and first-failure error classes/messages/order unchanged; duplicates/order/unknown optional references, readonly outputs and fingerprints retained.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Every non-import declaration unchanged; actual semantic resolver selected identities/diagnostics/constraints/avoidances/fingerprints/determinism and retained consumer regressions pass.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Exact one-file imports-only production correction and unchanged tests; bounded necessary evidence-reference/task-documentation changes only. All surviving original/source/contract/frozen inputs preserved except approved documentary updates whose original bytes are retained. Old missing artifacts explicit; new support/contract/raw/canonical identities independently reviewed and pinned. Existing exact Git-bookkeeping exception only.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Applicable A-K metadata/planner/provider/grammar/route/conformance/historical checks and unchanged A09 replays; no historical rebaselining, lost dependencies or new skips.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Unavailable original early candidate proof explicitly retained as summaries/hashes/counter, not recovered artifacts. One authorized replacement coordinator candidate and fresh independent final build pass every unchanged six-route raw/gzip budget with persistent exact source/toolchain/chunk identities and supported sequential capacity. No additional baseline production build or budget change.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    },
+    {
+      "id": "AC-08",
+      "requirement": "Complete original AR02/T01/T02/T21 assessment honestly retains Partial for named connected metadata residual; AR03closed, AR04/05blocked. Matching narrow current projections, guards, docs/requirements/tooling and deterministic exports pass.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for discrepancy; BLOCKED for genuine missing evidence/scope/policy/capacity. Partial parent is distinct from child failure."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-02l-semantic-feature-boundary.test.ts tests/unit/p10b-16p-04f-semantic-resolver.test.ts tests/unit/p10b-16p-04f-semantic-scale-and-influence.test.ts tests/unit/p10b-16p-04f-semantic-contract.test.ts tests/unit/p10b-16p-02a-architecture-boundaries.test.ts tests/unit/p10b-16p-02b-compiler-slot-semantics.test.ts tests/unit/p10b-09-commercial-homepage-profile-library.test.ts tests/unit/p10b-10-commercial-collection-search-profile-library.test.tsx tests/unit/p10b-11-commercial-pdp-profile-library.test.ts",
+      "purpose": "New boundary and actual semantic consumer/profile failures/identities/determinism.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/unit/ar-02a-renderer-observation-boundary.test.ts tests/unit/ar-02b-renderer-free-conformance.test.ts tests/unit/ar-02c-utility-metadata.test.ts tests/unit/ar-02d-homepage-metadata.test.ts tests/unit/ar-02e-commerce-metadata.test.ts tests/unit/ar-02f-v2-metadata-adaptation.test.ts tests/unit/ar-02g-template-capability-boundary.test.ts tests/unit/ar-02g-closure-transition.test.ts tests/unit/ar-02h-semantic-request-boundary.test.ts tests/unit/ar-02i-planner-metadata-boundary.test.ts tests/unit/ar-03d-authoring-boundary.test.ts tests/unit/ar-03e-legacy-conversion-boundary.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts tests/unit/ar-01-current-behaviour.test.ts tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts tests/unit/ar-02j-provider-description-boundary.test.ts tests/unit/ar-02k-skill-capability-boundary.test.ts tests/unit/ar-03c-route-resolution-boundary.test.ts",
+      "purpose": "Applicable A-K and route/render/conformance/current behavior/adoption/source transition checks.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run tests/integration/p10b-16p-04f-semantic-lifecycle.test.ts tests/unit/p10a-05a-skill-capability-knowledge.test.ts tests/unit/p10b-01-commercial-design-grammar.test.ts",
+      "purpose": "Real lifecycle and capability/grammar regression.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts -t 'strictly locks the complete safe inventory|retains fresh-clone A-09 baseline identities|keeps all nine production authorities inactive|is discovered once'",
+      "purpose": "Original inventory selected four cases; two unselected disclosed.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01/support/check.py replays",
+      "purpose": "Preserve reports then unchanged historical/publication replay.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01/support/observe.py capture",
+      "purpose": "Independently execute the single authorized new historical-source/candidate pair with reviewed identical harness; complete311-observation byte parity, not original pre-edit capture.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01/support/check.py declarations",
+      "purpose": "Exact imports-only diff and byte-identical nonimport declarations.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01/support/check.py integrity",
+      "purpose": "Complete source/support/original/config/budgets/whitespace/native integrity.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm typecheck",
+      "purpose": "Repository typecheck.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm exec eslint src/application/prompted-storefront-design-compiler/semantic-capability-features.ts tests/unit/ar-02l-semantic-feature-boundary.test.ts tests/helpers/ar-02l-semantic-feature-observation.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "All affected lint.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm exec prettier --check src/application/prompted-storefront-design-compiler/semantic-capability-features.ts tests/unit/ar-02l-semantic-feature-boundary.test.ts tests/helpers/ar-02l-semantic-feature-observation.ts docs/AR_02L_APPROACH.md docs/AR_02L_IMPLEMENTATION_REPORT.md docs/governance/task-contracts/AR/AR-02L.json docs/BATCH_09_EXECUTION.md docs/AR_02_BOUNDARY_ACCEPTANCE.md README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "All affected formatting.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm docs:validate",
+      "purpose": "Existing documentation/traceability/tooling/deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Existing documentation/traceability/tooling/deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation/traceability/tooling/deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Existing documentation/traceability/tooling/deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Existing documentation/traceability/tooling/deterministic exports.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-09/AR-02L/recovery-01/correction-01/support/build.py build final-01",
+      "purpose": "Fresh independently executed final production build and unchanged6route budgets.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Native amended contract/diff/freeze/source/support/original integrity, missing-artifact inventory and active readiness; original identities never overwritten.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Independent complete closure/new historical-source parity/nonimport/identity and replacement candidate/final build source/chunk measurements, persisted in recovery-01.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual independently executed declared commands, exact totals/unselected cases and original execution provenance.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "command",
+      "description": "Documentation/requirements/tooling/exports and original parent acceptance with exact residual operations/chains.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Unapproved required scope change, failed gate outside bounded correction, insufficient measured capacity, persistent managed denial, or exhausted correction/build/CI allowance.",
+      "action": "STOP",
+      "owner": "architecture-owner"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "BATCH-09-CLOSEOUT",
+    "title": "Safe synchronization and batch closeout only",
+    "eligibility": "After verified expected-head merge; report exact PR/head/merge, validation and truthful parent Partial decision, then stop."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
