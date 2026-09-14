@@ -360,6 +360,7 @@ statusExpectation.set("AR-03B", "Baseline");
 statusExpectation.set("AR-03C", "Baseline");
 statusExpectation.set("AR-03D", "Baseline");
 statusExpectation.set("AR-03E", "Baseline");
+statusExpectation.set("AR-04", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -418,7 +419,7 @@ for (const record of statusRecords) {
   const permittedQualifier = ["AR-00", "AR-01"].includes(record.subject)
     ? /^closed$/iu
     : ["AR-02", "AR-02M"].includes(record.subject)
-      ? /^closed upon explicit owner acceptance\/merge$/iu
+      ? /^closed$/iu
       : record.subject === "AR-03"
         ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
         : record.subject === "AR-02A"
@@ -444,9 +445,11 @@ for (const record of statusRecords) {
                     ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
                     : record.subject === "AR-23"
                       ? /^unstarted$/iu
-                      : /^AR-\d{2}$/u.test(record.subject)
-                        ? /^$/u
-                        : /^(?:closed)?$/iu;
+                      : record.subject === "AR-04"
+                        ? /^closed effective upon accepted merge$/iu
+                        : /^AR-\d{2}$/u.test(record.subject)
+                          ? /^$/u
+                          : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -503,9 +506,12 @@ if (
   !trackerCurrent.includes("AR-02I is Baseline / closed.") ||
   !trackerCurrent.includes("AR-02J is Baseline / closed.") ||
   !trackerCurrent.includes(
-    "AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed upon explicit owner acceptance/merge.",
+    "AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed.",
   ) ||
-  !trackerCurrent.includes("AR-02 is Baseline / closed upon explicit owner acceptance/merge;") ||
+  !trackerCurrent.includes("AR-02 is Baseline / closed;") ||
+  !trackerCurrent.includes(
+    "AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05.",
+  ) ||
   !trackerCurrent.includes("AR-03 is Baseline / closed;") ||
   !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
   !trackerCurrent.includes("AR-03B is Baseline / closed.") ||
@@ -517,13 +523,13 @@ if (
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
   !trackerCurrent.includes(
-    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete upon AR-02M acceptance/merge and safe closeout.",
+    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete upon AR-04 acceptance/merge and safe closeout.",
   ) ||
   !trackerCurrent.includes("No third task is authorized.") ||
   nextTaskIds(trackerCurrent).length !== 0
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02M and AR-02 conditional closure and no successor are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 conditional closure and no successor are required",
   );
 }
 if (
@@ -539,7 +545,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed upon explicit owner acceptance/merge. AR-02 is Baseline / closed upon explicit owner acceptance/merge; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04/AR-05 are eligible / unstarted after that merge; AR-06 remains dependent on AR-05. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete upon AR-02M acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete upon AR-04 acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");

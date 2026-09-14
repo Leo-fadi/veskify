@@ -29,9 +29,10 @@
 > [AR-02M evidence](AR_02M_IMPLEMENTATION_REPORT.md) narrows coordinated schemas, direction validation,
 > candidate eligibility and the actual semantic resolver together, retaining four exact historical
 > source archives and fixed original hashes. Original G/H transitions and aggregate expectations remain.
-> Complete original AR-02 acceptance is assessed in the parent evidence map; closure takes effect
-> only upon independent verification and accepted AR-02M merge. AR-03 remains closed.
-> AR-04/AR-05 are eligible / unstarted after that merge; AR-06 remains dependent on AR-05.
+> Complete original AR-02 acceptance is assessed in the parent evidence map and was accepted in
+> PR #255. AR-02 and AR-03 remain closed. [AR-04 acceptance](AR_04_COMPOSITION_ACCEPTANCE.md)
+> maps normal generation, production-disabled injection and retained follow-up compatibility.
+> AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
