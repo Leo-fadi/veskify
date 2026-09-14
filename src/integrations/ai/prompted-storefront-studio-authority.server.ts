@@ -1,9 +1,15 @@
 import "server-only";
 
+import type { ServerPromptedStorefrontStudioAuthority } from "./prompted-storefront-studio-authority-contract.server";
+export type {
+  ServerPromptedStorefrontStudioContext,
+  ServerPromptedStorefrontStudioAuthority,
+} from "./prompted-storefront-studio-authority-contract.server";
+export { unavailableServerPromptedStorefrontStudioAuthority } from "./prompted-storefront-studio-authority-contract.server";
+
 import {
   createMerchantProjectAuthorization,
   createStandaloneMerchantProjectContextPort,
-  type MerchantProjectAuthorization,
 } from "@/application/merchant-project-context";
 import type { PromptedStorefrontDesignCompilationAuthority } from "@/application/prompted-storefront-design-compiler";
 import type { PromptedStorefrontStudioGenerationRequest } from "@/application/prompted-storefront-studio";
@@ -18,20 +24,6 @@ import {
   type PageFactEvidenceReference,
 } from "@/domain/storefront";
 import { ServerWholeStorefrontAuthorityError } from "./whole-storefront-runtime-authority";
-
-export type ServerPromptedStorefrontStudioContext = Readonly<{
-  authorization: MerchantProjectAuthorization;
-  loadCurrentAuthority: () =>
-    | PromptedStorefrontDesignCompilationAuthority
-    | Promise<PromptedStorefrontDesignCompilationAuthority>;
-}>;
-
-export interface ServerPromptedStorefrontStudioAuthority {
-  resolve(
-    request: PromptedStorefrontStudioGenerationRequest,
-    httpRequest: Request,
-  ): Promise<ServerPromptedStorefrontStudioContext>;
-}
 
 const standaloneIdentity = Object.freeze({
   tenantId: "tenant_standalone",
@@ -223,9 +215,3 @@ export function loadP10B16P03InitialDraftAuthority({
     }),
   );
 }
-
-export const unavailableServerPromptedStorefrontStudioAuthority: ServerPromptedStorefrontStudioAuthority =
-  Object.freeze({
-    resolve: () =>
-      Promise.reject(new ServerWholeStorefrontAuthorityError("authentication-unavailable")),
-  });

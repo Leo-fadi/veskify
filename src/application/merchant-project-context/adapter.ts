@@ -17,7 +17,10 @@ import {
   toStandaloneProjectRevision,
 } from "@/application/merchant-project-context/contract";
 import { VeskoIntegrationError } from "@/application/vesko-integration/contract";
-import { ProjectNotFoundError, type ProjectRepository } from "@/services/storage";
+import {
+  ProjectNotFoundError,
+  type ProjectRepository,
+} from "@/services/storage/project-repository";
 
 const actionPermissions: Readonly<
   Record<MerchantProjectContextAction, readonly MerchantProjectPermission[]>

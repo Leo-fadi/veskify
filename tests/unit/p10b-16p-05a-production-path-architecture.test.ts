@@ -31,6 +31,9 @@ describe("P10B-16P-05A active production-path architecture", () => {
       "src/app/api/ai/whole-storefront-proposals/p9-05b-composition.server.ts",
     );
     const route = source("src/app/api/ai/whole-storefront-proposals/route.ts");
+    const localDispatch = source(
+      "src/app/api/ai/whole-storefront-proposals/local-acceptance-dispatch.server.ts",
+    );
 
     for (const composition of [p03, p04]) {
       expect(composition).toContain("createServerPromptedStorefrontStudioHandler");
@@ -43,8 +46,10 @@ describe("P10B-16P-05A active production-path architecture", () => {
     expect(p9FollowUp).toContain("createP905bLocalDemoAuthority");
     expect(p9FollowUp).toContain("createWholeStorefrontPlanningRouteHandler");
     expect(route).toContain('process.env.NODE_ENV !== "production"');
-    expect(route).toContain('process.env.VESKIFY_P9_05B_LOCAL_DEMO === "1"');
-    expect(route).toContain('await import("./p9-05b-composition.server")');
+    expect(route).toContain('await import("./local-acceptance-dispatch.server")');
+    expect(localDispatch).toContain('process.env.NODE_ENV !== "production"');
+    expect(localDispatch).toContain('process.env.VESKIFY_P9_05B_LOCAL_DEMO === "1"');
+    expect(localDispatch).toContain('await import("./p9-05b-composition.server")');
   });
 
   it("keeps local acceptance fail closed in production and out of browser authority", () => {

@@ -186,7 +186,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Delivery status baseline: 4 September 2026, P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate",
-      "Effective upon independently verified AR-02M acceptance/merge: AR-02 and AR-02A through AR-02M Baseline / closed; AR-03 and AR-03A through AR-03E remain closed; AR-04/AR-05 eligible / unstarted after that merge; AR-06 depends on AR-05; AR-23 eligible / unstarted; BATCH-10 complete after M merge and safe closeout; no next task",
+      "AR-02 and AR-02A through AR-02M Baseline / closed; AR-03 and AR-03A through AR-03E remain closed; AR-04 Baseline / closed effective upon accepted merge; AR-05 eligible / unstarted; AR-06 depends on AR-05; AR-23 eligible / unstarted; BATCH-10 complete; BATCH-11 complete upon AR-04 acceptance/merge and safe closeout; no next task",
       "Overall product status: Partial",
       "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
       "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

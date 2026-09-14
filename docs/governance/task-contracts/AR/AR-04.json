@@ -1,0 +1,458 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One generation composition boundary, original ten paths plus explicitly authorized single adapter import-source correction. Other line budgets unchanged.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic generated DOCX export only."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic generated DOCX export only."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Coordinator owner-authorized origin fetch/push and Leo-fadi/veskify public PR/review/CI/expected-head merge only. Verifier network disabled; locked offline dependencies and local checks only.",
+      "Owner-authorized local diagnostic HTTP/WebSocket server and browser traffic only, existing deterministic provider, no live provider/Vesko/publication; installed Chromium and exact offline locked dependencies."
+    ],
+    "secretFilesAllowed": []
+  },
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  },
+  "sprintId": "BATCH-11",
+  "taskId": "AR-04",
+  "title": "Explicit normal generation and isolated local/legacy composition",
+  "branch": "codex/ar-04-generation-composition",
+  "baseCommit": "4ee8cee63f10e38f5b8a569f896d131309346d8d",
+  "objective": "Extract explicit actual normal prompted composition, retained registered follow-up, production-disabled local interception and shared authority/failure declarations without changing behavior.",
+  "expectedOutcome": "One normal prompted entry used by existing dispatcher; P03/P04/P9 local injection is independently production-disabled; canonical handlers, authentication, exact errors, follow-up and legacy reads remain unchanged. Assess full original AR-04 acceptance; keep AR-02/03 closed.",
+  "dependencies": [
+    {
+      "taskId": "AR-02M",
+      "requiredState": "MERGED",
+      "commit": "4ee8cee63f10e38f5b8a569f896d131309346d8d"
+    }
+  ],
+  "mergeOrder": 1,
+  "ownedPaths": [
+    "src/app/api/ai/whole-storefront-proposals/route.ts",
+    "src/app/api/ai/whole-storefront-proposals/handler.ts",
+    "src/integrations/ai/prompted-storefront-studio-authority.server.ts",
+    "src/integrations/ai/prompted-storefront-studio-handler.server.ts",
+    "src/integrations/ai/whole-storefront-runtime-authority.ts",
+    "src/app/api/ai/whole-storefront-proposals/prompted-composition.server.ts",
+    "src/app/api/ai/whole-storefront-proposals/legacy-follow-up-composition.server.ts",
+    "src/app/api/ai/whole-storefront-proposals/local-acceptance-dispatch.server.ts",
+    "src/integrations/ai/prompted-storefront-studio-authority-contract.server.ts",
+    "src/integrations/ai/whole-storefront-failures.ts",
+    "src/application/merchant-project-context/adapter.ts",
+    "tests/unit/p10b-16p-05a-production-path-architecture.test.ts",
+    "tests/unit/ar-04-generation-composition.test.ts",
+    "tests/integration/ar-04-proposal-route-isolation.test.ts",
+    "docs/AR_04_APPROACH.md",
+    "docs/AR_04_IMPLEMENTATION_REPORT.md",
+    "docs/AR_04_COMPOSITION_ACCEPTANCE.md",
+    "docs/governance/task-contracts/AR/AR-04.json",
+    "docs/BATCH_11_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "tests/e2e/p10b-16p-03-studio-prompt-generation.spec.ts"
+  ],
+  "allowedPaths": [
+    "src/app/api/ai/whole-storefront-proposals/route.ts",
+    "src/app/api/ai/whole-storefront-proposals/handler.ts",
+    "src/integrations/ai/prompted-storefront-studio-authority.server.ts",
+    "src/integrations/ai/prompted-storefront-studio-handler.server.ts",
+    "src/integrations/ai/whole-storefront-runtime-authority.ts",
+    "src/app/api/ai/whole-storefront-proposals/prompted-composition.server.ts",
+    "src/app/api/ai/whole-storefront-proposals/legacy-follow-up-composition.server.ts",
+    "src/app/api/ai/whole-storefront-proposals/local-acceptance-dispatch.server.ts",
+    "src/integrations/ai/prompted-storefront-studio-authority-contract.server.ts",
+    "src/integrations/ai/whole-storefront-failures.ts",
+    "src/application/merchant-project-context/adapter.ts",
+    "tests/unit/p10b-16p-05a-production-path-architecture.test.ts",
+    "tests/unit/ar-04-generation-composition.test.ts",
+    "tests/integration/ar-04-proposal-route-isolation.test.ts",
+    "docs/AR_04_APPROACH.md",
+    "docs/AR_04_IMPLEMENTATION_REPORT.md",
+    "docs/AR_04_COMPOSITION_ACCEPTANCE.md",
+    "docs/governance/task-contracts/AR/AR-04.json",
+    "docs/BATCH_11_EXECUTION.md",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "tests/e2e/p10b-16p-03-studio-prompt-generation.spec.ts"
+  ],
+  "canonicalAuthorities": [
+    "AGENTS.md; DEVELOPMENT_GUIDE section4; AGENT_TEAM_WORKFLOW; both Veskify skills; existing native v1 contract/verdict schemas. Affected SDD4/6/8/10.19-10.23, ADR001-004, incorporated AR-00 addendum, complete original AR-04 and T01/T16/T21. Tracker owns status; roadmap owns dependencies.",
+    "Direct owner autonomous BATCH-11 instruction and preflight/runbook.md SHA256 d1d50db4ac19c09482db6aa5e12dc09ca59c89fbc63127e329207f3de163c4b5. Only original /Users/leo/veskify; one branch/PR/task. BATCH10 closeout retained and actual PR255 merge/content verified; no predecessor rerun.",
+    "Configured fresh verifier ar04_verifier readiness: active original-checkout sequential verification instructions confirmed, model configured Astra/high, actual runtime model/effort not independently observable. All writers paused; freeze complete inputs before/after. Verifier writes complete standalone native verdict at persistent independent-01/independent-verdict.json (or independent-02 rerun); root retains full bytes verbatim and reconciles natively. Browser continuation extends the configured verifier assignment to independent-03 or independent-04 with full verbatim native verdict retention. No active policy changes.",
+    "Authoritative support, observations, locks, proof, private bookkeeping and delivery records persist from inception in /Users/leo/veskify-batch-runs/BATCH-11/AR-04. Exact Git-base pre-edit observations plus existing declared real-handler baseline regressions are captured before production edits; same reviewed observation harness runs final. Pre-lock diagnostics retained as diagnostics, not accepted proof.",
+    "Preflight source/assertion/pin closure: mandatory production-path assertion move plus exact adapter importsource amendment. No existing adapter test/source/hash/directory pin update or historicaltransition required; unchanged adapter/storagecontract tests added. Earlier ten-path prospective leak and initialdraft preserved in scope-blocker-01. Fresh virtual eleven-path graph removes P03fixture edge; actualfinalgraph/build/behavior remain mandatory.",
+    "Direct owner AR-04 eleventh-path amendment authorizes only src/application/merchant-project-context/adapter.ts import ProjectNotFoundError and erased ProjectRepository from @/services/storage/project-repository. Preparedpatch verified exactly, allotherimports and non-importdeclarations unchanged afterformat. Initialcontract amendment beforelocking, no reissue. Preserve scope-blocker-01 and373pre-editobservations. No cleanup authorized during this continuation.",
+    "Retained exact pre-edit observation baseline373rows/111errorcases SHA256fd1c2241bce4bbb2fb019bde8cd2252b939b7e543c289c3a49e99d2d682d2555. Pendingexistingbaseline regressions nowcompleted beforeproduction changes: 112tests/12files, baseline commands/results pinned by preflight/completed-baseline-regressions.json. Do not repeatthiscapture merely because owner scopeapproval was required.",
+    "Direct owner AR-04 TRACE-ONLY SUPPORT CORRECTION authorizes semantic same-branch/base trace validation and synthetic support controls only. Preserve original contract/support/raw/canonical identities, proposal and BLOCKED records in trace-amendment-01/original. Eleven production paths, implementation, dependency installation, security and bundle budgets remain unchanged. No coordinator build rerun for trace correction.",
+    "Direct owner BOUNDED AR-04 BROWSER DIAGNOSIS AND CORRECTION, recorded in browser-amendment-01/AUTHORIZATION.json. Same original workspace/branch/base and PR256 at submitted head958209f953938d97872cab2aee65f4f94c06714a. Semantic support/contract successor before browser execution; preserve all original locks, both failed CI runs and every prior verification record. Six focused sequential Playwright invocations total, one worker, zero retries; unchanged named configuration and deterministic local provider. Fresh independent/native verification and normal new-head CI; no second automatic review."
+  ],
+  "forbiddenPaths": [
+    ".git/**",
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "AGENTS.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.*",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/helpers/ar-02-runtime-import-closure.ts",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/fixtures/ar-02g/**",
+    "tests/fixtures/ar-02h/**",
+    "tests/fixtures/ar-02m/**",
+    "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts",
+    "tests/helpers/p10b-19a-10c-architecture-closure.ts",
+    "tests/fixtures/p10b-19a-10a-retained-matrix-inventory.v1.json",
+    "tests/fixtures/p10b-19a-10c-architecture-closure-manifest.v1.json"
+  ],
+  "noTouchAreas": [
+    "Original ten production paths plus exactly one additional adapter path in ownedPaths only; no deletions. Move four shared failure declarations unchanged, mapping order and class/function identity preserved; import current defining scope-router/provider-boundary, planningcontract/provider, proposal-lifecyclecontract and Veskocontract. Original runtime module imports/reexports same values/types, every remaining declaration/body unchanged; shared failures remain browser-compatible.",
+    "Additional eleventhpath src/application/merchant-project-context/adapter.ts ONLY replaces the existing ProjectNotFoundError/typeProjectRepository importspecifier @/services/storage with @/services/storage/project-repository; applyrepositoryformatting. Everyotherimport/nonimportdeclaration unchanged. Definingstorageowner/barrel/repositories/authrules/error mappings/persistence untouched. No additional historicaltransition/testassertion maintenance needed.",
+    "Move normal authority context/interface/unavailable singleton unchanged; erased compilation/auth/request types, same shared authentication-unavailable error. Old local-authority surface imports/reexports exact instances, all P03 identity/fixture/evidence/draft helpers unchanged. Canonical prompted-handler imports-only; narrow already-imported schema/constants to defining leaves if necessary, every non-import declaration/body unchanged.",
+    "Actual handler dispatcher uses prompted/legacy compositions at original eager initialization points. Preserve options/signature/environment capture/provider defaults/current-state/auth/provider/compiler/lifecycle/validation/proposal ordering. No lazy init, fallback, new prompt/provider/selection/transport/schema, new integrated identity or storage. Same prompted/follow-up exclusivity, malformed/null/array/unknownbody and exactheaders/bodyreadability.",
+    "Local dispatch preserves three caches/literal dynamic loaders/live predicates and priority P04 then standalone P03 then tagged/session-present P9 then no-match. Route explicit NODE_ENV!==production before dynamic dispatcher load; dispatcher independently production-disabled. Loader/factory/handler exceptions remain terminal; do not catch as no-match. Actual tokens/origin/authorization/calllimits/fixtures/providers/localcompositions unchanged.",
+    "Normal graph may legitimately reach execution/compiler/materializer/renderer/validation. Reject dedicated acceptance/fixture/mock acceptance provider and legacy-runtime error backedges; no AR02scanner changes or generic auditframework. Dynamic route local edge remains declared; distinguish shipped server chunks from runtime evaluation; production nonexecution tests and actual server trace mandatory.",
+    "Only existing production-path test P9flag/dynamicimport location assertions move to exact localdispatch plus routeguard, <=160changedlines. All other assertions and behavioral fixtures unchanged. Two new task tests allowed; no optional new repo helper selected. Adoptiontest separate narrow statusprojection only. Handwritten targets2000/hard3000additions/hard1200deletions; productiontarget750/hard1200additions; elevenpaths; onlytwoexistingDOCX excluded. Reports targets700/acceptance800words. No newexportdocuments/parsermatrixexpansion/historical rebaseline. Owner browser amendment adds ONLY the named P10B-16P-03 E2E spec, at most200changedlines, conditional on demonstrated setup/readiness defect; preserve English and every lifecycle, commerce-protection, provider-call and persistence assertion. Existing eleven production paths permit minimal correction only if refactor caused failure; another production file requires a consolidated cause/patch proposal before editing.",
+    "Preserve nine original untracked inputs unchanged (allowed only for complete native identity, never stage/publish), prior evidence/worktrees/branches, G/H/M transitions/archive bytes/hash/aggregate/goldens and all unowned tracked sources. No historical-source transitions, permission/auth/config/agent/package/CI/Next/webpack/budget changes, deployment/VerifyAI inspection/thirdparty provider activity/additional task.",
+    "Persistent outputs beneath taskroot: preflight/support/contract/locks/acceptedbaseline; builds/{base-01,candidate-01,candidate-02,final-01,final-02,infrastructure-01}/export exactGit plus ownedoverlays and separately manifested test-only tests/unit/ar04-observation.test.ts and tests/helpers/ar04-errors.ts; logs/measurements/chunks/manifests/identities/capacity; coordinator labels/independent-01|02/freeze/reconciliation/verdict/replays/delivery/closeout/privatebookkeeping/tmp. Originalgenerated tsconfig.tsbuildinfo,node_modules/.vite*/.cache permitted. No source/env/privateinput inclusion inexports. Verifier generatedoutputsonly; no reviewed input edits. Browser amendment adds persistent browser-amendment-01/support, original, records, runs/{baseline,current,corrected,independent,correction2,independent2}/export and sibling identities/assignments/logs/results/traces/screenshots; test-only telemetry overlay only changes test fixture import and adds its isolated helper. ExactGit non-Git diagnostic exports; no working-checkout reset/switch. independent-03|04 and focused validation/evidence outputs authorized. No raw private input or environment files in exports or public updates.",
+    "Atmost2coordinator+2independentproductionbuilds plus1demonstratedinfrareplacementaftercausefixed; oneearlycandidate andfreshindependentfinal mandatory. No baselineproductionbuild. Sequential measuredadditionalcapacity source/deps/output/temporaryoverlap plus explicit2GiBOSreserve; existingallocations notcountedadditional, nofixed15/6/5GiBthreshold. Existingoffline dependencies; noinstallationchanges. Allsixraw/gzipbudgetsunchanged, search1655000/475000. One evidence-led imports/packaging correction inside the original10paths only if identicalbehavior. Latest owner authorizes at most TWO additional production builds only if production changes invalidate retained proof. Tests/docs-only changes require independent unchanged build-input identity and retained artifact verification, without rebuilding. Preserve previous build counters (two coordinator, one independent production invocations already consumed); no reset.",
+    "Owner continuation prohibits cleanup; retain all newly created exports/dependencies/caches as well as historical evidence. No historicalcleanup/wholeexportdeletion/pruning/originaldependencytouch. PreserveexistingA09B/Ctemporaryreports before unchangedreplaytestwrites exact /private/tmp/veskify-p10b-19a-09b-final-replay-comparison.json and /private/tmp/veskify-p10b-19a-09c-final-publication-comparison.json. Durablycopynewoutputs, noartifactwritingflags. Twoexistinginventorycases remain unselected.",
+    "BeforecommitHEAD=base; authorized committed anchor may only use reviewed-anchors/<HEAD>.json binding prior retainedPASS and completecommitteddiff equality. Each independent-01|02 assignment pins root/branch/base/reviewedHEAD/contractraw/supportmanifest/buildlabel beforefreeze. Final.py dispatch via AR04_INDEPENDENT_RUN1|2; nooutputoverwrites. All materialsource changes needfreshapplicableproof; unchanged-inputlink repair retains actualexecution andprovenance. For browser continuation, assignments pin exact current HEAD/native diff, export identity, configuration and telemetry. Primary unbuilt base export preserves original generated-type checks; any additional retained/diagnostic exports must be explicitly assigned by exact identity SHA and frozen before/after. No retained-build boolean or generated-file bypass.",
+    "Only normal exactbranch-specific vscode-merge-base=origin/main and paired remote=origin/merge=refs/heads/codex/ar-04-generation-composition bookkeeping may be privately reconciled against fixedbeforebytes. Never editconfig or freezeGitobjectgrowth. Nativecontract and allsupportrawpins checked, completeinputhashes/modes/nativeidentity beforeafter. Hashintegritynot filesystemimmutability. No relabeling prior nativeevidence.",
+    "One clericalsuccessor only same-meaningformat/exactunchangedreplaydestination/escapingalreadyapprovedliteralpath/mistypedbookkeepingbranch correction. Preserveoldraw/canonicalidentities listchangedpointers. No retrospective semantic scope invention. Oneconsolidatedin-scopecorrection+indrerun andoneautomaticreviewcorrectionpass withinbudgets. Singleautomaticreview nosecondrequest; eachhead90min/30observations >=3minutesapart, retainstatechanges/finalgates. The direct browser instruction separately authorizes this semantic successor and one bounded cause-based correction, with fresh independent verification and at most six focused browser invocations INCLUDING baseline/current diagnosis, corrected complete spec and independent complete confirmation. No retry of unchanged failed CI head to seek green. Original single automatic review remains the only review request.",
+    "Standingdirectownerconditionalauthorization recordedexacthead beforemerge; independent/nativePASS plusoneautomaticreview andallrequiredexacthead/baseCIincludingbudgets+validate mustpass. Expectedheadprotectedmerge nooverride/rebase/forcepush. ReuseoneowningPR. Public reviewedownedchanges/sanitizeddescriptiononly. Safesyncoriginalmainafteractualacceptedmerge, recordAR04fullexitdecision, keepAR02/03closed, AR05eligibleunstarted AR06depends05 AR07depends04+06 AR08notclosed AR23eligibleunstarted; finishBATCH11 andstop.",
+    "Export-only next-env.d.ts is an explicitly generated build output: retain exactGit original bytes/hash and permit only the existing Next production type-route reference change from ./.next/dev/types/routes.d.ts to ./.next/types/routes.d.ts (expectedSHA7b550dda9686c16f36a17bf9051d5dbf31e98555b30d114ac49fc49a1e712651), with before/after recorded separately. Originalcheckout next-env remainsimmutable. Freeze all otherexport sources/dependencies exceptdeclarednewbuild/cacheoutputs, plus repo, contract/support, acceptedbaseline and assignment-reviewed evidence beforeafter; report generatedoutputchange honestly, never as unchangedsource.",
+    "Trace-only support amendment: authorize exactly the three reported dependency-directory symlinks using recorded link text, package/lock/installation provenance and expected target content from preserved base/candidate installations. Portable component-aware lexical/resolved containment; reject unknown/broken/cyclic/changed targets, omitted entries and changed artifacts. Only two named pnpm-generated Next .bin wrappers may materialize the verified exact baseline template with the current export root; all other bytes remain pinned and actual wrapper hashes are recorded. No dependency edits/reinstallation to satisfy this gate. Pin pre-adoption retained build records and original NFT/client identities; full server hashes first captured now are honestly new retained-output pins. Bind independent final exports to their frozen exact assigned identity. Support may retain trace-amendment-01, trace-controls/run-* synthetic fixtures/results, trace-policy.json and per-build trace-inputs.json, corrected server-trace.json and successor trace result; original build results/counters unchanged. Synthetic expected/different-root links pass and unauthorized/broken/cyclic/changed-target/artifact/root-wrapper controls fail. Trace-only revalidation of candidate-02; one fresh independent final build remains mandatory, observations precede its build.",
+    "Browser diagnosis must establish request/response activeLocale, selected language, navigation/remount/application state, iframe readiness and development reload behavior using equivalent base/current tools, fresh contexts and fresh server state. No English-or-Finnish expectation, unexplained forced English reset, arbitrary sleeps, timeout increases, skipped assertions or unsupported flaky classification. Keep config, dependencies, production behavior and bundle limits unchanged. No local complete browser campaign, cleanup or live provider/Vesko/publication calls. Record actual invocations and outcomes including failed/incomplete runs; stop at six. Final independent complete four-test spec mandatory. Preserve all prior evidence under original identities; new retained-build applicability is not a new build."
+  ],
+  "implementationApproach": {
+    "selectedApproach": "Extract declarations and eager factories at existing seams; preserve canonical handler bodies and exact dispatcher truth table. Separate production-disabled interception behind an explicit guarded dynamic edge. Characterize unchanged behavior before extraction and verify old/new identity and exact declaration parity. Browser continuation first compares the unchanged lifecycle case on exact base/current non-Git exports using test-only telemetry, then selects a minimal evidence-based correction within conditional scope. Observe locale/HMR/navigation/iframe without changing application state or assertions. Rejected unexplained resets and permissive locators.",
+    "canonicalAuthorityExtended": "Existing prompted handler/compiler, trusted authority, shared failure classes and registered follow-up handler remain single owners; extraction introduces named composition entrypoints only.",
+    "namedCurrentConsumers": [
+      "src/app/api/ai/whole-storefront-proposals/handler.ts",
+      "src/app/api/ai/whole-storefront-proposals/route.ts",
+      "src/integrations/ai/prompted-storefront-studio-handler.server.ts"
+    ],
+    "rejectedShortcuts": [
+      "An unused pure factory while actual route still uses mixed ownership.",
+      "Lazy provider initialization, fixture identity fallback, duplicate error classes/schema copies or changed mapping categories.",
+      "Pretending source dynamic reachability is absent, applying AR02 renderer-free rules to realexecution, or weakening bundle/historical checks.",
+      "Accepting either language, sleeps or timeout increases; retrying unchanged failed CI for green; rebuilding unchanged production inputs or calling retained outputs a fresh build."
+    ],
+    "expectedFailureBehavior": "Exact existing terminal auth/validation/stale/provider/lifecycle mappings and callback order; no cross-path fallback or draft/history/commerce/publication mutation on failure. Gatefailure stops within bounded correction authority.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "normal entrypoint and public compatibility\n\nActual prompted dispatch uses the new normal composition and unchanged canonical server handler. Old handler options, exports and authority/failure identities remain available. Known injected/default provider and authority behavior matches the baseline. Normal generation never substitutes a fixture identity for missing integrated authentication.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "explicit non-production and legacy boundaries\n\nTrace resolved source imports/re-exports for the new normal composition/authority and canonical prompted handler. Prove no dedicated P03/P04/P9 composition, acceptance authority, mock acceptance provider or fixture is in the normal composition path, and no dependency loops back through the legacy runtime-authority module merely for shared errors. Report genuine execution dependencies separately.\n\nThis is **not** a demand for renderer-free normal generation or an indiscriminate ban on every reusable mock export in every dependency barrel. A full execution handler legitimately reaches renderers and compilation. Do not reuse AR-02's strict pure-graph helper blindly: CSS, `server-only`, Node builtins and installed execution dependencies need honest treatment. Use existing repository dependency tooling where suitable, plus bounded resolved-owner checks and actual build evidence; do not change the AR-02 scanner or invent another general audit framework. A traversal that stopped on an unresolved dependency is not a complete graph proof.\n\nThe public route's graph contains a declared conditional local-dispatch edge. Do not pretend a dynamic import is absent from source reachability. Prove production nonexecution with request/loader tests and inspect the produced server route/chunk trace. Report the distinction between a shipped-but-unexecuted server chunk and a production-evaluated dependency; do not claim all local code was eliminated by bundling without evidence.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "dispatch precedence and no cross-path fallback\n\nUse fresh module instances/controlled environment isolation so cached handlers cannot mask production leakage. Cover production with every local flag enabled, integrated/standalone/unconfigured combinations, prompted/follow-up/both/neither operations, malformed/null/unknown bodies, missing/present session header, and combinations where precedence matters. Assert actual selected loader/handler counts, no unintended provider selection, original request-body readability and exact response status/body.\n\nIn production, no P03/P04/P9 loader or fixture is executed even with spoofed local headers/flags. Do not stub the production guard away. In local tests, exact eligible compositions still execute; a token/origin/authority failure remains terminal and does not call another path. Repeated requests retain the original three cache lifetimes and factory counts. Do not run a real OpenAI call to prove dispatch. Browser continuation: explain the observed English-to-Finnish transition with retained base/current evidence and show the complete corrected English lifecycle spec passes in fresh coordinator and independent contexts; every original behavior/protection/provider/persistence assertion remains effective.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "shared errors, authorization and state safety\n\nCompare every mapping branch and all authority error codes with the baseline, including subclasses/unknown errors and ordering. Prove the same constructors/functions/singletons across old and new imports, with no duplicate class breaking `instanceof`.\n\nExercise the real normal handler with existing trusted in-memory test authority: unauthorized/missing identity, tenant/project/draft/locale mismatches, stale before/after provider, provider invalid/timeout/refusal and lifecycle errors retain their exact terminal behavior and call counts. Missing normal authority rejects before provider selection. Existing validations, callbacks and proposal construction stay unchanged; no draft/history/commerce/publication mutations follow failure.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "unchanged generation and retained follow-up\n\nRun applicable actual normal prompted-generation and registered follow-up regressions. Preserve request/result/diagnostic fingerprints, generated proposal values, provider-before-materialization ordering, exact execution count, protected commerce/media, and existing accept/undo/save behavior. Existing profiles/registries/version readers and published artifacts still resolve (T01/T21). No unsupported legacy route is resurrected.\n\nUse complete baseline/final response/selection/error observations for the affected seam, not comparisons limited to fields the replacement emits. Compare unchanged non-import/moved declarations with source/AST evidence where appropriate. Do not capture arbitrary network headers/timestamps as supposed stable application goldens; bind deterministic inputs and document any unavoidable platform-only data.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "production builds and preservation\n\nTypecheck, focused lint/format, full-diff whitespace, docs/requirements/tooling/exports, existing boundary/history checks, source/input preservation and native checks pass. Run an early candidate build and a fresh independently executed final build; all six existing raw/gzip budgets and `validate` remain mandatory. Record server composition trace, actual client chunks and sizes. Server-oriented changes do not imply a smaller browser bundle.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "AR-04 parent exit\n\nMap complete original T01/T16/T21 acceptance in `docs/AR_04_COMPOSITION_ACCEPTANCE.md` (target <=800 words). Record the one normal entry, selected local injections and retained follow-up operation, actual guards/evidence, supported old readers/references and non-claims. If the original outcome is independently met, mark AR-04 Baseline / closed effective upon accepted merge. Otherwise keep Partial with the exact remaining operation/edge/acceptance clause, not another vague cleanup list. Do not silently reduce acceptance or classify a fixture injection as normal integrated auth.\n\nAR-02 and AR-03 stay closed. AR-05 is already dependency-eligible; it does not depend on finishing AR-04. Our selected order is AR-04 now, then AR-05 and AR-06's composed-template proof. AR-07 requires AR-04 and AR-06. AR-08, visual-family activation and production integration are not complete. AR-23 remains independently eligible/unstarted. No successor implementation begins here.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for unmet criterion; BLOCKED for genuine missing evidence/scope/policy/capacity. Parent closure requires complete original acceptance."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/p10b-16p-05a-production-path-architecture.test.ts tests/unit/ar-04-generation-composition.test.ts tests/integration/ar-04-proposal-route-isolation.test.ts",
+      "purpose": "New task and exact currentassertion tests.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/integration/p10b-16p-03-server-prompt-generation.test.ts tests/integration/p10b-16p-04f-semantic-lifecycle.test.ts tests/integration/whole-storefront-runtime-provider.test.ts tests/unit/server-authoritative-trusted-plan-proposal.test.ts tests/unit/p10b-16p-03-canonical-generation-transition.test.ts tests/unit/merchant-project-context-adapter.test.ts tests/unit/storage-contract.test.ts",
+      "purpose": "Real canonical normal/followup/auth/lifecycle/acceptundo/save regressions; baseline same command before edits.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts tests/integration/p9-05b-local-demo-authority.test.ts tests/integration/p9-05b-local-demo-security.test.ts tests/integration/p9-05b-editor-bridge.test.ts tests/integration/p9-05b-editor-follow-up-route.test.ts",
+      "purpose": "Actual configured/disabled/token/origin/authority/retainedfollowup boundaries; baseline same command before edits.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts tests/unit/p10b-19a-09b-historical-v1-snapshot-replay.test.ts tests/unit/p10b-19a-09c-legacy-v1-publication-replay.test.ts tests/unit/p10b-19a-10c-closure-manifest.test.ts tests/unit/ar-03a-route-selection-boundary.test.ts tests/unit/ar-03b-presentation-support.test.ts tests/unit/ar-03c-route-resolution-boundary.test.ts tests/unit/ar-03d-authoring-boundary.test.ts tests/unit/ar-03e-legacy-conversion-boundary.test.ts",
+      "purpose": "Affected historical/version/reference and route boundaries; no broad completedbatch rerun.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/support/check.py replays",
+      "purpose": "Unchanged legacyrender/publicationreplays with originalreports preserved.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts -t 'strictly locks the complete safe inventory|retains fresh-clone A-09 baseline identities|keeps all nine production authorities inactive|is discovered once'",
+      "purpose": "Fourselectedinventorytests;twoexistingcasesunselected.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm exec vitest run tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Narrowcurrentadoptionprojection.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/support/check.py declarations",
+      "purpose": "Exactmoveddeclarations/nonimportbodies/dispatchbodyparity.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/support/final.py graph",
+      "purpose": "Actualresolvedrepositoryruntimeedges andexplicit installedpackageboundaries.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/support/final.py observe",
+      "purpose": "Complete actual sameharness final comparedtoacceptedpre-editbaseline.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/support/check.py integrity",
+      "purpose": "Completescope/budgets/native/support/original/worktree/config preservation.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm typecheck",
+      "purpose": "Repositorytypecheck.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "pnpm exec eslint src/app/api/ai/whole-storefront-proposals/route.ts src/app/api/ai/whole-storefront-proposals/handler.ts src/integrations/ai/prompted-storefront-studio-authority.server.ts src/integrations/ai/prompted-storefront-studio-handler.server.ts src/integrations/ai/whole-storefront-runtime-authority.ts src/app/api/ai/whole-storefront-proposals/prompted-composition.server.ts src/app/api/ai/whole-storefront-proposals/legacy-follow-up-composition.server.ts src/app/api/ai/whole-storefront-proposals/local-acceptance-dispatch.server.ts src/integrations/ai/prompted-storefront-studio-authority-contract.server.ts src/integrations/ai/whole-storefront-failures.ts tests/unit/p10b-16p-05a-production-path-architecture.test.ts tests/unit/ar-04-generation-composition.test.ts tests/integration/ar-04-proposal-route-isolation.test.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs src/application/merchant-project-context/adapter.ts tests/e2e/p10b-16p-03-studio-prompt-generation.spec.ts",
+      "purpose": "Allownedcode/tests focusedlint.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "pnpm exec prettier --check src/app/api/ai/whole-storefront-proposals/route.ts src/app/api/ai/whole-storefront-proposals/handler.ts src/integrations/ai/prompted-storefront-studio-authority.server.ts src/integrations/ai/prompted-storefront-studio-handler.server.ts src/integrations/ai/whole-storefront-runtime-authority.ts src/app/api/ai/whole-storefront-proposals/prompted-composition.server.ts src/app/api/ai/whole-storefront-proposals/legacy-follow-up-composition.server.ts src/app/api/ai/whole-storefront-proposals/local-acceptance-dispatch.server.ts src/integrations/ai/prompted-storefront-studio-authority-contract.server.ts src/integrations/ai/whole-storefront-failures.ts tests/unit/p10b-16p-05a-production-path-architecture.test.ts tests/unit/ar-04-generation-composition.test.ts tests/integration/ar-04-proposal-route-isolation.test.ts docs/AR_04_APPROACH.md docs/AR_04_IMPLEMENTATION_REPORT.md docs/AR_04_COMPOSITION_ACCEPTANCE.md docs/governance/task-contracts/AR/AR-04.json docs/BATCH_11_EXECUTION.md README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs src/application/merchant-project-context/adapter.ts tests/e2e/p10b-16p-03-studio-prompt-generation.spec.ts",
+      "purpose": "Allownedformatincludingdocumentarycontract.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "pnpm docs:validate",
+      "purpose": "Documentationvalidation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Requirementtraceability.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Documentationtooling.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-18",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "DeterministicSDDexportcheck.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-19",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Deterministictrackerexportcheck.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-20",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/browser-amendment-01/support/browser.py build-proof",
+      "purpose": "Fresh independent applicability check of retained actual final production build: exact original source identity, receipt, frozen artifact hashes, unchanged complete executable inputs, all six original raw/gzip budgets and strict trace proof. No rebuild solely tests/docs; if production correction invalidates inputs use at most two owner-authorized replacement builds with fresh source-bound proof.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-21",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-11/AR-04/support/trace-controls.mjs",
+      "purpose": "Authorized strict synthetic trace controls including expected dependency links and unauthorized/broken/cyclic/changed targets/artifacts and exact generated-wrapper root templates.",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-22",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-11/AR-04/browser-amendment-01/support/browser.py independent-check",
+      "purpose": "Fresh independent complete four-test named browser spec, unchanged config, deterministic provider, one worker, zero retries, within total sixinvocation allowance. Exact input identity and frozen original checkout/export sources checked before/after. AR04_BROWSER_LABEL selects assigned independent or independent2; no output overwrite.",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Nativecontract/identity, completefrozeninputs and scope/preservation/buildcapacity records. Browser amendment identities, bounded diagnostics/cause, focused final checks and retained-build applicability are linked here as applicable, preserving earlier provenance.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Reviewed pre-edit/final fullresponses/providerinputs/calls/errors/routeguards; oldnewidentity/declarations/graph plus sourcebound productionserver/clientbuildproof. Browser amendment identities, bounded diagnostics/cause, focused final checks and retained-build applicability are linked here as applicable, preserving earlier provenance.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual independently executed declaredcommands/logs/totals, realauthorization/localfailures/historicalrenderreplays. Browser amendment identities, bounded diagnostics/cause, focused final checks and retained-build applicability are linked here as applicable, preserving earlier provenance.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "command",
+      "description": "Currentdocs/status/tooling/exports and completeoriginalAR04 T01/T16/T21 exitdecision. Browser amendment identities, bounded diagnostics/cause, focused final checks and retained-build applicability are linked here as applicable, preserving earlier provenance.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Unapprovednecessaryscope,failedgateoutsideboundedcorrection,insufficientmeasuredcapacity,persistentmanageddenial,exhaustedbuild/correction/CIallowance or changedfrozenhead.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "nextTask": {
+    "taskId": "BATCH-11-CLOSEOUT",
+    "title": "Original-checkout synchronization and batch closeout only",
+    "eligibility": "After exactheadprotectedverifiedmerge, recordactualhead/merge/entrypoints/retainedoperations/tests/builds/limitations/AR04decision then safeoriginalmainsync andstop. No nextimplementation."
+  }
+}

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { aiStorefrontProviderResponseSchema } from "@/application/ai-storefront-generation";
+import { aiStorefrontProviderResponseSchema } from "@/application/ai-storefront-generation/contract";
 import {
   canonicalizeAiStorefrontTarget,
   createAiStorefrontGenerationPermissionFingerprint,
@@ -31,12 +31,12 @@ import { selectServerPromptedStorefrontDesignIntentProviderConfiguration } from 
 import {
   mapServerWholeStorefrontFailure,
   ServerWholeStorefrontAuthorityError,
-} from "@/integrations/ai/whole-storefront-runtime-authority";
+} from "@/integrations/ai/whole-storefront-failures";
 import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
 } from "@/domain/storefront";
-import type { ServerPromptedStorefrontStudioAuthority } from "./prompted-storefront-studio-authority.server";
+import type { ServerPromptedStorefrontStudioAuthority } from "./prompted-storefront-studio-authority-contract.server";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
