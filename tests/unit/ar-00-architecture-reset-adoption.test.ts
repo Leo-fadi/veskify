@@ -429,7 +429,7 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-02M");
+      expect(tracker).toContain("effective upon explicit owner acceptance/merge of AR-04");
       expect(tracker).toContain(
         "claim that this PR has merged or that owner acceptance has occurred",
       );

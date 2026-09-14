@@ -7,7 +7,7 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-explicit owner acceptance/merge of AR-02M and does not assert the PR's lifecycle or owner acceptance.
+accepted merge of AR-04 and does not assert the PR's lifecycle or owner acceptance.
 AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete upon AR-04 acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
@@ -719,7 +719,7 @@ This table is the committed detailed replacement-roadmap record. The tracker alo
 ### AR-02 — Separate pure capability metadata from rendering and diagnostics
 
 **Package:** P1 — Dependency boundaries. **Dependencies:** AR-01. **Status projection:** Baseline / closed
-upon independently verified AR-02M acceptance/merge; the tracker controls status.
+after independently verified AR-02M acceptance/merge in PR #255; the tracker controls status.
 
 Accepted A-L slices preserve shared definitions, renderer observations, adapted legacy identities,
 actual planner/provider/skill/grammar consumers and semantic feature metadata. Their original reports
