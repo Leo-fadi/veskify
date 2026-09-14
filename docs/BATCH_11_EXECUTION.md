@@ -41,3 +41,14 @@ AR-05 remains eligible and unstarted; AR-06 depends on AR-05 and AR-07 on AR-04 
 AR-06. AR-08 and production integration are incomplete. AR-23 remains independently
 eligible and unstarted. BATCH-11 ends after AR-04 closeout; no additional task,
 worktree, window, permission change or deployment is authorized.
+
+The owner subsequently authorized bounded browser diagnosis for PR #256, preserving
+both CI failures and all earlier contracts/verdicts. The semantic browser successor
+was formatted and pinned before execution. Three of six allowed invocations covered
+exact-base diagnosis, unchanged-head diagnosis and the complete corrected spec
+(four tests passed). Independent confirmation uses a fresh assigned export and
+server. The correction adds 36 setup lines and preserves all original journey
+assertions; production inputs and bundle ceilings are unchanged. No production
+rebuild is justified for these test/documentation changes. Fresh independent/native
+PASS and normal new-head CI are required before the same PR can merge; the original
+single automatic review is retained and no second request is made.

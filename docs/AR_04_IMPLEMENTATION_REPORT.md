@@ -44,10 +44,8 @@ retained build passes all 124 NFT entries; no coordinator build was repeated.
 Repository graph and declaration comparisons pass. The normal factory reaches no
 dedicated P03/P04/P9 fixture/composition or legacy-runtime error backedge. Installed
 runtime package entrypoints and legitimate execution/rendering dependencies are
-reported explicitly. A formatter-only support comparison correction normalizes an
-optional import trailing comma; original support bytes and lock remain retained,
-with that correction's original contract identity unchanged. The later trace-only
-semantic reissue records separate actual identities and preserves the blocker.
+reported explicitly. Earlier formatting and semantic support corrections retain their original
+identities and blocker evidence.
 
 Coordinator validation passed 984 tests across 28 files; two existing inventory
 cases were intentionally unselected. This includes historical render/publication
@@ -56,13 +54,23 @@ documentation/requirements/tooling and existing DOCX checks passed. A-09B used i
 checked-in baseline without conditional external report emission; A-09C emitted a
 fresh retained report. No substitute report was created.
 
-Independent execution and native reconciliation are mandatory delivery gates.
-The same-harness observation runs before the fresh independent final build; the
-post-build candidate observation attempt stopped on the already-declared generated
-`next-env.d.ts` change before running any test. Earlier successful observations
-retain their original identities. Complete native verdict, reconciliation and actual
-PR/merge events are retained separately in persistent task records. Newly captured
-server-content hashes are identified honestly; earlier client/NFT pins are checked.
+Initial independent verification passed 988 tests, including the observation
+harness, and the fresh final build passed all six budgets (search 1,654,432 raw /
+450,609 gzip). Complete native verdicts and reconciliations remain preserved.
+
+PR #256's two retained CI runs failed the English proposal journey. The authorized
+browser amendment compared exact base and submitted head with fresh servers. On
+the head, cold API compilation triggered an RSC refresh: newly cloned evidence
+props reran existing editor initialization, restoring Finnish while the proposal
+survived. The base passed that point but timed out on cold normal-preview navigation.
+A 36-line setup-only hook readies those routes before browser state exists; all
+original assertions and timeouts remain byte-identical. The complete corrected
+spec passed four tests without retries. Production source remains identical to
+submitted head `958209f953938d97872cab2aee65f4f94c06714a`; retained build proof
+requires fresh independent input/artifact applicability checks. No build was repeated
+for this test/documentation correction. Final independent confirmation, native
+reconciliation and new-head CI remain mandatory. The existing behavior during
+an actual development RSC refresh is unchanged and recorded honestly.
 
 [The complete acceptance map](AR_04_COMPOSITION_ACCEPTANCE.md) conditions AR-04
 closure on independent acceptance and merge. AR-02 and AR-03 stay closed. All six

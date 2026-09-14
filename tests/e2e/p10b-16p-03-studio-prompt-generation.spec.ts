@@ -271,6 +271,42 @@ async function rejectProposal(page: Page) {
 
 test.describe.configure({ timeout: 360_000 });
 
+// Finish cold development-route compilation before locale or draft state exists in the browser.
+// A server-component refresh supplies fresh evidence props and reinitializes that editor state.
+test.beforeEach(async ({ request }, testInfo) => {
+  const observations: { method: string; path: string; status?: number; elapsedMs?: number }[] = [];
+  try {
+    for (const path of [editorUrl, `/projects/${projectId}`]) {
+      const started = Date.now();
+      const observation = { method: "GET", path, status: 0, elapsedMs: 0 };
+      observations.push(observation);
+      const response = await request.get(path);
+      observation.status = response.status();
+      observation.elapsedMs = Date.now() - started;
+      expect(response.status()).toBe(200);
+    }
+    const started = Date.now();
+    const observation = { method: "POST", path: generationPath, status: 0, elapsedMs: 0 };
+    observations.push(observation);
+    const response = await request.post(generationPath, {
+      data: "{",
+      headers: { "Content-Type": "application/json" },
+    });
+    observation.status = response.status();
+    observation.elapsedMs = Date.now() - started;
+    expect(response.status()).toBe(400);
+    expect(await response.json()).toEqual({
+      ok: false,
+      failure: { category: "validation", retryable: false },
+    });
+  } finally {
+    await testInfo.attach("p10b16p03-development-route-readiness", {
+      body: JSON.stringify(observations, null, 2),
+      contentType: "application/json",
+    });
+  }
+});
+
 test("raw Studio generates, reviews, rejects, accepts, restores, saves and previews one canonical storefront", async ({
   page,
 }, testInfo) => {

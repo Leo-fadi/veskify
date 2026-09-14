@@ -49,3 +49,13 @@ all blocked evidence. It authorizes exactly three proven dependency-directory
 links, strict expected package manifests and synthetic failure controls. The
 retained candidate build is revalidated without rebuilding; independent execution
 still uses a fresh source-verified build and complete before/after input freeze.
+
+The browser continuation preserves the submitted production source. Exact-base and
+submitted-head diagnostics identified cold development compilation as the trigger:
+Next refreshed server-component props, and the existing editor initialization
+selected the project's Finnish primary locale while retaining its proposal. A
+36-line test setup hook finishes editor, normal-preview and API compilation using
+isolated requests before browser state exists. It asserts successful GETs and the
+exact validation rejection for an invalid-shape request. Every original English,
+lifecycle, commerce, provider-call and persistence assertion remains byte-identical.
+Generic waits, forced locale resets and a production editor rewrite were rejected.
