@@ -1,14 +1,23 @@
 # Veskify Development Delivery Tracker
 
-> **Candidate status effective upon explicit owner acceptance/merge of AR-04:** This projection does not
+> **Candidate status effective upon explicit owner acceptance/merge of AR-05A:** This projection does not
 > claim that this PR has merged or that owner acceptance has occurred.
 > **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed.** AR-02C is **Baseline / closed.** AR-02D is **Baseline / closed.** AR-02E is **Baseline / closed.** AR-02F is **Baseline / closed.** AR-02G is **Baseline / closed.** AR-02H is **Baseline / closed.** AR-02I is **Baseline / closed.** AR-02J is **Baseline / closed.** AR-02K is **Baseline / closed.** AR-02L is **Baseline / closed.** AR-02M is **Baseline / closed.**
-> AR-02 is **Baseline / closed**; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05. AR-03 is **Baseline / closed**; original same-input characterization and separate ownership are verified.
+> AR-02 is **Baseline / closed**; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05 is Partial; canonical nesting/version dispatch remains AR-05B work. AR-05A is Baseline / closed effective upon accepted merge. AR-06 remains dependent on AR-05; positive collection/search and PDP composition must be proven by its executable commerce support before enablement. AR-03 is **Baseline / closed**; original same-input characterization and separate ownership are verified.
 > AR-03A is **Baseline / closed.** AR-03B is **Baseline / closed.** AR-03C is **Baseline / closed.** AR-03D is **Baseline / closed.** AR-03E is **Baseline / closed.** AR-23 is **Planned / unstarted**. AR-23 depends on AR-01 and is not serialized behind
-> visual work. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete upon AR-04 acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized. This tracker owns current status; the roadmap owns dependency order.
+> visual work. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete upon AR-05A acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized. This tracker owns current status; the roadmap owns dependency order.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
+
+AR-05 decomposition: [AR-05A design](AR_05_COMPOSITION_DESIGN.md) and
+[implementation evidence](AR_05A_IMPLEMENTATION_REPORT.md) cover the strict compiled
+value, positive static binding and specific rejection of current indivisible dynamic
+inventories. T01/T02 snapshot nesting, explicit version dispatch and combined
+fingerprint participation remain AR-05B obligations. AR-06 executable commerce
+support, or its explicitly scoped child, must prove positive collection/search and
+PDP composition before composed dynamic templates are enabled. No dynamic or
+rendered-fidelity proof is claimed by A, and no successor implementation is authorized.
 
 ## Document control
 
