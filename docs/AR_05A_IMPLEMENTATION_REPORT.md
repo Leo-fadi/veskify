@@ -27,6 +27,12 @@ directory. Pre-lock drafts and both scope blockers remain historical evidence.
 The initial contract incorporates both source-guard entries and the narrowed AC-02;
 no semantic reissue was used for those amendments.
 
+The single automatic review identified missing component visual-weight validation.
+The shared binder now checks the assigned region against `allowedVisualWeights`;
+compile and serialized-read regressions preserve compatible assignments and reject
+incompatible weights. Fresh correction evidence is kept separately from the
+submitted head's verdict and first independent build.
+
 AR-05 stays **Partial**. AR-05B must attach this same optional value to canonical
 page/archetype owners, implement explicit snapshot-extension/dynamic-version
 dispatch, combined fingerprints, unsupported-consumer rejection and upgrade/read

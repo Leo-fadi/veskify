@@ -378,6 +378,8 @@ function validate(
       if (assigned.has(key)) fail("visible units must be assigned exactly once");
       if (!bound.definition.designCompatibility.allowedNarrativeRoles.includes(region.role))
         fail(`component narrative role unsupported for ${region.id}`);
+      if (!bound.definition.designCompatibility.allowedVisualWeights.includes(region.visualWeight))
+        fail(`component visual weight unsupported for ${region.id}`);
       assigned.add(key);
       return bound;
     });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compilePageBlueprintComposition as compile } from "@/application/storefront-templates/compile-page-blueprint-composition";
 import { validateCompiledPageBlueprintComposition as validate } from "@/application/storefront-templates/validate-page-blueprint-composition";
 import { createPageBlueprintV2CandidateAuthority } from "@/application/storefront-templates/page-blueprint-v2-candidate-authority";
+import { validateComponentDefinitionV2 } from "@/domain/component-platform/component-platform";
 import { canonicalValueFingerprint } from "@/domain/storefront/canonical-storefront";
 import {
   createCompiledPageBlueprintCompositionV1 as create,
@@ -126,6 +127,55 @@ describe("AR-05A reference-only composition", () => {
       compile(selection, { ...authority, owner: { kind: "static-page", page: changedContent } })
         .bindingFingerprint,
     ).toBe(first.bindingFingerprint);
+  });
+  it.each(["compile", "read"] as const)("enforces component visual weight on %s", (mode) => {
+    const fixture = ar05aFixture();
+    const assignment = fixture.selection.regionAssignments[0];
+    const unit = assignment.units[0];
+    if (unit.kind !== "section") throw new Error("static fixture");
+    const section = fixture.page.sections.find((entry) => entry.id === unit.sectionId)!;
+    fixture.authority = {
+      ...fixture.authority,
+      componentDefinitions: fixture.authority.componentDefinitions.map((entry) => {
+        const definition = validateComponentDefinitionV2(entry);
+        return definition.type === section.component
+          ? validateComponentDefinitionV2({
+              ...definition,
+              designCompatibility: {
+                ...definition.designCompatibility,
+                allowedVisualWeights: ["medium"],
+              },
+            })
+          : definition;
+      }),
+    };
+    const accepted = compile(fixture.selection, fixture.authority);
+    expect(validate(JSON.parse(JSON.stringify(accepted)), fixture.authority)).toEqual(accepted);
+    const { candidateFingerprint: _candidateFingerprint, ...candidateMaterial } = fixture.candidate;
+    void _candidateFingerprint;
+    const candidate = createPageBlueprintV2CandidateAuthority({
+      ...candidateMaterial,
+      structural: {
+        ...fixture.candidate.structural,
+        regions: fixture.candidate.structural.regions.map((region) =>
+          region.id === assignment.regionId ? { ...region, visualWeight: "heavy" } : region,
+        ),
+      },
+    });
+    ar05aReplaceCandidate(fixture, candidate);
+    const { compositionFingerprint: _fingerprint, ...material } = accepted;
+    void _fingerprint;
+    const untrusted = create({
+      ...material,
+      blueprint: { ...accepted.blueprint, candidateFingerprint: candidate.candidateFingerprint },
+    });
+    const before = JSON.stringify(fixture);
+    expect(() =>
+      mode === "compile"
+        ? compile(fixture.selection, fixture.authority)
+        : validate(JSON.parse(JSON.stringify(untrusted)), fixture.authority),
+    ).toThrow(`component visual weight unsupported for ${assignment.regionId}`);
+    expect(JSON.stringify(fixture)).toBe(before);
   });
   it.each([
     "foreign",
