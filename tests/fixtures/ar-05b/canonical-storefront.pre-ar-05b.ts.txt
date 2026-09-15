@@ -1,10 +1,8 @@
 import type { StorefrontSnapshot } from "./storefront";
-import type { ComposedStorefrontSnapshotV1 } from "./storefront-composition-version";
-type CanonicalSnapshot = StorefrontSnapshot | ComposedStorefrontSnapshotV1;
 
 export type StorefrontContent = Omit<
   Pick<
-    CanonicalSnapshot,
+    StorefrontSnapshot,
     | "brandSystem"
     | "navigation"
     | "sharedFrame"
@@ -15,9 +13,7 @@ export type StorefrontContent = Omit<
   >,
   "contentSupportFactDocuments"
 > &
-  Partial<Pick<CanonicalSnapshot, "contentSupportFactDocuments">> & {
-    compositionExtensionVersion?: "1.0.0";
-  };
+  Partial<Pick<StorefrontSnapshot, "contentSupportFactDocuments">>;
 
 export function canonicalizeValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalizeValue);
@@ -35,7 +31,7 @@ export function canonicalValueString(value: unknown): string {
   return JSON.stringify(canonicalizeValue(value));
 }
 
-export function storefrontContent(snapshot: CanonicalSnapshot): StorefrontContent {
+export function storefrontContent(snapshot: StorefrontSnapshot): StorefrontContent {
   return {
     brandSystem: snapshot.brandSystem,
     navigation: snapshot.navigation,
@@ -52,19 +48,16 @@ export function storefrontContent(snapshot: CanonicalSnapshot): StorefrontConten
       ? { contentSupportFactDocuments: snapshot.contentSupportFactDocuments }
       : {}),
     catalogueRef: snapshot.catalogueRef,
-    ...("compositionExtensionVersion" in snapshot
-      ? { compositionExtensionVersion: snapshot.compositionExtensionVersion }
-      : {}),
   };
 }
 
-export function canonicalStorefrontContentString(snapshot: CanonicalSnapshot): string {
+export function canonicalStorefrontContentString(snapshot: StorefrontSnapshot): string {
   return canonicalValueString(storefrontContent(snapshot));
 }
 
 export function canonicalStorefrontContentEqual(
-  left: CanonicalSnapshot,
-  right: CanonicalSnapshot,
+  left: StorefrontSnapshot,
+  right: StorefrontSnapshot,
 ): boolean {
   return canonicalStorefrontContentString(left) === canonicalStorefrontContentString(right);
 }
@@ -145,6 +138,6 @@ export function canonicalValueFingerprint(value: unknown): string {
   return `v1_${canonical.length}_${sha256(canonical)}`;
 }
 
-export function canonicalStorefrontContentFingerprint(snapshot: CanonicalSnapshot): string {
+export function canonicalStorefrontContentFingerprint(snapshot: StorefrontSnapshot): string {
   return canonicalValueFingerprint(storefrontContent(snapshot));
 }

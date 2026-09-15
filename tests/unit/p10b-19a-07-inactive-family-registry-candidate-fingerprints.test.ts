@@ -339,7 +339,11 @@ function fingerprintProtectedAuthority(repositoryRoot: string): string {
                     : path ===
                         "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts"
                       ? "0defde83c5531069f5c1091c5918220b702e1869469f0000822deec70e7530bb"
-                      : undefined,
+                      : path === "src/domain/storefront/storefront.ts"
+                        ? "ef5c167114b2f94f66a9f13bb181db9fe1f03d06f2ff4b7c141795c0739d9d99"
+                        : path === "src/domain/storefront/canonical-storefront.ts"
+                          ? "d47e26eb93d935f83e604a357e6a43edd39e00deabcbf3b1df131eea50b5e6bb"
+                          : undefined,
       }),
     );
     hash.update("\0");

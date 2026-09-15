@@ -11,6 +11,8 @@ const paths = [
   "src/application/bounded-storefront-synthesis/direction-registry.ts",
   "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
   "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts",
+  "src/domain/storefront/storefront.ts",
+  "src/domain/storefront/canonical-storefront.ts",
 ] as const;
 const authorities = [
   {
@@ -69,10 +71,26 @@ const authorities = [
     archivePath: "tests/fixtures/ar-02m/semantic-compatibility-resolution.pre-ar-02m.ts.txt",
     successorSha256: "22efb180825d76f39de79661bd7be4e6642cc857ca0073bf0a0def01383b6383",
   },
+  {
+    taskId: "AR-05B",
+    path: paths[7],
+    baseCommit: "1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc",
+    originalSha256: "ef5c167114b2f94f66a9f13bb181db9fe1f03d06f2ff4b7c141795c0739d9d99",
+    archivePath: "tests/fixtures/ar-05b/storefront.pre-ar-05b.ts.txt",
+    successorSha256: "6a8d8a58d1aa019429062bda07003d52f604c12a4d2412aae45ad87edaa80e9b",
+  },
+  {
+    taskId: "AR-05B",
+    path: paths[8],
+    baseCommit: "1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc",
+    originalSha256: "d47e26eb93d935f83e604a357e6a43edd39e00deabcbf3b1df131eea50b5e6bb",
+    archivePath: "tests/fixtures/ar-05b/canonical-storefront.pre-ar-05b.ts.txt",
+    successorSha256: "931b95cf7acadbef42b5032fa5c2918c027ac7557ca92f40fb0c3520b7b14959",
+  },
 ] as const;
 const recordSchema = z
   .object({
-    taskId: z.enum(["AR-02G", "AR-02H", "AR-02M"]),
+    taskId: z.enum(["AR-02G", "AR-02H", "AR-02M", "AR-05B"]),
     path: z.enum(paths),
     baseCommit: z.string().regex(/^[a-f0-9]{40}$/u),
     originalSha256: z.string().regex(/^[a-f0-9]{64}$/u),
@@ -88,7 +106,8 @@ const recordSchema = z
         value.path !== paths[3] &&
         value.path !== paths[4] &&
         value.path !== paths[5] &&
-        value.path !== paths[6])
+        value.path !== paths[6]) ||
+      (value.taskId === "AR-05B" && value.path !== paths[7] && value.path !== paths[8])
     )
       context.addIssue({ code: "custom", message: "Transition task and path do not match." });
   });

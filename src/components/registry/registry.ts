@@ -165,6 +165,22 @@ export function createStorefrontPagePaths({
   pagePathPrefix?: string;
   pagePathSuffix?: string;
 }): Readonly<Record<string, string>> {
+  const hasComposition = (owner: unknown) =>
+    owner !== null && typeof owner === "object" && "composition" in owner;
+  const dynamic = snapshot.dynamicCommercePresentation;
+  if (
+    "compositionExtensionVersion" in snapshot ||
+    snapshot.pages.some(hasComposition) ||
+    (dynamic &&
+      (dynamic.contractVersion !== "1.0.0" ||
+        [dynamic.collectionSearchArchetypes, dynamic.productDetailArchetypes].some(
+          (owners) => Array.isArray(owners) && owners.some(hasComposition),
+        )))
+  ) {
+    throw new Error(
+      "Composition-version storefront values are not available to legacy path projection.",
+    );
+  }
   return Object.fromEntries([
     ...snapshot.pages.map((page): readonly [string, string] => [
       page.id,

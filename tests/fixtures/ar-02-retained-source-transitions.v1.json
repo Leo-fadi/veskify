@@ -56,6 +56,22 @@
       "originalSha256": "0defde83c5531069f5c1091c5918220b702e1869469f0000822deec70e7530bb",
       "archivePath": "tests/fixtures/ar-02m/semantic-compatibility-resolution.pre-ar-02m.ts.txt",
       "successorSha256": "22efb180825d76f39de79661bd7be4e6642cc857ca0073bf0a0def01383b6383"
+    },
+    {
+      "taskId": "AR-05B",
+      "path": "src/domain/storefront/storefront.ts",
+      "baseCommit": "1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc",
+      "originalSha256": "ef5c167114b2f94f66a9f13bb181db9fe1f03d06f2ff4b7c141795c0739d9d99",
+      "archivePath": "tests/fixtures/ar-05b/storefront.pre-ar-05b.ts.txt",
+      "successorSha256": "6a8d8a58d1aa019429062bda07003d52f604c12a4d2412aae45ad87edaa80e9b"
+    },
+    {
+      "taskId": "AR-05B",
+      "path": "src/domain/storefront/canonical-storefront.ts",
+      "baseCommit": "1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc",
+      "originalSha256": "d47e26eb93d935f83e604a357e6a43edd39e00deabcbf3b1df131eea50b5e6bb",
+      "archivePath": "tests/fixtures/ar-05b/canonical-storefront.pre-ar-05b.ts.txt",
+      "successorSha256": "931b95cf7acadbef42b5032fa5c2918c027ac7557ca92f40fb0c3520b7b14959"
     }
   ]
 }

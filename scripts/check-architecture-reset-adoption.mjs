@@ -361,8 +361,9 @@ statusExpectation.set("AR-03C", "Baseline");
 statusExpectation.set("AR-03D", "Baseline");
 statusExpectation.set("AR-03E", "Baseline");
 statusExpectation.set("AR-04", "Baseline");
-statusExpectation.set("AR-05", "Partial");
+statusExpectation.set("AR-05", "Baseline");
 statusExpectation.set("AR-05A", "Baseline");
+statusExpectation.set("AR-05B", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -449,11 +450,13 @@ for (const record of statusRecords) {
                       ? /^unstarted$/iu
                       : record.subject === "AR-04"
                         ? /^closed$/iu
-                        : record.subject === "AR-05A"
-                          ? /^closed effective upon accepted merge$/iu
-                          : /^AR-\d{2}$/u.test(record.subject)
-                            ? /^$/u
-                            : /^(?:closed)?$/iu;
+                        : ["AR-05", "AR-05B"].includes(record.subject)
+                          ? /^closed effective upon accepted merge(?: of AR-05B)?$/iu
+                          : record.subject === "AR-05A"
+                            ? /^closed$/iu
+                            : /^AR-\d{2}$/u.test(record.subject)
+                              ? /^$/u
+                              : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -514,7 +517,7 @@ if (
   ) ||
   !trackerCurrent.includes("AR-02 is Baseline / closed;") ||
   !trackerCurrent.includes(
-    "AR-04 is Baseline / closed. AR-05 is Partial; canonical nesting/version dispatch remains AR-05B work. AR-05A is Baseline / closed effective upon accepted merge. AR-06 remains dependent on AR-05; positive collection/search and PDP composition must be proven by its executable commerce support before enablement.",
+    "AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed effective upon accepted merge. AR-05 is Baseline / closed effective upon accepted merge of AR-05B; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06 remains unstarted and must provide the shared registered renderer, lossless Puck/save/history/publication integration, four-width evidence, and positive collection/search and PDP executable-commerce proof before enablement.",
   ) ||
   !trackerCurrent.includes("AR-03 is Baseline / closed;") ||
   !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
@@ -527,13 +530,13 @@ if (
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
   !trackerCurrent.includes(
-    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete upon AR-05A acceptance/merge and safe closeout.",
+    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete upon AR-05B acceptance/merge and safe closeout.",
   ) ||
   !trackerCurrent.includes("No third task is authorized.") ||
   nextTaskIds(trackerCurrent).length !== 0
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05 Partial, AR-05A conditional closure and no successor are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 conditional closure and no successor are required",
   );
 }
 if (
@@ -549,7 +552,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05 is Partial; canonical nesting/version dispatch remains AR-05B work. AR-05A is Baseline / closed effective upon accepted merge. AR-06 remains dependent on AR-05; positive collection/search and PDP composition must be proven by its executable commerce support before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete upon AR-05A acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed effective upon accepted merge. AR-05 is Baseline / closed effective upon accepted merge of AR-05B; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06 remains unstarted and must provide the shared registered renderer, lossless Puck/save/history/publication integration, four-width evidence, and positive collection/search and PDP executable-commerce proof before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete upon AR-05B acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");

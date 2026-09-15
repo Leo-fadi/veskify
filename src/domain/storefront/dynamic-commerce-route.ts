@@ -472,7 +472,7 @@ const fallbackSchema = z
   })
   .strict();
 
-const authorityMaterialShape = {
+export const authorityMaterialShape = {
   contractVersion: z.literal(DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION),
   authorityId: idSchema,
   authorityRevision: z.number().int().nonnegative(),
@@ -500,8 +500,8 @@ function addDuplicateIssue(
   }
 }
 
-function refineAuthorityMaterial(
-  authority: z.output<typeof authorityMaterialObjectSchema>,
+export function refineAuthorityMaterial(
+  authority: Omit<z.output<typeof authorityMaterialObjectSchema>, "contractVersion">,
   context: z.RefinementCtx,
 ): void {
   addDuplicateIssue(
@@ -705,9 +705,9 @@ function sortStrings<T extends string>(values: readonly T[]): T[] {
   return [...values].sort((left, right) => left.localeCompare(right));
 }
 
-function normalizeCollectionSearchArchetype(
-  archetype: z.output<typeof dynamicCommerceCollectionSearchArchetypeSchema>,
-): z.output<typeof dynamicCommerceCollectionSearchArchetypeSchema> {
+function normalizeCollectionSearchArchetype<
+  T extends z.output<typeof dynamicCommerceCollectionSearchArchetypeSchema>,
+>(archetype: T): T {
   return {
     ...archetype,
     compatibleSharedFrameProfileIds: sortStrings(archetype.compatibleSharedFrameProfileIds),
@@ -720,9 +720,9 @@ function normalizeCollectionSearchArchetype(
   };
 }
 
-function normalizeProductDetailArchetype(
-  archetype: z.output<typeof dynamicCommerceProductDetailArchetypeSchema>,
-): z.output<typeof dynamicCommerceProductDetailArchetypeSchema> {
+function normalizeProductDetailArchetype<
+  T extends z.output<typeof dynamicCommerceProductDetailArchetypeSchema>,
+>(archetype: T): T {
   return {
     ...archetype,
     compatibleSharedFrameProfileIds: sortStrings(archetype.compatibleSharedFrameProfileIds),
@@ -734,9 +734,9 @@ function normalizeProductDetailArchetype(
   };
 }
 
-function normalizeAuthorityMaterial(
-  authority: z.output<typeof authorityMaterialObjectSchema>,
-): z.output<typeof authorityMaterialObjectSchema> {
+export function normalizeAuthorityMaterial<
+  T extends Omit<z.output<typeof authorityMaterialObjectSchema>, "contractVersion">,
+>(authority: T): T {
   return {
     ...authority,
     routeInventory: [...authority.routeInventory].sort((left, right) =>
