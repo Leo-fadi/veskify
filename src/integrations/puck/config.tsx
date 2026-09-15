@@ -320,6 +320,7 @@ export function generateVeskifyPuckConfig(
 export const veskifyPuckConfig = generateVeskifyPuckConfig();
 
 export function pageToPuckData(page: PageModel, context: StorefrontRenderContext): Data {
+  validateRegisteredPage(page, context);
   const activeLocale = context.activeLocale;
   return {
     content: page.sections.map((section) => {
@@ -445,6 +446,7 @@ export function puckDataToPage(
   originalPage: PageModel,
   context: StorefrontRenderContext,
 ): PageModel {
+  validateRegisteredPage(originalPage, context);
   const parsed = veskifyPuckDataSchema.parse(data);
   if (Object.values(parsed.zones ?? {}).some((items) => items.length > 0)) {
     throw new Error("Nested canvas zones are not supported for storefront pages.");

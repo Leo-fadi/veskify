@@ -319,7 +319,7 @@ export const sharedFrameModelSchema = z
     }
   });
 
-export const storefrontSnapshotObjectSchema = z
+export const storefrontSnapshotSchema = z
   .object({
     id: idSchema,
     projectId: idSchema,
@@ -336,120 +336,108 @@ export const storefrontSnapshotObjectSchema = z
     createdAt: isoDateTimeSchema,
     createdBy: z.enum(["user", "agent", "system"]),
   })
-  .strict();
+  .strict()
+  .superRefine((snapshot, context) => {
+    const pageIds = snapshot.pages.map((page) => page.id);
+    if (new Set(pageIds).size !== pageIds.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Page IDs must be unique within a snapshot.",
+        path: ["pages"],
+      });
+    }
 
-export function refineStorefrontSnapshot(
-  snapshot: Omit<z.output<typeof storefrontSnapshotObjectSchema>, "dynamicCommercePresentation"> & {
-    dynamicCommercePresentation?: Pick<
-      z.output<typeof dynamicCommercePresentationAuthoritySchema>,
-      "routeInventory" | "collectionSearchArchetypes" | "productDetailArchetypes"
-    >;
-  },
-  context: z.RefinementCtx,
-): void {
-  const pageIds = snapshot.pages.map((page) => page.id);
-  if (new Set(pageIds).size !== pageIds.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Page IDs must be unique within a snapshot.",
-      path: ["pages"],
-    });
-  }
+    const sectionIds = [
+      ...(snapshot.sharedFrame
+        ? [
+            snapshot.sharedFrame.header.id,
+            snapshot.sharedFrame.footer.id,
+            snapshot.sharedFrame.announcement?.id,
+          ].filter((id): id is string => id !== undefined)
+        : []),
+      ...snapshot.pages.flatMap((page) => page.sections.map((section) => section.id)),
+    ];
+    if (new Set(sectionIds).size !== sectionIds.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Section IDs must be unique within a snapshot.",
+        path: ["pages"],
+      });
+    }
 
-  const sectionIds = [
-    ...(snapshot.sharedFrame
-      ? [
-          snapshot.sharedFrame.header.id,
-          snapshot.sharedFrame.footer.id,
-          snapshot.sharedFrame.announcement?.id,
-        ].filter((id): id is string => id !== undefined)
-      : []),
-    ...snapshot.pages.flatMap((page) => page.sections.map((section) => section.id)),
-  ];
-  if (new Set(sectionIds).size !== sectionIds.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Section IDs must be unique within a snapshot.",
-      path: ["pages"],
-    });
-  }
+    const contentSupportDocumentIds = snapshot.contentSupportFactDocuments.map(
+      (document) => document.id,
+    );
+    if (new Set(contentSupportDocumentIds).size !== contentSupportDocumentIds.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Content/support fact document IDs must be unique within a snapshot.",
+        path: ["contentSupportFactDocuments"],
+      });
+    }
 
-  const contentSupportDocumentIds = snapshot.contentSupportFactDocuments.map(
-    (document) => document.id,
-  );
-  if (new Set(contentSupportDocumentIds).size !== contentSupportDocumentIds.length) {
-    context.addIssue({
-      code: "custom",
-      message: "Content/support fact document IDs must be unique within a snapshot.",
-      path: ["contentSupportFactDocuments"],
-    });
-  }
-
-  const knownPageIds = new Set(pageIds);
-  const knownDynamicRouteIds = new Set(
-    snapshot.dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
-  );
-  const knownDynamicArchetypeIds = new Set(
-    snapshot.dynamicCommercePresentation
-      ? [
-          ...snapshot.dynamicCommercePresentation.collectionSearchArchetypes.map(({ id }) => id),
-          ...snapshot.dynamicCommercePresentation.productDetailArchetypes.map(({ id }) => id),
-        ]
-      : [],
-  );
-  const collidingDynamicRouteIds = pageIds.filter((id) => knownDynamicRouteIds.has(id));
-  if (collidingDynamicRouteIds.length > 0) {
-    context.addIssue({
-      code: "custom",
-      message: "Static page IDs and dynamic commerce route IDs must be globally unique.",
-      path: ["dynamicCommercePresentation", "routeInventory"],
-    });
-  }
-  const collidingDynamicArchetypeIds = pageIds.filter((id) => knownDynamicArchetypeIds.has(id));
-  if (collidingDynamicArchetypeIds.length > 0) {
-    context.addIssue({
-      code: "custom",
-      message: "Static page IDs and dynamic commerce archetype IDs must be globally unique.",
-      path: ["dynamicCommercePresentation"],
-    });
-  }
-  const derivedEditorSectionIds = new Set(
-    [...knownDynamicArchetypeIds].map((archetypeId) => `section_${archetypeId}`),
-  );
-  const collidingEditorSectionIds = sectionIds.filter((id) => derivedEditorSectionIds.has(id));
-  if (collidingEditorSectionIds.length > 0) {
-    context.addIssue({
-      code: "custom",
-      message:
-        "Canonical section IDs and derived dynamic commerce editor section IDs must be globally unique.",
-      path: ["dynamicCommercePresentation"],
-    });
-  }
-  for (const [area, items] of Object.entries(snapshot.navigation)) {
-    items.forEach((item, index) => {
-      if (item.target.type === "page" && !knownPageIds.has(item.target.pageId)) {
-        context.addIssue({
-          code: "custom",
-          message: "Navigation targets must resolve to a page in this snapshot.",
-          path: ["navigation", area, index, "target", "pageId"],
-        });
-      }
-      if (
-        item.target.type === "dynamic-commerce-route" &&
-        !knownDynamicRouteIds.has(item.target.routeId)
-      ) {
-        context.addIssue({
-          code: "custom",
-          message: "Dynamic navigation targets must resolve to current route inventory.",
-          path: ["navigation", area, index, "target", "routeId"],
-        });
-      }
-    });
-  }
-}
-
-export const storefrontSnapshotSchema =
-  storefrontSnapshotObjectSchema.superRefine(refineStorefrontSnapshot);
+    const knownPageIds = new Set(pageIds);
+    const knownDynamicRouteIds = new Set(
+      snapshot.dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
+    );
+    const knownDynamicArchetypeIds = new Set(
+      snapshot.dynamicCommercePresentation
+        ? [
+            ...snapshot.dynamicCommercePresentation.collectionSearchArchetypes.map(({ id }) => id),
+            ...snapshot.dynamicCommercePresentation.productDetailArchetypes.map(({ id }) => id),
+          ]
+        : [],
+    );
+    const collidingDynamicRouteIds = pageIds.filter((id) => knownDynamicRouteIds.has(id));
+    if (collidingDynamicRouteIds.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Static page IDs and dynamic commerce route IDs must be globally unique.",
+        path: ["dynamicCommercePresentation", "routeInventory"],
+      });
+    }
+    const collidingDynamicArchetypeIds = pageIds.filter((id) => knownDynamicArchetypeIds.has(id));
+    if (collidingDynamicArchetypeIds.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Static page IDs and dynamic commerce archetype IDs must be globally unique.",
+        path: ["dynamicCommercePresentation"],
+      });
+    }
+    const derivedEditorSectionIds = new Set(
+      [...knownDynamicArchetypeIds].map((archetypeId) => `section_${archetypeId}`),
+    );
+    const collidingEditorSectionIds = sectionIds.filter((id) => derivedEditorSectionIds.has(id));
+    if (collidingEditorSectionIds.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Canonical section IDs and derived dynamic commerce editor section IDs must be globally unique.",
+        path: ["dynamicCommercePresentation"],
+      });
+    }
+    for (const [area, items] of Object.entries(snapshot.navigation)) {
+      items.forEach((item, index) => {
+        if (item.target.type === "page" && !knownPageIds.has(item.target.pageId)) {
+          context.addIssue({
+            code: "custom",
+            message: "Navigation targets must resolve to a page in this snapshot.",
+            path: ["navigation", area, index, "target", "pageId"],
+          });
+        }
+        if (
+          item.target.type === "dynamic-commerce-route" &&
+          !knownDynamicRouteIds.has(item.target.routeId)
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "Dynamic navigation targets must resolve to current route inventory.",
+            path: ["navigation", area, index, "target", "routeId"],
+          });
+        }
+      });
+    }
+  });
 
 export type AllowedSectionOverrides = z.infer<typeof allowedSectionOverridesSchema>;
 export type SectionInstance = z.infer<typeof sectionInstanceSchema>;

@@ -118,18 +118,65 @@ Nothing is silently flattened to a stack or removed from reading order.
 Errors are bounded deterministic categories without raw content or exception
 payloads. Inputs and source arrays remain unchanged, including rejected calls.
 
-## Deferred activation
+## AR-05B binding and deferred activation
 
-AR-05 remains Partial after A. AR-05B must add this same optional `composition` to
-the existing page/archetype owner, explicit snapshot-extension/dynamic-version
-dispatch, combined fingerprint participation, unsupported-consumer rejection and
-upgrade/read tests. Composed storage uses stable-ID order; legacy flat-array order
-is unchanged. No reader infers composition from shape or upgrades on read.
+AR-05B attaches the same optional composition to actual canonical owners through explicit
+`compositionExtensionVersion: "1.0.0"` snapshot dispatch and explicit dynamic-commerce v1/v2
+dispatch. Legacy readers remain strict. Static and unchanged dynamic v1 authority can coexist in a
+composed snapshot; dynamic v2 is structural until it has executable realization support. Canonical
+identity includes the marker and nested composition without changing the legacy hash primitive.
 
-AR-06 is the named shared renderer/Puck/save/publication consumer, blocked on that
-integration. It must implement real registered realizations, internal anatomy hooks
-where needed, lossless round trips and four-width visual evidence. AR-06 executable
-commerce support, or an explicitly scoped child, must prove positive collection/
-search and PDP composition before composed dynamic templates can be enabled.
-AR-05A proves neither dynamic composition nor rendered fidelity. No composed
-snapshot, active layout, family, UI or live integration is claimed here.
+AR-05A+B map original T01/T02 representation and version acceptance only upon AR-05B's accepted
+merge. AR-06 remains the named consumer: it must provide the shared registered renderer, lossless
+Puck/save/history/publication integration, four-width evidence, and positive collection/search and
+PDP executable-commerce proof before dynamic templates are enabled. A single-family candidate cannot
+semantically bind a current collection/search archetype across both supported contexts, even if later
+anatomy support exists. No composed layout, family, UI, or live integration is active here.
+
+## AR-05B canonical binding and explicit dispatch
+
+`storefront-composition-version.ts` owns the additive `compositionExtensionVersion: "1.0.0"`
+root codec. An absent marker delegates to the existing legacy snapshot parser. Present unknown
+markers reject; composed pages require the exact AR-05A value on their actual owner. Uncomposed
+pages and unchanged v1 dynamic authority may coexist. Structural parsing is not semantic acceptance.
+
+`dynamic-commerce-composition-version.ts` owns explicit dynamic `2.0.0` material and fingerprint
+handling. V2 requires a composed archetype, preserves all existing structural/reference refinements,
+and hashes normalized complete material without its own fingerprint. Composed sections and slots
+use increasing code-unit ID order. Only explicit construction sorts cloned inventories; serialized
+reads reject noncanonical storage. AR-05A composition remains the sole meaningful layout order.
+
+`createComposedStorefrontCandidate` checks expected base ID, revision and content fingerprint;
+requires a distinct successor ID, next revision and unchanged project/catalogue; and returns a
+pure, deeply frozen candidate. `validateComposedStorefrontSnapshot` revalidates every stored
+composition, including owners not selected by an update. Both resolve actual containing owners
+and delegate to A's compiler/validator. The trusted resolver receives frozen owner identity and
+composition context and supplies candidate, component definitions, realization support and capacity
+evidence. It cannot replace canonical owner content. The accepted TypeScript brand denotes semantic
+validation; neither API performs a repository write or revision allocation.
+
+Canonical content identity includes the optional root marker and nested composition/dynamic
+identities. Legacy hash algorithms, defaults and array order are unchanged. Retained commercial
+profiles prove provenance, not a second layout. Original G/H/M history is unchanged; the two B
+source archives retain their original hashes and strict caller pins.
+
+The initial path-guard mechanism was corrected within the runbook's compatibility allowance:
+known version/owner fields reject unsupported composition, while unrelated legacy errors reach
+their existing strict consumer/error-mapping boundaries. The immutable initial approach and failed
+legacy check are retained. Both Puck entrypoints still validate their actual page before projection.
+
+A shared collection/search archetype poses an additional explicit limitation: A's authority has one
+exact candidate family, so a single-family composition cannot satisfy both actual supported contexts.
+Additional realization support alone does not resolve this mismatch. AR-06 must scope that decision
+alongside executable commerce anatomy, preserve protected controls and prove positive collection,
+search and PDP composition before enablement. B's borrowed-topology dynamic syntax tests are not
+semantic acceptance or rendered-fidelity evidence.
+
+The composition binder also runs the existing canonical site-map validator on the complete, strictly
+parsed aggregate before semantic branding. This preserves page-family, route, shared-frame, commerce,
+evidence-presence, locale, parent and navigation invariants on every governed owner, including owners
+without composition. The call retains the actual extension/dynamic versions and all composition fields;
+only its legacy TypeScript parameter needs a documented compatibility cast, and its return is ignored.
+It does not parse or select versions, change layout order, provide external catalogue or enabled-locale
+authority, or establish factual approval. Strict codecs and AR-05A authority validation remain separate
+mandatory gates. Ungoverned legacy snapshots retain the validator's existing behavior.
