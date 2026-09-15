@@ -7,8 +7,8 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-accepted merge of AR-04 and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete upon AR-04 acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
+accepted merge of AR-05A and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05 is Partial; canonical nesting/version dispatch remains AR-05B work. AR-05A is Baseline / closed effective upon accepted merge. AR-06 remains dependent on AR-05; positive collection/search and PDP composition must be proven by its executable commerce support before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete upon AR-05A acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -727,7 +727,7 @@ retain their provenance, including L's explicit evidence recovery. [AR-02M](AR_0
 narrows the connected schema, direction registry, candidate eligibility and actual semantic resolver
 imports together. The [parent evidence map](AR_02_BOUNDARY_ACCEPTANCE.md) assesses the complete original
 acceptance below; closure requires independent verification and accepted merge. AR-03 stays closed.
-AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05.
+AR-04 is Baseline / closed. AR-05 is Partial; canonical nesting/version dispatch remains AR-05B work. AR-05A is Baseline / closed effective upon accepted merge. AR-06 remains dependent on AR-05; positive collection/search and PDP composition must be proven by its executable commerce support before enablement.
 
 **Outcome:** Template planning can use truthful component capabilities without importing editor/runtime/audit implementations.
 
@@ -833,6 +833,15 @@ The retained registered follow-up remains available until AR-20; no successor im
 - T01,T02: supported old payloads parse identically; new authority rejects contradictions and cannot become a parallel tree.
 - Exact owner, version and fingerprint strategy is documented and ready for AR-06’s named renderer consumer.
 
+**Safe child decomposition:** AR-05A defines the strict compiled reference value and
+shared authority validation ([design](AR_05_COMPOSITION_DESIGN.md)). It proves
+static binding and rule-specific rejection of current indivisible commerce
+presentations. AR-05B attaches that same value to canonical page/archetype owners,
+adds explicit snapshot-extension/dynamic-version dispatch and combined fingerprint participation,
+and rejects unsupported consumers. These are children of AR-05, not new roadmap
+stages. The tracker owns their status; neither future integration nor AR-06 is
+authorized by BATCH-12.
+
 **Non-goals:**
 
 - No active family registration, full token redesign, arbitrary CSS or generic DOM model.
@@ -851,6 +860,7 @@ The retained registered follow-up remains available until AR-20; no successor im
 
 - Implement the shared registered composition renderer for the minimal supported relation set needed by the first families; unimplemented relations fail, never silently degrade.
 - Retain generic product option state and registered commerce sub-anatomy; do not create competing variant resolvers.
+- AR-06 executable commerce support, or its explicitly scoped child, must prove positive collection/search and PDP composition before composed dynamic templates are enabled. AR-05A rejection evidence does not discharge this obligation.
 - Project composition losslessly to/from Puck and preserve it in save/history/publish compilation.
 - Use one approved/neutral representative template to prove offset/stack behaviour, mobile reading order and round trip.
 

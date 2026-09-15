@@ -32,7 +32,12 @@
 > Complete original AR-02 acceptance is assessed in the parent evidence map and was accepted in
 > PR #255. AR-02 and AR-03 remain closed. [AR-04 acceptance](AR_04_COMPOSITION_ACCEPTANCE.md)
 > maps normal generation, production-disabled injection and retained follow-up compatibility.
-> AR-04 is Baseline / closed effective upon accepted merge. AR-05 is eligible / unstarted; AR-06 remains dependent on AR-05.
+> AR-04 is Baseline / closed. AR-05 is Partial; canonical nesting/version dispatch remains AR-05B work. AR-05A is Baseline / closed effective upon accepted merge. AR-06 remains dependent on AR-05; positive collection/search and PDP composition must be proven by its executable commerce support before enablement.
+> [AR-05A evidence](AR_05A_IMPLEMENTATION_REPORT.md) and [composition design](AR_05_COMPOSITION_DESIGN.md)
+> cover a strict reference-only value, positive static binding and specific rejection
+> of current indivisible dynamic inventories. No renderer or dynamic composition
+> proof is claimed; AR-05B owns nesting/version dispatch and AR-06 must prove positive
+> collection/search and PDP composition before dynamic enablement.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
