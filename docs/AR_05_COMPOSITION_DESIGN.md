@@ -171,3 +171,12 @@ Additional realization support alone does not resolve this mismatch. AR-06 must 
 alongside executable commerce anatomy, preserve protected controls and prove positive collection,
 search and PDP composition before enablement. B's borrowed-topology dynamic syntax tests are not
 semantic acceptance or rendered-fidelity evidence.
+
+The composition binder also runs the existing canonical site-map validator on the complete, strictly
+parsed aggregate before semantic branding. This preserves page-family, route, shared-frame, commerce,
+evidence-presence, locale, parent and navigation invariants on every governed owner, including owners
+without composition. The call retains the actual extension/dynamic versions and all composition fields;
+only its legacy TypeScript parameter needs a documented compatibility cast, and its return is ignored.
+It does not parse or select versions, change layout order, provide external catalogue or enabled-locale
+authority, or establish factual approval. Strict codecs and AR-05A authority validation remain separate
+mandatory gates. Ungoverned legacy snapshots retain the validator's existing behavior.

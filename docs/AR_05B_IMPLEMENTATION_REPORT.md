@@ -43,3 +43,26 @@ any acceptance. No test allowlist, authority validator or historical expectation
 The original failure and first successful candidate build remain under their actual input identities.
 Final independent verification uses the corrected complete diff, including typed test fixtures and
 lint corrections; the earlier build is not relabeled as a final-diff build.
+
+The single automatic review of submitted head `f19f2a24268911c2627cee6b5a7fe735877c4a7c`
+identified incomplete canonical page-family validation and a stale effective-merge label.
+Thirteen metadata mutations reproduced acceptance by the submitted binder even though the existing
+canonical site-map validator rejected them; the valid governed control passed. The first test-fixture
+attempt lacked required approval-reference fields and is retained separately from that reproduction.
+The correction calls the existing site-map validator in the shared semantic acceptance path after
+strict version parsing. It inspects the actual composed aggregate without coercing versions, removing
+composition, or using its legacy-typed return. Both APIs now preserve page-family, shared-frame,
+commerce, route, evidence, locale, parent and navigation invariants on composed and uncomposed owners.
+No catalogue or enabled-locale authority is supplied to that validator, so this is not an external
+commerce/evidence approval claim. The two stale AR-05A projection labels are corrected. Original
+verification/build/CI evidence remains tied to the submitted head; final correction verification and
+new-head delivery gates remain separate. No second automatic review is requested.
+
+Original-head CI also exposed a portability defect in B's new historical-source test: its
+`git show` comparisons required the exact base object, which CI's depth-one PR merge checkout
+does not retain. The corrected test uses fixed hashes derived from that exact base for all seven
+G/H/M records and the three unchanged inventory/helper files. It retains their complete identity
+checks without changing historical records, aggregate expectations or CI configuration. The failed
+CI artifact and original base bytes are preserved. The in-progress independent verification was
+paused before its final build; its completed and interrupted checks retain their original identity,
+and final verification executes against the complete consolidated correction.

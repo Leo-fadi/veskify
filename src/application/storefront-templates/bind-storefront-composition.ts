@@ -2,8 +2,11 @@ import { z } from "zod";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared/schemas";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform/component-platform";
 import { canonicalStorefrontContentFingerprint } from "@/domain/storefront/canonical-storefront";
-import { getPageFamilyDefinition } from "@/domain/storefront/page-family";
-import type { PageModel } from "@/domain/storefront/storefront";
+import {
+  getPageFamilyDefinition,
+  validateCanonicalStorefrontSiteMap,
+} from "@/domain/storefront/page-family";
+import type { PageModel, StorefrontSnapshot } from "@/domain/storefront/storefront";
 import type {
   DynamicCommerceCollectionSearchArchetype,
   DynamicCommerceProductDetailArchetype,
@@ -220,6 +223,10 @@ function validateAll(
   snapshot: ComposedStorefrontSnapshotV1,
   resolver: StorefrontCompositionAuthorityResolver,
 ): AcceptedComposedStorefrontSnapshotV1 {
+  // Strict version parsing has already succeeded. This existing validator only reads
+  // shared page/route/navigation metadata; its legacy parameter type is narrower.
+  // Keep the actual versions/compositions intact and ignore its legacy-typed return.
+  validateCanonicalStorefrontSiteMap(snapshot as unknown as StorefrontSnapshot);
   const compositions = [
     ...snapshot.pages.flatMap((page) => ("composition" in page ? [page.composition] : [])),
     ...(snapshot.dynamicCommercePresentation?.collectionSearchArchetypes.flatMap((owner) =>

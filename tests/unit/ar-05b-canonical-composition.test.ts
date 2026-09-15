@@ -5,6 +5,8 @@ import {
 } from "@/application/storefront-templates/bind-storefront-composition";
 import { canonicalStorefrontContentFingerprint as fingerprint } from "@/domain/storefront/canonical-storefront";
 import { parseStorefrontSnapshotVersion as parse } from "@/domain/storefront/storefront-composition-version";
+import { validateCanonicalStorefrontSiteMap } from "@/domain/storefront/page-family";
+import type { StorefrontSnapshot } from "@/domain/storefront/storefront";
 import {
   createCompiledPageBlueprintCompositionV1,
   compiledPageBlueprintCompositionV1Schema,
@@ -13,7 +15,11 @@ import {
   createDynamicCommercePresentationAuthorityV2,
   parseDynamicCommercePresentationVersion,
 } from "@/domain/storefront/dynamic-commerce-composition-version";
-import { ar05bFixture, ar05bStructuralDynamic } from "../helpers/ar-05b-composition-fixtures";
+import {
+  ar05bFixture,
+  ar05bGovernedFixture,
+  ar05bStructuralDynamic,
+} from "../helpers/ar-05b-composition-fixtures";
 
 import { ar05aFixture } from "../helpers/ar-05a-composition-fixtures";
 
@@ -32,6 +38,72 @@ function home(value: ReturnType<typeof ar05bFixture>["create"] extends () => inf
 }
 
 describe("AR-05B canonical composition", () => {
+  it("preserves valid governed metadata and original v1 dynamic authority through composition", () => {
+    const f = ar05bGovernedFixture();
+    expect(validateCanonicalStorefrontSiteMap(f.base)).toBe(f.base);
+    const before = JSON.stringify([f.base, f.request]);
+    const value = f.create();
+    expect(validate(JSON.parse(JSON.stringify(value)), f.authority)).toEqual(value);
+    expect(value.pages.map((p) => p.pageFamily)).toEqual(f.base.pages.map((p) => p.pageFamily));
+    expect(value.dynamicCommercePresentation).toEqual(f.base.dynamicCommercePresentation);
+    expect(JSON.stringify([f.base, f.request])).toBe(before);
+  });
+  it.each([
+    ["home-frame-id", "invalid-shared-frame"],
+    ["home-frame-version", "invalid-shared-frame"],
+    ["home-commerce", "commerce-authority-violation"],
+    ["home-route", "conflicting-route-namespace"],
+    ["home-locale", "invalid-locale-coverage"],
+    ["about-frame", "invalid-shared-frame"],
+    ["about-evidence", "missing-evidence"],
+    ["about-navigation", "orphan-navigation"],
+    ["about-parent", "invalid-parent"],
+    ["cart-navigation", "orphan-navigation"],
+    ["cart-route", "conflicting-route-namespace"],
+    ["missing-cart", "missing-required-page-family"],
+    ["mixed-about", "mixed-page-family-authority"],
+  ])("rejects canonical %s metadata in construction and reads", (kind, code) => {
+    const f = ar05bGovernedFixture();
+    const base = clone(f.base);
+    const value = clone(f.create());
+    const mutate = (snapshot: Pick<StorefrontSnapshot, "pages">) => {
+      const home = snapshot.pages.find((p) => p.pageFamily?.familyId === "home")!;
+      const about = snapshot.pages.find((p) => p.pageFamily?.familyId === "about")!;
+      const cart = snapshot.pages.find((p) => p.pageFamily?.familyId === "cart")!;
+      if (kind === "home-frame-id") home.pageFamily!.sharedFrameId = "foreign-frame";
+      if (kind === "home-frame-version") home.pageFamily!.sharedFrameVersion = "9.0.0";
+      if (kind === "home-commerce")
+        home.pageFamily!.commerceOperationAuthority = "presentation-only";
+      if (kind === "home-route") home.slug = "/pages/home";
+      if (kind === "home-locale") delete home.title.fi;
+      if (kind === "about-frame") about.pageFamily!.sharedFrameId = "foreign-frame";
+      if (kind === "about-evidence") about.pageFamily!.evidenceReferences = [];
+      if (kind === "about-navigation") about.pageFamily!.navigationAreas = [];
+      if (kind === "about-parent") about.pageFamily!.parentPageId = about.id;
+      if (kind === "cart-navigation") cart.pageFamily!.navigationAreas = ["primary"];
+      if (kind === "cart-route") cart.slug = "/pages/cart";
+      if (kind === "missing-cart") snapshot.pages = snapshot.pages.filter((p) => p.id !== cart.id);
+      if (kind === "mixed-about") delete about.pageFamily;
+    };
+    mutate(base);
+    mutate(value);
+    const before = JSON.stringify([base, value]);
+    expect(() => validateCanonicalStorefrontSiteMap(base)).toThrowError(
+      expect.objectContaining({ code }),
+    );
+    expect(() =>
+      create(
+        base,
+        {
+          ...f.request,
+          expectedBase: { ...f.request.expectedBase, contentFingerprint: fingerprint(base) },
+        },
+        f.authority,
+      ),
+    ).toThrowError(expect.objectContaining({ code }));
+    expect(() => validate(value, f.authority)).toThrowError(expect.objectContaining({ code }));
+    expect(JSON.stringify([base, value])).toBe(before);
+  });
   it("binds multiple actual owners and revalidates retained owners in a later partial selection", () => {
     const f = ar05bFixture();
     const collection = ar05aFixture({ family: "collection" });

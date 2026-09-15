@@ -294,20 +294,23 @@ describe("AR-05B exact historical transitions", () => {
     },
   );
   it("preserves every accepted G/H/M record, source inventory and aggregate authority", () => {
-    const previous = JSON.parse(
-      execFileSync("git", ["show", "1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc:" + recordsPath], {
-        encoding: "utf8",
-      }),
-    ) as TransitionDocument;
+    // Pins derived from exact base 1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc.
+    // CI's shallow checkout need not contain that historical Git object.
     const current = JSON.parse(readFileSync(recordsPath, "utf8")) as TransitionDocument;
-    expect(current.transitions.filter((r) => r.taskId !== "AR-05B")).toEqual(previous.transitions);
-    for (const path of [
-      "tests/fixtures/p10b-19a-10a-retained-matrix-inventory.v1.json",
-      "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts",
-      "tests/helpers/p10b-19a-10c-architecture-closure.ts",
-    ])
-      expect(readFileSync(path)).toEqual(
-        execFileSync("git", ["show", "1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc:" + path]),
-      );
+    const retained = current.transitions.filter((r) => r.taskId !== "AR-05B");
+    expect(retained).toHaveLength(7);
+    expect(createHash("sha256").update(JSON.stringify(retained)).digest("hex")).toBe(
+      "f4bd0b0ff40ba6796f86fb41f3fbafef4caf2050f4a56d0a506c558b5e70237f",
+    );
+    const historicalFiles = {
+      "tests/fixtures/p10b-19a-10a-retained-matrix-inventory.v1.json":
+        "2324cf405e12f4b06cbb288eac8d90dc759fc0eb87a39ba206eef784f3b0f4ab",
+      "tests/helpers/p10b-19a-10a-retained-matrix-inventory.ts":
+        "01d8f531a70f622938ea67a0863b33c48b158e99fbdc8f26277ffa8bfd2ac182",
+      "tests/helpers/p10b-19a-10c-architecture-closure.ts":
+        "a0c9658d65d080812fcb1e8afd7554a45336e9acae763854637ee33dd99f01ae",
+    };
+    for (const [path, expected] of Object.entries(historicalFiles))
+      expect(createHash("sha256").update(readFileSync(path)).digest("hex")).toBe(expected);
   });
 });
