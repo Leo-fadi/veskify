@@ -213,8 +213,16 @@ describe("AR-05B actual inactive consumer boundaries", () => {
     )
       .trim()
       .split("\n");
+    const ar06aConsumers = new Set([
+      "src/components/storefront/composed-storefront-page.tsx",
+      "src/data/demo/ar-06a-composed-template.ts",
+    ]);
     for (const file of new Set(files)) {
-      if (entries.includes(file) || file === "src/domain/storefront/canonical-storefront.ts")
+      if (
+        entries.includes(file) ||
+        ar06aConsumers.has(file) ||
+        file === "src/domain/storefront/canonical-storefront.ts"
+      )
         continue;
       expect(readFileSync(file, "utf8")).not.toMatch(
         /(?:from\s*|import\s*\()["'][^"']*(?:storefront-composition-version|dynamic-commerce-composition-version|bind-storefront-composition)["']/u,

@@ -410,16 +410,19 @@ a {
   margin: 0 auto;
 }
 .store-hero {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(24rem, 50%)), 1fr));
   min-height: min(44rem, 78vh);
   background: var(--brand-surface-subtle);
 }
 .store-hero__copy {
   display: flex;
+  min-width: 0;
   max-width: 42rem;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
   padding: clamp(3rem, 8vw, 8rem) clamp(1.25rem, 6vw, 6rem);
+  overflow-wrap: anywhere;
 }
 .store-hero h2,
 .campaign-banner h2,
@@ -721,7 +724,6 @@ a {
   .store-header__tools {
     justify-content: flex-end;
   }
-  .store-hero,
   .campaign-banner,
   .brand-story {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -745,14 +747,25 @@ a {
     justify-self: stretch;
     width: auto;
   }
-  .product-grid--two {
-    grid-template-columns: repeat(var(--content-item-columns), minmax(0, 1fr));
-  }
-  .product-grid--three {
-    grid-template-columns: repeat(var(--content-item-columns), minmax(0, 1fr));
-  }
+  .product-grid--two,
+  .product-grid--three,
   .product-grid--four {
-    grid-template-columns: repeat(var(--content-item-columns), minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(
+        min(
+          100%,
+          max(
+            12rem,
+            calc(
+              (100% - (var(--content-item-columns) - 1) * var(--content-grid-gap)) /
+                var(--content-item-columns)
+            )
+          )
+        ),
+        1fr
+      )
+    );
   }
 }
 
