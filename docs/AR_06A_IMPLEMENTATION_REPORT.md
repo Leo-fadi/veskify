@@ -60,3 +60,26 @@ The administrative successor classifies EVIDENCE-07 as a document while retainin
 the complete verifier-authored native report and separate provenance. Prior BLOCKED
 report and executions remain unchanged. The continuation binds applicable earlier
 independent checks to their actual inputs and uses fresh final build/browser outputs.
+
+PR #259's automatic review found a second unchecked authority resolution between
+whole-snapshot validation and layout. The correction retains a private cloned/frozen
+candidate and capacity evidence per owner and composition fingerprint within the
+current render, preserving the exact registered support and definition identities.
+Canonical validation and layout consume the same retained authority. Regressions
+cover alternating resolver results, cross-owner mutation, valid rendering and stale
+or invalid authority without changing the accepted fixture or stylesheet.
+
+The failed CI source scan reported exactly the realization module and guarded demo
+fixture. A-10A now exempts those two literal paths and tests that unrelated matching
+consumers remain rejected. Its original marker predicate, nine inactive authorities,
+historical expectations and full CI matrix remain intact; local correction validation
+selects only the named scan test.
+
+The review successor retains every earlier lock, failure, report and capture. Before
+the correction, two coordinator builds, one independent build, five local browser
+invocations and three complete capture sets were consumed. The owner authorized one
+additional independent browser invocation and set; the production build allowance
+is unchanged. Fresh independent-03/final-03 records must cover the complete corrected
+diff, remaining build and all sixteen newly captured cases before delivery. Earlier
+images remain proof only of their recorded renderer, and earlier PASS is not the
+corrected candidate's final verdict.

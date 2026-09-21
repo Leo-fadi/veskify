@@ -4,6 +4,13 @@ AR-05 remains accepted. This child executes static composition through existing 
 
 ## Reusable authority and API
 
+The renderer retains one private authority snapshot per exact owner and compiled
+composition fingerprint for the current render. Candidate and capacity data are
+cloned and frozen before whole-snapshot validation; registered support and component
+definitions retain their exact identities. Layout consumes that same retained
+authority. A stateful resolver or later caller mutation cannot substitute unchecked
+geometry, and no cache survives into another render.
+
 `composedPageRealizationSupport` is the immutable real implementation adapter. `deriveComposedPageLayout` is its bounded grouping mapper, shared by support approval and rendering. `renderComposedStorefrontPage({ snapshot, pageId, catalogue, activeLocale, primaryLocale, enabledLocales, resolveAuthority, evidenceReferences?, contentSupportFactDocuments? })` returns React nodes without writes or external calls.
 
 The renderer calls `validateComposedStorefrontSnapshot` on the complete original input with a trusted resolver wrapper that requires the actual real support implementation and exact current registered definitions. Every stored owner is revalidated, including unselected owners. A's validator checks actual containing sections, candidate/binding/support fingerprints, capability/variant/role/weight/cardinality, references and responsive choices. The requested page must be a composed static owner in that accepted snapshot. No brand/cast/fingerprint alone bypasses validation.

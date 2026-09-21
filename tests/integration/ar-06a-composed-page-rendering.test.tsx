@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
+import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
 import { execFileSync } from "node:child_process";
 import { render, cleanup } from "@testing-library/react";
@@ -8,7 +9,14 @@ import { renderRegisteredSection } from "@/components/registry";
 import type * as RegistryModule from "@/components/registry";
 import { renderComposedStorefrontPage } from "@/components/storefront/composed-storefront-page";
 import { createAr06aComposedTemplate } from "@/data/demo/ar-06a-composed-template";
+import { createComposedStorefrontCandidate } from "@/application/storefront-templates/bind-storefront-composition";
+import { createPageBlueprintV2CandidateAuthority } from "@/application/storefront-templates/page-blueprint-v2-candidate-authority";
+import { createPageBlueprintV2RegionRelationshipKey } from "@/application/storefront-templates/page-blueprint-v2-contract";
 import { createCompiledPageBlueprintCompositionV1 } from "@/domain/storefront/compiled-page-blueprint-composition";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+} from "@/domain/storefront/canonical-storefront";
 import type { ComposedStorefrontSnapshotV1 } from "@/domain/storefront/storefront-composition-version";
 import { ar05bStructuralDynamic } from "../helpers/ar-05b-composition-fixtures";
 import { resolveRuntimeImportClosure } from "../helpers/ar-02-runtime-import-closure";
@@ -100,6 +108,187 @@ function changeComposition(
   page.composition = structuredClone(
     createCompiledPageBlueprintCompositionV1(material),
   ) as typeof page.composition;
+}
+
+function withSecondStaticOwner(fixture: Fixture, layout: "stack" | "offset") {
+  const snapshot = structuredClone(fixture.snapshot);
+  const target = snapshot.pages.find((page) => page.type === "collection");
+  if (!target) throw new Error("AR-06A multi-owner proof requires the seeded collection page.");
+  const secondOwner = { kind: "static-page" as const, id: target.id };
+  const blueprintId = `ar06a-collection-${layout}-multi-owner`;
+  const regions = [
+    ["collection-orientation", "orientation", ["section_collection_rings_intro"]],
+    [
+      "collection-results",
+      "primary-discovery",
+      ["section_collection_rings_filters", "section_collection_rings_products"],
+    ],
+  ] as const;
+  const regionIds = regions.map(([id]) => id);
+  const precedes = regionIds.slice(0, -1).map((sourceRegionId, index) => ({
+    sourceRegionId,
+    relationshipKind: "precedes" as const,
+    targetRegionId: regionIds[index + 1],
+  }));
+  const pair = {
+    sourceRegionId: regionIds[0],
+    relationshipKind: "pairs-with" as const,
+    targetRegionId: regionIds[1],
+  };
+  const offset = { ...pair, relationshipKind: "offsets" as const };
+  const relationships = layout === "offset" ? [...precedes, pair, offset] : precedes;
+  const orderAlternatives =
+    layout === "offset"
+      ? [
+          { id: "pair-stack", regionIds },
+          { id: "pair-columns", regionIds },
+        ]
+      : [{ id: "section-flow", regionIds }];
+  const breakpointRules = [
+    ["mobile", 375, layout === "offset" ? "pair-stack" : "section-flow"],
+    ["tablet", 768, layout === "offset" ? "pair-stack" : "section-flow"],
+    ["desktop", 1024, layout === "offset" ? "pair-columns" : "section-flow"],
+    ["wide", 1440, layout === "offset" ? "pair-columns" : "section-flow"],
+  ] as const;
+  const candidate = createPageBlueprintV2CandidateAuthority({
+    candidateSchemaVersion: "1.0.0",
+    structural: {
+      id: blueprintId,
+      version: "1.0.0",
+      pageFamilyId: "collection",
+      regions: regions.map(([id, role]) => ({
+        id,
+        role,
+        requirement: "required" as const,
+        cardinality:
+          id === "collection-results"
+            ? { minimum: 2, ideal: 2, maximum: 2 }
+            : { minimum: 1, ideal: 1, maximum: 1 },
+        visualWeight: "medium" as const,
+      })),
+      relationships,
+      orderAlternatives,
+      defaultOrderAlternativeId: orderAlternatives[0].id,
+    },
+    assetRoleCompatibility: {
+      contractSchemaVersion: "1.0.0",
+      blueprintId,
+      blueprintVersion: "1.0.0",
+      regionAssetRequirements: [],
+    },
+    responsiveRules: {
+      contractSchemaVersion: "1.0.0",
+      blueprintId,
+      blueprintVersion: "1.0.0",
+      breakpointRules: breakpointRules.map(([breakpoint, viewport, orderAlternativeId]) => ({
+        breakpoint,
+        viewport,
+        orderAlternativeId,
+        regionProportionRules: regionIds.map((regionId) => ({
+          regionId,
+          proportionMode: "preserve" as const,
+        })),
+        relationshipTransformations: relationships.map((relationship) => ({
+          relationshipKey: createPageBlueprintV2RegionRelationshipKey(relationship),
+          transformation:
+            relationship.relationshipKind === "pairs-with"
+              ? breakpoint === "mobile" || breakpoint === "tablet"
+                ? "stack"
+                : "preserve"
+              : relationship.relationshipKind === "offsets"
+                ? breakpoint === "mobile" || breakpoint === "tablet"
+                  ? "remove-offset"
+                  : "preserve"
+                : "preserve",
+        })),
+      })),
+    },
+    omissionSubstitutionFallback: {
+      contractSchemaVersion: "1.0.0",
+      blueprintId,
+      blueprintVersion: "1.0.0",
+      blueprintSubstitutionCandidates: [],
+      regionFallbackRules: [],
+    },
+  });
+  const evidence = {
+    blueprintId: candidate.structural.id,
+    blueprintVersion: candidate.structural.version,
+    exactCandidateFingerprint: candidate.candidateFingerprint,
+    requiredRoleCapacities: [],
+  };
+  const resolver: Fixture["resolver"] = (request) => {
+    if (request.owner.id !== secondOwner.id) return fixture.resolver(request);
+    return {
+      candidate,
+      componentDefinitions: fixture.resolver(request).componentDefinitions,
+      support: fixture.resolver(request).support,
+      requiredAssetRoleCapacityEvidence: evidence,
+    };
+  };
+  const composed = createComposedStorefrontCandidate(
+    snapshot,
+    {
+      expectedBase: {
+        id: snapshot.id,
+        revision: snapshot.revision,
+        contentFingerprint: canonicalStorefrontContentFingerprint(snapshot),
+      },
+      successor: {
+        id: `${snapshot.id}_second_static_owner`,
+        revision: snapshot.revision + 1,
+        projectId: snapshot.projectId,
+        catalogueRef: snapshot.catalogueRef,
+        createdAt: "2026-09-21T09:00:00+03:00",
+        createdBy: "system",
+      },
+      assignments: [
+        {
+          selection: {
+            compositionVersion: "1.0.0",
+            owner: secondOwner,
+            orderAlternativeId: layout === "offset" ? "pair-columns" : "section-flow",
+            regionAssignments: regions.map(([regionId, , sectionIds]) => ({
+              regionId,
+              realizationId: "section-flow",
+              units: sectionIds.map((sectionId) => ({ kind: "section" as const, sectionId })),
+            })),
+            relationshipRealizations: relationships.map((relationship) => ({
+              relationshipKey: createPageBlueprintV2RegionRelationshipKey(relationship),
+              realizationId:
+                relationship.relationshipKind === "pairs-with"
+                  ? "pair-columns"
+                  : relationship.relationshipKind === "offsets"
+                    ? "offset-block-start"
+                    : "precedes-preserve",
+            })),
+            breakpoints: candidate.responsiveRules.breakpointRules.map((rule) => ({
+              breakpoint: rule.breakpoint,
+              viewport: rule.viewport,
+              orderAlternativeId: rule.orderAlternativeId,
+              ruleFingerprint: canonicalValueFingerprint(rule),
+              relationshipRealizations: rule.relationshipTransformations.map((transformation) => ({
+                relationshipKey: transformation.relationshipKey,
+                realizationId:
+                  transformation.transformation === "stack"
+                    ? "pair-stack"
+                    : transformation.transformation === "remove-offset"
+                      ? "offset-none"
+                      : transformation.relationshipKey.includes("pairs-with")
+                        ? "pair-columns"
+                        : transformation.relationshipKey.includes("offsets")
+                          ? "offset-block-start"
+                          : "precedes-preserve",
+              })),
+            })),
+            omissions: [],
+          },
+        },
+      ],
+    },
+    resolver,
+  );
+  return { snapshot: composed, secondOwner, resolver };
 }
 const mutations: [string, (snapshot: ComposedStorefrontSnapshotV1) => void][] = [
   [
@@ -217,6 +406,100 @@ const mutations: [string, (snapshot: ComposedStorefrontSnapshotV1) => void][] = 
 ];
 
 describe("AR-06A actual registered renderer", () => {
+  it.each([
+    ["stack", "en"],
+    ["stack", "fi"],
+    ["offset", "en"],
+    ["offset", "fi"],
+  ] as const)(
+    "retains the validated %s authority for %s and scopes it to one render",
+    (layout, locale) => {
+      const fixture = createAr06aComposedTemplate(layout);
+      const alternative = createAr06aComposedTemplate(layout === "stack" ? "offset" : "stack");
+      const before = JSON.stringify(fixture.snapshot);
+      const output = (resolveAuthority: Fixture["resolver"]) =>
+        renderToStaticMarkup(
+          <>
+            {renderComposedStorefrontPage({
+              ...args(fixture),
+              activeLocale: locale,
+              resolveAuthority,
+            })}
+          </>,
+        );
+      const expected = output(fixture.resolver);
+      const changing = vi
+        .fn()
+        .mockImplementationOnce(fixture.resolver)
+        .mockImplementation(alternative.resolver);
+      expect(output(changing)).toBe(expected);
+      expect(changing).toHaveBeenCalledTimes(1);
+      const separateCalls = vi.fn(fixture.resolver);
+      expect(output(separateCalls)).toBe(expected);
+      expect(output(separateCalls)).toBe(expected);
+      expect(separateCalls).toHaveBeenCalledTimes(2);
+      expect(JSON.stringify(fixture.snapshot)).toBe(before);
+      expect(Object.isFrozen(fixture.snapshot)).toBe(true);
+    },
+  );
+  it("rejects a stale first authority before rendering instead of retrying with a later resolver value", () => {
+    const fixture = createAr06aComposedTemplate("stack");
+    const alternative = createAr06aComposedTemplate("offset");
+    const resolver = vi
+      .fn()
+      .mockImplementationOnce(alternative.resolver)
+      .mockImplementation(fixture.resolver);
+    expect(() =>
+      renderComposedStorefrontPage({ ...args(fixture), resolveAuthority: resolver }),
+    ).toThrow();
+    expect(resolver).toHaveBeenCalledTimes(1);
+    expect(renderRegisteredSection).not.toHaveBeenCalled();
+  });
+  it("isolates retained authorities by owner while a later owner mutates an earlier caller value", () => {
+    const fixture = createAr06aComposedTemplate("stack");
+    const twoOwners = withSecondStaticOwner(fixture, "offset");
+    const before = JSON.stringify(twoOwners.snapshot);
+    const render = (pageId: string, resolveAuthority: Fixture["resolver"]) =>
+      renderToStaticMarkup(
+        <>
+          {renderComposedStorefrontPage({
+            ...args(fixture),
+            pageId,
+            snapshot: twoOwners.snapshot,
+            resolveAuthority,
+          })}
+        </>,
+      );
+    const expectedHome = render(fixture.homeId, twoOwners.resolver);
+    const expectedSecond = render(twoOwners.secondOwner.id, twoOwners.resolver);
+    const mutatedRender = (pageId: string) => {
+      const mutableHomeCandidate = structuredClone(
+        fixture.resolver({
+          owner: home(twoOwners.snapshot).composition.owner,
+          composition: home(twoOwners.snapshot).composition,
+        }).candidate,
+      ) as { structural: { orderAlternatives: unknown[] } };
+      const resolver = vi.fn<Fixture["resolver"]>((request) => {
+        const authority = twoOwners.resolver(request);
+        if (request.owner.id === fixture.homeId)
+          return { ...authority, candidate: mutableHomeCandidate };
+        mutableHomeCandidate.structural.orderAlternatives.length = 0;
+        return authority;
+      });
+      return { markup: render(pageId, resolver), resolver };
+    };
+    const homeResult = mutatedRender(fixture.homeId);
+    const secondResult = mutatedRender(twoOwners.secondOwner.id);
+    expect(homeResult.markup).toBe(expectedHome);
+    expect(secondResult.markup).toBe(expectedSecond);
+    for (const { resolver } of [homeResult, secondResult])
+      expect(resolver.mock.calls.map(([request]) => request.owner.id)).toEqual([
+        fixture.homeId,
+        twoOwners.secondOwner.id,
+      ]);
+    expect(renderRegisteredSection).toHaveBeenCalled();
+    expect(JSON.stringify(twoOwners.snapshot)).toBe(before);
+  });
   it.each(["stack", "offset"] as const)(
     "renders %s once, without mutating canonical content",
     (layout) => {

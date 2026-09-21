@@ -161,3 +161,35 @@ The successor retains unchanged historical command literals for applicable prior
 independent observation and controls; fresh routing uses independent-02/final-02.
 The original independent BLOCKED report and native FAIL remain immutable. No build
 or browser counter was reset, and no production/test/configuration bytes changed.
+
+## Consolidated review and CI correction
+
+PR #259 submitted head `75357d43b2ac6a8312c45348390806cea4a4ed1e` received its
+single automatic review. Comment 4058053919 identified a second unchecked renderer
+authority resolution. CI run 35536682533, job 106146923285 and retained Vitest blob
+10614185964 identify exactly two A-10A source-scan consumers: the realization module
+and guarded fixture. Both findings and the original proposal/patch remain preserved.
+
+The owner authorized the renderer correction, two exact scan exceptions and focused
+negative controls, plus one additional independent browser invocation/capture set.
+The successor is `review-correction-01/contract.json`, raw
+`dcb740fff8a2c5aad20578c5102f6d1b8d9a050786844015fd9a8df4db6f6d9d`, canonical
+`veskify-task-contract-v1_cdbbff4972c8abb72ebae2ccccb90924daada5d6647b3cca778a6bbd0a515b7c`.
+Native schema, evidence types, all criterion/command links and separate complete
+report/provenance destinations were checked together before pinning. Independent
+readiness confirmed the original checkout and full successor diff.
+
+The renderer uses a private immutable authority copy shared by full validation and
+layout. The prepared parser-import patch is superseded and unapplied: it would add
+a third scan consumer beyond the two approved paths. No parser-import disguise or
+additional source-guard exemption is used. The old renderer pin remains verifiable
+against an exact submitted-source archive; new native identity and before/after
+freeze bind the corrected live renderer. All other source pins remain unchanged.
+
+Counters retain two coordinator builds, one independent build, five browser attempts
+and three complete image sets. Maximums are two builds per role, six browser attempts
+and four complete sets. Both corrections and focused checks precede the new frozen
+`independent-03` assignment. The final build is `final-03`; browser captures and
+comparison boards use `browsers/independent-03`. Old screenshots cannot establish
+corrected-renderer PASS. Fresh independent/native verification, existing-thread
+response, all final-head CI and expected-head-protected merge remain delivery gates.

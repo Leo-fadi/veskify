@@ -41,17 +41,60 @@ function reject(reason: string): never {
   throw new Error(`Composed storefront renderer rejected: ${reason}.`);
 }
 
+function recursiveFreeze<T>(value: T, seen = new WeakSet<object>()): T {
+  if (!value || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  Object.values(value as Record<string, unknown>).forEach((entry) => recursiveFreeze(entry, seen));
+  return Object.freeze(value);
+}
+
+function privateFrozenCopy<T>(value: T): T {
+  return recursiveFreeze(structuredClone(value));
+}
+
 function trustedResolver(
   input: StorefrontCompositionAuthorityResolver,
 ): StorefrontCompositionAuthorityResolver {
+  type CachedAuthority = Readonly<{
+    compositionFingerprint: string;
+    authority: ReturnType<StorefrontCompositionAuthorityResolver>;
+  }>;
+  const authorities = new Map<string, Map<string, CachedAuthority>>();
   return (request) => {
-    const authority = input(request);
+    const composition = request.composition;
     if (
-      authority.support !== composedPageRealizationSupport ||
-      authority.componentDefinitions !== veskifyComponentDefinitionsV2
+      !("compositionFingerprint" in composition) ||
+      request.owner.kind !== composition.owner.kind ||
+      request.owner.id !== composition.owner.id
+    )
+      reject("authority request does not match the compiled owner");
+    const byOwner = authorities.get(request.owner.kind) ?? new Map<string, CachedAuthority>();
+    const cached = byOwner.get(request.owner.id);
+    if (cached) {
+      if (cached.compositionFingerprint !== composition.compositionFingerprint)
+        reject("authority request changed for an already validated owner");
+      return cached.authority;
+    }
+    const authority = input(request);
+    const { support, componentDefinitions, candidate, requiredAssetRoleCapacityEvidence } =
+      authority;
+    if (
+      support !== composedPageRealizationSupport ||
+      componentDefinitions !== veskifyComponentDefinitionsV2
     )
       reject("untrusted realization support or component definitions");
-    return authority;
+    const retained = Object.freeze({
+      candidate: privateFrozenCopy(candidate),
+      componentDefinitions,
+      support,
+      requiredAssetRoleCapacityEvidence: privateFrozenCopy(requiredAssetRoleCapacityEvidence),
+    });
+    byOwner.set(request.owner.id, {
+      compositionFingerprint: composition.compositionFingerprint,
+      authority: retained,
+    });
+    authorities.set(request.owner.kind, byOwner);
+    return retained;
   };
 }
 
