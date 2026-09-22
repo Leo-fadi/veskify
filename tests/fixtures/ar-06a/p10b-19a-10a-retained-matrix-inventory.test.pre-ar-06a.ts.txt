@@ -86,35 +86,8 @@ describe("P10B-19A-10A retained matrix inventory", () => {
       /page-blueprint-v2|PageBlueprintV2|structural-storefront-(?:family-candidate|candidate-compatibility|deterministic-selection|selection-contract)|legacy-v1-(?:replay-authority|historical-snapshot-replay|publication-replay)/u;
     const allowed =
       /src\/(?:application\/storefront-templates\/|domain\/structural-storefront-family\/|application\/bounded-storefront-synthesis\/legacy-v1-historical-snapshot-replay\.ts$|application\/publishing\/legacy-v1-publication-replay\.ts$)/u;
-    const scopedConsumers = new Set([
-      "src/components/storefront/composed-page-realization.ts",
-      "src/data/demo/ar-06a-composed-template.ts",
-    ]);
-    const unexpectedConsumer = (file: string, source: string) =>
-      !allowed.test(file) && !scopedConsumers.has(file) && marker.test(source);
     // prettier-ignore
-    expect(sourceFiles(path.join(repositoryRoot, "src")).map((file) => path.relative(repositoryRoot, file).split(path.sep).join("/")).filter((file) => unexpectedConsumer(file, readFileSync(path.join(repositoryRoot, file), "utf8")))).toEqual([]);
-    expect(
-      unexpectedConsumer(
-        "src/components/storefront/composed-page-realization.ts",
-        "PageBlueprintV2",
-      ),
-    ).toBe(false);
-    expect(
-      unexpectedConsumer("src/data/demo/ar-06a-composed-template.ts", "page-blueprint-v2"),
-    ).toBe(false);
-    expect(
-      unexpectedConsumer("src/components/storefront/unrelated-v2-renderer.tsx", "PageBlueprintV2"),
-    ).toBe(true);
-    expect(
-      unexpectedConsumer(
-        "src/components/storefront/composed-page-realization-copy.ts",
-        "PageBlueprintV2",
-      ),
-    ).toBe(true);
-    expect(
-      unexpectedConsumer("src/data/demo/ar-06a-composed-template-copy.ts", "page-blueprint-v2"),
-    ).toBe(true);
+    expect(sourceFiles(path.join(repositoryRoot, "src")).map((file) => path.relative(repositoryRoot, file).split(path.sep).join("/")).filter((file) => !allowed.test(file) && marker.test(readFileSync(path.join(repositoryRoot, file), "utf8")))).toEqual([]);
   });
 
   it("is discovered once and assigned once by the current dynamic DEVX-01 plan", async () => {

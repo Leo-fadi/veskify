@@ -951,6 +951,8 @@ describe("P10B-19A-03 forbidden authority and zero reachability", () => {
       "src/application/storefront-templates/structural-storefront-selection-contract.ts",
       "src/application/storefront-templates/page-blueprint-version-dispatch.ts",
       "src/application/storefront-templates/index.ts",
+      "src/components/storefront/composed-page-realization.ts",
+      "src/data/demo/ar-06a-composed-template.ts",
     ]);
     const consumers = collectTypeScriptFiles(resolve(repositoryRoot, "src"))
       .map((path) => ({ path, source: readFileSync(path, "utf8") }))

@@ -7,8 +7,8 @@ status tracker and the supplied 31-task decomposition is advisory planning rathe
 numeric lock. Every task's detailed outcome, changes, acceptance, non-goals, and rollback gate is
 recorded in the complete task specifications below; [AR-00 source disposition](./AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md)
 records source/evidence and old-work disposition. This repository projection takes effect upon
-accepted merge of AR-05B and does not assert the PR's lifecycle or owner acceptance.
-AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed effective upon accepted merge. AR-05 is Baseline / closed effective upon accepted merge of AR-05B; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06 remains unstarted and must provide the shared registered renderer, lossless Puck/save/history/publication integration, four-width evidence, and positive collection/search and PDP executable-commerce proof before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete upon AR-05B acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
+accepted merge of AR-06A and does not assert the PR's lifecycle or owner acceptance.
+AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed effective upon accepted merge. AR-06 is Partial; static rendering evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. Lossless Puck/save/history/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete upon AR-06A acceptance/merge and safe closeout. No next reset task is selected. No third task is authorized.
 
 Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
@@ -727,7 +727,7 @@ retain their provenance, including L's explicit evidence recovery. [AR-02M](AR_0
 narrows the connected schema, direction registry, candidate eligibility and actual semantic resolver
 imports together. The [parent evidence map](AR_02_BOUNDARY_ACCEPTANCE.md) assesses the complete original
 acceptance below; closure requires independent verification and accepted merge. AR-03 stays closed.
-AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed effective upon accepted merge. AR-05 is Baseline / closed effective upon accepted merge of AR-05B; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06 remains unstarted and must provide the shared registered renderer, lossless Puck/save/history/publication integration, four-width evidence, and positive collection/search and PDP executable-commerce proof before enablement.
+AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed effective upon accepted merge. AR-06 is Partial; static rendering evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. Lossless Puck/save/history/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement.
 
 **Outcome:** Template planning can use truthful component capabilities without importing editor/runtime/audit implementations.
 
@@ -817,7 +817,7 @@ The retained registered follow-up remains available until AR-20; no successor im
 
 ### AR-05 — Define versioned executable composition inside canonical state
 
-**Package:** P2 — Template execution core. **Dependencies:** AR-02, AR-03. **Planned detail:** future work; tracker status controls.
+**Package:** P2 — Template execution core. **Dependencies:** AR-02, AR-03. **Delivered representation:** AR-05A/B; tracker status controls.
 
 **Outcome:** One authoritative v2 composition can be represented without duplicating content, ordering or the page graph.
 
@@ -839,8 +839,7 @@ static binding and rule-specific rejection of current indivisible commerce
 presentations. AR-05B attaches that same value to canonical page/archetype owners,
 adds explicit snapshot-extension/dynamic-version dispatch and combined fingerprint participation,
 and rejects unsupported consumers. These are children of AR-05, not new roadmap
-stages. The tracker owns their status; neither future integration nor AR-06 is
-authorized by BATCH-12.
+stages. Both are accepted; the tracker owns status. AR-06 integration remains separate.
 
 **Non-goals:**
 
@@ -852,9 +851,17 @@ authorized by BATCH-12.
 
 ### AR-06 — Render and round-trip one composed template end to end
 
-**Package:** P2 — Template execution core. **Dependencies:** AR-05. **Planned detail:** future work; tracker status controls.
+**Package:** P2 — Template execution core. **Dependencies:** AR-05. **Partial delivery:** AR-06A static rendering; tracker status controls.
 
 **Outcome:** PageBlueprint regions become visible, editable and persistable—not metadata-only architecture.
+
+**Bounded child AR-06A:** the shared static compositor realizes ordered regions,
+disjoint adjacent pairs and directed offsets through existing registered sections.
+The guarded acceptance route proves stack/remove-offset at compact widths and
+real paired geometry at desktop/wide widths. See [child/parent evidence](AR_06_RENDERING_ACCEPTANCE.md).
+This child does not integrate Puck, save/history or publication, enable dynamic
+composition, or decide shared collection/search context. Parent acceptance below
+remains unchanged; no successor is authorized by BATCH-14.
 
 **Changes:**
 

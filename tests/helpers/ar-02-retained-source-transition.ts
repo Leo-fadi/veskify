@@ -13,6 +13,8 @@ const paths = [
   "src/application/prompted-storefront-design-compiler/semantic-compatibility-resolution.ts",
   "src/domain/storefront/storefront.ts",
   "src/domain/storefront/canonical-storefront.ts",
+  "tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts",
+  "tests/helpers/p10b-19a-10c-architecture-closure.ts",
 ] as const;
 const authorities = [
   {
@@ -87,10 +89,27 @@ const authorities = [
     archivePath: "tests/fixtures/ar-05b/canonical-storefront.pre-ar-05b.ts.txt",
     successorSha256: "931b95cf7acadbef42b5032fa5c2918c027ac7557ca92f40fb0c3520b7b14959",
   },
+  {
+    taskId: "AR-06A",
+    path: paths[9],
+    baseCommit: "a4f4ea0bee14b12cefaa8ff65cd31d7891675f02",
+    originalSha256: "14ee717cb1b6c682ae2c8013c0544b66d6aef6e1aa1a300eeb9e43c92785b50a",
+    archivePath:
+      "tests/fixtures/ar-06a/p10b-19a-10a-retained-matrix-inventory.test.pre-ar-06a.ts.txt",
+    successorSha256: "bbf6cdc66276cb5ed5d04a6f443d08a78e68837140ae65e1a8a3078925e0f9ff",
+  },
+  {
+    taskId: "AR-06A",
+    path: paths[10],
+    baseCommit: "a4f4ea0bee14b12cefaa8ff65cd31d7891675f02",
+    originalSha256: "a0c9658d65d080812fcb1e8afd7554a45336e9acae763854637ee33dd99f01ae",
+    archivePath: "tests/fixtures/ar-06a/p10b-19a-10c-architecture-closure.pre-ar-06a.ts.txt",
+    successorSha256: "17b006ac8a607f262762992cfad150e42a73412acb83240ba2ee5326956aaea9",
+  },
 ] as const;
 const recordSchema = z
   .object({
-    taskId: z.enum(["AR-02G", "AR-02H", "AR-02M", "AR-05B"]),
+    taskId: z.enum(["AR-02G", "AR-02H", "AR-02M", "AR-05B", "AR-06A"]),
     path: z.enum(paths),
     baseCommit: z.string().regex(/^[a-f0-9]{40}$/u),
     originalSha256: z.string().regex(/^[a-f0-9]{64}$/u),
@@ -107,7 +126,8 @@ const recordSchema = z
         value.path !== paths[4] &&
         value.path !== paths[5] &&
         value.path !== paths[6]) ||
-      (value.taskId === "AR-05B" && value.path !== paths[7] && value.path !== paths[8])
+      (value.taskId === "AR-05B" && value.path !== paths[7] && value.path !== paths[8]) ||
+      (value.taskId === "AR-06A" && value.path !== paths[9] && value.path !== paths[10])
     )
       context.addIssue({ code: "custom", message: "Transition task and path do not match." });
   });

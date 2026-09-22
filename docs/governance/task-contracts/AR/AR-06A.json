@@ -1,0 +1,549 @@
+{
+  "$schema": "../../task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AR",
+  "taskId": "AR-06A",
+  "title": "Static composition rendering and four-width proof",
+  "repository": { "root": "/Users/leo/veskify", "canonicalRemote": "origin", "baseBranch": "main" },
+  "branch": "codex/ar-06a-static-composition-renderer",
+  "baseCommit": "a4f4ea0bee14b12cefaa8ff65cd31d7891675f02",
+  "objective": "Execute real AR-05 static composition through existing registered section renderers with bounded stack/pair/offset geometry and four-width EN/FI visual proof.",
+  "expectedOutcome": "One reusable production compositor and strict executable support policy are exercised only through a guarded acceptance route. Identical content has measured stack versus offset consequence; normal Studio/save/publish and dynamic composition remain disabled.",
+  "dependencies": [
+    {
+      "taskId": "AR-05B",
+      "requiredState": "MERGED",
+      "commit": "a4f4ea0bee14b12cefaa8ff65cd31d7891675f02"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "AGENTS.md; docs/DEVELOPMENT_GUIDE.md section4; native task and verifier schemas; existing team/skills.",
+    "docs/VESKIFY_SDD.md sections4,7,8,10.8-10.9,13-14 and applicable retained requirements/ADRs001-004.",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md sections1-7,16-18; complete roadmap AR-06; acceptance catalogue T01-T04/T17/T21.",
+    "Existing AR-05A/B value, codecs, compiler, whole-snapshot binder and validator; registered component/content/frame/BrandSystem authority; legacy guards remain intact.",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/preflight/runbook.md and /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/preflight/design.md; support manifest pins exact task design and execution procedures.",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/visual-correction-01/AUTHORIZATION.json; owner-authorized two-CSS-path visual correction, focused regressions and one additional browser invocation, preserving all prior identities.",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/import-guard-01/AUTHORIZATION.json; owner-authorized one-file source-level production import guard and remaining bounded proof, preserving all earlier locks and evidence.",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/nft-retention-01/OWNER-AUTHORIZATION.md; explicit owner acceptance amendment only for identity-verified deterministic fixture NFT retention, preserving all previous authority and gates.",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/administrative-01/OWNER-AUTHORIZATION.md; owner standing administrative repair and autonomous completion authority, preserving all prior approved product/header/CSS/import-guard/NFT acceptance, exact report provenance, resource counters and delivery gates.",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/OWNER-AUTHORIZATION.md; consolidated renderer/CI correction, sixth browser invocation/fourth capture set, standing administrative and exact-head delivery authority; /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/DESIGN.md",
+    "/Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/OWNER-AUTHORIZATION.md; exact two historical-source transitions and directly dependent caller repair; /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/DESIGN.md"
+  ],
+  "ownedPaths": [
+    "src/components/storefront/composed-page-realization.ts",
+    "src/components/storefront/composed-storefront-page.tsx",
+    "src/components/storefront/composed-storefront-page.module.css",
+    "src/data/demo/ar-06a-composed-template.ts",
+    "src/app/acceptance/ar-06a/page.tsx",
+    "tests/unit/ar-06a-composed-page-realization.test.ts",
+    "tests/integration/ar-06a-composed-page-rendering.test.tsx",
+    "tests/e2e/ar-06a-composed-template.spec.ts",
+    "tests/helpers/ar-06a-composition-observation.ts",
+    "tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts",
+    "tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts",
+    "tests/integration/ar-05a-composition-authority.test.ts",
+    "tests/integration/ar-05b-composition-version-boundaries.test.ts",
+    "docs/AR_06A_RENDERER_DESIGN.md",
+    "docs/AR_06A_APPROACH.md",
+    "docs/AR_06A_IMPLEMENTATION_REPORT.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/BATCH_14_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-06A.json",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "playwright.config.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "src/app/globals.css",
+    "src/components/storefront/canonical-product-card.module.css",
+    "tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts",
+    "tests/helpers/p10b-19a-10c-architecture-closure.ts",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/fixtures/ar-06a/p10b-19a-10a-retained-matrix-inventory.test.pre-ar-06a.ts.txt",
+    "tests/fixtures/ar-06a/p10b-19a-10c-architecture-closure.pre-ar-06a.ts.txt",
+    "tests/unit/ar-06a-retained-source-transition.test.ts"
+  ],
+  "allowedPaths": [
+    "src/components/storefront/composed-page-realization.ts",
+    "src/components/storefront/composed-storefront-page.tsx",
+    "src/components/storefront/composed-storefront-page.module.css",
+    "src/data/demo/ar-06a-composed-template.ts",
+    "src/app/acceptance/ar-06a/page.tsx",
+    "tests/unit/ar-06a-composed-page-realization.test.ts",
+    "tests/integration/ar-06a-composed-page-rendering.test.tsx",
+    "tests/e2e/ar-06a-composed-template.spec.ts",
+    "tests/helpers/ar-06a-composition-observation.ts",
+    "tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts",
+    "tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts",
+    "tests/integration/ar-05a-composition-authority.test.ts",
+    "tests/integration/ar-05b-composition-version-boundaries.test.ts",
+    "docs/AR_06A_RENDERER_DESIGN.md",
+    "docs/AR_06A_APPROACH.md",
+    "docs/AR_06A_IMPLEMENTATION_REPORT.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/BATCH_14_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-06A.json",
+    "README.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "playwright.config.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "src/app/globals.css",
+    "src/components/storefront/canonical-product-card.module.css",
+    "tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts",
+    "tests/helpers/p10b-19a-10c-architecture-closure.ts",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/fixtures/ar-06a/p10b-19a-10a-retained-matrix-inventory.test.pre-ar-06a.ts.txt",
+    "tests/fixtures/ar-06a/p10b-19a-10c-architecture-closure.pre-ar-06a.ts.txt",
+    "tests/unit/ar-06a-retained-source-transition.test.ts"
+  ],
+  "forbiddenPaths": [
+    ".git/**",
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "AGENTS.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.*",
+    "scripts/check-storefront-build-budgets.mjs",
+    "scripts/playwright-ci*",
+    "src/domain/**",
+    "src/application/**",
+    "src/integrations/**",
+    "src/services/**",
+    "src/features/**",
+    "src/components/registry/**",
+    "src/components/storefront/storefront-page.tsx",
+    "tests/helpers/ar-02-runtime-import-closure.ts"
+  ],
+  "noTouchAreas": [
+    "Preserve the submitted implementation except the owner-authorized renderer authority-cache/snapshot correction in src/components/storefront/composed-storefront-page.tsx. Rendering must consume the exact authority retained before canonical full-snapshot validation, scoped to this render and exact owner/fingerprint, resistant to caller mutation. Support/definitions/owner/content/fingerprint validation stays strict. No new candidate-parser import or third A10A exception. Previously approved import guard remains unchanged. No normal-root imports, opaque import/eval/bundler-ignore, schemas, global theme, registry/family/provider/storage/auth/publication changes or historical rebaselining.",
+    "Playwright config changes only add VESKIFY_AR06A_ACCEPTANCE: \"1\" to existing webServer.env. Suite inventory, plan, workflows, retries, sharding and timeouts unchanged. Named four current guards gain only literal actually-importing paths from the five production files and scoped-consumer labels; predicates, legacy rejection, historical hashes and goldens unchanged. The additional named A10A inventory test may gain only the two exact scoped-consumer exceptions for composed-page-realization.ts and ar-06a-composed-template.ts, preserving its original marker/allowed regexes and all nine inactivity assertions; a focused actual-predicate unrelated-consumer negative control is required.",
+    "The discovered CI A10A scan failure is now expressly authorized only in tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts for the two exact paths and focused negative control described above. No additional guard exception or production consumer is authorized. Run only its named scan test locally, never the expensive126-case matrix solely for this correction; full required final-head CI remains.",
+    "Target at most seven exact production files/1100 additions, hard1500; all handwritten repository additions target2800/hard4500 including fixtures/support. Native schema fixed targets remain1000/8 but the stricter literal seven-path ownership and task checker govern. Optional observation helper selected, <=250 lines. Only existing generated SDD/tracker DOCX and actual binary captures are excluded.",
+    "Nine original untracked inputs appear in complete native identity only; retain original bytes and never stage/publish them. All prior evidence, contracts, verdicts, exports and worktrees remain at original paths. No cleanup, package-store pruning or original dependency mutation is authorized.",
+    "Execution outputs only: original ignored tsconfig.tsbuildinfo and normal node_modules/.vite/.vite-temp/.cache; persistent task tmp/, baseline/, capacity/, coordinator-01/02, independent-01/02, builds/candidate-01/02 or final-01/02, browsers/same-label or browser-only coordinator-03/04/export/.next and node_modules plus assigned reports/captures. Non-Git exports use exact base plus complete owned overlays; no secrets or original private inputs. Next may generate only the known next-env.d.ts production route-type reference; original reviewed checkout bytes unchanged. New outputs: review-correction-01/focused-01 and support/contract/adoption records; independent-03 assignment/verdict/evidence/freeze; builds/final-03; browsers/independent-03; corresponding capacity records. Existing execution records remain unchanged. New writes only historical-transition-01/** and its assigned coordinator-01/independent-01 reports, temp fixtures and ordinary existing test caches.",
+    "At most two coordinator and two verifier production builds, sequential, with one mandatory fresh independent final build. One demonstrated infrastructure replacement requires preserved failed attempt and cause authority; counters never reset. Measure supported additional capacity before each build/export with unchanged reserve and no fixed free-space threshold. No overlapping build/browser/known VerifyAI heavy work.",
+    "At most six focused local Playwright invocations and four complete16-image capture sets; five invocations and three complete sets are already consumed and retained. The owner authorized one additional independent-03 invocation/capture set. One worker, zero retries, all16 stack/offset x EN/FI x375/768/1024/1440; original geometry/order/focus/accessibility/media/text/control clipping assertions unchanged. Complete both corrections/focused tests before final freeze/capture. Retain all rejected and older screenshots with actual source identities. Old renderer screenshots cannot prove corrected code; independent direct image inspection is required.",
+    "All outputs retained persistently before execution; exact source/CSS/dependency/build inventories and URL/file mappings preserved. Tested trace/URL collectors are reused with positive/negative controls. Never fabricate build equivalence or rewrite earlier assignments or execution attribution.",
+    "All implementation writers pause for independent original-checkout verification; confirm exact branch/base and active policy, freeze complete source/test/docs/contract/evidence inputs and compare afterward. Verifier directly authors complete native report at /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/independent-01/verdict.json and provenance at /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/independent-01/verdict-provenance.json. EVIDENCE-07 pre-report document is /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/independent-01/evidence-07.json; no report self-hash cycle. Coordinator reconciles only that complete report; distinguish fresh versus inherited executions.",
+    "Standing owner administrative authority permits necessary same-branch/base successors for schema bookkeeping, references, output routing and support portability while preserving complete coverage/integrity and approved product acceptance. Preserve original bytes/identities and every earlier failure; record exact successor differences. Product/security/integrity weakening remains forbidden. Normal approval denial stops once without bypass.",
+    "Standing owner authority covers reviewed public diff/sanitized description, one automatic review, required final-head CI including new default browser spec/budgets/validate, and exact-head-protected merge with recorded authorization; no override or second review request. AR06A closes only accepted merge; AR06 Partial; AR02/03/04/05 remain closed. No successor implementation/deployment/live provider/Vesko/publication.",
+    "Development-header exception: only /acceptance/ar-06a from the local/CI Next development server (NODE_ENV development, standalone runtime, VESKIFY_AR06A_ACCEPTANCE 1), serving only the approved deterministic fixture and no private merchant/project data or secrets, may return parsed no-cache,must-revalidate. Retain acceptable original private/no-store responses. Parse directives independently of capitalization/spacing; reject missing/malformed/ambiguous headers and public, immutable, positive freshness or stale-serving directives. This exception establishes neither storage prevention nor shared-cache exclusion. Keep noStore invocation, noindex, bounded selectors, guard-before-fixture-loading, flag-off/non-standalone rejection and production404 with flag1 from the required final build. This header exception authorizes no fixture-content/global-cache/dependency/Next/middleware/proxy/endpoint changes; the separate bounded renderer review correction remains authorized.",
+    "The completed owner-authorized visual correction is preserved byte-identically, including globals.css and conditional card CSS. All original production files except the previously approved import guard and current renderer authority correction are unchanged. Preserve text/products/media/control identities and meaningful offset. No truncation, hidden-overflow concealment, arbitrary font shrinking, injected test CSS or viewport/threshold changes. Existing AR06A tests may add minimal real enabled-development route and disabled-before-fixture controls; all previous assertions and helper<=250 lines remain.",
+    "Historical-transition successor supersedes capacity-resume routing only for the new repair. Preserve all previous records, counters and original proof attribution. Repository documentary copy matches this successor; complete corrected input inventory is frozen anew. Existing successful final03 build and independent03 browser are reused only after actual applicability and artifact integrity proof; test TypeScript changes require fresh typecheck. No new build/browser execution authorized solely for this repair.",
+    "Only two exact source archives and tests/fixtures/ar-02-retained-source-transitions.v1.json may change within fixtures. Preserve every pre-existing record/archive and all historical pins, manifests, metrics, counts and owner decisions. Keep submitted A10A test bytes bbf6cdc66276cb5ed5d04a6f443d08a78e68837140ae65e1a8a3078925e0f9ff unchanged. A10C adds only its exact A10A test reader branch; AR05B selects exact G/H/M IDs and checks historical A10C archive plus fixed current successor. No production changes after HEAD1cb9dbe; one small AR06A transition-control test covers both new rows. Historical archives count toward unchanged4500-line cap; no generated exclusion."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "Real static AR-05 composition execution through one shared registered renderer; original five production paths plus only two named CSS sizing corrections. The acceptance route additionally uses the narrowly authorized compile-time production import guard; no path or numerical budget expansion.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic generated DOCX synchronized with authorized source."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic generated DOCX synchronized with authorized source."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Owner-authorized GitHub fetch/read/push/PR/review-disposition/CI/expected-head merge for Leo-fadi/veskify through normal approval.",
+      "Task-owned loopback Next development/production servers and focused browser/HTTP checks, no external runtime requests.",
+      "Offline frozen-lock dependency materialization in new task exports only, using existing installation/store without pruning or original dependency changes."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Generic whole-section support table and bounded adjacent-pair mapper shared by validation and rendering; full B revalidation with actual A support and registered definitions, then private content-only context projection. Lazy guarded acceptance client constructs real candidates and invokes same compositor. The acceptance page encloses its literal dynamic fixture import in an explicit non-production branch so normal production compilation can eliminate registration; actual emitted evidence and unchanged budgets must establish the outcome. For the review correction, snapshot/freeze caller candidate and capacity data privately, preserve exact support/definition references, and cache by owner kind/ID plus compiled composition fingerprint within this render. Full-snapshot binder validates that retained authority; layout reuses it without a second unchecked resolver invocation. Historical-test repair extends the existing strict transition reader with two exact base-recovered archives and actual successor hashes; AR05B retains the historical hash while independently checking current bytes. No second framework or rebaseline.",
+    "canonicalAuthorityExtended": "Existing CompiledPageBlueprintCompositionV1, AR-05B canonical binding and registered rendering; no new stored tree.",
+    "namedCurrentConsumers": [
+      "/acceptance/ar-06a guarded read-only acceptance route",
+      "Future separately approved AR-06 editor/preview/publication integration must reuse this compositor."
+    ],
+    "rejectedShortcuts": [
+      "Metadata-only offset or test-only renderer/CSS.",
+      "Permissive test support, hardcoded fixture section IDs in production support, forged branding or strip-before-validation.",
+      "Widening legacy guards, duplicating content/interactive subtrees or enabling dynamic templates.",
+      "Re-resolving unchecked authority after validation; mutable shared or cross-render authority caches.",
+      "Importing the parser merely to create an unapproved third source-scan exception, or broadening the A10A marker exemptions."
+    ],
+    "expectedFailureBehavior": "Reject the entire request before registered render invocation for invalid any owner, stale authority, unsupported arrangement/realization, missing or colliding frame, invalid content or dynamic/anatomy composition; leave input unchanged.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Exact canonical and realization authority. Compile and render a valid real static composition through the A/B APIs and the new support. Reject wrong owner/snapshot, invalid or stale composition/support/candidate fingerprints, missing/foreign units, component/variant/weight mismatch and unvalidated content. No copied persistent content, second page graph or source mutation. Validate the complete snapshot, not only the selected page. Rendering geometry must use the same private authority snapshot accepted during full-snapshot validation, with exact-owner/fingerprint binding and no cross-render cache. Cover alternating resolver results, cross-owner caller mutation, ordinary valid rendering and invalid/stale rejection before rendering.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Real structural consequence. Both fixture cases render through the same reusable compositor. Content, catalogue, media and BrandSystem fingerprints are equal between cases; the selected structural authority differs. DOM/geometry demonstrate stack versus paired offset at wide/desktop and the declared mobile transformation. A label, class name or changed fingerprint without geometry is a failure.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Four widths, locale and accessibility. Capture both cases at 375/768/1024/1440 in EN/FI: 16 primary screenshots per accepted capture pass. Record actual bounding boxes, declared composition/stylesheet identities, DOM reading order, tab sequence of relevant controls, overflow, settled assets and console/page errors. Exactly one main landmark, no duplicated frame or interactive content, no collision/hidden required content. Check geometry relationally and with a declared sensible tolerance; do not silently widen thresholds after failure.  Retain a compact comparison board made from the actual screenshots plus a short visual inspection record. Automated capture is required, and an independent reviewer must inspect the images for clipping, blank media and actual structural change. Human commercial acceptance/family distinctiveness is not claimed or made a routine merge checkpoint for this neutral proof. Directly prove hero/card text and controls are visible and unobscured, with usable settled media; viewport containment alone is insufficient. Independently inspect corrected desktop hero/card detail. Preserve existing legacy/full-width rendering when shared CSS changes.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Unsupported choices fail closed. Test unknown/unsupported relationship and realization choices, impossible pairing/order, unavailable support, frame collisions, foreign anatomy and composed dynamic input. No fallback to legacy flat rendering. Current collection/search/PDP positive composition and the shared-context limitation remain explicitly unresolved; current negative proof stays intact. Prove rejection occurs before any partial render or mutation.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Isolation and compatibility. Legacy parse/fingerprint/render/consumer tests remain true. Normal generation and legacy preview/save/publish behavior is unchanged. The acceptance route is unavailable outside its explicit non-production standalone flag and in a production server even with that flag set. It makes zero provider, Vesko or publication calls. Existing schemas, active family registries and production write paths are not broadened. Development-header exception: only /acceptance/ar-06a from the local/CI Next development server (NODE_ENV development, standalone runtime, VESKIFY_AR06A_ACCEPTANCE 1), serving only the approved deterministic fixture and no private merchant/project data or secrets, may return parsed no-cache,must-revalidate. Retain acceptable original private/no-store responses. Parse directives independently of capitalization/spacing; reject missing/malformed/ambiguous headers and public, immutable, positive freshness or stale-serving directives. This exception establishes neither storage prevention nor shared-cache exclusion. Keep noStore invocation, noindex, bounded selectors, guard-before-fixture-loading, flag-off/non-standalone rejection and production404 with flag1 from the required final build. The header exception authorizes no fixture-content/global-cache/dependency/Next/middleware/proxy/endpoint changes; the separate bounded renderer review correction remains authorized. One-file import-guard amendment preserves all these semantics while using supported source-level production isolation; no opaque imports/eval, bundler-ignore, build-mode/config manipulation or measurement exclusions. Enabled development must still render the real fixture, disabled modes reject before fixture execution. Parse the actual production client-reference manifests for all six measured routes plus acceptance and require zero exact fixture registrations; permit only identity-verified retention of src/data/demo/ar-06a-composed-template.ts in server NFT packaging traces. For each relevant retained entry record the trace file, original entry, resolved path and content hash; verify against frozen reviewed deterministic source, with no secrets/private merchant data/unrelated inputs. Preserve complete trace collection and path/integrity validation; reject unexpected fixture-related artifacts, without directory allowances, skipped entries, manifest/chunk changes or tracing exclusions. Retained source may be packaged; do not claim absence from server output or inability to execute from production404. Preserve general trace/artifact integrity checks and report these bounded findings without claiming zero acceptance bytes everywhere. The A10A source scan exempts exactly the approved realization and guarded fixture paths and continues rejecting unrelated matching consumers; all nine inactive-authority expectations and historical data remain unchanged. Preserve the A10A/A10C historical pin chain with two exact base archives, strict successor checks, unchanged eleven-file manifest/accepted closure and seven G/H/M records. New records remain fully validated; malformed/duplicate/foreign/escaping records fail.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-06"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Reproducible final verification. Typecheck, affected lint/format, whitespace, documentation/export checks, native contract/identity, focused new and affected legacy tests, independent visual/browser proof and all six unchanged raw/gzip budgets pass. Independently verify the complete final source and test diff. Required normal CI includes the new browser spec and existing complete campaigns. Distinguish test cases, repeated executions and inherited observations; do not add overlapping totals as unique tests. Compare actual client-reference and chunk evidence with failed candidate-01 after the coordinator correction build. Preserve all six counting rules/limits and honest measured attribution; do not assume the suspected cause proven. Preserve coordinator-04 captures for their actual input; renderer/fixture/CSS identities must match the independently captured corrected route. The corrected complete candidate requires fresh independent-03 rendering/browser images and remaining final-03 build. Preserve independent-02 and coordinator-04 as historical exact-candidate evidence; unchanged fixture/CSS identities do not make older renderer images proof of the correction. Execute only the filtered A10A source test locally; complete matrix remains final-head CI. Historical-test repair retains completed final03/independent03 proof under original identities after applicability; fresh affected test/type/lint/format/docs/native checks cover changed TypeScript and documentary inputs. No new local build/capture solely for test support.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04", "EVIDENCE-05", "EVIDENCE-06"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Bounded delivery and truthful handoff. Accepted merge closes AR-06A only. Record actual supported realization subset, reusable renderer/support APIs, screenshots and limitations. AR-06 remains Partial with explicit remaining editor/lifecycle/publication and executable-commerce proof. AR-02/03/04/05 remain closed. No full family, AI output-quality, integrated commerce or live publication claim.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-07"],
+      "failureBehavior": "FAIL for missing independent proof, weakened acceptance, incompatible authority, unsupported claims or any violated requirement."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-06a-composed-page-realization.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx tests/unit/ar-05b-canonical-composition.test.ts tests/unit/ar-05a-compiled-composition.test.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts",
+      "purpose": "Real renderer/support/guard positive and negative behavior plus unchanged A/B semantic and version boundaries. Include focused positive/negative parsed-header controls and enabled-route noStore/noindex/bounded-selector proof; noStore invocation is not an HTTP no-store proof. Minimal enabled-development real-fixture and production/other-disabled-before-execution controls for the import guard. Fresh stateful resolver, private immutable authority, multiple-owner and cross-render regressions for complete corrected renderer. For historical-transition repair, retain only independently applicable unaffected cases from this original execution; changed AR05B historical cases are freshly executed by VALIDATION-29 and new strict-reader controls by VALIDATION-27. Do not claim this whole prior command covers changed inputs.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/unit/component-registry.test.tsx tests/unit/puck-adapter.test.ts tests/unit/editor-history.test.ts tests/integration/in-memory-project-repository.test.ts tests/unit/p10a-08c-02a-deterministic-publish-compiler.test.ts tests/unit/p10b-16p-01-dynamic-commerce-route-contract.test.ts tests/unit/p10b-16p-01-dynamic-commerce-route-authority.test.ts tests/unit/p10b-16p-02b-dynamic-commerce-proposal-lifecycle.test.ts",
+      "purpose": "Current legacy render/Puck/repository/history/proposal/publication and dynamic compatibility.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts",
+      "purpose": "Exactly maintained source-consumer guards; unchanged core/golden predicates.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec vitest run tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Narrow task/parent status progression.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm typecheck",
+      "purpose": "No-emit repository typecheck.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm exec eslint src/components/storefront/composed-page-realization.ts src/components/storefront/composed-storefront-page.tsx src/data/demo/ar-06a-composed-template.ts src/app/acceptance/ar-06a/page.tsx tests/unit/ar-06a-composed-page-realization.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx tests/e2e/ar-06a-composed-template.spec.ts tests/helpers/ar-06a-composition-observation.ts tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts playwright.config.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts tests/helpers/p10b-19a-10c-architecture-closure.ts tests/helpers/ar-02-retained-source-transition.ts tests/unit/ar-06a-retained-source-transition.test.ts",
+      "purpose": "All owned TypeScript/source/tests/tooling lint.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm exec prettier --check src/components/storefront/composed-page-realization.ts src/components/storefront/composed-storefront-page.tsx src/components/storefront/composed-storefront-page.module.css src/data/demo/ar-06a-composed-template.ts src/app/acceptance/ar-06a/page.tsx tests/unit/ar-06a-composed-page-realization.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx tests/e2e/ar-06a-composed-template.spec.ts tests/helpers/ar-06a-composition-observation.ts tests/unit/p10b-19a-03-page-blueprint-v2-contract.test.ts tests/unit/p10b-19a-05-page-blueprint-v2-responsive-rule-contract.test.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts docs/AR_06A_RENDERER_DESIGN.md docs/AR_06A_APPROACH.md docs/AR_06A_IMPLEMENTATION_REPORT.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/BATCH_14_EXECUTION.md docs/governance/task-contracts/AR/AR-06A.json README.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md playwright.config.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs src/app/globals.css src/components/storefront/canonical-product-card.module.css tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts tests/helpers/p10b-19a-10c-architecture-closure.ts tests/helpers/ar-02-retained-source-transition.ts tests/fixtures/ar-02-retained-source-transitions.v1.json tests/unit/ar-06a-retained-source-transition.test.ts",
+      "purpose": "All owned textual source, tests, configuration, docs and documentary contract.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm docs:validate",
+      "purpose": "Existing documentation and deterministic export validation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Existing documentation and deterministic export validation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation and deterministic export validation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Existing documentation and deterministic export validation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Existing documentation and deterministic export validation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/support/repair-v4.py scope",
+      "purpose": "Native complete identity, whitespace/scope and unchanged originals/unowned tracked bytes.",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/nft-retention-01/support/final.py observe",
+      "purpose": "Same compact harness against assigned exact candidate export; four full rows equal pre-edit baseline.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/nft-retention-01/support/controls.py",
+      "purpose": "Preserved dependency-link and URL mapping positive/negative controls.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/capacity-resume-01/support/final.py build",
+      "purpose": "Counted sequential production build, original six-route budget checker, source/dependency/trace/chunk integrity. Compare actual failed/current client manifests and chunk measurements; no measurement exclusions.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/support/production-smoke.py",
+      "purpose": "Actual completed production server with acceptance flag set returns404 and leaves build artifacts unchanged.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-18",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/support/final.py verify",
+      "purpose": "Required completed build/input/artifact/log identities.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-19",
+      "command": "node scripts/playwright-ci.mjs audit-plan",
+      "purpose": "Unchanged locked CI suite/group inventory includes default suite.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-20",
+      "command": "pnpm exec playwright test tests/e2e/ar-06a-composed-template.spec.ts --config=playwright.config.ts --list",
+      "purpose": "Actual default-config discovery of the exact new spec without executing browser.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-21",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/support/browser.py",
+      "purpose": "Counted exact-source focused default-config browser invocation, checked unused port,CI1,one worker,zero retries; persistent16 screenshots/geometry and no external runtime requests.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-22",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/support/board.mjs /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/browsers/$AR06A_RUN/captures",
+      "purpose": "Two locale comparison boards from actual16 screenshots with original-file provenance; verifier must also inspect actual images and record clipping/media/geometry outcome.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-23",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/nft-retention-01/support/board-controls.mjs",
+      "purpose": "Exact installed Next-to-Sharp dependency resolution with pinned artifact/containment positive and negative controls; preserve board composition algorithm.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-24",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/support/production-retention-v2.mjs controls $AR06A_RUN",
+      "purpose": "Preserve existing client-manifest controls and add focused exact fixture-retention identity/path/completeness positive and negative controls; no emitted JavaScript execution.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-25",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/review-correction-01/support/production-retention-v2.mjs check $AR06A_RUN",
+      "purpose": "Completed-build identity-bound absence in all six client manifests plus acceptance, and complete NFT trace recollection with per-entry reporting of exact reviewed fixture source retention; unchanged integrity, production404 and budget gates.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-26",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts -t 'keeps all nine production authorities inactive and all governed adapters outside runtime'",
+      "purpose": "Actual failed source guard with exactly two literal scoped consumers and focused unrelated matching-consumer rejection; preserve original scan predicate, nine inactivity expectations and historical data. Do not run126-case matrix locally for this edit.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-27",
+      "command": "pnpm exec vitest run tests/unit/ar-06a-retained-source-transition.test.ts tests/unit/ar-02g-closure-transition.test.ts tests/unit/ar-02m-retained-source-transition.test.ts",
+      "purpose": "Two-transition controls and directly affected strict-reader predecessor regressions.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-28",
+      "command": "pnpm exec vitest run tests/integration/p10b-19a-10c-architecture-closure.test.ts tests/unit/p10b-19a-10c-closure-manifest.test.ts",
+      "purpose": "Exact historical closure and manifest checks, no A10A expensive matrix execution.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-29",
+      "command": "pnpm exec vitest run tests/integration/ar-05b-composition-version-boundaries.test.ts -t 'AR-05B exact historical transitions'",
+      "purpose": "Affected historical-byte and record-selection assertions; preserved original seven-record fingerprint.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-30",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-14/AR-06A/historical-transition-01/support/repair-v4.py applicability",
+      "purpose": "Retained original build/browser inputs and artifacts; unchanged runtime/config/dependencies, separately fresh typecheck. No new execution attribution.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "test",
+      "description": "Fresh unit/integration checks of real support/renderer, actual authority/content/owner behavior and fail-closed controls. Include fresh resolver TOCTOU/private-copy/owner-isolation regressions.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "screenshot",
+      "description": "Independent focused browser execution,16 actual screenshots, per-case geometry/locale/reading/tab/overflow/assets/errors, source/CSS identities, boards and direct visual-inspection record. Include fresh CSS identities, direct text/control/media visibility regressions and installed board dependency provenance. Fresh independent-03 corrected renderer images; previous5 browser invocations/3 sets remain counted and unchanged.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Current legacy tests, exact source guards, type/lint and byte-identical new pre-edit legacy comparison. Include the bounded header-rule controls and the retained installed-Next/header observations, without relabeling either failed browser attempt. Include filtered actual A10A scanner and unrelated-consumer negative control. Fresh two-transition chain checks preserve original accepted hashes and explicit current successors.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "document",
+      "description": "Task design/approach/report, status/doc exports, AR06 Partial handoff and declared limits.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "diff",
+      "description": "Complete native identity, exact allowed paths/line budgets and original/unowned preservation; frozen before/after reviewed inventory.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-06",
+      "type": "command",
+      "description": "Measured sequential build inputs/dependencies/outputs/traces/URL mapping,47controls,all six unchanged budgets and production flagged404 smoke. Preserve failed candidate-01 and add an actual client-reference/chunk comparison after the one-file source correction, retaining all six original route measurements. Record each retained exact fixture source entry with trace/original reference/resolved path/hash and explicit server-packaging limitation under the NFT-retention successor; preserve earlier FAIL and denial. Historical-transition applicability report retains original build attribution; changed test TypeScript covered by fresh current typecheck.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-07",
+      "type": "document",
+      "description": "Complete verifier-authored native criterion report with source/agent/tool provenance, exact bytes/hash, fresh vs inherited execution evidence and native reconciliation. Delivery/CI/merge remain separate gates.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": { "required": false, "timing": "not-required", "criteria": [] },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Unresolved product/architecture/acceptance conflict, necessary out-of-scope change, hard budget excess or insufficient measured capacity.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Required independent/native/visual/browser/CI gate fails beyond bounded correction authority or normal approval remains denied/unavailable. Preserve checkpoint; no bypass or unchanged-failure retry.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "AR06A accepted merge and safe BATCH14 closeout complete; no successor implementation authorized.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-06",
+    "title": "Remaining editor/lifecycle/publication and executable-commerce support (not authorized)",
+    "eligibility": "Separate future owner-approved scope only; stop after BATCH14."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
