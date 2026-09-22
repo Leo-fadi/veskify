@@ -305,7 +305,9 @@ describe("AR-05B exact historical transitions", () => {
     // Pins derived from exact base 1d880f1efc9ff2f2eb735b5638a9a7058dd9f3fc.
     // CI's shallow checkout need not contain that historical Git object.
     const current = JSON.parse(readFileSync(recordsPath, "utf8")) as TransitionDocument;
-    const retained = current.transitions.filter((r) => r.taskId !== "AR-05B");
+    const retained = current.transitions.filter((r) =>
+      ["AR-02G", "AR-02H", "AR-02M"].includes(r.taskId),
+    );
     expect(retained).toHaveLength(7);
     expect(createHash("sha256").update(JSON.stringify(retained)).digest("hex")).toBe(
       "f4bd0b0ff40ba6796f86fb41f3fbafef4caf2050f4a56d0a506c558b5e70237f",
@@ -319,6 +321,24 @@ describe("AR-05B exact historical transitions", () => {
         "a0c9658d65d080812fcb1e8afd7554a45336e9acae763854637ee33dd99f01ae",
     };
     for (const [path, expected] of Object.entries(historicalFiles))
-      expect(createHash("sha256").update(readFileSync(path)).digest("hex")).toBe(expected);
+      expect(
+        createHash("sha256")
+          .update(
+            path === "tests/helpers/p10b-19a-10c-architecture-closure.ts"
+              ? readRetainedSource({
+                  repositoryRoot: process.cwd(),
+                  recordsPath,
+                  sourcePath: path,
+                  expectedHistoricalSha256: expected,
+                })
+              : readFileSync(path),
+          )
+          .digest("hex"),
+      ).toBe(expected);
+    expect(
+      createHash("sha256")
+        .update(readFileSync("tests/helpers/p10b-19a-10c-architecture-closure.ts"))
+        .digest("hex"),
+    ).toBe("17b006ac8a607f262762992cfad150e42a73412acb83240ba2ee5326956aaea9");
   });
 });

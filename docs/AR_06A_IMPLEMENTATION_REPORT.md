@@ -83,3 +83,15 @@ is unchanged. Fresh independent-03/final-03 records must cover the complete corr
 diff, remaining build and all sixteen newly captured cases before delivery. Earlier
 images remain proof only of their recorded renderer, and earlier PASS is not the
 corrected candidate's final verdict.
+
+## Historical transition repair
+
+`historical-transition-01` preserves the submitted A-10A test as successor
+`bbf6cdc66276cb5ed5d04a6f443d08a78e68837140ae65e1a8a3078925e0f9ff` and archives its
+base bytes. It also archives A-10C's base bytes
+`a0c9658d65d080812fcb1e8afd7554a45336e9acae763854637ee33dd99f01ae`; the only
+reader change adds that exact A-10A test path, producing successor
+`17b006ac8a607f262762992cfad150e42a73412acb83240ba2ee5326956aaea9`. AR-05B retains its G/H/M aggregate assertion and separately pins both
+the A-10C archive and current successor. Focused controls reject missing, wrong,
+changed, duplicate, foreign, escaping and unused records. Verification and delivery
+gates remain pending.

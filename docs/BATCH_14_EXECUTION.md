@@ -193,3 +193,12 @@ and four complete sets. Both corrections and focused checks precede the new froz
 comparison boards use `browsers/independent-03`. Old screenshots cannot establish
 corrected-renderer PASS. Fresh independent/native verification, existing-thread
 response, all final-head CI and expected-head-protected merge remain delivery gates.
+
+## Historical transition repair
+
+The locked `historical-transition-01` successor records two AR-06A historical
+source transitions: the submitted A-10A test (`14ee717c…85b50a` archive to
+`bbf6cdc6…e0f9ff` current) and A-10C closure helper (`a0c9658d…9f01ae` archive
+to `17b006ac8a607f262762992cfad150e42a73412acb83240ba2ee5326956aaea9` current). It preserves every prior transition row and evidence.
+Fresh focused/typecheck, independent/native verification and delivery gates remain
+required; this record does not claim PASS or batch completion.
