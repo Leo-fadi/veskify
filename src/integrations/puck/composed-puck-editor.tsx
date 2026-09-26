@@ -139,7 +139,8 @@ function sessionKey(session: Session) {
 
 function sessionView(session: Session) {
   const renderer = session.renderer();
-  return { renderer, data: session.project(), config: createComposedPagePuckConfig(renderer) };
+  const data = session.project();
+  return { renderer, data, config: createComposedPagePuckConfig(renderer, data) };
 }
 
 function SelectedSectionObserver({
@@ -338,6 +339,7 @@ function ComposedPuckEditorSession({
   };
   const onChange = (next: Data) => {
     if (!active.current || currentReadOnly.current) return;
+    let changed = false;
     try {
       const accepted = session.apply(next, expectedIdentity.current);
       expectedIdentity.current = accepted.identity;
@@ -354,7 +356,7 @@ function ComposedPuckEditorSession({
       });
       if (accepted.changed) {
         setView(sessionView(session));
-        onAcceptedChange();
+        changed = true;
       }
     } catch (error) {
       setError("That change could not be applied safely. Your last valid design is still shown.");
@@ -373,6 +375,14 @@ function ComposedPuckEditorSession({
       setView(sessionView(session));
       setRestoreSelectionId(retainedSelection.current);
       setRecoveryEpoch((value) => value + 1);
+      return;
+    }
+    if (changed) {
+      try {
+        onAcceptedChange();
+      } catch {
+        setError("Your edit was accepted, but its preview could not be refreshed.");
+      }
     }
   };
   return (

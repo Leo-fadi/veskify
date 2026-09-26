@@ -152,7 +152,7 @@
     "At most6production starts:3coordinator/3independent unchanged; third independent review-reserved. Browser ceiling28total,21prior invocations retained. Up to4targeted diagnostics covering all six failures,1complete coordinator actual AR06B spec,1complete independent final-candidate spec,1genuine post-review reserve. One worker,zero retries,no debugger. Diagnose first unfinished operation and equivalent geometry; no speculative pointer campaign. Coordinator full PASS precedes frozen same-source/test-entrypoint independent run with fresh contexts/server; same session for forward/reverse. Preserve strict current image load/decode/positive intrinsic dimensions, protected data, locale, focus, clipping and alignment. No ignored image failure, arbitrary sleep, timeout increase, relaxed threshold, state injection or canonical weakening. Up to3additional complete16image sets (coordinator,independent,post-review), overall9maximum; partial sets are not complete proof. Existing capacity estimate/reserve and all bundle/build limits unchanged.",
     "Standing admin/support successors allowed for references, native bookkeeping, output routing and path/trace portability preserving product/visual/security/integrity acceptance. Preserve old raw/canonical identities and all failures; validate complete successor before pinning. No routine owner PR/CI/merge questions, no bypass of managed denial.",
     "One automatic review and final-head mandatory CI/browser/budgets/validate. Expected-head protected merge only after fresh/applicable complete independent native report and reconciliation PASS, existing review resolved and recorded standing authority. No successor/deployment/live calls.",
-    "The verifier receives a new assignment and exact native identity before each independent attempt; direct complete report destinations and post-report provenance routing are pinned in administrative-successor-10/report-routing.json (which preserves prior preflight/report-routing.json). Native reconciliation uses only that exact complete report. Keep transient-output and implementation identities separate. If the unused infrastructure replacement becomes necessary, record actual interrupted attempt/resolved cause and exact replacement output routing before execution; support-only routing successors cannot reset counters or broaden acceptance."
+    "The verifier receives a new assignment and exact native identity before each independent attempt; direct complete report destinations and post-report provenance routing are pinned in administrative-successor-12/report-routing.json (which preserves prior preflight/report-routing.json). Native reconciliation uses only that exact complete report. Keep transient-output and implementation identities separate. If the unused infrastructure replacement becomes necessary, record actual interrupted attempt/resolved cause and exact replacement output routing before execution; support-only routing successors cannot reset counters or broaden acceptance."
   ],
   "scopeBudget": {
     "targetMaxNetProductionLines": 1000,
@@ -348,31 +348,31 @@
     },
     {
       "id": "VALIDATION-15",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-10/support/check.py",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-12/support/check.py",
       "purpose": "Complete native identity, exact9production/1500addition and4500handwritten hard bounds, originals/unowned source preserved.",
       "requiredEvidence": ["EVIDENCE-05"]
     },
     {
       "id": "VALIDATION-16",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/controls.py",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/controls.py",
       "purpose": "Reused strict dependency-link/URL/filesystem/trace positive and negative controls.",
       "requiredEvidence": ["EVIDENCE-06"]
     },
     {
       "id": "VALIDATION-17",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/final.py build",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/final.py build",
       "purpose": "One counted sequential production build plus original six-route budget checker and full trace/chunk/input proof. Prepare export first; capacity check is not a build.",
       "requiredEvidence": ["EVIDENCE-06"]
     },
     {
       "id": "VALIDATION-18",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/production-smoke.py",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/production-smoke.py",
       "purpose": "Sealed final production build returns404 with B flag1; artifacts unchanged.",
       "requiredEvidence": ["EVIDENCE-06"]
     },
     {
       "id": "VALIDATION-19",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/final.py verify",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/final.py verify",
       "purpose": "Completed build/source/dependency/artifact/log identities remain exact.",
       "requiredEvidence": ["EVIDENCE-06"]
     },
@@ -390,31 +390,31 @@
     },
     {
       "id": "VALIDATION-22",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/browser.py",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/browser.py",
       "purpose": "Counted stabilization:21previous attempts retained; maximum28 total. Up to4targeted diagnostics covering six failures, then complete coordinator actual full spec PASS, frozen same-source independent full spec PASS and1post-review reserve. One worker,zero retries,no debugger. Fresh server/contexts; preserve same-session edit/forward/reverse, all EN/FI four-width geometry/readiness/focus/clipping/protected-data checks. Three additional complete16-image sets; no partial set substitution. Build/capacity/budgets unchanged.",
       "requiredEvidence": ["EVIDENCE-02"]
     },
     {
       "id": "VALIDATION-23",
-      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/board.mjs /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/browsers/$AR06B_RUN/captures",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/board.mjs /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/browsers/$AR06B_RUN/captures",
       "purpose": "Actual paired editor/preview boards preserving images and capture provenance; independent direct inspection required.",
       "requiredEvidence": ["EVIDENCE-02"]
     },
     {
       "id": "VALIDATION-24",
-      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-09/support/board-controls.mjs",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/board-controls.mjs",
       "purpose": "Pinned installed board renderer resolution and positive/negative integrity controls.",
       "requiredEvidence": ["EVIDENCE-02"]
     },
     {
       "id": "VALIDATION-25",
-      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-10/support/production-retention-v2.mjs controls $AR06B_RUN",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/production-retention-v2.mjs controls $AR06B_RUN",
       "purpose": "Exact source/client/NFT retention completeness, path and identity controls.",
       "requiredEvidence": ["EVIDENCE-06"]
     },
     {
       "id": "VALIDATION-26",
-      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-10/support/production-retention-v2.mjs check $AR06B_RUN",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/production-retention-v2.mjs check $AR06B_RUN",
       "purpose": "Exact six normal plus guarded acceptance client manifests isolated; complete identity-bound NFT source report and explicit packaging limitation.",
       "requiredEvidence": ["EVIDENCE-06"]
     }
@@ -465,7 +465,7 @@
     {
       "id": "EVIDENCE-07",
       "type": "document",
-      "description": "Complete verifier-authored native criterion report with original agent/output path/provenance/exact bytes, fresh versus inherited evidence and native reconciliation. Review/CI/merge remain separate gates. Original independent-01, independent-02 and independent-03 FAIL and provenance remain unchanged. Fresh verifier-owned destination /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/independent-03/support-correction-01/verdict.json (post-review independent-04 uses its own new path), with assignment.json, freeze.before/after.json and separate post-report provenance.json in that same assigned directory. Never overwrite or reconstruct a prior report. The verifier also directly authors pre-report evidence-07.json in that attempt directory, containing assignment/input and actual execution/evidence attribution before hashing it as EVIDENCE-07. It must not depend on a future report or post-report provenance hash. Support-only revalidation retains original browser/build executions and identities after exact input/artifact applicability; no extra build or browser execution is attributed to this report.",
+      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/independent-04/visual-completion-01/verdict.json, with new assignment, input inventory, before/after integrity and pre-report evidence-07.json; post-report provenance binds exact bytes to the exposed author/tool reference. Inspect every required original capture with a traceable fresh image call and actual observations; do not reuse the earlier unsupported all-sixteen inspection claim. Bind retained browser28/final04 proof to corrected production/test/dependency inputs, explicitly separating documentary-only successor changes and old execution identities. No new browser/build execution solely for inspection. Preserve the rejected operation, all previous reports/failures/locks and source artifacts. Native reconciliation consumes only the complete truthful new report; review, final-head CI and merge remain separate.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     }

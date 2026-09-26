@@ -39,7 +39,17 @@ type TestProps = {
   permissions: Record<string, boolean>;
   config: {
     root: { render: (props: Record<string, unknown>) => ReactNode };
-    components: Record<string, { render: (props: Record<string, unknown>) => ReactNode }>;
+    components: Record<
+      string,
+      {
+        render: (props: Record<string, unknown>) => ReactNode;
+        fields: Record<string, unknown>;
+        resolveFields?: (item: {
+          type: string;
+          props: Record<string, unknown>;
+        }) => Record<string, unknown>;
+      }
+    >;
   };
 };
 const puck = vi.hoisted(() => ({
@@ -485,6 +495,78 @@ describe("AR-06B reusable editor lifecycle", () => {
     act(() => puck.change!(edited(value, "Observer-safe heading")));
     expect(value.project()).toEqual(edited(value, "Observer-safe heading"));
     expect(accepted).toHaveBeenCalledTimes(1);
+  });
+  it("binds optional controls to trusted section authority rather than mutable Puck props", () => {
+    const fixture = createAr06aComposedTemplate("offset");
+    const snapshot = structuredClone(fixture.snapshot);
+    const story = snapshot.pages
+      .find((page) => page.id === fixture.homeId)!
+      .sections.find((section) => section.id === "section_home_story")!;
+    delete story.content.eyebrow;
+    const value = createComposedPuckSession({
+      snapshot,
+      pageId: fixture.homeId,
+      catalogue: fixture.catalogue,
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      resolveAuthority: fixture.resolver,
+    });
+    render(<ComposedPuckEditor session={value} onAcceptedChange={vi.fn()} />);
+    const data = structuredClone(value.project());
+    const item = Object.values(
+      data.root.props as Record<string, { type: string; props: Record<string, unknown> }[]>,
+    )
+      .flat()
+      .find((entry) => entry.props.id === story.id);
+    if (!item) throw new Error("Missing trusted story projection");
+    const config = puck.props!.config.components[item.type];
+    const fields = (payload: typeof item) => config.resolveFields?.(payload) ?? config.fields;
+    expect(Object.keys(fields(item)).sort()).toEqual(
+      Object.keys(item.props)
+        .filter((key) => key !== "id")
+        .sort(),
+    );
+    expect(fields(item)).not.toHaveProperty("eyebrow");
+    expect(fields({ ...item, props: { id: story.id } })).toHaveProperty("heading");
+    expect(
+      fields({ ...item, props: { ...item.props, eyebrow: "Forged authority" } }),
+    ).not.toHaveProperty("eyebrow");
+    const before = value.snapshot;
+    item.props.eyebrow = "Forged authority";
+    expect(() => value.apply(data, value.identity)).toThrow(/unsupported editor field/u);
+    expect(value.snapshot).toBe(before);
+    expect(fields({ ...item, props: { id: "foreign" } })).toEqual({});
+    expect(fields({ ...item, props: { id: "section_home_hero" } })).toEqual({});
+  });
+  it("keeps a successful edit accepted when its consumer notification throws", () => {
+    const value = session(),
+      observations = vi.fn<(observation: ComposedPuckStatePathObservation) => void>();
+    const accepted = vi.fn(() => {
+      throw new Error("consumer refresh failed");
+    });
+    render(
+      <ComposedPuckEditor
+        session={value}
+        onAcceptedChange={accepted}
+        onStatePathObservation={observations}
+      />,
+    );
+    const mounts = puck.mounts;
+    act(() => puck.change!(edited(value, "Accepted despite notification")));
+    expect(screen.getByTestId("puck-canvas")).toHaveTextContent("Accepted despite notification");
+    expect(puck.mounts).toBe(mounts);
+    expect(screen.queryByText(/last valid design/u)).toBeNull();
+    expect(screen.getByText(/Your edit was accepted/u)).toBeVisible();
+    expect(
+      observations.mock.calls
+        .filter(([entry]) => entry.phase === "commit")
+        .map(([entry]) => entry.outcome),
+    ).toEqual(["accepted"]);
+    act(() => puck.change!(edited(value, "Still editable")));
+    expect(screen.getByTestId("puck-canvas")).toHaveTextContent("Still editable");
+    expect(accepted).toHaveBeenCalledTimes(2);
+    expect(puck.mounts).toBe(mounts);
   });
   it("records a later text commit separately from an uncommitted move action", () => {
     const value = session();

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Config, Field } from "@puckeditor/core";
+import type { Config, Data, Field } from "@puckeditor/core";
 import type { ComposedStorefrontPageRenderer } from "@/components/storefront/composed-storefront-page";
 import { getComponentDefinition } from "@/components/registry";
 import { composedRegionSlotName } from "@/integrations/puck/composed-page-adapter";
@@ -19,16 +19,47 @@ function textFields(component: string): Record<string, Field> {
 }
 
 /** Builds one Puck config from a private validated compositor factory. */
-export function createComposedPagePuckConfig(renderer: ComposedStorefrontPageRenderer): Config {
+export function createComposedPagePuckConfig(
+  renderer: ComposedStorefrontPageRenderer,
+  projection: Data,
+): Config {
   const sections = renderer.regions.flatMap((region) => region.sections);
   const byId = new Map(sections.map((section) => [section.id, section]));
+  // Capture names before Puck receives this trusted session projection. Later
+  // mutable transport props cannot grant or remove instance field authority.
+  const projected = Object.values(
+    (projection.root.props ?? {}) as Record<
+      string,
+      { type: string; props: Record<string, unknown> }[]
+    >,
+  ).flat();
+  const fieldsById = new Map(
+    sections.map((section) => {
+      const matches = projected.filter((item) => item?.props?.id === section.id);
+      if (matches.length !== 1 || matches[0].type !== section.component)
+        throw new Error("Composed Puck fields rejected a missing or foreign section projection.");
+      const props = matches[0].props;
+      return [
+        section.id,
+        Object.freeze(
+          Object.fromEntries(
+            Object.entries(textFields(section.component))
+              .filter(([name]) => Object.hasOwn(props, name) && typeof props[name] === "string")
+              .map(([name, field]) => [name, Object.freeze(field)]),
+          ),
+        ),
+      ];
+    }),
+  );
   const components = Object.fromEntries(
     [...new Set(sections.map((section) => section.component))].map((component) => [
       component,
       {
         label: getComponentDefinition(component).label,
         inline: true,
-        fields: textFields(component),
+        fields: {},
+        resolveFields: ({ props }: { props: { id: string } }) =>
+          byId.get(props.id)?.component === component ? { ...fieldsById.get(props.id) } : {},
         permissions: { insert: false, delete: false, duplicate: false },
         render: ({
           id,
