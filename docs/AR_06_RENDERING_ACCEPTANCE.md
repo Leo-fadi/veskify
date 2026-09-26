@@ -1,22 +1,24 @@
 # AR-06 rendering acceptance
 
-AR-06 remains **Partial**. Accepted delivery closes only AR-06A; the candidate
-status projection is conditional on independent/native verification, browser/visual
-proof, review, required CI and accepted merge. AR-02/03/04/05 remain closed.
+AR-06 remains **Partial**. AR-06A is closed, verified at
+`bc209f4bdfed9626605b8c699aaabb547d5d2025`. AR-06B is a delivery candidate:
+its guarded unsaved Puck boundary closes only after independent/native verification,
+browser/visual proof, review, required CI and accepted merge. AR-02/03/04/05 remain closed.
 
-| Original acceptance                    | AR-06A contribution                                                                                                                               | Remaining parent obligation                                                                               |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| T01 legacy canonical replay            | Exact-base/candidate observations and unchanged legacy consumer tests preserve existing parse/read/render/publication behavior without write-back | Retain the same compatibility through future integration                                                  |
-| T02 composition integrity              | Complete A/B validation, actual owner/reference binding, one content inventory and fail-closed geometry                                           | Preserve integrity through all editing and lifecycle consumers                                            |
-| T03 four-width composition             | Required stack/offset proof at 375/768/1024/1440 in EN/FI with accessible order, real geometry and media                                          | Broader executable-commerce support and integrated renderer parity                                        |
-| T04 Puck round trip                    | No new composed editor integration claimed                                                                                                        | Text edits, selection, permitted reorders and save/reload must preserve composition and version rejection |
-| T17 publication atomicity              | Read-only route provides no composed publication proof                                                                                            | Prepare/confirm drift, parallel confirmation and failed propagation must preserve active artifact/version |
-| T21 safe removal (retained constraint) | No legacy implementation or supported dependency removed; narrow exact consumer assertions retained                                               | Any later retirement needs caller, persisted-reference and regression proof                               |
+| Original acceptance                    | AR-06A contribution                                                                                                                               | Remaining parent obligation                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| T01 legacy canonical replay            | Exact-base/candidate observations and unchanged legacy consumer tests preserve existing parse/read/render/publication behavior without write-back | Retain the same compatibility through future integration                                                      |
+| T02 composition integrity              | Complete A/B validation, actual owner/reference binding, one content inventory and fail-closed geometry                                           | Preserve integrity through all editing and lifecycle consumers                                                |
+| T03 four-width composition             | Required stack/offset proof at 375/768/1024/1440 in EN/FI with accessible order, real geometry and media                                          | Broader executable-commerce support and integrated renderer parity                                            |
+| T04 Puck round trip                    | AR-06B candidate adds guarded text edits, selection and the actual primary-discovery reorder to the static acceptance surface                     | Save/reload and normal lifecycle integration remain required; candidate proof is pending final delivery gates |
+| T17 publication atomicity              | Read-only route provides no composed publication proof                                                                                            | Prepare/confirm drift, parallel confirmation and failed propagation must preserve active artifact/version     |
+| T21 safe removal (retained constraint) | No legacy implementation or supported dependency removed; narrow exact consumer assertions retained                                               | Any later retirement needs caller, persisted-reference and regression proof                                   |
 
 The implementation is `renderComposedStorefrontPage`, backed by
 `composedPageRealizationSupport`. Only the guarded `/acceptance/ar-06a` route uses
-it in this child. Later consumers must reuse this implementation and preserve
-full canonical validation; the private content projection is never a saved value.
+it in AR-06A. AR-06B's guarded acceptance route adds a transient Puck projection;
+later consumers must reuse this implementation and preserve full canonical validation.
+The private content projection is never a saved value.
 
 Positive collection/search and PDP composition remain obligations of executable
 commerce support before enablement. Current indivisible inventories and foreign
