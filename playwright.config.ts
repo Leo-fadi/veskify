@@ -25,6 +25,7 @@ export default defineConfig({
       ...process.env,
       VESKIFY_RUNTIME_MODE: "standalone",
       VESKIFY_AR06A_ACCEPTANCE: "1",
+      VESKIFY_AR06B_ACCEPTANCE: "1",
     },
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,

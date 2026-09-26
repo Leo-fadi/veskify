@@ -7,7 +7,10 @@ import { render, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderRegisteredSection } from "@/components/registry";
 import type * as RegistryModule from "@/components/registry";
-import { renderComposedStorefrontPage } from "@/components/storefront/composed-storefront-page";
+import {
+  createComposedStorefrontPageRenderer,
+  renderComposedStorefrontPage,
+} from "@/components/storefront/composed-storefront-page";
 import { createAr06aComposedTemplate } from "@/data/demo/ar-06a-composed-template";
 import { createComposedStorefrontCandidate } from "@/application/storefront-templates/bind-storefront-composition";
 import { createPageBlueprintV2CandidateAuthority } from "@/application/storefront-templates/page-blueprint-v2-candidate-authority";
@@ -442,6 +445,22 @@ describe("AR-06A actual registered renderer", () => {
       expect(Object.isFrozen(fixture.snapshot)).toBe(true);
     },
   );
+  it("retains a private validated factory after callers mutate their input objects", () => {
+    const fixture = createAr06aComposedTemplate("offset");
+    const input = {
+      ...args(fixture),
+      snapshot: structuredClone(fixture.snapshot),
+      catalogue: structuredClone(fixture.catalogue),
+      enabledLocales: ["en", "fi"] as const,
+    };
+    const renderer = createComposedStorefrontPageRenderer(input);
+    const expected = renderToStaticMarkup(<>{renderer.render()}</>);
+    (input.snapshot as { pages: Array<{ id: string }> }).pages[0].id = "caller-mutated";
+    (input.catalogue as { products: unknown[] }).products.length = 0;
+    (input.enabledLocales as unknown as string[]).splice(0, 1);
+    expect(renderToStaticMarkup(<>{renderer.render()}</>)).toBe(expected);
+    expect(() => renderer.renderSection("foreign-section")).toThrow(/bound section/u);
+  });
   it("rejects a stale first authority before rendering instead of retrying with a later resolver value", () => {
     const fixture = createAr06aComposedTemplate("stack");
     const alternative = createAr06aComposedTemplate("offset");
@@ -598,7 +617,9 @@ describe("AR-06A actual registered renderer", () => {
       const closure = browserSourceClosure(entry);
       expect(
         closure.some((path) =>
-          /ar-06a|composed-storefront-page|composed-page-realization/u.test(path),
+          /ar-06a|ar-06b|composed-storefront-page|composed-page-realization|composed-page-adapter|composed-page-config|composed-puck-editor/u.test(
+            path,
+          ),
         ),
       ).toBe(false);
     }
@@ -627,7 +648,10 @@ describe("AR-06A actual registered renderer", () => {
           readFileSync(path, "utf8"),
         ),
     );
-    expect([...new Set(callers)]).toEqual(["src/app/acceptance/ar-06a/page.tsx"]);
+    expect([...new Set(callers)].sort()).toEqual([
+      "src/app/acceptance/ar-06a/page.tsx",
+      "src/integrations/puck/ar-06b-composed-editor-proof.tsx",
+    ]);
   });
 });
 

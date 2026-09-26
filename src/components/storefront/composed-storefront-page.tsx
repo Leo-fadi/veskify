@@ -15,15 +15,15 @@ import {
   deriveComposedPageLayout,
 } from "@/components/storefront/composed-page-realization";
 import styles from "@/components/storefront/composed-storefront-page.module.css";
+import { validateRegisteredSnapshot } from "@/components/registry/registry";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
+import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { StorefrontSnapshot } from "@/domain/storefront";
-import type { PageFactEvidenceReference } from "@/domain/storefront/page-fact-evidence";
 import type { ContentSupportFactDocument } from "@/domain/storefront/content-support-facts";
 import type { CompiledPageBlueprintCompositionV1 } from "@/domain/storefront/compiled-page-blueprint-composition";
+import type { PageFactEvidenceReference } from "@/domain/storefront/page-fact-evidence";
 import { parseStorefrontSnapshotVersion } from "@/domain/storefront/storefront-composition-version";
-import { validateRegisteredSnapshot } from "@/components/registry/registry";
-import { brandSystemToCssVariables } from "@/domain/design-system";
 
 type Input = Readonly<{
   snapshot: unknown;
@@ -35,6 +35,38 @@ type Input = Readonly<{
   resolveAuthority: StorefrontCompositionAuthorityResolver;
   evidenceReferences?: readonly PageFactEvidenceReference[];
   contentSupportFactDocuments?: readonly ContentSupportFactDocument[];
+}>;
+
+type RenderedSection = Readonly<{
+  id: string;
+  component: string;
+  section: Parameters<typeof renderRegisteredSection>[0];
+}>;
+type RenderedRegion = Readonly<{
+  id: string;
+  sections: readonly RenderedSection[];
+}>;
+type RenderedGroup = Readonly<{
+  region: RenderedRegion;
+  pairedRegion?: RenderedRegion;
+  offsetPairedRegion: boolean;
+}>;
+
+export type ComposedStorefrontPageRenderer = Readonly<{
+  regions: readonly Readonly<{
+    id: string;
+    sections: readonly Readonly<{ id: string; component: string }>[];
+  }>[];
+  renderSection: (sectionId: string) => ReactNode;
+  render: () => ReactNode;
+  renderWithRegions: (
+    renderRegion: (
+      region: Readonly<{
+        id: string;
+        sections: readonly Readonly<{ id: string; component: string }>[];
+      }>,
+    ) => ReactNode,
+  ) => ReactNode;
 }>;
 
 function reject(reason: string): never {
@@ -111,7 +143,9 @@ function legacyProjection(input: unknown): StorefrontSnapshot {
   return snapshot as StorefrontSnapshot;
 }
 
-function sectionMap(page: { sections: readonly { id: string; visible: boolean }[] }) {
+function sectionMap(page: {
+  sections: readonly { id: string; visible: boolean; component: string }[];
+}) {
   const mapped = new Map(page.sections.map((section) => [section.id, section]));
   if (mapped.size !== page.sections.length) reject("duplicate section IDs");
   return mapped;
@@ -123,9 +157,24 @@ function pageComposition(page: unknown): CompiledPageBlueprintCompositionV1 {
   return (page as { composition: CompiledPageBlueprintCompositionV1 }).composition;
 }
 
-export function renderComposedStorefrontPage(input: Input): ReactNode {
+/**
+ * Establishes one private, fully validated composed-rendering authority. The returned
+ * bound callbacks are for trusted integration decorations only; no unchecked layout
+ * or resolver material is exposed as a second renderer authority.
+ */
+export function createComposedStorefrontPageRenderer(input: Input): ComposedStorefrontPageRenderer {
+  const activeLocale = input.activeLocale;
+  const primaryLocale = input.primaryLocale;
+  const enabledLocales = privateFrozenCopy([...input.enabledLocales]);
+  const catalogue = privateFrozenCopy(input.catalogue);
+  const evidenceReferences = input.evidenceReferences
+    ? privateFrozenCopy([...input.evidenceReferences])
+    : undefined;
+  const contentSupportFactDocuments = input.contentSupportFactDocuments
+    ? privateFrozenCopy([...input.contentSupportFactDocuments])
+    : undefined;
   const resolver = trustedResolver(input.resolveAuthority);
-  const parsed = parseStorefrontSnapshotVersion(input.snapshot);
+  const parsed = parseStorefrontSnapshotVersion(privateFrozenCopy(input.snapshot));
   if (parsed.dynamicCommercePresentation?.contractVersion === "2.0.0")
     reject("composed dynamic commerce is unsupported");
   const accepted = validateComposedStorefrontSnapshot(parsed, resolver);
@@ -140,37 +189,37 @@ export function renderComposedStorefrontPage(input: Input): ReactNode {
   const layout = deriveComposedPageLayout({ composition, candidate: authority.candidate });
   const projected = validateRegisteredSnapshot(
     legacyProjection(accepted),
-    input.catalogue,
-    input.activeLocale,
-    input.primaryLocale,
-    input.enabledLocales,
-    input.evidenceReferences,
-    input.contentSupportFactDocuments,
+    catalogue,
+    activeLocale,
+    primaryLocale,
+    enabledLocales,
+    evidenceReferences,
+    contentSupportFactDocuments,
   );
   const page = projected.pages.find((entry) => entry.id === input.pageId);
   if (!page || !projected.sharedFrame) reject("legacy projection lost requested frame or page");
   const context = withCurrentStorefrontPage(
     createStorefrontRenderContext({
-      activeLocale: input.activeLocale,
-      primaryLocale: input.primaryLocale,
-      enabledLocales: input.enabledLocales,
-      catalogue: input.catalogue,
+      activeLocale,
+      primaryLocale,
+      enabledLocales,
+      catalogue,
       snapshot: projected,
-      evidenceReferences: input.evidenceReferences,
-      contentSupportFactDocuments: input.contentSupportFactDocuments,
+      evidenceReferences,
+      contentSupportFactDocuments,
     }),
     page,
   );
   const sections = sectionMap(page);
   const bodySections = new Set<string>();
-  const regions = layout.regions.map((region) => {
-    const entries = region.sectionIds.map((id) => {
+  const regions = layout.regions.map((region): RenderedRegion => {
+    const entries = region.sectionIds.map((id): RenderedSection => {
       const section = sections.get(id);
       if (!section?.visible || bodySections.has(id)) reject("invalid body section realization");
       bodySections.add(id);
-      return section;
+      return Object.freeze({ id, component: section.component, section });
     });
-    return { region, entries };
+    return Object.freeze({ id: region.id, sections: Object.freeze(entries) });
   });
   const visibleBody = page.sections.filter((section) => section.visible);
   if (bodySections.size !== visibleBody.length)
@@ -178,54 +227,103 @@ export function renderComposedStorefrontPage(input: Input): ReactNode {
 
   const pairBySource = new Map(layout.pairs.map((pair) => [pair.sourceRegionId, pair]));
   const pairedTargets = new Set(layout.pairs.map((pair) => pair.targetRegionId));
-  const groups = regions.flatMap((value, index) => {
-    if (pairedTargets.has(value.region.id)) return [];
-    const pair = pairBySource.get(value.region.id);
-    const next = pair ? regions[index + 1] : undefined;
-    if (pair && (!next || next.region.id !== pair.targetRegionId)) reject("invalid pair grouping");
-    return [{ value, next, pair }];
+  const groups = regions.flatMap((region, index): RenderedGroup[] => {
+    if (pairedTargets.has(region.id)) return [];
+    const pair = pairBySource.get(region.id);
+    const pairedRegion = pair ? regions[index + 1] : undefined;
+    if (pair && (!pairedRegion || pairedRegion.id !== pair.targetRegionId))
+      reject("invalid pair grouping");
+    return [
+      Object.freeze({
+        region,
+        pairedRegion,
+        offsetPairedRegion: pair?.offset === true,
+      }),
+    ];
   });
   const sharedFrame = context.sharedFrame;
   if (!sharedFrame) reject("render context lost canonical shared frame");
-  return (
-    <div
-      className={styles.root}
-      lang={input.activeLocale}
-      style={brandSystemToCssVariables(projected.brandSystem)}
-    >
-      {sharedFrame.announcement ? renderRegisteredSection(sharedFrame.announcement, context) : null}
-      {renderRegisteredSection(sharedFrame.header, context)}
-      <main id={storefrontMainContentId} tabIndex={-1} className={styles.main}>
-        {groups.map(({ value, next, pair }) => {
-          const renderRegion = (value: (typeof regions)[number], offset = false) => (
-            <section
-              key={value.region.id}
-              className={`${styles.region}${offset ? ` ${styles.offset}` : ""}`}
-              data-composed-region={value.region.id}
-            >
-              {value.entries.map((section) => (
-                <div key={section.id} data-composed-section={section.id}>
-                  {renderRegisteredSection(section, context, page.type)}
-                </div>
-              ))}
-            </section>
-          );
-          if (pair && next) {
-            return (
-              <div
-                className={styles.pair}
-                data-composed-pair={`${value.region.id}:${next.region.id}`}
-                key={value.region.id}
-              >
-                {renderRegion(value)}
-                {renderRegion(next, pair.offset)}
-              </div>
-            );
-          }
-          return renderRegion(value);
-        })}
-      </main>
-      {renderRegisteredSection(sharedFrame.footer, context)}
-    </div>
+  const publicRegions = Object.freeze(
+    regions.map((region) =>
+      Object.freeze({
+        id: region.id,
+        sections: Object.freeze(
+          region.sections.map((section) =>
+            Object.freeze({ id: section.id, component: section.component }),
+          ),
+        ),
+      }),
+    ),
   );
+
+  const renderWithRegions: ComposedStorefrontPageRenderer["renderWithRegions"] = (renderRegion) => {
+    const renderBoundRegion = (region: RenderedRegion, offset = false) => (
+      <section
+        key={region.id}
+        className={`${styles.region}${offset ? ` ${styles.offset}` : ""}`}
+        data-composed-region={region.id}
+      >
+        {renderRegion(
+          publicRegions.find((entry) => entry.id === region.id) ?? reject("missing public region"),
+        )}
+      </section>
+    );
+    return (
+      <div
+        className={styles.root}
+        lang={activeLocale}
+        style={brandSystemToCssVariables(projected.brandSystem)}
+      >
+        {sharedFrame.announcement
+          ? renderRegisteredSection(sharedFrame.announcement, context)
+          : null}
+        {renderRegisteredSection(sharedFrame.header, context)}
+        <main id={storefrontMainContentId} tabIndex={-1} className={styles.main}>
+          {groups.map(({ region, pairedRegion, offsetPairedRegion }) => {
+            if (pairedRegion) {
+              return (
+                <div
+                  className={styles.pair}
+                  data-composed-pair={`${region.id}:${pairedRegion.id}`}
+                  key={region.id}
+                >
+                  {renderBoundRegion(region)}
+                  {renderBoundRegion(pairedRegion, offsetPairedRegion)}
+                </div>
+              );
+            }
+            return renderBoundRegion(region);
+          })}
+        </main>
+        {renderRegisteredSection(sharedFrame.footer, context)}
+      </div>
+    );
+  };
+  const renderSection: ComposedStorefrontPageRenderer["renderSection"] = (sectionId) => {
+    const bound = regions
+      .flatMap((region) => region.sections)
+      .find((section) => section.id === sectionId);
+    if (!bound) return reject("missing bound section");
+    return renderRegisteredSection(bound.section, context, page.type);
+  };
+
+  return Object.freeze({
+    regions: publicRegions,
+    renderSection,
+    render: () =>
+      renderWithRegions((region) =>
+        region.sections.map((section) => {
+          return (
+            <div key={section.id} data-composed-section={section.id}>
+              {renderSection(section.id)}
+            </div>
+          );
+        }),
+      ),
+    renderWithRegions,
+  });
+}
+
+export function renderComposedStorefrontPage(input: Input): ReactNode {
+  return createComposedStorefrontPageRenderer(input).render();
 }

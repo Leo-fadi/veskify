@@ -216,6 +216,7 @@ describe("AR-05B actual inactive consumer boundaries", () => {
     const ar06aConsumers = new Set([
       "src/components/storefront/composed-storefront-page.tsx",
       "src/data/demo/ar-06a-composed-template.ts",
+      "src/integrations/puck/composed-page-adapter.ts",
     ]);
     for (const file of new Set(files)) {
       if (
