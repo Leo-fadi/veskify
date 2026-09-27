@@ -1,6 +1,37 @@
 # AR-06C implementation report
 
+## CI correction checkpoint
+
+PR #261's first CI run, `36351310293`, passed unit/integration, static and production
+budget gates but failed nine C browser cases at the unchanged 30-second test limit.
+The retained browser report shows 13.7–14.4 seconds spent in nine individual typing
+steps for each offset journey, and 18.4 seconds in the stale-page journey. The offset
+cases completed edit, reorder and save before timing out during fresh-page reopen.
+This is cumulative test interaction cost, not evidence of a repository rejection or
+an established infrastructure failure. The complete failed CI evidence is retained.
+
+Only the task-owned browser helper and C spec change: C explicitly replaces the real
+Puck text field's value through Playwright `fill`, then asserts focus, the exact full
+text and its editor/preview projections. B retains its existing default sequential
+typing, caret and per-character focus checks. No timeout, retry, content, drag,
+readiness, geometry, persistence assertion, production file or budget changes.
+
+The fresh complete coordinator campaign passes **12/12** in 3.0 minutes, with eight
+new original post-reload captures. The corrected candidate requires its own full
+independent browser execution and direct inspection of all eight images; previous
+captures are evidence of their original candidate. Production-build proof may be
+reused only after independent input and artifact applicability checks. The final
+correction report, native reconciliation and final-head CI are retained separately
+from the earlier reports below. The one automatic review completed without findings;
+no second review is requested. Accepted merge remains a separate delivery gate.
+
+At this checkpoint five local browser invocations and three complete capture sets
+are counted. Production builds remain three. AR-06 remains Partial.
+
 ## Independent verification checkpoint
+
+This earlier checkpoint describes the pre-CI-correction candidate and retains its
+original report identities and execution attribution.
 
 The guarded composed static draft can be edited, explicitly saved and reopened from
 real IndexedDB in a fresh page and repository instance. Independent verification and

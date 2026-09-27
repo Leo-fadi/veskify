@@ -1,6 +1,25 @@
 # BATCH-16 execution
 
+## CI correction checkpoint
+
+PR #261 retains the failed first-head CI run and complete step evidence. Nine C
+browser journeys exhausted their unchanged timeout after repeated per-character
+input; the C-only field-replacement correction preserves real Puck input, exact
+text, protected data, drag, fresh IndexedDB reopen and all visual assertions. B's
+sequential typing coverage stays unchanged. The complete new coordinator campaign
+passes 12/12 with eight captures. Independent full browser/image proof, applicability
+of the unchanged production build, a fresh verifier-authored report and native
+reconciliation are required for this corrected candidate before the same PR advances.
+
+Five browser invocations, three complete capture sets and three production builds
+are counted here. The sole automatic review completed without findings. Final-head
+CI and accepted merge remain mandatory; no unchanged-head retry or second review
+request is used. Actual final identities and later counts belong to the append-only
+delivery closeout. AR-06 remains Partial.
+
 ## Independent verification checkpoint
+
+The following checkpoint predates the CI correction and preserves its attribution.
 
 The explicit execution assignment resolved the retained managed-approval blocker without
 changing the product contract or permissions. All 21 independent validations pass:

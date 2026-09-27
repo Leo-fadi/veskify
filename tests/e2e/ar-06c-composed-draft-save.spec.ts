@@ -183,6 +183,7 @@ for (const locale of ["en", "fi"] as const)
         sectionId: "section_home_hero",
         suffix: ` saved ${locale}`,
         previewSelector: "[data-ar06c-preview]",
+        inputMode: "replace",
       });
       await journey.settle(page);
       await journey.reorderSections(page, original[1], original[2]);
@@ -304,6 +305,7 @@ for (const locale of ["en", "fi"] as const)
       sectionId: "section_home_hero",
       suffix: ` saved ${locale}`,
       previewSelector: "[data-ar06c-preview]",
+      inputMode: "replace",
     });
     await journey.settle(page);
     await journey.reorderSections(page, original[1], original[2]);
@@ -331,6 +333,7 @@ test("unsaved edits are absent from a fresh page", async ({ page, context, baseU
     sectionId: "section_home_hero",
     suffix: " unsaved",
     previewSelector: "[data-ar06c-preview]",
+    inputMode: "replace",
   });
   await expect(root(page)).toHaveAttribute("data-ar06c-unsaved", "true");
   await page.close();
@@ -361,6 +364,7 @@ test("stale second page cannot overwrite the saved draft", async ({
       sectionId: "section_home_hero",
       suffix,
       previewSelector: "[data-ar06c-preview]",
+      inputMode: "replace",
     });
   const saved = await save(page);
   await stale.getByRole("button", { name: "Save draft", exact: true }).click();

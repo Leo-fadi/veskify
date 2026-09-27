@@ -8,6 +8,7 @@ export async function editComposedHeading({
   label = "Main heading",
   suffix,
   previewSelector,
+  inputMode = "sequential",
 }: Readonly<{
   page: Page;
   frameSelector: string;
@@ -15,24 +16,31 @@ export async function editComposedHeading({
   label?: string;
   suffix: string;
   previewSelector: string;
+  inputMode?: "sequential" | "replace";
 }>): Promise<{ initial: string; value: string }> {
   const frame = page.frameLocator(frameSelector);
   await frame.locator(`[data-composed-puck-section="${sectionId}"]`).click();
   const heading = page.getByLabel(label, { exact: true });
   await expect(heading).toBeVisible();
   const initial = await heading.inputValue();
-  await heading.press("ControlOrMeta+a");
-  await heading.press("ArrowRight");
-  await expect
-    .poll(() =>
-      heading.evaluate((node: HTMLInputElement) => [node.selectionStart, node.selectionEnd]),
-    )
-    .toEqual([initial.length, initial.length]);
-  for (const character of suffix) {
-    await heading.pressSequentially(character);
-    await expect(heading).toBeFocused();
-  }
   const value = initial + suffix;
+  if (inputMode === "replace") {
+    // C proves persistence of a real field edit; B retains sustained typing below.
+    await heading.fill(value);
+    await expect(heading).toBeFocused();
+  } else {
+    await heading.press("ControlOrMeta+a");
+    await heading.press("ArrowRight");
+    await expect
+      .poll(() =>
+        heading.evaluate((node: HTMLInputElement) => [node.selectionStart, node.selectionEnd]),
+      )
+      .toEqual([initial.length, initial.length]);
+    for (const character of suffix) {
+      await heading.pressSequentially(character);
+      await expect(heading).toBeFocused();
+    }
+  }
   await expect(heading).toHaveValue(value);
   await expect(page.locator(previewSelector)).toContainText(value);
   await expect(frame.locator(`[data-composed-section="${sectionId}"]`)).toContainText(value);
