@@ -1,6 +1,16 @@
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
+import {
+  lookupComposedStaticDraftOperations,
+  type ComposedStaticDraftCapability,
+  type ComposedStaticDraftOperations,
+} from "./composed-draft-repository-support";
+export {
+  createComposedStaticDraftCapability,
+  type ComposedStaticDraftCapability,
+  type ComposedStaticDraftAuthorityMaterial,
+} from "./composed-draft-repository-support";
 import type {
   PublicationOperationIdentity,
   PublicationOperationRecord,
@@ -62,7 +72,11 @@ export function projectScopedSnapshotId(
   return `${compactPrefix}${compactProject ? `_${compactProject}` : ""}${suffix}`.slice(0, 80);
 }
 
-export type DraftBaseIdentity = Pick<StorefrontSnapshot, "id" | "revision">;
+export type DraftBaseIdentity = Pick<StorefrontSnapshot, "id" | "revision"> & {
+  /** Required by the explicitly selected composed draft path, checked inside storage. */
+  snapshotFingerprint?: string;
+  contextFingerprint?: string;
+};
 
 export type PublishSnapshotExpectation = DraftBaseIdentity & {
   contentFingerprint: string;
@@ -273,4 +287,16 @@ export class RepositoryValidationError extends Error {
     super(message, options);
     this.name = "RepositoryValidationError";
   }
+}
+
+export function composedStaticDraftOperationsFor(
+  capability: ComposedStaticDraftCapability | undefined,
+): ComposedStaticDraftOperations | undefined {
+  if (capability === undefined) return undefined;
+  const operations =
+    capability && typeof capability === "object"
+      ? lookupComposedStaticDraftOperations(capability)
+      : undefined;
+  if (!operations) throw new RepositoryValidationError("Unrecognized composed draft capability.");
+  return operations;
 }

@@ -17,9 +17,12 @@ import {
   SnapshotNotFoundError,
   SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
+  composedStaticDraftOperationsFor,
+  type DraftBaseIdentity,
   type ProjectAggregate,
   type AuthoritativePublishingProjectRepository,
   type ProjectSummary,
+  type ComposedStaticDraftCapability,
   type PublishExpectation,
   type RestoreExpectation,
   projectScopedSnapshotId,
@@ -39,6 +42,8 @@ import {
   repositoryValidationError,
   validateProjectAggregate,
   validateRepositorySnapshot,
+  validateProjectAggregateWithCapability,
+  validateRepositorySnapshotWithCapability,
 } from "./repository-validation";
 import {
   publishHistoryMetadata,
@@ -75,6 +80,7 @@ type StoredProject = {
 
 export type InMemoryProjectRepositoryOptions = Readonly<{
   failAtomicPublicationAt?: (point: AtomicPublicationFailurePoint) => void;
+  composedDraftCapability?: ComposedStaticDraftCapability;
 }>;
 
 function clone<T>(value: T): T {
@@ -92,14 +98,20 @@ function freeze<T>(value: T): T {
 export class InMemoryProjectRepository implements AuthoritativePublishingProjectRepository {
   readonly #projects = new Map<string, StoredProject>();
   readonly #failAtomicPublicationAt?: InMemoryProjectRepositoryOptions["failAtomicPublicationAt"];
+  readonly #composedDraftCapability?: ComposedStaticDraftCapability;
 
   constructor(
     initialProjects: readonly ProjectAggregate[],
     options: InMemoryProjectRepositoryOptions = {},
   ) {
     this.#failAtomicPublicationAt = options.failAtomicPublicationAt;
+    composedStaticDraftOperationsFor(options.composedDraftCapability);
+    this.#composedDraftCapability = options.composedDraftCapability;
     for (const input of initialProjects) {
-      const aggregate = validateProjectAggregate(clone(input));
+      const aggregate = validateProjectAggregateWithCapability(
+        clone(input),
+        this.#composedDraftCapability,
+      );
       if (this.#projects.has(aggregate.project.id)) {
         throw repositoryValidationError(
           `Duplicate seeded project ID: ${aggregate.project.id}.`,
@@ -152,8 +164,12 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
   }
 
   async create(input: ProjectAggregate): Promise<ProjectAggregate> {
+    input = clone(input);
     await Promise.resolve();
-    const aggregate = validateProjectAggregate(clone(input));
+    const aggregate = validateProjectAggregateWithCapability(
+      clone(input),
+      this.#composedDraftCapability,
+    );
 
     if (this.#projects.has(aggregate.project.id)) {
       throw new ProjectAlreadyExistsError(aggregate.project.id);
@@ -194,8 +210,10 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
   async saveDraft(
     projectId: string,
     input: StorefrontSnapshot,
-    expectedBase?: { id: string; revision: number },
+    expectedBase?: DraftBaseIdentity,
   ): Promise<void> {
+    input = clone(input);
+    expectedBase = clone(expectedBase);
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
     const currentDraft = stored.snapshots.get(stored.project.draftSnapshotId);
@@ -211,7 +229,20 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
         revision: currentDraft.revision,
       });
     }
-    const snapshot = validateRepositorySnapshot(clone(input), stored.catalogue);
+    composedStaticDraftOperationsFor(this.#composedDraftCapability)?.assertSave(
+      input,
+      currentDraft,
+      this.#validatedAggregate(stored),
+      expectedBase,
+    );
+    const snapshot = validateRepositorySnapshotWithCapability(
+      clone(input),
+      {
+        project: stored.project,
+        catalogue: stored.catalogue,
+      },
+      this.#composedDraftCapability,
+    );
 
     const snapshotOwner = this.#snapshotOwner(snapshot.id);
     if (snapshotOwner && snapshotOwner !== projectId) {
@@ -259,14 +290,17 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
     for (const removedSnapshotId of compacted.removedSnapshotIds) {
       nextSnapshotHistoryMetadata.delete(removedSnapshotId);
     }
-    const aggregate = validateProjectAggregate({
-      project: nextProject,
-      catalogue: stored.catalogue,
-      snapshots: compacted.snapshots,
-      ...(nextSnapshotHistoryMetadata.size > 0
-        ? { snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()] }
-        : {}),
-    });
+    const aggregate = validateProjectAggregateWithCapability(
+      {
+        project: nextProject,
+        catalogue: stored.catalogue,
+        snapshots: compacted.snapshots,
+        ...(nextSnapshotHistoryMetadata.size > 0
+          ? { snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()] }
+          : {}),
+      },
+      this.#composedDraftCapability,
+    );
 
     stored.project = freeze(aggregate.project);
     stored.snapshots = new Map(
@@ -283,6 +317,12 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
   async publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
+    validateProjectAggregate({
+      project: stored.project,
+      catalogue: stored.catalogue,
+      snapshots: [...stored.snapshots.values()],
+      snapshotHistoryMetadata: [...stored.snapshotHistoryMetadata.values()],
+    });
     const operation = expectation.operation
       ? parsePublicationOperationWrite(expectation.operation)
       : undefined;
@@ -565,6 +605,12 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
   ): Promise<StorefrontSnapshot> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
+    validateProjectAggregate({
+      project: stored.project,
+      catalogue: stored.catalogue,
+      snapshots: [...stored.snapshots.values()],
+      snapshotHistoryMetadata: [...stored.snapshotHistoryMetadata.values()],
+    });
     const historical = stored.snapshots.get(snapshotId);
     if (!historical) {
       throw new SnapshotNotFoundError(projectId, snapshotId);
@@ -676,14 +722,17 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
   }
 
   #validatedAggregate(stored: StoredProject): ProjectAggregate {
-    return validateProjectAggregate({
-      project: stored.project,
-      catalogue: stored.catalogue,
-      snapshots: [...stored.snapshots.values()],
-      ...(stored.snapshotHistoryMetadata.size > 0
-        ? { snapshotHistoryMetadata: [...stored.snapshotHistoryMetadata.values()] }
-        : {}),
-    });
+    return validateProjectAggregateWithCapability(
+      {
+        project: stored.project,
+        catalogue: stored.catalogue,
+        snapshots: [...stored.snapshots.values()],
+        ...(stored.snapshotHistoryMetadata.size > 0
+          ? { snapshotHistoryMetadata: [...stored.snapshotHistoryMetadata.values()] }
+          : {}),
+      },
+      this.#composedDraftCapability,
+    );
   }
 
   #snapshotId(

@@ -1,18 +1,17 @@
 # AR-06 rendering acceptance
 
 AR-06 remains **Partial**. AR-06A is closed, verified at
-`bc209f4bdfed9626605b8c699aaabb547d5d2025`. AR-06B is a delivery candidate:
-its guarded unsaved Puck boundary closes only after independent/native verification,
-browser/visual proof, review, required CI and accepted merge. AR-02/03/04/05 remain closed.
+`bc209f4bdfed9626605b8c699aaabb547d5d2025`. AR-06B is closed at accepted PR #260 merge `e2addffc29f7719e23e9e7856ecf7c739924501f`.
+AR-06C has independent save/reopen, visual and production proof; final-head CI and accepted delivery remain pending at this verification checkpoint. AR-02/03/04/05 remain closed.
 
-| Original acceptance                    | AR-06A contribution                                                                                                                               | Remaining parent obligation                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| T01 legacy canonical replay            | Exact-base/candidate observations and unchanged legacy consumer tests preserve existing parse/read/render/publication behavior without write-back | Retain the same compatibility through future integration                                                      |
-| T02 composition integrity              | Complete A/B validation, actual owner/reference binding, one content inventory and fail-closed geometry                                           | Preserve integrity through all editing and lifecycle consumers                                                |
-| T03 four-width composition             | Required stack/offset proof at 375/768/1024/1440 in EN/FI with accessible order, real geometry and media                                          | Broader executable-commerce support and integrated renderer parity                                            |
-| T04 Puck round trip                    | AR-06B candidate adds guarded text edits, selection and the actual primary-discovery reorder to the static acceptance surface                     | Save/reload and normal lifecycle integration remain required; candidate proof is pending final delivery gates |
-| T17 publication atomicity              | Read-only route provides no composed publication proof                                                                                            | Prepare/confirm drift, parallel confirmation and failed propagation must preserve active artifact/version     |
-| T21 safe removal (retained constraint) | No legacy implementation or supported dependency removed; narrow exact consumer assertions retained                                               | Any later retirement needs caller, persisted-reference and regression proof                                   |
+| Original acceptance                    | AR-06A contribution                                                                                                                                         | Remaining parent obligation                                                                                                               |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| T01 legacy canonical replay            | Exact-base/candidate observations and unchanged legacy consumer tests preserve existing parse/read/render/publication behavior without write-back           | Retain the same compatibility through future integration                                                                                  |
+| T02 composition integrity              | Complete A/B validation, actual owner/reference binding, one content inventory and fail-closed geometry                                                     | Preserve integrity through all editing and lifecycle consumers                                                                            |
+| T03 four-width composition             | Required stack/offset proof at 375/768/1024/1440 in EN/FI with accessible order, real geometry and media                                                    | Broader executable-commerce support and integrated renderer parity                                                                        |
+| T04 Puck round trip                    | Accepted AR-06B provides guarded text edits, selection and actual primary-discovery reorder; AR-06C adds explicit canonical save and fresh IndexedDB reopen | C save/reload proof passes independently; accepted delivery, history, publication and normal Studio lifecycle integration remain required |
+| T17 publication atomicity              | Read-only route provides no composed publication proof                                                                                                      | Prepare/confirm drift, parallel confirmation and failed propagation must preserve active artifact/version                                 |
+| T21 safe removal (retained constraint) | No legacy implementation or supported dependency removed; narrow exact consumer assertions retained                                                         | Any later retirement needs caller, persisted-reference and regression proof                                                               |
 
 The implementation is `renderComposedStorefrontPage`, backed by
 `composedPageRealizationSupport`. Only the guarded `/acceptance/ar-06a` route uses
@@ -69,3 +68,9 @@ NFT-absence FAIL and approval denial are preserved without relabeling.
 Final independent/native verification and accepted delivery are separate gates;
 complete provenance-bound verdicts, final build/browser proof and delivery events
 remain authoritative in persistent task storage. AR-06 remains Partial.
+
+## AR-06C persistence handoff
+
+The explicitly selected repository capability validates and stores the complete static composed snapshot in the existing tables. Default repositories remain legacy-strict. Exact content/context compare-and-swap runs inside the save transaction; unswitched publication, restore and demo replacement reject composed records before writing. The private content projection is never persisted. No dynamic anatomy, live server storage or normal Studio saves are enabled.
+
+C independent verification passed actual IndexedDB reopen in a fresh page, eight directly inspected original offset captures (EN/FI at 375/768/1024/1440), compact stack checks, unsaved-loss and stale-page rejection. Its [contract](governance/task-contracts/AR/AR-06C.json) and [report](AR_06C_IMPLEMENTATION_REPORT.md) distinguish pending checks from retained execution. Prior A event evidence below remains historical; its failures are not relabeled.

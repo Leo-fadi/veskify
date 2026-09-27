@@ -1,29 +1,18 @@
 import { type ReactNode } from "react";
-import {
-  validateComposedStorefrontSnapshot,
-  type StorefrontCompositionAuthorityResolver,
-} from "@/application/storefront-templates/bind-storefront-composition";
+import type { StorefrontCompositionAuthorityResolver } from "@/application/storefront-templates/bind-storefront-composition";
+import { validateComposedStorefrontContent } from "./composed-storefront-validation";
 import {
   createStorefrontRenderContext,
   renderRegisteredSection,
   storefrontMainContentId,
   withCurrentStorefrontPage,
 } from "@/components/registry";
-import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
-import {
-  composedPageRealizationSupport,
-  deriveComposedPageLayout,
-} from "@/components/storefront/composed-page-realization";
 import styles from "@/components/storefront/composed-storefront-page.module.css";
-import { validateRegisteredSnapshot } from "@/components/registry/registry";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
-import type { StorefrontSnapshot } from "@/domain/storefront";
 import type { ContentSupportFactDocument } from "@/domain/storefront/content-support-facts";
-import type { CompiledPageBlueprintCompositionV1 } from "@/domain/storefront/compiled-page-blueprint-composition";
 import type { PageFactEvidenceReference } from "@/domain/storefront/page-fact-evidence";
-import { parseStorefrontSnapshotVersion } from "@/domain/storefront/storefront-composition-version";
 
 type Input = Readonly<{
   snapshot: unknown;
@@ -73,88 +62,12 @@ function reject(reason: string): never {
   throw new Error(`Composed storefront renderer rejected: ${reason}.`);
 }
 
-function recursiveFreeze<T>(value: T, seen = new WeakSet<object>()): T {
-  if (!value || typeof value !== "object" || seen.has(value)) return value;
-  seen.add(value);
-  Object.values(value as Record<string, unknown>).forEach((entry) => recursiveFreeze(entry, seen));
-  return Object.freeze(value);
-}
-
-function privateFrozenCopy<T>(value: T): T {
-  return recursiveFreeze(structuredClone(value));
-}
-
-function trustedResolver(
-  input: StorefrontCompositionAuthorityResolver,
-): StorefrontCompositionAuthorityResolver {
-  type CachedAuthority = Readonly<{
-    compositionFingerprint: string;
-    authority: ReturnType<StorefrontCompositionAuthorityResolver>;
-  }>;
-  const authorities = new Map<string, Map<string, CachedAuthority>>();
-  return (request) => {
-    const composition = request.composition;
-    if (
-      !("compositionFingerprint" in composition) ||
-      request.owner.kind !== composition.owner.kind ||
-      request.owner.id !== composition.owner.id
-    )
-      reject("authority request does not match the compiled owner");
-    const byOwner = authorities.get(request.owner.kind) ?? new Map<string, CachedAuthority>();
-    const cached = byOwner.get(request.owner.id);
-    if (cached) {
-      if (cached.compositionFingerprint !== composition.compositionFingerprint)
-        reject("authority request changed for an already validated owner");
-      return cached.authority;
-    }
-    const authority = input(request);
-    const { support, componentDefinitions, candidate, requiredAssetRoleCapacityEvidence } =
-      authority;
-    if (
-      support !== composedPageRealizationSupport ||
-      componentDefinitions !== veskifyComponentDefinitionsV2
-    )
-      reject("untrusted realization support or component definitions");
-    const retained = Object.freeze({
-      candidate: privateFrozenCopy(candidate),
-      componentDefinitions,
-      support,
-      requiredAssetRoleCapacityEvidence: privateFrozenCopy(requiredAssetRoleCapacityEvidence),
-    });
-    byOwner.set(request.owner.id, {
-      compositionFingerprint: composition.compositionFingerprint,
-      authority: retained,
-    });
-    authorities.set(request.owner.kind, byOwner);
-    return retained;
-  };
-}
-
-function legacyProjection(input: unknown): StorefrontSnapshot {
-  const snapshot = structuredClone(input) as Record<string, unknown>;
-  delete snapshot.compositionExtensionVersion;
-  if (!Array.isArray(snapshot.pages)) reject("invalid page collection");
-  snapshot.pages = snapshot.pages.map((page) => {
-    if (!page || typeof page !== "object") reject("invalid page projection");
-    const { composition: _composition, ...legacyPage } = page as Record<string, unknown>;
-    void _composition;
-    return legacyPage;
-  });
-  return snapshot as StorefrontSnapshot;
-}
-
 function sectionMap(page: {
   sections: readonly { id: string; visible: boolean; component: string }[];
 }) {
   const mapped = new Map(page.sections.map((section) => [section.id, section]));
   if (mapped.size !== page.sections.length) reject("duplicate section IDs");
   return mapped;
-}
-
-function pageComposition(page: unknown): CompiledPageBlueprintCompositionV1 {
-  if (!page || typeof page !== "object" || !("composition" in page))
-    return reject("requested page has no composition");
-  return (page as { composition: CompiledPageBlueprintCompositionV1 }).composition;
 }
 
 /**
@@ -165,37 +78,18 @@ function pageComposition(page: unknown): CompiledPageBlueprintCompositionV1 {
 export function createComposedStorefrontPageRenderer(input: Input): ComposedStorefrontPageRenderer {
   const activeLocale = input.activeLocale;
   const primaryLocale = input.primaryLocale;
-  const enabledLocales = privateFrozenCopy([...input.enabledLocales]);
-  const catalogue = privateFrozenCopy(input.catalogue);
-  const evidenceReferences = input.evidenceReferences
-    ? privateFrozenCopy([...input.evidenceReferences])
-    : undefined;
-  const contentSupportFactDocuments = input.contentSupportFactDocuments
-    ? privateFrozenCopy([...input.contentSupportFactDocuments])
-    : undefined;
-  const resolver = trustedResolver(input.resolveAuthority);
-  const parsed = parseStorefrontSnapshotVersion(privateFrozenCopy(input.snapshot));
-  if (parsed.dynamicCommercePresentation?.contractVersion === "2.0.0")
-    reject("composed dynamic commerce is unsupported");
-  const accepted = validateComposedStorefrontSnapshot(parsed, resolver);
-  if (!accepted.sharedFrame) reject("canonical shared frame is required");
-  const composedPage = accepted.pages.find((page) => page.id === input.pageId);
-  if (!composedPage) reject("requested page is absent");
-  const composition = pageComposition(composedPage);
-  if (composition.owner.kind !== "static-page" || composition.owner.id !== composedPage.id)
-    reject("requested owner is not a static page");
-
-  const authority = resolver({ owner: composition.owner, composition });
-  const layout = deriveComposedPageLayout({ composition, candidate: authority.candidate });
-  const projected = validateRegisteredSnapshot(
-    legacyProjection(accepted),
+  const {
+    snapshot,
+    projected,
+    layouts,
     catalogue,
-    activeLocale,
-    primaryLocale,
     enabledLocales,
     evidenceReferences,
     contentSupportFactDocuments,
-  );
+  } = validateComposedStorefrontContent(input);
+  if (!snapshot.pages.some((page) => page.id === input.pageId)) reject("requested page is absent");
+  const layout = layouts.get(input.pageId);
+  if (!layout) reject("requested page has no composition");
   const page = projected.pages.find((entry) => entry.id === input.pageId);
   if (!page || !projected.sharedFrame) reject("legacy projection lost requested frame or page");
   const context = withCurrentStorefrontPage(

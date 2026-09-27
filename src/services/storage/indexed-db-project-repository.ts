@@ -27,6 +27,9 @@ import {
   SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type AuthoritativePublishingProjectRepository,
+  composedStaticDraftOperationsFor,
+  type ComposedStaticDraftCapability,
+  type DraftBaseIdentity,
   type ProjectAggregate,
   type ProjectSummary,
   type PublishExpectation,
@@ -49,6 +52,7 @@ import {
   repositoryValidationError,
   validateProjectAggregate,
   validateRepositorySnapshot,
+  validateRepositorySnapshotWithCapability,
 } from "./repository-validation";
 import {
   publishHistoryMetadata,
@@ -140,6 +144,7 @@ export type SnapshotTimeInput = {
 
 export type IndexedDbProjectRepositoryOptions = {
   databaseName?: string;
+  composedDraftCapability?: ComposedStaticDraftCapability;
   createSnapshotId?: (input: SnapshotIdentityInput) => string;
   createTimestamp?: (input: SnapshotTimeInput) => string;
   failAtomicPublicationAt?: (point: AtomicPublicationFailurePoint) => void;
@@ -395,12 +400,15 @@ function toSummary(project: Project): ProjectSummary {
 
 export class IndexedDbProjectRepository implements AuthoritativePublishingProjectRepository {
   readonly #databaseName: string;
+  readonly #composedDraftCapability?: ComposedStaticDraftCapability;
   readonly #createSnapshotId: NonNullable<IndexedDbProjectRepositoryOptions["createSnapshotId"]>;
   readonly #createTimestamp: NonNullable<IndexedDbProjectRepositoryOptions["createTimestamp"]>;
   readonly #failAtomicPublicationAt?: IndexedDbProjectRepositoryOptions["failAtomicPublicationAt"];
   #databasePromise?: Promise<IDBPDatabase<VeskifyDatabase>>;
 
   constructor(options: IndexedDbProjectRepositoryOptions = {}) {
+    composedStaticDraftOperationsFor(options.composedDraftCapability);
+    this.#composedDraftCapability = options.composedDraftCapability;
     this.#databaseName = options.databaseName ?? VESKIFY_DATABASE_NAME;
     this.#createSnapshotId = options.createSnapshotId ?? defaultSnapshotId;
     this.#createTimestamp = options.createTimestamp ?? defaultTimestamp;
@@ -448,12 +456,15 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       );
     }
     return clone(
-      validateProjectAggregate({
-        project,
-        catalogue,
-        snapshots,
-        ...(snapshotHistoryMetadata.length > 0 ? { snapshotHistoryMetadata } : {}),
-      }),
+      validateProjectAggregate(
+        {
+          project,
+          catalogue,
+          snapshots,
+          ...(snapshotHistoryMetadata.length > 0 ? { snapshotHistoryMetadata } : {}),
+        },
+        this.#composedDraftCapability,
+      ),
     );
   }
 
@@ -577,7 +588,7 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
   }
 
   async create(input: ProjectAggregate): Promise<ProjectAggregate> {
-    const aggregate = validateProjectAggregate(clone(input));
+    const aggregate = validateProjectAggregate(clone(input), this.#composedDraftCapability);
     const database = await this.#database();
     const transaction = database.transaction(
       ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
@@ -662,6 +673,8 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
 
     try {
       const existingSnapshots = await snapshots.index("by-project").getAll(projectId);
+      for (const snapshot of existingSnapshots)
+        validateRepositorySnapshot(snapshot, await catalogues.get(snapshot.catalogueRef));
       const catalogueIds = new Set([
         aggregate.catalogue.id,
         ...existingSnapshots.map((snapshot) => snapshot.catalogueRef),
@@ -735,9 +748,10 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
   async saveDraft(
     projectId: string,
     input: StorefrontSnapshot,
-    expectedBase?: { id: string; revision: number },
+    expectedBase?: DraftBaseIdentity,
   ): Promise<void> {
     const parsedInput = clone(input);
+    expectedBase = clone(expectedBase);
     if (parsedInput.projectId !== projectId) {
       throw new SnapshotProjectMismatchError(projectId, parsedInput.projectId);
     }
@@ -776,7 +790,21 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
         new Error("Catalogue reference must resolve."),
       );
     }
-    const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
+    const aggregate = validateProjectAggregate(
+      { project, catalogue, snapshots },
+      this.#composedDraftCapability,
+    );
+    composedStaticDraftOperationsFor(this.#composedDraftCapability)?.assertSave(
+      parsedInput,
+      currentDraft,
+      aggregate,
+      expectedBase,
+    );
+    const snapshot = validateRepositorySnapshotWithCapability(
+      parsedInput,
+      aggregate,
+      this.#composedDraftCapability,
+    );
     const globallyExisting = await snapshotsStore.get(snapshot.id);
     if (globallyExisting && globallyExisting.projectId !== projectId) {
       throw new SnapshotAlreadyExistsError(snapshot.id);
@@ -817,7 +845,10 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       nextProject,
       managedDraftSnapshotIds,
     );
-    validateProjectAggregate({ project: nextProject, catalogue, snapshots: compacted.snapshots });
+    validateProjectAggregate(
+      { project: nextProject, catalogue, snapshots: compacted.snapshots },
+      this.#composedDraftCapability,
+    );
 
     try {
       await (existing ? snapshotsStore.put(snapshot) : snapshotsStore.add(snapshot));
@@ -1134,6 +1165,7 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       );
     }
 
+    validateProjectAggregate({ project, catalogue, snapshots });
     const currentDraft = snapshots.find((snapshot) => snapshot.id === project.draftSnapshotId);
     if (!currentDraft) {
       throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);

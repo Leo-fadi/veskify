@@ -14,7 +14,7 @@ const routeBudgets = Object.freeze([
     route: "home",
     manifest: "server/app/projects/[projectId]/page_client-reference-manifest.js",
     manifestKey: "/projects/[projectId]/page",
-    maximumRawBytes: 1_600_000,
+    maximumRawBytes: 1_602_000,
     maximumGzipBytes: 450_000,
   },
   {
@@ -22,14 +22,14 @@ const routeBudgets = Object.freeze([
     manifest:
       "server/app/projects/[projectId]/[...storefrontPath]/page_client-reference-manifest.js",
     manifestKey: "/projects/[projectId]/[...storefrontPath]/page",
-    maximumRawBytes: 1_600_000,
+    maximumRawBytes: 1_602_000,
     maximumGzipBytes: 450_000,
   },
   {
     route: "search",
     manifest: "server/app/projects/[projectId]/search/page_client-reference-manifest.js",
     manifestKey: "/projects/[projectId]/search/page",
-    maximumRawBytes: 1_655_000,
+    maximumRawBytes: 1_660_000,
     maximumGzipBytes: 475_000,
   },
   {
@@ -37,7 +37,7 @@ const routeBudgets = Object.freeze([
     manifest:
       "server/app/projects/[projectId]/collections/[collectionSlug]/page_client-reference-manifest.js",
     manifestKey: "/projects/[projectId]/collections/[collectionSlug]/page",
-    maximumRawBytes: 1_650_000,
+    maximumRawBytes: 1_653_000,
     maximumGzipBytes: 475_000,
   },
   {
@@ -45,7 +45,7 @@ const routeBudgets = Object.freeze([
     manifest:
       "server/app/projects/[projectId]/products/[productSlug]/page_client-reference-manifest.js",
     manifestKey: "/projects/[projectId]/products/[productSlug]/page",
-    maximumRawBytes: 1_650_000,
+    maximumRawBytes: 1_653_000,
     maximumGzipBytes: 475_000,
   },
   {

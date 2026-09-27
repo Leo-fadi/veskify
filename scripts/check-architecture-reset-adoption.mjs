@@ -456,7 +456,7 @@ for (const record of statusRecords) {
                         : record.subject === "AR-06A"
                           ? /^closed$/iu
                           : record.subject === "AR-06B"
-                            ? /^closed effective upon accepted merge$/iu
+                            ? /^closed$/iu
                             : ["AR-05", "AR-05B"].includes(record.subject)
                               ? /^closed$/iu
                               : record.subject === "AR-05A"
@@ -524,7 +524,7 @@ if (
   ) ||
   !trackerCurrent.includes("AR-02 is Baseline / closed;") ||
   !trackerCurrent.includes(
-    "AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed effective upon accepted merge; this candidate does not assert delivery. AR-06 is Partial; rendering and editing evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. Lossless Puck/save/history/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement.",
+    "AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is a guarded composed static-draft persistence candidate with independent verification complete, pending final-head CI and accepted delivery. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement.",
   ) ||
   !trackerCurrent.includes("AR-03 is Baseline / closed;") ||
   !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
@@ -537,13 +537,13 @@ if (
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
   !trackerCurrent.includes(
-    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 closes only upon accepted AR-06B delivery and safe closeout.",
+    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout.",
   ) ||
   !trackerCurrent.includes("No successor implementation is authorized.") ||
   nextTaskIds(trackerCurrent).length !== 0
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B conditional closure and AR-06 Partial and no successor are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B verified closure and AR-06C pending delivery and AR-06 Partial and no successor are required",
   );
 }
 if (
@@ -559,7 +559,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed effective upon accepted merge; this candidate does not assert delivery. AR-06 is Partial; rendering and editing evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. Lossless Puck/save/history/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 closes only upon accepted AR-06B delivery and safe closeout. No successor implementation is authorized.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is a guarded composed static-draft persistence candidate with independent verification complete, pending final-head CI and accepted delivery. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout. No successor implementation is authorized.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
