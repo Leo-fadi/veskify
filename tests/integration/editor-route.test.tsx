@@ -2,7 +2,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createDeterministicMockAIProvider,
   type AIProvider,
@@ -34,6 +34,7 @@ import {
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { storefrontFailureDiagnosticCategory } from "@/app/projects/[projectId]/editor/use-design-agent-session";
+import type * as DesignAgentSessionModule from "@/app/projects/[projectId]/editor/use-design-agent-session";
 import { ProjectPreviewClient } from "@/app/projects/[projectId]/project-preview-client";
 import { CollectionPreviewClient } from "@/app/projects/[projectId]/collections/[collectionSlug]/collection-preview-client";
 import { ProductPreviewClient } from "@/app/projects/[projectId]/products/[productSlug]/product-preview-client";
@@ -63,6 +64,58 @@ import {
   type ProjectRepository,
 } from "@/services/storage";
 import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
+
+const deferredStorefrontHistory = vi.hoisted(() => ({
+  active: false,
+  historyGate: undefined as { promise: Promise<void>; resolve: () => void } | undefined,
+  historyPending: 0,
+}));
+
+afterEach(() => {
+  deferredStorefrontHistory.active = false;
+  deferredStorefrontHistory.historyGate = undefined;
+  deferredStorefrontHistory.historyPending = 0;
+});
+
+function deferredLegacyHistoryGate() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
+vi.mock("@/app/projects/[projectId]/editor/use-design-agent-session", async (importOriginal) => {
+  const actual = await importOriginal<typeof DesignAgentSessionModule>();
+  return {
+    ...actual,
+    useDesignAgentSession: (input: Parameters<typeof actual.useDesignAgentSession>[0]) => {
+      const historyCallback = input.onStorefrontHistorySnapshot;
+      if (deferredStorefrontHistory.active && !historyCallback) {
+        throw new Error("The deferred regression requires the real history callback.");
+      }
+      return actual.useDesignAgentSession(
+        deferredStorefrontHistory.active && historyCallback
+          ? {
+              ...input,
+              onStorefrontHistorySnapshot: async (snapshot) => {
+                const gate = deferredStorefrontHistory.historyGate;
+                if (gate) {
+                  deferredStorefrontHistory.historyPending += 1;
+                  try {
+                    await gate.promise;
+                  } finally {
+                    deferredStorefrontHistory.historyPending -= 1;
+                  }
+                }
+                await historyCallback(snapshot);
+              },
+            }
+          : input,
+      );
+    },
+  };
+});
 
 vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
   VeskifyPuckCanvas: ({
@@ -402,6 +455,14 @@ describe("P4-05D editor storefront integration", () => {
     await screen.findByText("Canvas: home / fi");
     fireEvent.click(screen.getByRole("radio", { name: "English" }));
     await screen.findByText("Canvas: home / en");
+    const pageFingerprint = () => {
+      const page = screen.getByLabelText("Visual editor canvas").getAttribute("data-page");
+      if (!page) throw new Error("The visual editor page projection is unavailable.");
+      return canonicalValueFingerprint(JSON.parse(page) as unknown);
+    };
+    const historyStatus = (message: string) =>
+      screen.getAllByText(message).find((element) => element.getAttribute("role") === "status");
+    const rawPageFingerprint = pageFingerprint();
     expect(promptedClient.calls).toHaveLength(0);
     expect(legacyProvider.calls).toHaveLength(0);
     await openStorefrontTarget();
@@ -464,11 +525,31 @@ describe("P4-05D editor storefront integration", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
     );
+    await waitFor(() => {
+      expect(
+        historyStatus("The entire-storefront proposal was applied as one unsaved draft change."),
+      ).toBeVisible();
+      expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+    });
+    const acceptedPageFingerprint = pageFingerprint();
     expect(promptedClient.calls).toHaveLength(2);
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled());
-    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled());
+    const user = userEvent.setup();
+    await act(async () => user.click(screen.getByRole("button", { name: "Undo" })));
+    await waitFor(() => {
+      expect(historyStatus("Undid the entire-storefront proposal as one change.")).toBeVisible();
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Redo" })).toBeEnabled();
+      expect(pageFingerprint()).toBe(rawPageFingerprint);
+    });
+    await act(async () => user.click(screen.getByRole("button", { name: "Redo" })));
+    await waitFor(() => {
+      expect(historyStatus("Redid the entire-storefront proposal as one change.")).toBeVisible();
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+      expect(pageFingerprint()).toBe(acceptedPageFingerprint);
+    });
     expect(promptedClient.calls).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "Generate storefront" })).not.toBeInTheDocument();
 
@@ -485,6 +566,105 @@ describe("P4-05D editor storefront integration", () => {
       capability: "approvedColorTypographyDirection",
       instruction: followUpPrompt,
     });
+  });
+
+  it("waits for a completed storefront history transition before asserting restored save readiness", async () => {
+    const promptedClient = new DeferredPromptedStorefrontClient();
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const repo = repository(() => Promise.resolve(fixture.aggregate));
+    deferredStorefrontHistory.active = true;
+    render(
+      <ProjectEditorClient
+        initialDesignAgentTarget="storefront"
+        projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+        promptedStorefrontClient={promptedClient}
+        repositoryFactory={() => repo}
+      />,
+    );
+
+    await screen.findByText("Canvas: home / fi");
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    await screen.findByText("Canvas: home / en");
+    const rawPage = screen.getByLabelText("Visual editor canvas").getAttribute("data-page");
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Restore the accepted storefront through its history boundary." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate storefront" }));
+    await act(() => promptedClient.resolve(0));
+    expect(await screen.findByLabelText("Storefront design proposal")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply storefront proposal" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
+    );
+
+    const pageFingerprint = () => {
+      const canvas = screen.getByLabelText("Visual editor canvas");
+      const page = canvas.getAttribute("data-page");
+      if (!page) throw new Error("The visual editor page projection is unavailable.");
+      return canonicalValueFingerprint(JSON.parse(page) as unknown);
+    };
+    const historyStatus = (message: string) =>
+      screen.getAllByText(message).find((element) => element.getAttribute("role") === "status");
+    const acceptedFingerprint = pageFingerprint();
+    const undoGate = deferredLegacyHistoryGate();
+    let redoGate: ReturnType<typeof deferredLegacyHistoryGate> | undefined;
+    try {
+      deferredStorefrontHistory.historyGate = undoGate;
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+        expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+      await waitFor(() => expect(deferredStorefrontHistory.historyPending).toBe(1));
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+      expect(
+        screen.queryAllByText("Undid the entire-storefront proposal as one change."),
+      ).toHaveLength(0);
+
+      await act(() => {
+        undoGate.resolve();
+        return undoGate.promise;
+      });
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled(),
+      );
+      expect(historyStatus("Undid the entire-storefront proposal as one change.")).toBeVisible();
+      expect(screen.getByRole("button", { name: "Redo" })).toBeEnabled();
+      expect(pageFingerprint()).not.toBe(acceptedFingerprint);
+      expect(screen.getByLabelText("Visual editor canvas")).toHaveAttribute("data-page", rawPage);
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+
+      redoGate = deferredLegacyHistoryGate();
+      deferredStorefrontHistory.historyGate = redoGate;
+      fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+      await waitFor(() => expect(deferredStorefrontHistory.historyPending).toBe(1));
+      expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+      expect(
+        screen.queryAllByText("Redid the entire-storefront proposal as one change."),
+      ).toHaveLength(0);
+
+      const completedRedoGate = redoGate;
+      await act(() => {
+        completedRedoGate.resolve();
+        return completedRedoGate.promise;
+      });
+      await waitFor(() => expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled());
+      expect(historyStatus("Redid the entire-storefront proposal as one change.")).toBeVisible();
+      expect(pageFingerprint()).toBe(acceptedFingerprint);
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+      expect(promptedClient.calls).toHaveLength(1);
+      expect(repo.saveDraft).not.toHaveBeenCalled();
+    } finally {
+      await act(async () => {
+        undoGate.resolve();
+        redoGate?.resolve();
+        await Promise.all([undoGate.promise, redoGate?.promise]);
+      });
+    }
   });
 
   it("does not re-enter prompted initial generation for a saved generated P03 draft", async () => {

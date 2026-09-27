@@ -31,10 +31,24 @@ because direct inspection of every image was not established by the exposed reco
 candidate independent/native PASS was issued. Successor12 assigns fresh inspection of all sixteen
 original captures and a new provenance-bound report, preserving the denial and previous records.
 
-Persistent `BATCH-15/AR-06B` records preserve prior failures, captures, identities and complete reports.
-Retained corrected-candidate browser/build proof requires exact applicability; complete visual
-inspection and the new independent/native PASS,
-review disposition, final-head CI and protected merge remain mandatory pending gates.
+Successor12 subsequently passed independent/native verification after direct inspection of every
+original image. The complete report and image-specific provenance remain under their original
+identities. Commit `2e9d6b4` carries the reviewed corrections; both existing review findings are resolved.
+CI run `36268352854` failed the legacy editor-route Save assertion after Undo/Redo. Its merge tree
+matches the submitted tree. A passing isolated test and a passing 129-test containing-file diagnostic
+do not establish an infrastructure failure or identify the failing CI state transition.
+Bounded callback and validator observations showed a successful local transition and no rejection.
+The test now requires actionable history controls, explicit completed-history status and exact page
+restoration before asserting Save readiness. A deferred real-callback regression distinguishes
+pending from completed Undo/Redo without changing application state or weakening validation.
+The corrected containing file passes 130 tests; typecheck and lint pass. No production code changed
+for this repair. The failed CI's precise scheduling condition remains unobserved, not labeled flaky.
+
+Successor13 adds bounded legacy lifecycle diagnosis and conditional repair without reopening the
+composed-Puck investigation. It preserves the six additional focused-test starts, conditional build
+and legacy-browser allowances, original production proof and all failed records. Persistent
+`BATCH-15/AR-06B` evidence distinguishes new execution from inherited proof. Fresh independent/native
+verification of the complete corrected diff, final-head CI and protected merge remain delivery gates.
 
 The development response does not establish storage prevention/shared-cache exclusion;
 identity-verified fixture source may remain in server packaging. AR-06 remains Partial:

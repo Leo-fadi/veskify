@@ -27,7 +27,8 @@
     "Current SDD canonical ownership/Puck/controlled-agent/locale/validation sections, AR00 incorporated addendum and ADR001-004; original AR06 roadmap and T01-T04/T17/T21.",
     "AR05 composition design/canonical acceptance, actual compiler/binder/version dispatch, AR06A renderer/support/fixture and AR06 rendering acceptance map.",
     "Owner-authorized BATCH15 runbook /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/preflight/runbook.md; initial design /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/preflight/design.md; completed source-pin preflight /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/preflight/source-pin-preflight.json.",
-    "Standing owner BATCH15 implementation/admin/independent/native/public PR/review/CI/conditional expected-head merge authorization. Standing bounded capacity-maintenance authority permits only verified inactive Veskify export/worktree generated caches and reinstallable dependency copies, preserving original checkout dependencies, pending inputs and evidence. No package-store pruning or broader cleanup; preserve closeout and all prior records."
+    "Standing owner BATCH15 implementation/admin/independent/native/public PR/review/CI/conditional expected-head merge authorization. Standing bounded capacity-maintenance authority permits only verified inactive Veskify export/worktree generated caches and reinstallable dependency copies, preserving original checkout dependencies, pending inputs and evidence. No package-store pruning or broader cleanup; preserve closeout and all prior records.",
+    "Owner direct 2026-09-27 bounded legacy Undo/Redo CI diagnosis/repair: three exact additional paths, test-only fix for established test-only readiness defect; production change conditional on demonstrated product defect, <=150 added lines across two legacy modules; total handwritten ceiling5000 solely for this repair/regressions/documentation. Preserve failed CI36268352854 and A12 proof; BATCH16/AR06C not authorized here."
   ],
   "ownedPaths": [
     "src/integrations/puck/composed-page-adapter.ts",
@@ -64,7 +65,10 @@
     "tests/unit/ar-00-architecture-reset-adoption.test.ts",
     "scripts/export-development-delivery-tracker-docx.mjs",
     "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
-    "docs/VESKIFY_SDD_v1.3.0.docx"
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "tests/integration/editor-route.test.tsx",
+    "src/app/projects/[[]projectId[]]/editor/project-editor-client.tsx",
+    "src/app/projects/[[]projectId[]]/editor/use-design-agent-session.ts"
   ],
   "allowedPaths": [
     "src/integrations/puck/composed-page-adapter.ts",
@@ -110,7 +114,10 @@
     "docs/Veskify_Architecture_Reset/manifest.json",
     "docs/Veskify_Architecture_Reset/refactor_inventory.json",
     "docs/Veskify_Architecture_Reset/roadmap.json",
-    "docs/VESKIFY_SDD_v1.3.0.docx"
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "tests/integration/editor-route.test.tsx",
+    "src/app/projects/[[]projectId[]]/editor/project-editor-client.tsx",
+    "src/app/projects/[[]projectId[]]/editor/use-design-agent-session.ts"
   ],
   "forbiddenPaths": [
     ".git/**",
@@ -143,23 +150,24 @@
     "docs/governance/task-contracts/AR/AR-06A.json"
   ],
   "noTouchAreas": [
-    "Exactly nine approved production paths; only seven expected to change. Existing puck/config helper exports and composed-page-realization mapping exposure only if actually necessary; no new composition import into legacy config or change to executable support. No ordinary Studio/generation/save/history/publish/proposal activation, dynamic anatomy, registry/schema/provider/data/dependency/build config or fixture changes.",
+    "Nine original production paths plus two exact legacy editor modules solely for demonstrated Undo/Redo defect, maximum eleven approved production paths. Preserve completed composed-Puck implementation.  Existing puck/config helper exports and composed-page-realization mapping exposure only if actually necessary; no new composition import into legacy config or change to executable support. No ordinary Studio/generation/save/history/publish/proposal activation, dynamic anatomy, registry/schema/provider/data/dependency/build config or fixture changes.",
     "Exact guard maintenance in AR05A/AR05B/AR06A tests only for approved current consumers; preserve every semantic/legacy assertion and unrelated consumer rejection. A10A/A03/A05 historical source and all retained records/archives stay unchanged under the selected public APIs.",
     "Nine original untracked inputs appear only as allowed preserved context in complete native identity; verify original hashes and never stage/publish them. Only the owner-authorized bounded inactive Veskify export/worktree cache and reinstallable dependency retirement is allowed, with no-follow containment, process checks and append-only preservation records; preserve original checkout dependencies and pending verification inputs. No package-store pruning, worktree/branch removal, settings/permissions changes, rebase or source reset.",
     "Playwright config only adds VESKIFY_AR06B_ACCEPTANCE=1 to existing webServer.env. Keep A flag, all suites/retries/timeouts/sharding/workflows. One focused spec uses1worker0retries.",
     "Only current notices/status projections, AR06 acceptance map, exact existing progression guard/tests and tracker exporter and required existing SDD/tracker DOCX outputs may change; preserve completed task reports and AR02/03/04/05/06A closed. Parent AR06 remains Partial.",
     "Persistent authoritative scripts/contracts/locks/source inventories/observations/captures/reports under /Users/leo/veskify-batch-runs/BATCH-15/AR-06B. New non-Git exact-base+owned-overlay exports may reuse copies of the already-installed original dependencies with exact lock/payload/mode/link identity and original-installation before/after verification. No installation, download, store access/pruning or original dependency mutation. Only generated export-local .bin NODE_PATH prefixes may be relocated with exact before/after identities; package implementation bytes remain unchanged. Original ignored normal tool caches/tsbuildinfo may be generated by declared commands, with only the separately authorized bounded disposable-output retirement; preserve all source and required evidence. No secret/original private inputs exported.",
-    "At most6production starts:3coordinator/3independent unchanged; third independent review-reserved. Browser ceiling28total,21prior invocations retained. Up to4targeted diagnostics covering all six failures,1complete coordinator actual AR06B spec,1complete independent final-candidate spec,1genuine post-review reserve. One worker,zero retries,no debugger. Diagnose first unfinished operation and equivalent geometry; no speculative pointer campaign. Coordinator full PASS precedes frozen same-source/test-entrypoint independent run with fresh contexts/server; same session for forward/reverse. Preserve strict current image load/decode/positive intrinsic dimensions, protected data, locale, focus, clipping and alignment. No ignored image failure, arbitrary sleep, timeout increase, relaxed threshold, state injection or canonical weakening. Up to3additional complete16image sets (coordinator,independent,post-review), overall9maximum; partial sets are not complete proof. Existing capacity estimate/reserve and all bundle/build limits unchanged.",
+    "At most6production starts:3coordinator/3independent unchanged; third independent review-reserved. Browser ceiling28total,21prior invocations retained. Up to4targeted diagnostics covering all six failures,1complete coordinator actual AR06B spec,1complete independent final-candidate spec,1genuine post-review reserve. One worker,zero retries,no debugger. Diagnose first unfinished operation and equivalent geometry; no speculative pointer campaign. Coordinator full PASS precedes frozen same-source/test-entrypoint independent run with fresh contexts/server; same session for forward/reverse. Preserve strict current image load/decode/positive intrinsic dimensions, protected data, locale, focus, clipping and alignment. No ignored image failure, arbitrary sleep, timeout increase, relaxed threshold, state injection or canonical weakening. Up to3additional complete16image sets (coordinator,independent,post-review), overall9maximum; partial sets are not complete proof. Existing capacity estimate/reserve and all bundle/build limits unchanged. Added, not reset: up to six focused one-worker Vitest invocations for legacy diagnosis/correction, including containing editor-route file and independent confirmation. Up to two additional production builds and two focused legacy lifecycle browser invocations only if demonstrated production correction invalidates retained proof. Test-only repair reuses applicable browser/build proof with fresh identity checks and does not repeat captures. All six bundle ceilings unchanged.",
     "Standing admin/support successors allowed for references, native bookkeeping, output routing and path/trace portability preserving product/visual/security/integrity acceptance. Preserve old raw/canonical identities and all failures; validate complete successor before pinning. No routine owner PR/CI/merge questions, no bypass of managed denial.",
     "One automatic review and final-head mandatory CI/browser/budgets/validate. Expected-head protected merge only after fresh/applicable complete independent native report and reconciliation PASS, existing review resolved and recorded standing authority. No successor/deployment/live calls.",
-    "The verifier receives a new assignment and exact native identity before each independent attempt; direct complete report destinations and post-report provenance routing are pinned in administrative-successor-12/report-routing.json (which preserves prior preflight/report-routing.json). Native reconciliation uses only that exact complete report. Keep transient-output and implementation identities separate. If the unused infrastructure replacement becomes necessary, record actual interrupted attempt/resolved cause and exact replacement output routing before execution; support-only routing successors cannot reset counters or broaden acceptance."
+    "The verifier receives a new assignment and exact native identity before each independent attempt; direct complete report destinations and post-report provenance routing are pinned in administrative-successor-13/report-routing.json (which preserves prior preflight/report-routing.json). Native reconciliation uses only that exact complete report. Keep transient-output and implementation identities separate. If the unused infrastructure replacement becomes necessary, record actual interrupted attempt/resolved cause and exact replacement output routing before execution; support-only routing successors cannot reset counters or broaden acceptance.",
+    "Legacy repair must trace accepted proposal/Undo completion/Redo availability/invocation/completion or rejection/draft and all five Save predicates. Preserve provider counts, no unintended saves, atomic history, commerce and stale rejection. No sleep, increased timeout, skips/retries, forced Save, swallowed rejection, dependency/CI changes or unexplained unchanged-head CI retry. Test-only synchronization defect gets test-only correction; do not reopen composed-Puck drag investigation."
   ],
   "scopeBudget": {
     "targetMaxNetProductionLines": 1000,
     "targetMaxProductionFiles": 8,
     "hardMaxNetProductionLines": 1500,
     "hardMaxProductionFiles": 12,
-    "canonicalConcern": "One unsaved composed static-page Puck/canonical/shared-renderer boundary. Owner approves exactly nine named production paths; target1200 production additions/hard1500; target3000 handwritten repository additions/hard4500, deletions reported separately. Native fixed1000/8 target fields retained schema-valid; task scope checker enforces exact nine-path and line bounds. No padding/compression to fit.",
+    "canonicalConcern": "One unsaved composed static-page Puck/canonical/shared-renderer boundary. Owner approves original nine plus two exact legacy modules conditional on demonstrated production defect; target1200 production additions/hard1500; target3000 handwritten repository additions/hard5000 solely for authorized legacy repair/regressions/documentation, deletions reported separately. Native fixed1000/8 target fields retained schema-valid; task scope checker enforces exact eleven-path and line bounds. No padding/compression to fit. Additional legacy production additions <=150 across the two modules; existing total production1500 remains.",
     "generatedFileExclusions": [
       {
         "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
@@ -187,7 +195,7 @@
     "secretFilesAllowed": []
   },
   "implementationApproach": {
-    "selectedApproach": "Private accepted canonical session and authority; definition-derived text-only root-slot Puck projection; explicit stale-bound deltas and same-region compile/full-validation; a shared validated compositor factory with bound rendering closures and trusted integration decorations; stable typing sessions and explicit external resets. Guarded proof route reuses unchanged A fixture and literal production isolation.",
+    "selectedApproach": "Private accepted canonical session and authority; definition-derived text-only root-slot Puck projection; explicit stale-bound deltas and same-region compile/full-validation; a shared validated compositor factory with bound rendering closures and trusted integration decorations; stable typing sessions and explicit external resets. Guarded proof route reuses unchanged A fixture and literal production isolation. For legacy CI repair, observe actual async history boundaries before changing behavior; use deterministic deferred-callback tests and real enabled/completed UI state. Prefer test-only readiness correction when actual valid production transition is retained.",
     "canonicalAuthorityExtended": "Existing complete composed StorefrontSnapshot, compiler/binder/version dispatch and shared registered renderer; no new stored representation.",
     "namedCurrentConsumers": [
       "New reusable composed Puck editor",
@@ -197,7 +205,8 @@
       "Flat page projection or saved Puck content tree.",
       "Unchecked authority/projection or a second renderer/layout/field registry.",
       "Fallback translation writes, protected metadata from hidden editor payload, arbitrary id/revision allocation.",
-      "Per-keystroke remount, screenshot/test-CSS substitute or weaker geometry/commerce/legacy guards."
+      "Per-keystroke remount, screenshot/test-CSS substitute or weaker geometry/commerce/legacy guards.",
+      "Treat a passing isolated run as infrastructure evidence; click disabled Undo/Redo; force Save or bypass full draft validation."
     ],
     "expectedFailureBehavior": "Reject unsupported/stale/foreign/mutable authority and untrusted editor fields atomically before replacing private accepted state; preserve current preview and canonical data, show bounded merchant-readable error.",
     "unresolvedArchitectureConflicts": []
@@ -233,7 +242,7 @@
     },
     {
       "id": "AC-05",
-      "requirement": "Preserve byte-unchanged A fixture/global CSS/product-card CSS and equivalent default compositor output/geometry, permitting only necessary wrapper compatibility in composed-storefront-page.module.css; preserve legacy Puck/save/history/publish/proposal/dynamic guards. New route development+standalone+explicitflag only, noindex/boundedselectors/guard-before-fixture, production404 withflag1 from finalbuild. Parsed approved development cache header proves neither storage prevention nor shared-cache exclusion. No live services/persistence. No new integration/client registration in six normal production client sets; identity-report exact non-sensitive server-source retention without skipping trace entries. Complete path/symlink/artifact checks and six unchanged raw/gzip ceilings. Exact necessary consumer scan additions retain unrelated rejection; all historical transition chains/goldens unchanged.",
+      "requirement": "Preserve byte-unchanged A fixture/global CSS/product-card CSS and equivalent default compositor output/geometry, permitting only necessary wrapper compatibility in composed-storefront-page.module.css; preserve legacy Puck/save/history/publish/proposal/dynamic guards. New route development+standalone+explicitflag only, noindex/boundedselectors/guard-before-fixture, production404 withflag1 from finalbuild. Parsed approved development cache header proves neither storage prevention nor shared-cache exclusion. No live services/persistence. No new integration/client registration in six normal production client sets; identity-report exact non-sensitive server-source retention without skipping trace entries. Complete path/symlink/artifact checks and six unchanged raw/gzip ceilings. Exact necessary consumer scan additions retain unrelated rejection; all historical transition chains/goldens unchanged. Diagnose and preserve the existing legacy accepted-proposal Undo/Redo lifecycle, including actual restored accepted content, unsaved state and enabled Save. Capture genuine rejection rather than swallowing it; test-only readiness defects do not authorize product edits.",
       "verificationClass": "compatibility",
       "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-06"],
       "failureBehavior": "FAIL for missing required proof, changed canonical/protected behavior, weakened acceptance, unsupported claim or scope violation."
@@ -306,13 +315,13 @@
     },
     {
       "id": "VALIDATION-08",
-      "command": "pnpm exec eslint src/integrations/puck/composed-page-adapter.ts src/integrations/puck/composed-page-config.tsx src/integrations/puck/composed-puck-editor.tsx src/components/storefront/composed-storefront-page.tsx src/integrations/puck/config.tsx src/components/storefront/composed-page-realization.ts src/app/acceptance/ar-06b/page.tsx src/integrations/puck/ar-06b-composed-editor-proof.tsx tests/unit/ar-06b-composed-page-adapter.test.ts tests/integration/ar-06b-composed-puck-roundtrip.test.tsx tests/e2e/ar-06b-composed-editor.spec.ts tests/helpers/ar-06b-edit-observation.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx playwright.config.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "command": "pnpm exec eslint src/integrations/puck/composed-page-adapter.ts src/integrations/puck/composed-page-config.tsx src/integrations/puck/composed-puck-editor.tsx src/components/storefront/composed-storefront-page.tsx src/integrations/puck/config.tsx src/components/storefront/composed-page-realization.ts src/app/acceptance/ar-06b/page.tsx src/integrations/puck/ar-06b-composed-editor-proof.tsx tests/unit/ar-06b-composed-page-adapter.test.ts tests/integration/ar-06b-composed-puck-roundtrip.test.tsx tests/e2e/ar-06b-composed-editor.spec.ts tests/helpers/ar-06b-edit-observation.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx playwright.config.ts scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs tests/integration/editor-route.test.tsx 'src/app/projects/[projectId]/editor/project-editor-client.tsx' 'src/app/projects/[projectId]/editor/use-design-agent-session.ts'",
       "purpose": "All owned implementation/test/tooling TypeScript and JavaScript lint.",
       "requiredEvidence": ["EVIDENCE-03"]
     },
     {
       "id": "VALIDATION-09",
-      "command": "pnpm exec prettier --check src/integrations/puck/composed-page-adapter.ts src/integrations/puck/composed-page-config.tsx src/integrations/puck/composed-puck-editor.tsx src/components/storefront/composed-storefront-page.tsx src/components/storefront/composed-storefront-page.module.css src/integrations/puck/config.tsx src/components/storefront/composed-page-realization.ts src/app/acceptance/ar-06b/page.tsx src/integrations/puck/ar-06b-composed-editor-proof.tsx tests/unit/ar-06b-composed-page-adapter.test.ts tests/integration/ar-06b-composed-puck-roundtrip.test.tsx tests/e2e/ar-06b-composed-editor.spec.ts tests/helpers/ar-06b-edit-observation.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx playwright.config.ts docs/AR_06B_APPROACH.md docs/AR_06B_COMPOSED_PUCK_EDITING_DESIGN.md docs/AR_06B_IMPLEMENTATION_REPORT.md docs/BATCH_15_EXECUTION.md docs/governance/task-contracts/AR/AR-06B.json README.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/AR_06_RENDERING_ACCEPTANCE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "command": "pnpm exec prettier --check src/integrations/puck/composed-page-adapter.ts src/integrations/puck/composed-page-config.tsx src/integrations/puck/composed-puck-editor.tsx src/components/storefront/composed-storefront-page.tsx src/components/storefront/composed-storefront-page.module.css src/integrations/puck/config.tsx src/components/storefront/composed-page-realization.ts src/app/acceptance/ar-06b/page.tsx src/integrations/puck/ar-06b-composed-editor-proof.tsx tests/unit/ar-06b-composed-page-adapter.test.ts tests/integration/ar-06b-composed-puck-roundtrip.test.tsx tests/e2e/ar-06b-composed-editor.spec.ts tests/helpers/ar-06b-edit-observation.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx playwright.config.ts docs/AR_06B_APPROACH.md docs/AR_06B_COMPOSED_PUCK_EDITING_DESIGN.md docs/AR_06B_IMPLEMENTATION_REPORT.md docs/BATCH_15_EXECUTION.md docs/governance/task-contracts/AR/AR-06B.json README.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/AR_06_RENDERING_ACCEPTANCE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs tests/integration/editor-route.test.tsx 'src/app/projects/[projectId]/editor/project-editor-client.tsx' 'src/app/projects/[projectId]/editor/use-design-agent-session.ts'",
       "purpose": "All owned textual source/tests/documentation and exact documentary contract formatting.",
       "requiredEvidence": ["EVIDENCE-04"]
     },
@@ -348,8 +357,8 @@
     },
     {
       "id": "VALIDATION-15",
-      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-12/support/check.py",
-      "purpose": "Complete native identity, exact9production/1500addition and4500handwritten hard bounds, originals/unowned source preserved.",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-13/support/check.py",
+      "purpose": "Complete native identity; original9+2conditional legacy production paths, <=150 legacy additions, existing1500 total production and5000 task handwritten bounds; originals/unowned preservation.",
       "requiredEvidence": ["EVIDENCE-05"]
     },
     {
@@ -417,6 +426,12 @@
       "command": "node /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-11/support/production-retention-v2.mjs check $AR06B_RUN",
       "purpose": "Exact six normal plus guarded acceptance client manifests isolated; complete identity-bound NFT source report and explicit packaging limitation.",
       "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-27",
+      "command": "python3 -B /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/administrative-successor-13/support/legacy-run.py full",
+      "purpose": "One-worker containing editor-route integration file with exact lifecycle assertions and deterministic regression after evidence-based correction; coordinator and independent confirmation within six additional focused invocations. Diagnostic filtered modes count in same ledger; original attempts unchanged.",
+      "requiredEvidence": ["EVIDENCE-03"]
     }
   ],
   "requiredEvidence": [
@@ -437,7 +452,7 @@
     {
       "id": "EVIDENCE-03",
       "type": "test",
-      "description": "Focused legacy/consumer/source-pin regressions plus typecheck/lint, exact unchanged historical pins/goldens and legacy rejection.",
+      "description": "Focused legacy/consumer/source-pin regressions plus typecheck/lint, exact unchanged historical pins/goldens and legacy rejection. Retain failed CI artifact/config comparison, bounded actual Undo/Redo/Save diagnostics, demonstrated cause and passing containing-file lifecycle/regression proof; preserve no-save/provider/protected/stale invariants.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     },
@@ -465,7 +480,7 @@
     {
       "id": "EVIDENCE-07",
       "type": "document",
-      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/independent-04/visual-completion-01/verdict.json, with new assignment, input inventory, before/after integrity and pre-report evidence-07.json; post-report provenance binds exact bytes to the exposed author/tool reference. Inspect every required original capture with a traceable fresh image call and actual observations; do not reuse the earlier unsupported all-sixteen inspection claim. Bind retained browser28/final04 proof to corrected production/test/dependency inputs, explicitly separating documentary-only successor changes and old execution identities. No new browser/build execution solely for inspection. Preserve the rejected operation, all previous reports/failures/locks and source artifacts. Native reconciliation consumes only the complete truthful new report; review, final-head CI and merge remain separate.",
+      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-15/AR-06B/independent-05/verdict.json with fresh assignment/freeze, actual command executions and independently checked applicability of prior browser28/final04/direct-sixteen-image inspection. Preserve original execution attribution, all prior reports and denied operation. Verifier writes its own complete report and provenance directly; native reconciliation uses this new report. No repeated browser/build solely for a test-only correction; final-head CI/review/merge remain separate mandatory gates.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     }

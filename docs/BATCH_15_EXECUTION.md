@@ -30,8 +30,21 @@ Browser28 and final04 bind the corrected working-tree inputs, not merely submitt
 The report-authoring denial remains preserved: the exposed record did not establish inspection
 of every original image. Successor12 assigns fresh direct inspection and a new truthful report,
 with retained execution proof subject to exact applicability and no browser/build rerun.
-Complete visual proof, corrected-candidate independent/native PASS, review disposition,
-final-head CI and protected merge remain mandatory gates; no earlier verdict is relabeled.
+Successor12 completed direct inspection of all sixteen original images and independent/native PASS.
+Both review findings are resolved. The corrected submitted head `2e9d6b4` then failed CI's legacy
+editor-route Save-after-Redo assertion; all previous proof remains under its original identity.
+Successor13 authorizes six additional focused one-worker Vitest starts and, only for a demonstrated
+production correction that invalidates proof, two additional builds and two legacy lifecycle browser
+starts. These are additive allowances; the earlier counters are unchanged. Test-only repair requires
+fresh affected checks and independent proof applicability, not another composed browser campaign.
+Fresh independent/native PASS, required final-head CI and protected merge remain mandatory.
+Four of the six additional Vitest starts are recorded: a 129-test diagnostic PASS, a two-case
+instrumented/regression PASS, a 129/130 run whose new assertion matched duplicate status elements,
+and the corrected 130/130 containing-file PASS. The duplicate-selector failure remains unchanged;
+its full executed test-file bytes were not separately archived before the next edit, and that
+limitation is recorded. No historical source was reconstructed. The ordinary journey receives the
+original hook inputs; only the dedicated regression defers the real history callback. Production
+inputs remain unchanged, so the conditional extra build/browser allowances have not been used.
 
 Capacity maintenance uses the unchanged 8.25 GiB requirement including reserve, measured
 before heavy execution. Only verified unused caches/reinstallable dependency copies may
