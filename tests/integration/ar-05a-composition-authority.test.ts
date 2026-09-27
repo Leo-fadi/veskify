@@ -283,6 +283,7 @@ describe("AR-05A real authorities without activation", () => {
             "src/components/storefront/composed-page-realization.ts",
             "src/components/storefront/composed-storefront-page.tsx",
             "src/data/demo/ar-06a-composed-template.ts",
+            "src/integrations/puck/composed-page-adapter.ts",
           ].includes(path) &&
           /\.[cm]?[jt]sx?$/u.test(path) &&
           imported.test(readFileSync(path, "utf8")),
