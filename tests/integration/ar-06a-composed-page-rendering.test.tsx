@@ -40,13 +40,14 @@ type Fixture = ReturnType<typeof createAr06aComposedTemplate>;
 // Browser roots contain real CSS imports, which the existing renderer-free
 // helper deliberately rejects. This conservative local-source graph includes
 // type edges too; CSS is retained as a verified leaf, packages as boundaries.
-function browserSourceClosure(entry: string) {
+function browserSourceClosure(entry: string, deferredCapability = false) {
   const root = process.cwd();
   const config = ts.readConfigFile(resolve(root, "tsconfig.json"), (path) => ts.sys.readFile(path));
   if (config.error) throw new Error("Unreadable TypeScript configuration");
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root);
   if (parsed.errors.length) throw new Error("Invalid TypeScript configuration");
   const visited = new Set<string>();
+  const deferred: string[] = [];
   const pending = [resolve(root, entry)];
   while (pending.length) {
     const file = pending.pop()!;
@@ -56,6 +57,7 @@ function browserSourceClosure(entry: string) {
     if (/\.(?:css|json)$/u.test(file)) continue;
     const source = readFileSync(file, "utf8");
     const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+    const capabilityImports: string[] = [];
     const inspect = (node: ts.Node) => {
       if (
         ts.isCallExpression(node) &&
@@ -64,12 +66,29 @@ function browserSourceClosure(entry: string) {
       ) {
         if (!node.arguments[0] || !ts.isStringLiteral(node.arguments[0]))
           throw new Error("Computed import cannot establish isolation: " + file);
+        if (node.arguments[0].text === "@/application/draft-save/composed-draft-validation") {
+          let parent: ts.Node | undefined = node.parent;
+          while (parent && !ts.isFunctionDeclaration(parent)) parent = parent.parent;
+          capabilityImports.push(parent?.name?.text ?? "outside-named-factory");
+        }
       }
       ts.forEachChild(node, inspect);
     };
     inspect(ast);
     for (const { fileName: specifier } of ts.preProcessFile(source, true, true).importedFiles) {
       if (!specifier.startsWith(".") && !specifier.startsWith("@/")) continue;
+      // The one material-only capability factory is separately restricted to the guarded
+      // C root. Retain this exact deferred edge, not a blanket dynamic-import exclusion.
+      // Actual client registration and budgets remain independent production-build gates.
+      if (
+        deferredCapability &&
+        relative(root, file) === "src/services/storage/composed-draft-repository-support.ts" &&
+        specifier === "@/application/draft-save/composed-draft-validation"
+      ) {
+        expect(capabilityImports).toEqual(["createComposedStaticDraftCapability"]);
+        deferred.push(`${relative(root, file)} -> ${specifier}`);
+        continue;
+      }
       const literal = specifier.startsWith("@/")
         ? resolve(root, "src", specifier.slice(2))
         : resolve(dirname(file), specifier);
@@ -82,7 +101,7 @@ function browserSourceClosure(entry: string) {
       pending.push(resolved);
     }
   }
-  return [...visited].map((file) => relative(root, file));
+  return { paths: [...visited].map((file) => relative(root, file)), deferred };
 }
 function args(fixture: Fixture) {
   return {
@@ -614,9 +633,16 @@ describe("AR-06A actual registered renderer", () => {
       "src/components/storefront/storefront-page.tsx",
     ];
     for (const entry of roots) {
-      const closure = browserSourceClosure(entry);
+      const closure = browserSourceClosure(entry, true);
+      expect(closure.deferred).toEqual(
+        closure.paths.includes("src/services/storage/composed-draft-repository-support.ts")
+          ? [
+              "src/services/storage/composed-draft-repository-support.ts -> @/application/draft-save/composed-draft-validation",
+            ]
+          : [],
+      );
       expect(
-        closure.some((path) =>
+        closure.paths.some((path) =>
           /ar-06a|ar-06b|composed-storefront-page|composed-page-realization|composed-page-adapter|composed-page-config|composed-puck-editor/u.test(
             path,
           ),
@@ -631,7 +657,7 @@ describe("AR-06A actual registered renderer", () => {
         /src\/components\/storefront\/|\.tsx$|\.css$/u.test(path),
       ),
     ).toEqual([]);
-    const route = browserSourceClosure("src/app/acceptance/ar-06a/page.tsx");
+    const route = browserSourceClosure("src/app/acceptance/ar-06a/page.tsx").paths;
     expect(route).toContain("src/data/demo/ar-06a-composed-template.ts");
     expect(route).toContain("src/components/storefront/composed-storefront-page.tsx");
     const paths = execFileSync(
@@ -651,6 +677,7 @@ describe("AR-06A actual registered renderer", () => {
     expect([...new Set(callers)].sort()).toEqual([
       "src/app/acceptance/ar-06a/page.tsx",
       "src/integrations/puck/ar-06b-composed-editor-proof.tsx",
+      "src/integrations/puck/ar-06c-composed-draft-proof.tsx",
     ]);
   });
 });

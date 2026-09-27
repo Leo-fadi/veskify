@@ -429,8 +429,10 @@ describe("post-pilot repository state and PR lifecycle", () => {
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("effective upon accepted AR-06B merge after AR-06A verification");
-      expect(tracker).toContain("this candidate does not assert delivery");
+      expect(tracker).toContain("AR-06C candidate status after accepted AR-06B merge");
+      expect(tracker).toContain(
+        "claim that this PR has merged or that owner acceptance has occurred",
+      );
       expect(tracker).toContain("**Baseline / closed.** AR-01 is **Baseline / closed.**");
       expect(tracker).toContain("AR-23 depends on AR-01");
       matrixCheck(
@@ -648,7 +650,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 closes only upon accepted AR-06B delivery and safe closeout. No successor implementation is authorized.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout. No successor implementation is authorized.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -665,7 +667,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 closes only upon accepted AR-06B delivery and safe closeout. No successor implementation is authorized.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout. No successor implementation is authorized.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);

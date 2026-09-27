@@ -1,0 +1,519 @@
+{
+  "$schema": "/Users/leo/veskify/docs/governance/task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "mergeOrder": 1,
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  },
+  "sprintId": "BATCH-16",
+  "taskId": "AR-06C",
+  "title": "Composed static-draft persistence and reload",
+  "branch": "codex/ar-06c-composed-draft-persistence",
+  "baseCommit": "e2addffc29f7719e23e9e7856ecf7c739924501f",
+  "objective": "Explicitly save and reopen the accepted composed static draft through existing canonical repositories and real IndexedDB without enabling normal Studio or publication.",
+  "expectedOutcome": "Real Puck text/order edits survive explicit Save draft and fresh-page/repository reload; unsaved edits do not persist and stale/failing saves leave existing records unchanged.",
+  "dependencies": [
+    {
+      "taskId": "AR-06B",
+      "requiredState": "MERGED",
+      "commit": "e2addffc29f7719e23e9e7856ecf7c739924501f"
+    }
+  ],
+  "canonicalAuthorities": [
+    "AGENTS.md; SDD affected canonical ownership/editor/storage/publication/locale/security/accessibility requirements, ADR001-004; incorporated AR00 addendum and original AR06/T01-T04/T17/T21 acceptance.",
+    "docs/DEVELOPMENT_GUIDE.md section4; existing team workflow and task-delivery/independent-verification skills; native contract/verdict schemas.",
+    "Owner-approved BATCH16 runbook /Users/leo/veskify-batch-runs/BATCH-16/AR-06C/preflight/runbook.md SHA256 38ba96cecbd6b2e2e529a8526cb71efbc0b29b5f3d7dd0d28ed27d78ad7d4806",
+    "/Users/leo/veskify-batch-runs/BATCH-16/AR-06C/preflight/design.md SHA256 82a02449753fd015584158494f6a14921aaee85f07e06ce1d4bf48ca38c399ee",
+    "/Users/leo/veskify-batch-runs/BATCH-16/AR-06C/preflight/source-pin-preflight.json SHA256 0e880dce2a91da0e1b3b32c209997751a11c23ddd93643337acf1b43a36dd2c7",
+    "Standing owner BATCH16 implementation, bounded administrative repairs with preservation-first succession, independent complete native-report provenance, public PR, single automatic review, bounded CI and conditional exact-head merge authorization. No next task authorized.",
+    "Owner bounded AR06C bundle-correction amendment in contract-successor-01/AUTHORITY.md; same branch/base, all product acceptance unchanged; original raw ceilings subsequently superseded only by the five-value policy in contract-successor-02/AUTHORITY.md; at most2 additional coordinator builds within original3 and6total limits.",
+    "Owner substantive five-raw-limit policy amendment retained in contract-successor-02/AUTHORITY.md; all gzip/editor/algorithm gates unchanged. No additional build allowance or automatic further increase."
+  ],
+  "ownedPaths": [
+    "src/services/storage/project-repository.ts",
+    "src/services/storage/repository-validation.ts",
+    "src/services/storage/in-memory-project-repository.ts",
+    "src/services/storage/indexed-db-project-repository.ts",
+    "src/application/draft-save/save-editor-draft.ts",
+    "src/application/draft-save/save-composed-editor-draft.ts",
+    "src/application/draft-save/composed-draft-validation.ts",
+    "src/components/storefront/composed-storefront-validation.ts",
+    "src/components/storefront/composed-storefront-page.tsx",
+    "src/services/storage/snapshot-history-metadata.ts",
+    "src/app/acceptance/ar-06c/page.tsx",
+    "src/integrations/puck/ar-06c-composed-draft-proof.tsx",
+    "tests/unit/ar-06c-composed-draft-save.test.ts",
+    "tests/integration/ar-06c-composed-draft-persistence.test.ts",
+    "tests/e2e/ar-06c-composed-draft-save.spec.ts",
+    "tests/helpers/ar-06c-composed-draft-journey.ts",
+    "tests/e2e/ar-06b-composed-editor.spec.ts",
+    "tests/integration/ar-05a-composition-authority.test.ts",
+    "tests/integration/ar-05b-composition-version-boundaries.test.ts",
+    "tests/integration/ar-06a-composed-page-rendering.test.tsx",
+    "tests/unit/draft-save.test.ts",
+    "tests/integration/in-memory-project-repository.test.ts",
+    "tests/integration/indexed-db-project-repository.test.ts",
+    "tests/integration/project-repository.contract.ts",
+    "tests/unit/storage-contract.test.ts",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "docs/AR_06C_APPROACH.md",
+    "docs/AR_06C_IMPLEMENTATION_REPORT.md",
+    "docs/BATCH_16_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-06C.json",
+    "README.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "playwright.config.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "src/services/storage/composed-draft-repository-support.ts",
+    "src/services/storage/index.ts",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/unit/ar-06c-storefront-build-budgets.test.ts"
+  ],
+  "allowedPaths": [
+    "src/services/storage/project-repository.ts",
+    "src/services/storage/repository-validation.ts",
+    "src/services/storage/in-memory-project-repository.ts",
+    "src/services/storage/indexed-db-project-repository.ts",
+    "src/application/draft-save/save-editor-draft.ts",
+    "src/application/draft-save/save-composed-editor-draft.ts",
+    "src/application/draft-save/composed-draft-validation.ts",
+    "src/components/storefront/composed-storefront-validation.ts",
+    "src/components/storefront/composed-storefront-page.tsx",
+    "src/services/storage/snapshot-history-metadata.ts",
+    "src/app/acceptance/ar-06c/page.tsx",
+    "src/integrations/puck/ar-06c-composed-draft-proof.tsx",
+    "tests/unit/ar-06c-composed-draft-save.test.ts",
+    "tests/integration/ar-06c-composed-draft-persistence.test.ts",
+    "tests/e2e/ar-06c-composed-draft-save.spec.ts",
+    "tests/helpers/ar-06c-composed-draft-journey.ts",
+    "tests/e2e/ar-06b-composed-editor.spec.ts",
+    "tests/integration/ar-05a-composition-authority.test.ts",
+    "tests/integration/ar-05b-composition-version-boundaries.test.ts",
+    "tests/integration/ar-06a-composed-page-rendering.test.tsx",
+    "tests/unit/draft-save.test.ts",
+    "tests/integration/in-memory-project-repository.test.ts",
+    "tests/integration/indexed-db-project-repository.test.ts",
+    "tests/integration/project-repository.contract.ts",
+    "tests/unit/storage-contract.test.ts",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "docs/AR_06C_APPROACH.md",
+    "docs/AR_06C_IMPLEMENTATION_REPORT.md",
+    "docs/BATCH_16_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-06C.json",
+    "README.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "playwright.config.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "src/services/storage/composed-draft-repository-support.ts",
+    "src/services/storage/index.ts",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/unit/ar-06c-storefront-build-budgets.test.ts"
+  ],
+  "forbiddenPaths": [
+    ".git/**",
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "AGENTS.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.*",
+    "scripts/playwright-ci*",
+    "src/domain/**",
+    "src/components/registry/**",
+    "src/features/**",
+    "src/app/projects/**",
+    "src/app/globals.css",
+    "src/integrations/puck/composed-page-adapter.ts",
+    "src/integrations/puck/composed-page-config.tsx",
+    "src/integrations/puck/composed-puck-editor.tsx",
+    "src/integrations/puck/config.tsx",
+    "src/data/demo/ar-06a-composed-template.ts",
+    "src/components/storefront/*.css",
+    "src/components/storefront/composed-page-realization.ts",
+    "tests/helpers/ar-06b-edit-observation.ts",
+    "tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts",
+    "tests/helpers/p10b-19a-10c-architecture-closure.ts",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/**",
+    "docs/governance/task-contracts/AR/AR-06B.json",
+    "docs/AR_06B*",
+    "docs/BATCH_15_EXECUTION.md"
+  ],
+  "noTouchAreas": [
+    "Fourteen exact production paths maximum; the two additional paths are limited to C-only support isolation and minimal storage/index wiring; no normal Studio activation, publication, restore/history UI, dynamic anatomy, new storage/table/schema, persisted Puck tree, AI/Vesko behavior or dependency changes. Legacy defaults and public unswitched writes stay strict.",
+    "Preserve accepted B editor/config/adapter, A renderer geometry and fixture, browser pointer behavior and all historical pins/goldens. Only exact current-consumer additions and explicit opt-in tests; existing default negative controls remain. Complete reverse chain before any newly necessary pin maintenance under preservation-first successor.",
+    "One implementation writer; original checkout only. Pause writers and freeze complete tracked/staged/unstaged/untracked reviewed inputs before independent execution and verify unchanged afterward. Verifier creates its own complete report and provenance in a fresh assigned persistent attempt. Never reconstruct a report or infer image inspection from hashes.",
+    "Persistent authoritative support/commands/logs/baselines/locks/assignments/captures/reports under /Users/leo/veskify-batch-runs/BATCH-16/AR-06C. Execution support adaptations are reviewed and identity-recorded before execution; immutable contract and original command requirements remain binding. New attempts use create-only records. Native full report evidence is document.",
+    "Nine original inputs are preserved context in native identity only: hash-check, never stage or publish. No .env/credentials/private originals/raw evidence exported. Reuse installed dependencies only in verified copies; no installation/store access. Preserve source/artifacts/modes/links; only generated export launcher prefixes may be relocated with exact before/after records.",
+    "Six production starts maximum, at most3coordinator/3independent; reserve1for genuine review correction. Twelve local Playwright invocations maximum, one worker/zero retries; reserve2for review. At most4complete eight-image C sets; failures/partial sets retained honestly. Complete coordinator full C PASS before frozen same-entrypoint independent full campaign. One separately evidenced infrastructure interruption replacement per category; no counters reset.",
+    "Measure next sequential operation additional peak plus existing2GiB OS reserve, no double counting. Eligible verified inactive completed Veskify export/worktree caches/reinstallable dependencies and unused original .next/cache may retire with append-only record; never original node_modules, whole exports/worktrees, proof, package stores, VerifyAI or private data. No concurrent heavy task jobs.",
+    "Playwright config adds only VESKIFY_AR06C_ACCEPTANCE=1 to existing webServer.env. Preserve every suite/retry/timeout/CI gate and existing B coverage. Guarded local/CI development standalone flag1 proof only, bounded selectors/noindex/approved header; production404 even flag1.",
+    "Only necessary current status notices, tracker/roadmap/AR06 map, adoption guard/test, existing exporter and two existing deterministic DOCX outputs. Previous task reports immutable. AR02/03/04/05/06A/06B remain closed; only C conditionally closes, AR06 remains Partial.",
+    "Exactly one automatic review; no second request. Required final-head CI incl browser/budgets/validate; <=90minutes/36observations per head, no busy polling. One unchanged-head CI retry only for independently evidenced external infrastructure failure. Expected-head merge no override; safe main sync then closeout/eligible cleanup/stop.",
+    "Approval timeout/service-capacity only permits two >=120-second-spaced resubmissions after checking execution state; preserve attempts. Substantive denial is not retried or bypassed. No reset/rebase/force push/worktree/window/permission expansion/deployment/successor.",
+    "Ancillary checker exception ONLY home/content maximumRawBytes1602000, search1660000, collection/product1653000; editor2850000 and gzip450000/450000/475000/475000/475000/825000 unchanged. Route coverage, collection/compression/integrity/failure algorithm unchanged. One task-owned budget regression; preserve original failed measurements, disclose policy and raw/gzip deltas. No coordinator rebuild for policy alone; required independent final-source build remains."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One explicit composed static-draft canonical save/read boundary. Target1000/hard1500 ADDED production lines across at most14 exact paths; handwritten target3000/hard4500 additions. Report deletions separately. Native fixed8-file target is advisory; owner approved14-path envelope for bounded bundle correction; original added-line ceilings unchanged. No historical archive is required by selected design; only two existing DOCX outputs excluded.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic synchronized DOCX export only; measure separately."
+      },
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic synchronized DOCX export only; measure separately."
+      }
+    ],
+    "hardLimitException": {
+      "approvedBy": "product-owner",
+      "approvalReference": "Owner direct authorization: I AUTHORIZE BOUNDED AR-06C BUNDLE DIAGNOSIS, CORRECTION AND CONTINUED BATCH-16 DELIVERY; retained in contract-successor-01/AUTHORITY.md",
+      "reason": "Maximum14 production paths solely for the existing12 plus composed-draft-repository-support.ts and minimal storage/index.ts wiring. No text-budget, acceptance or measurement exception."
+    }
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Owner-authorized GitHub fetch/read/push/PR/review disposition/bounded CI/expected-head merge for Leo-fadi/veskify through normal approval.",
+      "Task-owned loopback development/production HTTP/browser checks, isolated actual browser IndexedDB database. No external runtime provider/Vesko/publication calls.",
+      "Read already-installed packages and copy verified dependencies into task-owned non-Git exports; no download/install/upgrade/store changes."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Closed runtime-authenticated constructor capability with concrete authority-material-only factory; shared non-React composed validation, existing repository transactions and save orchestration; exact in-transaction CAS; guarded actual IndexedDB/Puck fresh-page proof. Bound C-only capability issuance/token storage to the optional support leaf, preserve project-repository public exports and runtime rejection. Fixed explicit composition policy remains in the existing C-only validator; compare actual emitted client/import/chunk results before claiming improvement.",
+    "canonicalAuthorityExtended": "Existing StorefrontSnapshot explicit composition version, actual AR05 binder and AR06A full registered validation, existing ProjectRepository tables/history and accepted B canonical editor session.",
+    "namedCurrentConsumers": [
+      "Guarded AR06C standalone proof",
+      "Explicit saveComposedEditorDraft application entrypoint",
+      "Opted-in existing InMemoryProjectRepository and IndexedDbProjectRepository"
+    ],
+    "rejectedShortcuts": [
+      "Arbitrary validator callbacks or saved payload policy flags",
+      "Only nominal token branding or a generic registration API",
+      "Preflight-only CAS or overwriting old history IDs",
+      "Stripping composition for persistence, duplicated page/Puck tree or reseeding on reopen",
+      "Importing fixture/Puck/React into storage or claiming unmeasured bundle isolation",
+      "Unmeasured lazy-chunk evasion, random module/export renaming, unapproved further budget increases, minification tricks, dropping checks, copied transactions or new storage frameworks"
+    ],
+    "expectedFailureBehavior": "Unknown/malformed/dynamic/foreign/stale authority, mutable input/context conflicts, unsupported writes and actual storage failure reject without partial records; legacy defaults remain strict. Honest conflict if readback sees a later save.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Trusted explicit static composition capability creates/reads/saves one complete canonical aggregate with exact owner/candidate/support/registered-content/asset/locale validation. Reject forged tokens, malformed/unknown/dynamic/foreign authority; freeze copied authority. Default legacy APIs remain strict.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Real text/order edits persist with trusted new saved identity; exact draft ID/revision/content+composition/context CAS inside actual storage transaction. Immutable pre-await input, protected/published/commerce/history invariants, stale/duplicate/foreign and actual write/commit failure atomicity. Readback conflict is truthful.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Actual browser IndexedDB fresh-page/fresh-repository reopen retains exact saved snapshot/text/order/locale/layout for offset EN/FI at375/768/1024/1440 plus compact stack bothlocales. No reseed/hidden transport; unsaved edit disappears and stale second page cannot overwrite.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Mixed valid legacy/composed history reads without downgrade/writeback and retains existing policy. All unswitched publication/restore/demo replacement reject existing composed target before mutation, while valid legacy behavior persists. Reader remains usable with new-write UI disabled.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Accepted A/B shared renderer/editor/legacy repository/save/publish behavior remains. Eight original post-reload images independently directly inspected with actual observations/provenance; real loaded content unclipped, focus/locale usable. No geometry/fixture or drag algorithm changes.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Complete diff independent verifier-authored report and provenance, native reconciliation, declared focused validation/typecheck/lint/format/docs, production build/six budgets with exactly owner-amended raw ceilings(home/content1602000,search1660000,collection/product1653000); every gzip/editor/algorithm condition unchanged/client isolation/complete trace mapping/production flag404 and final-head CI all pass. Exact source/dependency/artifact identities, scope and preserved originals proven.",
+      "verificationClass": "scope",
+      "requiredEvidence": [
+        "EVIDENCE-03",
+        "EVIDENCE-04",
+        "EVIDENCE-05",
+        "EVIDENCE-06",
+        "EVIDENCE-07"
+      ],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Close only AR06C after accepted delivery, report actual save/reload and transaction/browser identities, merge/head and limitations. AR06 stays Partial for history/lifecycle/publication integration, dynamic anatomy and normal Studio rollout. No live-server or publishing claim.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-07"],
+      "failureBehavior": "FAIL for missing proof, weakened invariants, scope violation or unsupported claim."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-06c-composed-draft-save.test.ts tests/integration/ar-06c-composed-draft-persistence.test.ts",
+      "purpose": "New explicit capability, actual repository CAS/reopen/failure and UI/save orchestration controls; early minimal integration before complete UI.",
+      "requiredEvidence": ["EVIDENCE-01"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/unit/draft-save.test.ts tests/unit/storage-contract.test.ts tests/integration/in-memory-project-repository.test.ts tests/integration/indexed-db-project-repository.test.ts",
+      "purpose": "Legacy shared repository/save/publication compatibility and unswitched rejection.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run tests/unit/ar-06b-composed-page-adapter.test.ts tests/integration/ar-06b-composed-puck-roundtrip.test.tsx tests/unit/ar-06a-composed-page-realization.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts",
+      "purpose": "Accepted A/B behavior, validator extraction and exact consumer exceptions with unrelated-consumer rejection.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec vitest run tests/unit/p10b-19a-10a-retained-matrix-inventory.test.ts -t 'keeps all nine production authorities inactive and all governed adapters outside runtime'",
+      "purpose": "Focused historical scan only, no expensive126-case matrix local rerun.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm exec vitest run tests/unit/ar-06a-retained-source-transition.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Unchanged historical transition integrity and current task-status guard.",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm typecheck",
+      "purpose": "Full repository no-emit typecheck.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm exec eslint src/services/storage/project-repository.ts src/services/storage/repository-validation.ts src/services/storage/in-memory-project-repository.ts src/services/storage/indexed-db-project-repository.ts src/application/draft-save/save-editor-draft.ts src/application/draft-save/save-composed-editor-draft.ts src/application/draft-save/composed-draft-validation.ts src/components/storefront/composed-storefront-validation.ts src/components/storefront/composed-storefront-page.tsx src/services/storage/snapshot-history-metadata.ts src/app/acceptance/ar-06c/page.tsx src/integrations/puck/ar-06c-composed-draft-proof.tsx tests/unit/ar-06c-composed-draft-save.test.ts tests/integration/ar-06c-composed-draft-persistence.test.ts tests/e2e/ar-06c-composed-draft-save.spec.ts tests/helpers/ar-06c-composed-draft-journey.ts tests/e2e/ar-06b-composed-editor.spec.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx tests/unit/draft-save.test.ts tests/integration/in-memory-project-repository.test.ts tests/integration/indexed-db-project-repository.test.ts tests/integration/project-repository.contract.ts tests/unit/storage-contract.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts playwright.config.ts scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs src/services/storage/composed-draft-repository-support.ts src/services/storage/index.ts scripts/check-storefront-build-budgets.mjs tests/unit/ar-06c-storefront-build-budgets.test.ts",
+      "purpose": "All owned existing/new TypeScript/JavaScript; execute exact argv after all planned modules exist. Any necessary optional-path change requires an explicit recorded command amendment.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm exec prettier --check src/services/storage/project-repository.ts src/services/storage/repository-validation.ts src/services/storage/in-memory-project-repository.ts src/services/storage/indexed-db-project-repository.ts src/application/draft-save/save-editor-draft.ts src/application/draft-save/save-composed-editor-draft.ts src/application/draft-save/composed-draft-validation.ts src/components/storefront/composed-storefront-validation.ts src/components/storefront/composed-storefront-page.tsx src/services/storage/snapshot-history-metadata.ts src/app/acceptance/ar-06c/page.tsx src/integrations/puck/ar-06c-composed-draft-proof.tsx tests/unit/ar-06c-composed-draft-save.test.ts tests/integration/ar-06c-composed-draft-persistence.test.ts tests/e2e/ar-06c-composed-draft-save.spec.ts tests/helpers/ar-06c-composed-draft-journey.ts tests/e2e/ar-06b-composed-editor.spec.ts tests/integration/ar-05a-composition-authority.test.ts tests/integration/ar-05b-composition-version-boundaries.test.ts tests/integration/ar-06a-composed-page-rendering.test.tsx tests/unit/draft-save.test.ts tests/integration/in-memory-project-repository.test.ts tests/integration/indexed-db-project-repository.test.ts tests/integration/project-repository.contract.ts tests/unit/storage-contract.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts docs/AR_06C_APPROACH.md docs/AR_06C_IMPLEMENTATION_REPORT.md docs/BATCH_16_EXECUTION.md docs/governance/task-contracts/AR/AR-06C.json README.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/AR_06_RENDERING_ACCEPTANCE.md playwright.config.ts scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs src/services/storage/composed-draft-repository-support.ts src/services/storage/index.ts scripts/check-storefront-build-budgets.mjs tests/unit/ar-06c-storefront-build-budgets.test.ts",
+      "purpose": "All owned textual code/tests/docs/current contract; execute exact argv. Any necessary optional-path change requires an explicit recorded command amendment.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:validate",
+      "purpose": "Existing documentation/status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Existing documentation/status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation/status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Existing documentation/status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Existing documentation/status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "node scripts/task-governance.mjs identity --contract /Users/leo/veskify-batch-runs/BATCH-16/AR-06C/contract-successor-02/contract.json --expected-file-sha256 \"$AR06C_CONTRACT_SHA256\"",
+      "purpose": "Full native diff identity against pinned external contract; additional strict added-line/original/unowned checks recorded by reviewed task support.",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "pnpm build:webpack",
+      "purpose": "Counted sequential production build in exact-base+owned-overlay non-Git export with frozen copied installed dependencies; complete source/artifact identities.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "pnpm build:check:storefront-budgets",
+      "purpose": "Same measurement algorithm and all six routes under only the five owner-amended raw constants; preserve old FAIL. Recheck retained exact candidate artifact identities without another coordinator build; fresh independent final-source build remains mandatory.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "node scripts/playwright-ci.mjs audit-plan",
+      "purpose": "Existing unchanged CI discovery configuration.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-18",
+      "command": "pnpm exec playwright test tests/e2e/ar-06c-composed-draft-save.spec.ts --config=playwright.config.ts --list",
+      "purpose": "Record exact C test discovery.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-19",
+      "command": "pnpm exec playwright test tests/e2e/ar-06c-composed-draft-save.spec.ts --config=playwright.config.ts --workers=1 --retries=0 --trace=on",
+      "purpose": "Counted actual full C coordinator and independent campaigns; fresh contexts/server, complete8-image sets and JSONobservations; targeted declared grep diagnostics count separately.",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-20",
+      "command": "pnpm start",
+      "purpose": "Task-loopback sealed final production smoke with VESKIFY_AR06C_ACCEPTANCE=1 requires404 before fixture execution; complete strict client/NFT/chunk mapping and path/symlink/encoding controls through identity-recorded reused support.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-21",
+      "command": "pnpm exec vitest run tests/unit/ar-06c-storefront-build-budgets.test.ts",
+      "purpose": "Actual checker boundary acceptance/rejection for every raw ceiling, gzip rejection, unchanged editor and missing-artifact failure; no separate budget framework.",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-06"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "test",
+      "description": "Explicit capability positive/negative controls, real repository transaction/reopen/atomicity tests; immutable input and exact context binding.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "screenshot",
+      "description": "Counted actual C browser campaigns,8post-reload original captures per complete set, scalar canonical/geometry observations and boards; verifier direct per-image observations/provenance. No inferred inspection or reseeded durable proof.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Declared compatibility, exact source guards/historical pins, typecheck/lint; no weakened legacy/default/publication/restore checks.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "document",
+      "description": "Approach/report/current status/handoff, deterministic exports and accurate AR06 Partial limitations.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "diff",
+      "description": "Exact base/branch/complete native candidate including uncommitted/untracked inputs,14path/1500production/4500handwritten added-line bounds, originals/unowned preservation.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-06",
+      "type": "command",
+      "description": "Counted final build, six budgets under the explicit five-raw-limit policy; original budget FAIL retained and new all-six headroom reported, actual source/dependency/artifact identity, flagged404, client isolation, complete identity-mapped NFT including approved deterministic retained source and strict negative controls.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-07",
+      "type": "document",
+      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-16/AR-06C/independent-01/verdict.json with exact bytes/source agent/tool provenance, frozen candidate/assignment and genuine fresh vs inherited evidence. A later correction uses a new assigned attempt and preservation-first references; coordinator never reconstructs verdict. Native reconciliation only against complete report. Pre-report evidence descriptor: /Users/leo/veskify-batch-runs/BATCH-16/AR-06C/independent-01/evidence-07.json; subsequent report provenance: /Users/leo/veskify-batch-runs/BATCH-16/AR-06C/independent-01/provenance.json. Avoid self-referential report hash; every later assigned attempt uses analogous separate create-only paths.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Substantive product/acceptance/production-envelope conflict, unavailable required evidence, exhausted actual execution allowance, or managed substantive denial; no gate weakening.",
+      "action": "STOP",
+      "owner": "architecture-owner"
+    }
+  ],
+  "nextTask": {
+    "taskId": "STOP",
+    "title": "No successor implementation authorized",
+    "eligibility": "Stop after accepted AR06C/BATCH16 merge, safe synchronization, closeout and eligible disposal. AR06 remains Partial."
+  }
+}

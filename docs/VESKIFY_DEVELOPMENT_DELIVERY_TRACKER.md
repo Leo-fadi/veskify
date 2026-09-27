@@ -1,11 +1,11 @@
 # Veskify Development Delivery Tracker
 
-> **Candidate status effective upon accepted AR-06B merge after AR-06A verification:** This projection does not
+> **AR-06C candidate status after accepted AR-06B merge:** This projection does not
 > claim that this PR has merged or that owner acceptance has occurred.
 > **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed.** AR-02C is **Baseline / closed.** AR-02D is **Baseline / closed.** AR-02E is **Baseline / closed.** AR-02F is **Baseline / closed.** AR-02G is **Baseline / closed.** AR-02H is **Baseline / closed.** AR-02I is **Baseline / closed.** AR-02J is **Baseline / closed.** AR-02K is **Baseline / closed.** AR-02L is **Baseline / closed.** AR-02M is **Baseline / closed.**
-> AR-02 is **Baseline / closed**; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed effective upon accepted merge; this candidate does not assert delivery. AR-06 is Partial; rendering and editing evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. Lossless Puck/save/history/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is **Baseline / closed**; original same-input characterization and separate ownership are verified.
+> AR-02 is **Baseline / closed**; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is a guarded composed static-draft persistence candidate with independent verification complete, pending final-head CI and accepted delivery. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is **Baseline / closed**; original same-input characterization and separate ownership are verified.
 > AR-03A is **Baseline / closed.** AR-03B is **Baseline / closed.** AR-03C is **Baseline / closed.** AR-03D is **Baseline / closed.** AR-03E is **Baseline / closed.** AR-23 is **Planned / unstarted**. AR-23 depends on AR-01 and is not serialized behind
-> visual work. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 closes only upon accepted AR-06B delivery and safe closeout. No successor implementation is authorized. This tracker owns current status; the roadmap owns dependency order.
+> visual work. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout. No successor implementation is authorized. This tracker owns current status; the roadmap owns dependency order.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
@@ -16,9 +16,10 @@ value, positive static binding and specific rejection of current indivisible dyn
 inventories. AR-05B supplies snapshot nesting, explicit version dispatch and combined
 fingerprint participation. Accepted AR-05A+B satisfy original T01/T02 representation
 acceptance. [AR-06A](AR_06_RENDERING_ACCEPTANCE.md) adds the actual shared static
-renderer and bounded four-width proof, effective upon its accepted merge. AR-06
-remains Partial: Puck editing, save/history/publication integration, dynamic executable
-commerce and the shared collection/search context decision remain unproven.
+renderer and bounded four-width proof. Accepted AR-06B adds guarded Puck editing
+and canonical round trip. AR-06 remains Partial: composed save/reload acceptance,
+history/publication integration, normal Studio rollout, dynamic executable commerce
+and the shared collection/search context decision remain unproven.
 
 ## Document control
 
@@ -58,7 +59,8 @@ required evidence are accepted.
 | AR-03E | AR-03  | Legacy migration, distinct transient projections and shared bridge schemas; [contract](governance/task-contracts/AR/AR-03E.json), [report](AR_03E_IMPLEMENTATION_REPORT.md), [parent acceptance](AR_03_BOUNDARY_ACCEPTANCE.md)     | **Baseline / closed** |
 
 | AR-06A | AR-06 | Shared static renderer and stack/offset proof in EN/FI at four widths; [contract](governance/task-contracts/AR/AR-06A.json), [report](AR_06A_IMPLEMENTATION_REPORT.md), [parent evidence](AR_06_RENDERING_ACCEPTANCE.md) | **Baseline / closed, verified at `bc209f4bdfed9626605b8c699aaabb547d5d2025`** |
-| AR-06B | AR-06 | Guarded unsaved Puck editing for the AR-06A static composition; [contract](governance/task-contracts/AR/AR-06B.json), [report](AR_06B_IMPLEMENTATION_REPORT.md), [parent evidence](AR_06_RENDERING_ACCEPTANCE.md) | **Baseline / closed effective upon accepted merge; candidate evidence remains pending** |
+| AR-06B | AR-06 | Guarded unsaved Puck editing for the AR-06A static composition; [contract](governance/task-contracts/AR/AR-06B.json), [report](AR_06B_IMPLEMENTATION_REPORT.md), [parent evidence](AR_06_RENDERING_ACCEPTANCE.md) | **Baseline / closed; accepted PR #260** |
+| AR-06C | AR-06 | Guarded canonical static-draft save and real IndexedDB reopen; [contract](governance/task-contracts/AR/AR-06C.json), [report](AR_06C_IMPLEMENTATION_REPORT.md) | **Independently verified; closes upon accepted PR merge** |
 
 ## Overall phase checklist
 

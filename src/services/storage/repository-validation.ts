@@ -2,7 +2,12 @@ import { validateRegisteredSnapshot } from "@/components/registry";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { projectSchema, type Project } from "@/domain/project";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
-import { RepositoryValidationError, type ProjectAggregate } from "./project-repository";
+import {
+  composedStaticDraftOperationsFor,
+  RepositoryValidationError,
+  type ComposedStaticDraftCapability,
+  type ProjectAggregate,
+} from "./project-repository";
 import { snapshotHistoryMetadataSchema } from "./snapshot-history-metadata";
 
 export function repositoryValidationError(
@@ -26,17 +31,25 @@ export function validateRepositorySnapshot(
   }
 }
 
-export function validateProjectAggregate(input: ProjectAggregate): ProjectAggregate {
+export function validateProjectAggregate(
+  input: ProjectAggregate,
+  capability?: ComposedStaticDraftCapability,
+): ProjectAggregate {
   try {
     const project = projectSchema.parse(input.project);
     const catalogue = catalogueDisplayModelSchema.parse(input.catalogue);
     const snapshots = input.snapshots.map((snapshot) =>
-      validateRepositorySnapshot(snapshot, catalogue),
+      validateRepositorySnapshotWithCapability(snapshot, { project, catalogue }, capability),
     );
     const snapshotHistoryMetadata = input.snapshotHistoryMetadata?.map((metadata) =>
       snapshotHistoryMetadataSchema.parse(metadata),
     );
     const snapshotIds = snapshots.map((snapshot) => snapshot.id);
+    if (capability)
+      validateRepositorySnapshot(
+        snapshots.find((snapshot) => snapshot.id === project.publishedSnapshotId),
+        catalogue,
+      );
 
     if (new Set(snapshotIds).size !== snapshotIds.length) {
       throw new Error("Snapshot IDs must be unique within a project aggregate.");
@@ -112,3 +125,22 @@ export function compactManagedDraftHistory(
     removedSnapshotIds,
   };
 }
+
+export function validateRepositorySnapshotWithCapability(
+  input: unknown,
+  aggregate: Pick<ProjectAggregate, "project" | "catalogue">,
+  capability?: ComposedStaticDraftCapability,
+): StorefrontSnapshot {
+  if (input && typeof input === "object" && "compositionExtensionVersion" in input) {
+    const operations = composedStaticDraftOperationsFor(capability);
+    if (!operations)
+      throw repositoryValidationError(
+        "Composed drafts require an explicit capability.",
+        new Error("Missing composed capability."),
+      );
+    return operations.validateSnapshot(input, aggregate);
+  }
+  return validateRepositorySnapshot(input, aggregate.catalogue);
+}
+
+export const validateProjectAggregateWithCapability = validateProjectAggregate;

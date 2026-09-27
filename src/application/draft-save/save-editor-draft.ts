@@ -43,7 +43,7 @@ function canonicalize(value: unknown): unknown {
   return value;
 }
 
-function canonicalSnapshotsEqual(left: StorefrontSnapshot, right: StorefrontSnapshot) {
+export function canonicalSnapshotsEqual(left: StorefrontSnapshot, right: StorefrontSnapshot) {
   return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
 }
 
@@ -56,7 +56,7 @@ function stableHash(value: string) {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-function currentDraft(aggregate: ProjectAggregate) {
+export function currentDraft(aggregate: ProjectAggregate) {
   const draft = aggregate.snapshots.find(
     (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
   );
@@ -183,10 +183,7 @@ export async function saveValidatedEditorDraft({
     throw new StaleEditorDraftError();
   }
 
-  const date = now();
-  const snapshotId =
-    createSnapshotId?.(date) ??
-    `snapshot_draft_${date.getTime().toString(36)}_${stableHash(latestDraft.id)}`;
+  const identity = allocateEditorDraftIdentity(latestDraft, now, createSnapshotId);
   const draft = assembleValidatedEditorDraft({
     baseDraft: latestDraft,
     changedPages,
@@ -195,11 +192,7 @@ export async function saveValidatedEditorDraft({
     primaryLocale,
     brandSystem,
     evidenceReferences,
-    identity: {
-      id: snapshotId,
-      createdAt: date.toISOString(),
-      createdBy: "user",
-    },
+    identity,
   });
 
   try {
@@ -212,10 +205,32 @@ export async function saveValidatedEditorDraft({
     throw cause;
   }
 
+  return readBackEditorDraft(repository, projectId, draft);
+}
+
+export function allocateEditorDraftIdentity(
+  loaded: StorefrontSnapshot,
+  now: () => Date,
+  createSnapshotId?: (date: Date) => string,
+): Pick<StorefrontSnapshot, "id" | "createdAt" | "createdBy"> {
+  const date = now();
+  return {
+    id:
+      createSnapshotId?.(date) ??
+      `snapshot_draft_${date.getTime().toString(36)}_${stableHash(loaded.id)}`,
+    createdAt: date.toISOString(),
+    createdBy: "user",
+  };
+}
+
+export async function readBackEditorDraft(
+  repository: ProjectRepository,
+  projectId: string,
+  draft: StorefrontSnapshot,
+) {
   const aggregate = await repository.get(projectId);
   const persistedDraft = currentDraft(aggregate);
-  if (persistedDraft.id !== draft.id || !canonicalSnapshotsEqual(persistedDraft, draft)) {
+  if (persistedDraft.id !== draft.id || !canonicalSnapshotsEqual(persistedDraft, draft))
     throw new StaleEditorDraftError();
-  }
   return { aggregate, draft: structuredClone(persistedDraft) };
 }
