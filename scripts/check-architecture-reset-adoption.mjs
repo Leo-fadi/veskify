@@ -78,6 +78,47 @@ if (
   throw new Error("AR-00B: exact early-slice owner crosswalk is required");
 
 requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", "AR-23 depends on AR-01");
+// Retained pre-AR schedules must be historical at their point of use, including tables.
+for (const [path, document] of [
+  ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", roadmap],
+  ["docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", tracker],
+]) {
+  const blocks = document.split(/\n\s*\n/u);
+  for (const [index, block] of blocks.entries()) {
+    if (!block.includes("P10B-19B-01") || !/exact[ -]next/iu.test(block)) continue;
+    if (
+      block.startsWith(
+        "Historical scheduling projection (pre-AR; superseded, not current eligibility):",
+      )
+    )
+      continue;
+    if (
+      block.startsWith("- ") &&
+      blocks[index - 1] ===
+        "Historical scheduling projection (pre-AR; superseded, not current eligibility):"
+    )
+      continue;
+    if (
+      block.startsWith("|") &&
+      !block
+        .split("\n")
+        .some((line) => line.includes("P10B-19B-01") && /exact[ -]next/iu.test(line))
+    )
+      continue;
+    throw new Error(
+      `${path}: competing pre-AR next-task projection must be historical at its use site`,
+    );
+  }
+}
+const ar06cRows = tracker.split("\n").filter((line) => /^\| AR-06C\s*\|/u.test(line));
+if (
+  ar06cRows.length !== 1 ||
+  !ar06cRows[0].includes(
+    "**Baseline / closed; accepted PR #261, merge `de0faeba0d40bd36ac83f25d533a3428f83501cc`**",
+  )
+) {
+  throw new Error("tracker: AR-06C child row must record its accepted closure");
+}
 // Mask examples without changing line positions used by the bounded section selectors.
 const policyLines = (document) => {
   let fence;

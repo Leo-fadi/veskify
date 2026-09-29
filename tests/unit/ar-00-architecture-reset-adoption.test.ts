@@ -933,6 +933,45 @@ describe("AR-06A bounded proposed status transition", () => {
 describe("AR-00B visual-feedback eligibility", () => {
   it.each([
     [
+      "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+      "Planned / historical pre-AR selection; not current eligibility",
+      "Planned / exact next",
+      /competing pre-AR next-task/,
+    ],
+    [
+      "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+      "Historical scheduling projection (pre-AR; superseded, not current eligibility):\n",
+      "",
+      /competing pre-AR next-task/,
+    ],
+    [
+      "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+      "Historical scheduling projection (pre-AR; superseded, not current eligibility):\n\n- DEVX-01A",
+      "- DEVX-01A",
+      /competing pre-AR next-task/,
+    ],
+    [
+      "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+      "Baseline / closed; accepted PR #261, merge `de0faeba0d40bd36ac83f25d533a3428f83501cc`",
+      "Independently verified; closes upon accepted PR merge",
+      /AR-06C child row/,
+    ],
+  ])("rejects stale scheduling or status in %s", (relativePath, before, after, error) => {
+    const directory = fixture();
+    try {
+      const path = join(directory, relativePath);
+      const original = readFileSync(path, "utf8");
+      const changed = original.replace(before, after);
+      expect(changed).not.toBe(original);
+      writeFileSync(path, changed);
+      expect(() => check(directory)).toThrow(error);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    [
       "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
       "An inspectable genuine output, owner-accepted visual quality, and production readiness are separate outcomes.",
     ],

@@ -246,6 +246,8 @@ on the child's base commit. An implementation branch must not edit its own contr
 contract change requires product-owner authority, a new locked baseline and a newly eligible branch;
 it is never a convenient scope expansion.
 
+For AR-00B only, explicit owner authority permits an externally locked initial contract and a repository documentary copy on the same implementation branch/base. The external bytes were frozen before implementation, validated by the existing native schema, and pinned by both raw SHA-256 and canonical fingerprint. The repository copy does not replace that immutable authority. Native verification uses the external path and expected raw hash, independently binds the full diff, and preserves every prior record. This task-specific exception does not grant another task permission to edit its own lock or bypass independent verification.
+
 DEVX-01B implements the canonical repository-native executable at `scripts/task-governance.mjs`.
 Its `contract`, `identity`, and `verify` commands validate immutable external or base-retained
 contracts, calculate RFC 8785 domain-separated identities, inspect complete Git worktree state,

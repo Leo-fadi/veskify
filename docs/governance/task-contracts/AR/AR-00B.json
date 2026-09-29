@@ -30,7 +30,7 @@
     "AGENTS.md",
     "ADR-001 through ADR-004",
     "Owner BATCH-17 launch and /Users/leo/Downloads/BATCH-17_Codex_Runbook.md",
-    "Pinned support /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-hashes.json SHA256 cd0e3027eb39315f3d3082bf1b6724e2df574e271cbc303146ea688488936bef"
+    "Pinned support /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-02/hashes.json SHA256 a0c346015966262f9b7d7899d95a5d985a4c26dfbb7f5155ca5333460732ca5b"
   ],
   "ownedPaths": [
     "AGENTS.md",
@@ -50,7 +50,8 @@
     "tests/unit/ar-00-architecture-reset-adoption.test.ts",
     "scripts/export-development-delivery-tracker-docx.mjs",
     "docs/VESKIFY_SDD_v1.3.0.docx",
-    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx"
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "scripts/validate-documentation.mjs"
   ],
   "allowedPaths": [
     "AGENTS.md",
@@ -79,7 +80,8 @@
     "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
     "docs/Veskify_Architecture_Reset/manifest.json",
     "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
-    "docs/Veskify_Architecture_Reset/00_START_HERE.md"
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "scripts/validate-documentation.mjs"
   ],
   "forbiddenPaths": [
     "src/**",
@@ -209,13 +211,13 @@
     },
     {
       "id": "VALIDATION-03",
-      "command": "pnpm exec eslint scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "command": "pnpm exec eslint scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/validate-documentation.mjs",
       "purpose": "Scoped lint of allowed changed support/test code",
       "requiredEvidence": ["EVIDENCE-03"]
     },
     {
       "id": "VALIDATION-04",
-      "command": "pnpm exec prettier --check AGENTS.md README.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md docs/BATCH_17_EXECUTION.md docs/governance/task-contracts/AR/AR-00B.json scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "command": "pnpm exec prettier --check AGENTS.md README.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md docs/BATCH_17_EXECUTION.md docs/governance/task-contracts/AR/AR-00B.json scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs scripts/validate-documentation.mjs",
       "purpose": "Scoped textual formatting",
       "requiredEvidence": ["EVIDENCE-03"]
     },
@@ -239,13 +241,13 @@
     },
     {
       "id": "VALIDATION-08",
-      "command": "node scripts/task-governance.mjs identity --contract /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/contract-01/contract.json --expected-file-sha256 \"$AR00B_CONTRACT_SHA256\"",
+      "command": "node scripts/task-governance.mjs identity --contract /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/contract-02/contract.json --expected-file-sha256 \"$AR00B_CONTRACT_SHA256\"",
       "purpose": "Complete native identity, including untracked original inputs and final corrected diff",
       "requiredEvidence": ["EVIDENCE-05"]
     },
     {
       "id": "VALIDATION-09",
-      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support/check-preservation.py",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-02/check-preservation.py",
       "purpose": "Exact scope/originals/budget/historical/AR06\u201330 acceptance and T01\u201324 preservation",
       "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-05"]
     }
@@ -289,7 +291,7 @@
     {
       "id": "EVIDENCE-06",
       "type": "document",
-      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/independent-01/verdict.json. Verifier writes own exact bytes; separate evidence-06.json/provenance.json records assignment and author/tool provenance without self-referential hash. Any correction uses fresh assigned persistent paths. Native reconciliation only against full authentic report, no coordinator reconstruction.",
+      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/independent-correction-01/verdict.json. Verifier writes own exact bytes; separate evidence-06.json/provenance.json records assignment and author/tool provenance without self-referential hash. Any correction uses fresh assigned persistent paths. Native reconciliation only against full authentic report, no coordinator reconstruction.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     }
