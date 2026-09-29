@@ -1,0 +1,345 @@
+{
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "AR",
+  "taskId": "AR-00B",
+  "title": "Visual-feedback-led delivery amendment and disposable-output retirement",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-00b-visual-feedback-roadmap",
+  "baseCommit": "de0faeba0d40bd36ac83f25d533a3428f83501cc",
+  "objective": "Adopt the owner-approved visual-feedback-led strategy in existing authorities; preserve all original obligations and completed work; retire only eligible disposable outputs; select one exact next implementation without executing it.",
+  "expectedOutcome": "Consistent SDD/addendum, roadmap, tracker and development instructions distinguish genuine inspectable output, owner-accepted quality and production readiness; source-backed AR-06D brief; honest cleanup and delivery evidence.",
+  "dependencies": [
+    {
+      "taskId": "AR-06C",
+      "requiredState": "MERGED",
+      "commit": "de0faeba0d40bd36ac83f25d533a3428f83501cc"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "docs/VESKIFY_SDD.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md \u2014 sole delivery-order authority",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md \u2014 sole status authority",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "AGENTS.md",
+    "ADR-001 through ADR-004",
+    "Owner BATCH-17 launch and /Users/leo/Downloads/BATCH-17_Codex_Runbook.md",
+    "Pinned support /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-hashes.json SHA256 cd0e3027eb39315f3d3082bf1b6724e2df574e271cbc303146ea688488936bef"
+  ],
+  "ownedPaths": [
+    "AGENTS.md",
+    "README.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md",
+    "docs/BATCH_17_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-00B.json",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx"
+  ],
+  "allowedPaths": [
+    "AGENTS.md",
+    "README.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md",
+    "docs/BATCH_17_EXECUTION.md",
+    "docs/governance/task-contracts/AR/AR-00B.json",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md"
+  ],
+  "forbiddenPaths": [
+    "src/**",
+    ".git/**",
+    ".github/**",
+    ".codex/**",
+    ".agents/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.*",
+    "playwright*.ts",
+    "vitest*.ts",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/fixtures/**",
+    "docs/P10B_19_STRUCTURAL_DESIGN_INTELLIGENCE_ARCHITECTURE.md"
+  ],
+  "noTouchAreas": [
+    "ZERO application/runtime changes; all schema scope-budget constants remain standard.",
+    "Nine untracked original architecture inputs are allowlisted solely for complete native identity; exact preflight hashes remain unchanged and originals must not be staged or published.",
+    "Prior task contracts/locks/verdicts/build/browser identities and historical evidence remain immutable; no historical rebaselining.",
+    "No role/permission/dependency/build/CI/budget/fixture changes, model calls, local browser/build, new worktree, VerifyAI activity or successor execution.",
+    "Cleanup only completed owned export/worktree caches and reproducible dependencies per runbook; root node_modules, profiles/IndexedDB/saved drafts, source and required proof protected.",
+    "Public disclosure only reviewed task diff and sanitized description, never raw local evidence or credentials."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One zero-runtime delivery-policy amendment. Core strategy/crosswalk target1500\u20132500 words, retaining original parent specifications.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic synchronized DOCX projection; preserve source authority."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic synchronized DOCX projection; preserve source authority."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "GitHub Leo-fadi/veskify read/fetch and owning AR-00B commit/push/public PR/review disposition/CI observation and exact-head protected conditional merge. No provider/Vesko/media/publication calls."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Dated normative amendment in existing SDD/addendum, actual slice eligibility/crosswalk and ONE next-task brief in the existing roadmap, factual tracker and bounded projections; extend existing documentation checks/exporters only as needed; reuse retirement procedures and record zero eligible cleanup honestly.",
+    "canonicalAuthorityExtended": "Existing AR delivery policy; StorefrontSnapshot, BrandSystem/Design DNA, PageBlueprint and registered components retain sole product ownership.",
+    "namedCurrentConsumers": [
+      "Roadmap task scheduling and tracker status",
+      "Existing prompted provider/compiler/proposal and guarded P04 preview source frontier for future AR-06D planning",
+      "Existing independent/native verification and documentation/export CI"
+    ],
+    "rejectedShortcuts": [
+      "Throwaway generator or manual fixture output relabelled live AI proof",
+      "All-parent serial refactor gate before safe internal visual learning",
+      "Early output equated with commercial acceptance, family activation or production readiness",
+      "New roadmap/feedback service/cleanup framework or historical source-hash rewrite"
+    ],
+    "expectedFailureBehavior": "Keep unsupported intent, missing authority and unsafe deletion fail closed. Retain partial/rejected/pending evidence honestly. Stop for substantive scope/permission/evidence blockers; no silent bypass or successor execution.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Truthful baseline: PR261 accepted af75994f2a4e1186b4429db6b93cb1bf51d2e048 merged de0faeba0d40bd36ac83f25d533a3428f83501cc and B16 closeout reconciled; AR06C current status closed, AR06 Partial, prior closed tasks and dated evidence intact.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Effective strategy: Authorities implement genuine output\u2192mechanical QA\u2192actual owner feedback\u2192bounded reusable correction\u2192comparable regeneration. Preserve all AR06\u201330 outcomes and T01\u2013T24 obligations. Explicit early-slice prerequisites differ from parent/family/production gates; AR08 is not blanket pre-review gate.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Executable next step: Select only AR06D genuine generated-storefront visual review loop as AR06 child with source-backed existing P04/provider/compiler/proposal/registered preview path, complete-store surfaces, minimal missing bridge, actual prerequisites, expected bounded source envelope, future explicit call/attempt/cost caps and zero-call preflight. No live call or next implementation now.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02", "EVIDENCE-03"],
+      "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Safe retirement: Run one bounded approved cleanup pass or record exact no-candidate/skips and measured filesystem delta honestly. Preserve source, original dependency installation, saved data, originals, worktrees and required evidence. No repeat of B16 retirements or store pruning.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-05"],
+      "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Verification integrity: Focused policy/documentation/exports checks and final independent/native verification cover exact complete diff with authentic verifier-authored provenance. No application/dependency/budget/permission changes. All historical claims distinguish current evidence.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-05", "EVIDENCE-06"],
+      "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Accepted delivery: Precommit review verifies preserved standing authorization and mandatory independent/native PASS, exactly one automatic review, resolved findings, final-head CI and expected-head protected merge policy. AC06 delivery itself closes only after actual accepted merge/safe synchronization; precommit PASS must not claim future events already occurred. Coordinator records actual postmerge evidence/closeout, no successor execution.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-05", "EVIDENCE-06"],
+      "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-00-architecture-reset-adoption.test.ts --maxWorkers=1",
+      "purpose": "Existing focused policy/current status/ownership/negative mutation controls",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm typecheck",
+      "purpose": "Existing no-emit repository typecheck for changed TypeScript test",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec eslint scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Scoped lint of allowed changed support/test code",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec prettier --check AGENTS.md README.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md docs/BATCH_17_EXECUTION.md docs/governance/task-contracts/AR/AR-00B.json scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Scoped textual formatting",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm docs:validate",
+      "purpose": "Existing documentation authority/status/link/adoption checks including BOTH deterministic DOCX check-only exports",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Existing retained requirement traceability",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation tooling controls",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "node scripts/task-governance.mjs identity --contract /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/contract-01/contract.json --expected-file-sha256 \"$AR00B_CONTRACT_SHA256\"",
+      "purpose": "Complete native identity, including untracked original inputs and final corrected diff",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support/check-preservation.py",
+      "purpose": "Exact scope/originals/budget/historical/AR06\u201330 acceptance and T01\u201324 preservation",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-05"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Source-backed initial-state/PR261 merge/approach assessment in persistent task preflight; no new live evidence.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "document",
+      "description": "Reviewed strategy/crosswalk/next-task/current-status documents and synchronized exports, with future delivery gates honest.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "command",
+      "description": "Actual independent focused policy/typecheck/lint/format/documentation command logs and exit results.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "document",
+      "description": "Append-only retirement result with exact removed/skipped paths, prior-retirement references, preservation and actual free-space observations; zero deletion is valid when nothing eligible remains.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "diff",
+      "description": "Complete native identity/frozen reviewed input hashes/scope preservation for branch/base and staged/unstaged/untracked state; nine originals retained.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-06",
+      "type": "document",
+      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/independent-01/verdict.json. Verifier writes own exact bytes; separate evidence-06.json/provenance.json records assignment and author/tool provenance without self-referential hash. Any correction uses fresh assigned persistent paths. Native reconciliation only against full authentic report, no coordinator reconstruction.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Substantive scope/acceptance/integrity conflict, unsafe cleanup or normal managed approval denial; timeout/capacity may use at most two spaced2minute resubmissions after execution-state check, never bypass a substantive denial.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Accepted delivery/closeout completed; AR06D and all successor implementation/model calls are not authorized by B17.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-06D",
+    "title": "Genuine generated-storefront visual review loop",
+    "eligibility": "Selected only; separate owner launch and explicit future provider/model/cost/attempt authorization, source-backed hard prerequisites and zero-call preflight required. Do not execute in B17."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}

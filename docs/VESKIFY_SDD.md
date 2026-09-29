@@ -27,6 +27,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 AR-00B | 29 September 2026 | Owner-approved visual-feedback-led delivery amendment; effective on accepted merge | Amend delivery order through bounded early slices and real generated-store review while preserving every original AR/T requirement, canonical safety and separate visual/production gates; select AR-06D only. |
 | 1.3.0 P10B-19A-10C | 4 September 2026 | P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate | Execute the sorted retained 26-file authority from frozen A-10A/A-10B1/A-10B2 evidence; preserve accepted 24/76/9, 126/72 and A-09 metrics, 11 predecessor files, the 21-section/four-diagram/73-child architecture lock and every production/runtime zero; freeze the checked accepted-closure manifest and external mirror; record exact product-owner architecture acceptance and ten ordered limitations; close A-10 and P10B-19A with zero production or merchant-visible change and make P10B-19B-01 exact next without beginning it. |
 | 1.3.0 P10B-19A-10B2 | 4 September 2026 | P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure | Freeze 36 exact ordered owner-first negative cases across A-03 through A-09C from fresh A-10B1 authority; require one atomic corruption, exact bounded failure, zero downstream phases, partial outputs, source mutations, repairs, fallbacks and external activity; retain strict legacy-v1/v2 isolation and all nine production-v2 zeroes; preserve byte-identical A-10A/A-10B1 and accepted 24/76/9, 126/72 and A-09 authority; add zero production/runtime or merchant-visible change; close parent A-10B while A-10/P10B-19A remain Partial and make A-10C exact next. |
 | 1.3.0 P10B-19A-10B1 | 4 September 2026 | P10B-19A-10B1 Positive Cross-Authority Integration Matrix | Delivery-decompose A-10B into A-10B1 positive integration and A-10B2 fail-closed failure/parent closure without changing the accepted 73-child architecture; freeze the positive 8/6/6/3 authority with three two-identity topology groups, six direct receipts and three sequential topology-distinct receipts; preserve A-09 and byte-identical A-10A 24/76/9 authority, accepted 126/72 metrics and zero production/runtime reach; leave A-10B, A-10 and P10B-19A Partial and make A-10B2 exact next. |
@@ -1228,6 +1229,12 @@ removed the P10B-16L active runtime while preserving valid follow-up authority. 
 claims no real Design Intent provider call or commercial visual-quality acceptance. P10B-16P-04
 supplies those later bounded acceptance facts. Details are in
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
+
+### 10.21A AR-00B visual-feedback-led delivery amendment
+
+The incorporated AR-00 addendum permits an internal, bounded review loop through an actual provider intent, canonical compilation and isolated pending proposal, registered rendering, mechanical QA, and retained owner feedback. It retains StorefrontSnapshot, BrandSystem, PageBlueprint, registered components, protected Vesko commerce, proposal isolation, and explicit Accept/Save/Publish as the sole authorities. An inspectable genuine output, owner-accepted visual quality, and production readiness remain distinct.
+
+AR-06D is the selected unstarted child for a guarded same-running-server-process and authorized-P04-request-context P10B-16P-04 run-to-cross-page review packet. It requires separate authorization for provider/model/calls/attempts/tokens/cost and a zero-call preflight. It may use the existing legacy/dynamic registered baseline, but does not prove composed dynamic rendering, normal tenant activation, publication, or AR-06 closure.
 
 ### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance
 

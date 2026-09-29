@@ -1,8 +1,7 @@
 # AR-06 rendering acceptance
 
 AR-06 remains **Partial**. AR-06A is closed, verified at
-`bc209f4bdfed9626605b8c699aaabb547d5d2025`. AR-06B is closed at accepted PR #260 merge `e2addffc29f7719e23e9e7856ecf7c739924501f`.
-AR-06C has independent save/reopen, visual and production proof; final-head CI and accepted delivery remain pending at this verification checkpoint. AR-02/03/04/05 remain closed.
+`bc209f4bdfed9626605b8c699aaabb547d5d2025`. AR-06B is closed at accepted PR #260 merge `e2addffc29f7719e23e9e7856ecf7c739924501f`. AR-06C is closed at accepted PR #261 head `af75994f2a4e1186b4429db6b93cb1bf51d2e048`, merged as `de0faeba0d40bd36ac83f25d533a3428f83501cc`; BATCH-16 is complete. AR-02/03/04/05 remain closed.
 
 | Original acceptance                    | AR-06A contribution                                                                                                                                         | Remaining parent obligation                                                                                                               |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -73,4 +72,6 @@ remain authoritative in persistent task storage. AR-06 remains Partial.
 
 The explicitly selected repository capability validates and stores the complete static composed snapshot in the existing tables. Default repositories remain legacy-strict. Exact content/context compare-and-swap runs inside the save transaction; unswitched publication, restore and demo replacement reject composed records before writing. The private content projection is never persisted. No dynamic anatomy, live server storage or normal Studio saves are enabled.
 
-C independent verification passed actual IndexedDB reopen in a fresh page, eight directly inspected original offset captures (EN/FI at 375/768/1024/1440), compact stack checks, unsaved-loss and stale-page rejection. Its [contract](governance/task-contracts/AR/AR-06C.json) and [report](AR_06C_IMPLEMENTATION_REPORT.md) distinguish pending checks from retained execution. Prior A event evidence below remains historical; its failures are not relabeled.
+C's accepted delivery retains actual IndexedDB reopen in a fresh page, eight directly inspected original offset captures (EN/FI at 375/768/1024/1440), compact stack checks, unsaved-loss and stale-page rejection. Its [contract](governance/task-contracts/AR/AR-06C.json) and [report](AR_06C_IMPLEMENTATION_REPORT.md) distinguish retained execution from later obligations. Prior A event evidence below remains historical; its failures are not relabeled.
+
+AR-06D is selected only as a future guarded review loop: the same running server process and authorized P04 request context must carry a real provider candidate to the existing preview surfaces and original-capture packet. It does not close AR-06 or prove dynamic composition, normal tenancy, publication, or visual acceptance.

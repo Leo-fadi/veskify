@@ -1,0 +1,13 @@
+# BATCH-17 execution
+
+## AR-00B visual-feedback-led delivery amendment
+
+AR-06C closed at accepted PR #261 merge `de0faeba0d40bd36ac83f25d533a3428f83501cc`; AR-06 remains Partial. This candidate policy update adopts the source-backed visual-feedback loop and selects AR-06D, Planned and unstarted, for a separately authorized genuine P10B-16P-04 run-to-cross-page review packet.
+
+Cleanup recorded `COMPLETE_NO_ELIGIBLE_PAYLOAD`: no path was removed and reclaimed capacity was 0 bytes; free space measured 7,955,795,968 bytes before and 7,954,444,288 after the shared-filesystem interval. Retained metadata and earlier evidence remain protected.
+
+No model, Vesko, publication, browser capture, build, or successor implementation occurred in BATCH-17. The authoritative retirement record remains external. At this pre-delivery documentation checkpoint, independent verification, review, final-head CI and accepted merge remain pending. The complete verifier-authored report, native reconciliation and actual delivery/closeout records are retained separately; this snapshot does not assert future execution.
+
+The amendment preserves all 31 original AR outcomes, 25 remaining AR-06–30 parent acceptance blocks and the 24 T01–T24 obligations. It separates early slice eligibility from parent completion, family activation and production readiness. The roadmap selects exactly **AR-06D — genuine generated-storefront visual review loop**; its first output is a runnable guarded canonical candidate with cross-page boards and actual owner feedback, using the existing provider/compiler/registered-renderer chain. No successor is launched here.
+
+Required verification uses the existing focused adoption test, typecheck, scoped lint/format, documentation/requirements/tooling checks, both deterministic DOCX projections, native complete-diff identity and preservation checks. Earlier failed draft validation is retained, not relabelled. The local cleanup's exact removed-path list is empty: previous retirements were not repeated, and residual metadata/source/compiled proof remain retained. No runtime, dependency, bundle-budget or permission changes are included.

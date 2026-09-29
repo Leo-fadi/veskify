@@ -752,3 +752,7 @@ Existing explicit merge authority remains independent. The product owner does no
 | P11-09–10                                     | AR-28 full staging journey and controlled pilot readiness.                                                              |
 | P10D                                          | Deferred nonblocking advanced-media/motion backlog.                                                                     |
 | P12                                           | AR-17/23–28 applicable pilot security/performance/recovery; full hardening/rollout remains Blocked independent backlog. |
+
+## AR-00B owner strategy decision (29 September 2026)
+
+The owner adopted visual-feedback-led delivery: an approved bounded genuine provider run must flow through canonical compilation, isolated proposal and registered rendering, then mechanical QA and Leo’s actual review. This decision does not alter the retained source catalogue, input hashes, historical locks, or prior acceptance evidence. AR-06D is selected only as the guarded same-running-server-process and authorized-P04-request-context P10B-16P-04 run-to-cross-page review packet; a separate launch must authorize provider/model, limits and credentials.
