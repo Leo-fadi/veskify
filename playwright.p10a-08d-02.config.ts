@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.PLAYWRIGHT_PORT ?? "3132";
+const group02Diagnostics = process.env.VESKIFY_AR00B_GROUP02_DIAGNOSTICS === "1";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -19,10 +20,11 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120_000,
     url: `http://localhost:${port}`,
+    ...(group02Diagnostics ? { stdout: "pipe" as const, stderr: "pipe" as const } : {}),
   },
   use: {
     baseURL: `http://localhost:${port}`,
-    trace: "on-first-retry",
+    trace: group02Diagnostics ? { mode: "retain-on-failure", sources: false } : "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

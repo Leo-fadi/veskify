@@ -313,6 +313,53 @@ describe.sequential("DEVX-01F group execution and cancellation authority", () =>
     }
   });
 
+  it("adds bounded group-02 diagnostics without changing its suite order or blob authority", () => {
+    const root = mkdtempSync(join(tmpdir(), "devx-01f-group02-diagnostic-"));
+    try {
+      const fakeLog = join(root, "fake.log");
+      const bin = makeFakePnpm(root);
+      const output = join(root, "output");
+      const result = runRunner(
+        ["run-group", "--group-id", "group-02", "--output-directory", output],
+        {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH ?? ""}`,
+          DEVX01F_FAKE_LOG: fakeLog,
+          DEVX01F_FAIL_MATCH: "",
+          DEVX_SECRET_CANARY: "never-record-this-value",
+        },
+      );
+      expect(result.status, result.stderr).toBe(0);
+      const invocations = readFileSync(fakeLog, "utf8").trim().split("\n");
+      expect(invocations).toHaveLength(6);
+      expect(
+        invocations.every((line) =>
+          line.includes("--reporter=blob,./tests/helpers/ar-00b-group-02-diagnostic-reporter.ts"),
+        ),
+      ).toBe(true);
+      const diagnosticRoot = join(root, ".ci-group02-diagnostics", "group-02");
+      for (const suiteId of [
+        "p10a-08d-02",
+        "p10b-09",
+        "p10b-11",
+        "p10b-13",
+        "p10b-17",
+        "p10b-18a",
+      ]) {
+        const before = readFileSync(join(diagnosticRoot, suiteId, "runner-before.json"), "utf8");
+        const after = readFileSync(join(diagnosticRoot, suiteId, "runner-after.json"), "utf8");
+        expect(before).toContain('"phase":"BEFORE_CHILD"');
+        expect(after).toContain('"phase":"AFTER_CHILD"');
+        expect(`${before}${after}`).not.toContain("never-record-this-value");
+      }
+      expect(readFileSync(join(output, "group-02", "manifest.json"), "utf8")).not.toContain(
+        "GROUP02_DIAGNOSTIC",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("stops a failed group immediately, preserves the truthful prefix, and propagates exit 23", () => {
     const root = mkdtempSync(join(tmpdir(), "devx-01f-failure-"));
     try {

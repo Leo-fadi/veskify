@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.PLAYWRIGHT_PORT ?? "3140";
+const group02Diagnostics = process.env.VESKIFY_AR00B_GROUP02_DIAGNOSTICS === "1";
 const inheritedAcceptanceToken = process.env.P10B17_PLAYWRIGHT_ACCEPTANCE_TOKEN;
 const acceptanceToken =
   inheritedAcceptanceToken && Buffer.byteLength(inheritedAcceptanceToken) >= 32
@@ -46,6 +47,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120_000,
     url: baseURL,
+    ...(group02Diagnostics ? { stdout: "pipe" as const, stderr: "pipe" as const } : {}),
   },
   use: {
     baseURL,

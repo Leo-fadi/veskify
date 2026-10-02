@@ -406,6 +406,18 @@ jobs:
           path: .ci-playwright-groups/${{ matrix.groupId }}/blobs
           if-no-files-found: warn
           retention-days: 3
+      - name: Upload group-02 browser diagnostics
+        if: ${{ always() && matrix.groupId == 'group-02' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: group-02-browser-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.groupId }}
+          path: |
+            .ci-group02-diagnostics/${{ matrix.groupId }}
+            .ci-pdp-diagnostics
+            .ci-playwright-groups/${{ matrix.groupId }}/blobs
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
   browser-report:
     name: Browser merged report

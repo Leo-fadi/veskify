@@ -21,6 +21,7 @@ registerHooks({
 });
 
 const standalonePort = process.env.PLAYWRIGHT_PORT ?? "3141";
+const group02Diagnostics = process.env.VESKIFY_AR00B_GROUP02_DIAGNOSTICS === "1";
 const p04Port = process.env.P10B18A_P04_PLAYWRIGHT_PORT ?? "3142";
 if (standalonePort === p04Port) {
   throw new Error("P10B-18A requires distinct standalone and P04 preview ports.");
@@ -91,6 +92,7 @@ process.env.P10B18A_P04_PLAYWRIGHT_ORIGIN = p04BaseURL;
 process.env.P10B18A_P04_ACCEPTANCE_TOKEN = acceptanceToken;
 process.env.P10B18A_EVIDENCE_DIR = evidenceDirectory;
 process.env.P10B18A_EVIDENCE_RUN_ID = runId;
+if (group02Diagnostics) process.env.VESKIFY_AR00B_GROUP02_P04_CWD = p04ServerRoot;
 
 export default defineConfig({
   testDir: "./tests/acceptance",
@@ -113,6 +115,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       url: baseURL,
+      ...(group02Diagnostics ? { stdout: "pipe" as const, stderr: "pipe" as const } : {}),
     },
     {
       command: `pnpm dev --webpack --port ${p04Port}`,
@@ -129,13 +132,14 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       url: p04BaseURL,
+      ...(group02Diagnostics ? { stdout: "pipe" as const, stderr: "pipe" as const } : {}),
     },
   ],
   use: {
     baseURL,
     actionTimeout: 30_000,
     navigationTimeout: 120_000,
-    trace: "off",
+    trace: group02Diagnostics ? { mode: "retain-on-failure", sources: false } : "off",
     video: "off",
     screenshot: "only-on-failure",
   },

@@ -167,6 +167,7 @@ When AR-00 is adopted, its incorporated SDD addendum governs future template-sco
 bounded operational persistence, one-concept default, two initial families, and staged AR delivery.
 The roadmap remains the delivery-order authority and the tracker remains the sole status authority.
 Historical P10B-19A/A-10C records remain event evidence and do not schedule successor work.
+AR-00B permits a separately authorized visual-feedback review loop through genuine provider intent, canonical proposal and registered rendering; it does not relax canonical ownership, protected commerce, proposal isolation, explicit Accept/Save/Publish, or independent visual and production acceptance gates.
 
 For an explicitly owner-approved finite batch, the coordinator may continue only the named next
 child after the preceding child is accepted and merged. It may reuse one worktree sequentially only

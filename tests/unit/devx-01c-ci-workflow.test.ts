@@ -95,11 +95,48 @@ describe("DEVX-01C retained CI authority", () => {
     expect(workflow).toMatch(/ci-timing\.mjs summarize\s+--profile browser/u);
     expect(workflow).toContain("playwright-group-evidence-${{ github.run_id }}");
     expect(workflow).toContain("playwright-matrix-evidence-${{ github.run_id }}");
-    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(10);
-    expect(count(workflow, "include-hidden-files: true")).toBe(3);
+    expect(count(workflow, "uses: actions/upload-artifact@v4")).toBe(11);
+    expect(count(workflow, "include-hidden-files: true")).toBe(4);
     expect(count(workflow, "if-no-files-found: warn")).toBe(5);
-    expect(count(workflow, "if-no-files-found: error")).toBe(5);
-    expect(count(workflow, "retention-days: 14")).toBe(8);
+    expect(count(workflow, "if-no-files-found: error")).toBe(6);
+    expect(count(workflow, "retention-days: 14")).toBe(9);
     expect(count(workflow, "retention-days: 3")).toBe(2);
+    const diagnosticName =
+      "group-02-browser-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.groupId }}";
+    const uploadSteps = workflow
+      .split(/(?=^ {6}- name:)/mu)
+      .filter((step) => step.includes("        uses: actions/upload-artifact@v4\n"));
+    expect(uploadSteps).toHaveLength(11);
+    const diagnosticSteps = uploadSteps.filter((step) =>
+      step.includes(`          name: ${diagnosticName}\n`),
+    );
+    expect(diagnosticSteps).toHaveLength(1);
+    const diagnosticStep = diagnosticSteps[0];
+    expect(diagnosticStep).toContain("uses: actions/upload-artifact@v4");
+    expect(diagnosticStep.match(/^ {10}path: \|\n((?: {12}[^\n]+\n)+)/mu)?.[1]).toBe(
+      "            .ci-group02-diagnostics/${{ matrix.groupId }}\n" +
+        "            .ci-pdp-diagnostics\n" +
+        "            .ci-playwright-groups/${{ matrix.groupId }}/blobs\n",
+    );
+    expect(diagnosticStep).toContain("if: ${{ always() && matrix.groupId == 'group-02' }}");
+    expect(diagnosticStep).toContain("include-hidden-files: true");
+    expect(diagnosticStep).toContain("if-no-files-found: error");
+    expect(diagnosticStep).toContain("retention-days: 14");
+    const originalUploads = [
+      "ci-timings-static-",
+      "vitest-plan-evidence-",
+      "vitest-shard-evidence-",
+      "vitest-shard-blob-",
+      "vitest-matrix-evidence-",
+      "ci-timings-build-",
+      "playwright-group-evidence-",
+      "playwright-group-blobs-",
+      "playwright-matrix-evidence-",
+      "playwright-merged-report-",
+    ];
+    for (const name of originalUploads)
+      expect(uploadSteps.filter((step) => step.includes(`          name: ${name}`))).toHaveLength(
+        1,
+      );
   });
 });

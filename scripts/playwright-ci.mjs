@@ -155,6 +155,8 @@ const CI_TIMING_KEYS = [
 const GROUP_TERMINAL_KEYS = ["exitCode", "signal", "status"];
 const MATRIX_GROUP_MAX = 6;
 const SUITE_SHARD_MAX = 4;
+const GROUP02_DIAGNOSTIC_GROUP = "group-02";
+const GROUP02_DIAGNOSTIC_REPORTER = "./tests/helpers/ar-00b-group-02-diagnostic-reporter.ts";
 const SHA256_PATTERN = /^[a-f0-9]{64}$/u;
 const SAFE_RUN_ID_PATTERN = /^[1-9][0-9]{0,19}$/u;
 const LOCKED_SOURCE_RUN_ID = 33335864920;
@@ -1241,7 +1243,14 @@ function devx01fKillChild(child, signal, detached) {
   }
 }
 
-async function devx01fExecuteEntry({ suite, entry, blobPath, repositoryRoot }) {
+async function devx01fExecuteEntry({
+  suite,
+  entry,
+  blobPath,
+  repositoryRoot,
+  groupId,
+  diagnosticDirectory,
+}) {
   const startedAt = new Date().toISOString();
   const started = process.hrtime.bigint();
   const detached = process.platform !== "win32";
@@ -1250,13 +1259,37 @@ async function devx01fExecuteEntry({ suite, entry, blobPath, repositoryRoot }) {
   let forceTimer;
   const args = ["exec", "playwright", ...suite.args];
   if (entry.shardIndex !== undefined) args.push(`--shard=${entry.shardIndex}/${entry.shardTotal}`);
-  args.push("--reporter=blob");
+  const sharedDiagnostic =
+    groupId === GROUP02_DIAGNOSTIC_GROUP && diagnosticDirectory !== undefined;
+  args.push(
+    sharedDiagnostic ? `--reporter=blob,${GROUP02_DIAGNOSTIC_REPORTER}` : "--reporter=blob",
+  );
+  const diagnostic = sharedDiagnostic
+    ? {
+        VESKIFY_AR00B_GROUP02_DIAGNOSTICS: "1",
+        VESKIFY_AR00B_GROUP02_DIAGNOSTIC_ROOT: diagnosticDirectory,
+        VESKIFY_AR00B_GROUP02_REPOSITORY_ROOT: repositoryRoot,
+        VESKIFY_AR00B_GROUP02_SUITE_ID: suite.id,
+      }
+    : {};
+  if (sharedDiagnostic) {
+    devx01fWriteJsonAtomic(join(diagnosticDirectory, suite.id, "runner-before.json"), {
+      schemaVersion: "1.0.0",
+      recordType: "ar-00b-group02-suite-boundary",
+      phase: "BEFORE_CHILD",
+      groupId,
+      suiteId: suite.id,
+      command: ["pnpm", ...args],
+      cwd: repositoryRoot,
+      startedAt,
+    });
+  }
   const child = spawn("pnpm", args, {
     cwd: repositoryRoot,
     detached,
     stdio: "inherit",
     shell: false,
-    env: { ...process.env, PLAYWRIGHT_BLOB_OUTPUT_FILE: blobPath },
+    env: { ...process.env, PLAYWRIGHT_BLOB_OUTPUT_FILE: blobPath, ...diagnostic },
   });
   child.once("error", () => {
     spawnFailed = true;
@@ -1291,6 +1324,21 @@ async function devx01fExecuteEntry({ suite, entry, blobPath, repositoryRoot }) {
         : code
       : null;
   const status = effectiveSignal !== null ? "signaled" : exitCode === 0 ? "success" : "failure";
+  if (sharedDiagnostic) {
+    devx01fWriteJsonAtomic(join(diagnosticDirectory, suite.id, "runner-after.json"), {
+      schemaVersion: "1.0.0",
+      recordType: "ar-00b-group02-suite-boundary",
+      phase: "AFTER_CHILD",
+      groupId,
+      suiteId: suite.id,
+      cwd: repositoryRoot,
+      childPid: child.pid ?? null,
+      completedAt,
+      exitCode,
+      signal: effectiveSignal,
+      status,
+    });
+  }
   return {
     startedAt,
     completedAt,
@@ -1347,8 +1395,16 @@ async function runExecutionGroup({
   if (devx01fPathExists(groupDirectory)) fail("Group output already exists.");
   const timingDirectory = join(groupDirectory, "timings");
   const blobDirectory = join(groupDirectory, "blobs");
+  const diagnosticDirectory =
+    groupId === GROUP02_DIAGNOSTIC_GROUP
+      ? join(dirname(root), ".ci-group02-diagnostics", groupId)
+      : undefined;
   devx01fAssertRealDirectory(timingDirectory, "Group timing directory", true);
   devx01fAssertRealDirectory(blobDirectory, "Group blob directory", true);
+  if (diagnosticDirectory !== undefined) {
+    if (devx01fPathExists(diagnosticDirectory)) fail("Group02 diagnostic output already exists.");
+    devx01fAssertRealDirectory(diagnosticDirectory, "Group02 diagnostic directory", true);
+  }
   const expectedEntries = group.entries.map((entry, index) =>
     devx01fExpectedEntry(entry, suiteById.get(entry.suiteId), index + 1),
   );
@@ -1372,7 +1428,14 @@ async function runExecutionGroup({
     const expected = expectedEntries[index];
     const suite = suiteById.get(entry.suiteId);
     const blobPath = join(blobDirectory, expected.blobFilename);
-    const result = await devx01fExecuteEntry({ suite, entry, blobPath, repositoryRoot });
+    const result = await devx01fExecuteEntry({
+      suite,
+      entry,
+      blobPath,
+      repositoryRoot,
+      groupId,
+      diagnosticDirectory,
+    });
     const blobExists = devx01fPathExists(blobPath);
     if (result.status === "success") {
       const blobStats = devx01fAssertRegularFile(blobPath, "Playwright blob report");

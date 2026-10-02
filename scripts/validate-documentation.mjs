@@ -1207,6 +1207,11 @@ if ((tracker.match(/☑/g) ?? []).length !== 66) {
   failures.push("Delivery tracker must contain exactly sixty-six completed checkboxes");
 }
 
+// AR-00B changes current eligibility while preserving the dated pre-AR rows below.
+requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
+  "AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch.",
+]);
+
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
   (match) => match[1],
 );
@@ -1297,13 +1302,15 @@ if (
   !/^\| ☑\s+\| P10B-19A-10B1\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-10B2\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-19A-10C\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| ☐\s+\| P10B-19B-01\s+\|[^\n]*\| \*\*Planned \/ exact next\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-19B-01\s+\|[^\n]*\| \*\*Planned \/ historical pre-AR selection; not current eligibility\*\*/m.test(
+    tracker,
+  ) ||
   !/^\| ☐\s+\| P10B-19B-J\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must preserve accepted predecessor Baselines, close A-10 and P10B-19A, make A-10C Baseline, make P10B-19B-01 Planned / exact next, and keep P10B-19B-J Planned",
+    "Delivery tracker must preserve accepted predecessor Baselines, close A-10 and P10B-19A, make A-10C Baseline, retain P10B-19B-01 as a historical pre-AR selection, not current eligibility, and keep P10B-19B-J Planned",
   );
 }
 
@@ -1324,10 +1331,12 @@ if (
   !/^\| Baseline\s+\| P10B-19A-10B1\s+\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| Baseline\s+\| P10B-19A-10B2\s+\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| Baseline\s+\| P10B-19A-10C\s+\| \*\*Baseline\*\*/m.test(tracker) ||
-  !/^\| Next\s+\| P10B-19B-01\s+\| \*\*Planned \/ exact next\*\*/m.test(tracker)
+  !/^\| Historical next\s+\| P10B-19B-01\s+\| \*\*Planned \/ historical pre-AR selection; not current eligibility\*\*/m.test(
+    tracker,
+  )
 ) {
   failures.push(
-    "Delivery tracker current-state table must preserve accepted predecessor Baselines, close A-10 and P10B-19A, make A-10C Baseline and make P10B-19B-01 Planned / exact next",
+    "Delivery tracker current-state table must preserve accepted predecessor Baselines, close A-10 and P10B-19A, make A-10C Baseline and retain P10B-19B-01 as a historical pre-AR selection, not current eligibility",
   );
 }
 
@@ -1341,7 +1350,7 @@ if (
   !/^\| ☑\s+\| P10B-19A-10C\s+\| P10B-19A Closure and Product-Owner Architecture Gate\s+\| \*\*Baseline\*\*[^\n]*\| P10B-19A-10B2 merged\s+\|[^\n]*Accepted closure manifest; retained 26-file execution\/discovery authority; frozen predecessors\/architecture and explicit product-owner decision; zero production/m.test(
     tracker,
   ) ||
-  !/^\| ☐\s+\| P10B-19B-01\s+\| VisualRecipeIntentV1 Safe Schema and Capability Projection\s+\| \*\*Planned \/ exact next\*\*[^\n]*\| P10B-19A-10C merged\s+\|[^\n]*B-01 has not begun/m.test(
+  !/^\| ☐\s+\| P10B-19B-01\s+\| VisualRecipeIntentV1 Safe Schema and Capability Projection\s+\| \*\*Planned \/ historical pre-AR selection; not current eligibility\*\*[^\n]*\| P10B-19A-10C merged\s+\|[^\n]*B-01 has not begun/m.test(
     tracker,
   ) ||
   !/^\| Baseline\s+\| P10B-19A-10B1\s+\| \*\*Baseline\*\*\s+\| Exact fixed-count positive matrix; A-09\/A-10A unchanged; zero production\s+\|/m.test(

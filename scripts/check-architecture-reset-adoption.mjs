@@ -22,7 +22,103 @@ const addendum = read("docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md")
 const disposition = read("docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md");
 const sha256 = (path) => createHash("sha256").update(read(path)).digest("hex");
 
+// AR-00B amends slice eligibility, not the original parent specifications or safety gates.
+for (const [path, clauses] of [
+  [
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    [
+      "An inspectable genuine output, owner-accepted visual quality, and production readiness are separate outcomes.",
+      "AR-08 remains a required foundational completion gate, but it is not a blanket prerequisite",
+    ],
+  ],
+  [
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    [
+      "### Early-slice eligibility crosswalk",
+      "same running server process and same authorized P04 request context",
+      "Plan one baseline request and zero automatic retries",
+      "BATCH-17 grants zero calls",
+      "Do not execute AR-06D in BATCH-17.",
+    ],
+  ],
+  [
+    "docs/DEVELOPMENT_GUIDE.md",
+    [
+      "Silence is not acceptance.",
+      "A technical diagnostic may finish with rejected visual quality",
+    ],
+  ],
+]) {
+  for (const clause of clauses) requireText(path, clause);
+}
+const earlySliceRows = roadmap
+  .split("### Early-slice eligibility crosswalk")[1]
+  ?.split("### Exact next implementation:")[0];
+const earlyOwners = [...(earlySliceRows ?? "").matchAll(/^\| (AR-\d{2})\s*\|/gmu)].map(
+  ([, task]) => task,
+);
+if (
+  JSON.stringify(earlyOwners) !==
+  JSON.stringify([
+    "AR-06",
+    "AR-07",
+    "AR-09",
+    "AR-10",
+    "AR-11",
+    "AR-12",
+    "AR-13",
+    "AR-14",
+    "AR-15",
+    "AR-18",
+    "AR-19",
+    "AR-21",
+    "AR-22",
+  ])
+)
+  throw new Error("AR-00B: exact early-slice owner crosswalk is required");
+
 requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", "AR-23 depends on AR-01");
+// Retained pre-AR schedules must be historical at their point of use, including tables.
+for (const [path, document] of [
+  ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", roadmap],
+  ["docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", tracker],
+]) {
+  const blocks = document.split(/\n\s*\n/u);
+  for (const [index, block] of blocks.entries()) {
+    if (!block.includes("P10B-19B-01") || !/exact[ -]next/iu.test(block)) continue;
+    if (
+      block.startsWith(
+        "Historical scheduling projection (pre-AR; superseded, not current eligibility):",
+      )
+    )
+      continue;
+    if (
+      block.startsWith("- ") &&
+      blocks[index - 1] ===
+        "Historical scheduling projection (pre-AR; superseded, not current eligibility):"
+    )
+      continue;
+    if (
+      block.startsWith("|") &&
+      !block
+        .split("\n")
+        .some((line) => line.includes("P10B-19B-01") && /exact[ -]next/iu.test(line))
+    )
+      continue;
+    throw new Error(
+      `${path}: competing pre-AR next-task projection must be historical at its use site`,
+    );
+  }
+}
+const ar06cRows = tracker.split("\n").filter((line) => /^\| AR-06C\s*\|/u.test(line));
+if (
+  ar06cRows.length !== 1 ||
+  !ar06cRows[0].includes(
+    "**Baseline / closed; accepted PR #261, merge `de0faeba0d40bd36ac83f25d533a3428f83501cc`**",
+  )
+) {
+  throw new Error("tracker: AR-06C child row must record its accepted closure");
+}
 // Mask examples without changing line positions used by the bounded section selectors.
 const policyLines = (document) => {
   let fence;
@@ -367,6 +463,7 @@ statusExpectation.set("AR-05B", "Baseline");
 statusExpectation.set("AR-06", "Partial");
 statusExpectation.set("AR-06A", "Baseline");
 statusExpectation.set("AR-06B", "Baseline");
+statusExpectation.set("AR-06C", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -457,13 +554,15 @@ for (const record of statusRecords) {
                           ? /^closed$/iu
                           : record.subject === "AR-06B"
                             ? /^closed$/iu
-                            : ["AR-05", "AR-05B"].includes(record.subject)
+                            : record.subject === "AR-06C"
                               ? /^closed$/iu
-                              : record.subject === "AR-05A"
+                              : ["AR-05", "AR-05B"].includes(record.subject)
                                 ? /^closed$/iu
-                                : /^AR-\d{2}$/u.test(record.subject)
-                                  ? /^$/u
-                                  : /^(?:closed)?$/iu;
+                                : record.subject === "AR-05A"
+                                  ? /^closed$/iu
+                                  : /^AR-\d{2}$/u.test(record.subject)
+                                    ? /^$/u
+                                    : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -490,12 +589,17 @@ for (const [path] of allCurrentAuthorities) {
 const nextTaskIds = (block) =>
   [
     ...block.matchAll(
-      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:(?:sole|exact) next (?:reset )?(?:task|selected child)|selected successor)/giu,
+      /(AR-\d{2}[A-Z]?) is (?:(?!AR-\d{2}[A-Z]?)[^.]){0,80}?(?:(?:sole|exact) next (?:reset )?(?:task|selected child)|exact selected next child|selected successor)/giu,
     ),
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (declaredNext.length > 0) {
+  if (
+    declaredNext.some((id) => id !== "AR-06D") ||
+    declaredNext.filter((id) => id === "AR-06D").length > 1 ||
+    (declaredNext.includes("AR-06D") &&
+      !block.includes("AR-06D is the exact selected next child, Planned and unstarted"))
+  ) {
     throw new Error(`${path}: current authority assigns ${declaredNext[0]} as next`);
   }
 }
@@ -524,7 +628,7 @@ if (
   ) ||
   !trackerCurrent.includes("AR-02 is Baseline / closed;") ||
   !trackerCurrent.includes(
-    "AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is a guarded composed static-draft persistence candidate with independent verification complete, pending final-head CI and accepted delivery. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement.",
+    "AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement.",
   ) ||
   !trackerCurrent.includes("AR-03 is Baseline / closed;") ||
   !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
@@ -537,13 +641,14 @@ if (
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
   !trackerCurrent.includes(
-    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout.",
+    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is a policy amendment under review until its accepted merge. AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch.",
   ) ||
   !trackerCurrent.includes("No successor implementation is authorized.") ||
-  nextTaskIds(trackerCurrent).length !== 0
+  nextTaskIds(trackerCurrent).some((id) => id !== "AR-06D") ||
+  !nextTaskIds(trackerCurrent).includes("AR-06D")
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B verified closure and AR-06C pending delivery and AR-06 Partial and no successor are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B verified closure and AR-06C accepted closure, AR-06 Partial, and the qualified AR-06D selection are required",
   );
 }
 if (
@@ -559,7 +664,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is a guarded composed static-draft persistence candidate with independent verification complete, pending final-head CI and accepted delivery. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 closes only upon accepted AR-06C delivery and safe closeout. No successor implementation is authorized.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is a policy amendment under review until its accepted merge. AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch. No successor implementation is authorized.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
