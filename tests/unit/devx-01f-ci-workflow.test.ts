@@ -76,6 +76,12 @@ describe("DEVX-01F browser matrix workflow authority", () => {
       "playwright-group-blobs-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.groupId }}",
     );
     expect(matrixJob).toContain("retention-days: 3");
+    expect(matrixJob).toContain(
+      "group-02-browser-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.groupId }}",
+    );
+    expect(matrixJob).toContain(".ci-group02-diagnostics/${{ matrix.groupId }}");
+    expect(matrixJob).toContain("include-hidden-files: true");
+    expect(matrixJob).toContain("if-no-files-found: error");
     expect(workflow).not.toContain("pnpm test:e2e");
     expect(workflow).not.toContain("PLAYWRIGHT_CI_TIMING_OUTPUT_DIRECTORY");
   });
