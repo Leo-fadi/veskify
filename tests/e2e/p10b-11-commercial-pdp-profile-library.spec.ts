@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import type { TestInfo } from "@playwright/test";
+import {
+  attachPdpDiagnostic,
+  gotoPdpWithDiagnostics,
+  latestPdpDiagnostic,
+  refreshPdpDiagnostic,
+} from "../helpers/ar-00b-pdp-diagnostics";
 import { expectNoStorefrontHorizontalClipping } from "./storefront-geometry";
 
 const profiles = [
@@ -10,6 +17,29 @@ const profiles = [
 
 const widths = [375, 768, 1024, 1440] as const;
 
+async function navigateWithAttachment(
+  page: Parameters<typeof gotoPdpWithDiagnostics>[0],
+  testInfo: TestInfo,
+  profileId: string,
+  suffix: string,
+) {
+  try {
+    const diagnostic = await gotoPdpWithDiagnostics(
+      page,
+      `/p10b-11-pdp-proof?profile=${profileId}`,
+      process.cwd(),
+      Number(process.env.PLAYWRIGHT_PORT ?? "3100"),
+      String(testInfo.project.metadata.ar00bPdpRuntimeMode ?? "CONFIGURED:unknown"),
+    );
+    await attachPdpDiagnostic(testInfo, `${profileId}-${suffix}-route`, diagnostic);
+    return diagnostic;
+  } catch (error) {
+    const diagnostic = latestPdpDiagnostic(page);
+    if (diagnostic) await attachPdpDiagnostic(testInfo, `${profileId}-${suffix}-route`, diagnostic);
+    throw error;
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route("https://lumo.example/**", (route) =>
     route.fulfill({
@@ -17,6 +47,16 @@ test.beforeEach(async ({ page }) => {
       contentType: "image/svg+xml",
     }),
   );
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status === testInfo.expectedStatus) return;
+  const diagnostic = refreshPdpDiagnostic(
+    page,
+    process.cwd(),
+    Number(process.env.PLAYWRIGHT_PORT ?? "3100"),
+  );
+  if (diagnostic) await attachPdpDiagnostic(testInfo, "final-route", diagnostic);
 });
 
 for (const profileId of profiles) {
@@ -30,7 +70,7 @@ for (const profileId of profiles) {
         }
       });
       await page.setViewportSize({ width, height: width === 375 ? 1000 : 1100 });
-      await page.goto(`/p10b-11-pdp-proof?profile=${profileId}`);
+      await navigateWithAttachment(page, testInfo, profileId, `${width}px`);
       const root = page.locator(`[data-p10b-11-pdp-profile="${profileId}"]`);
       await expect(root).toHaveAttribute("data-profile-version", "1.0.0");
       await expect(root).toHaveAttribute("data-structural-fingerprint", /pdp-profile-/);
@@ -56,12 +96,12 @@ for (const profileId of profiles) {
   }
 }
 
-test("all PDP profiles retain distinct structural composition", async ({ page }) => {
+test("all PDP profiles retain distinct structural composition", async ({ page }, testInfo) => {
   test.setTimeout(240_000);
   const fingerprints = new Set<string>();
   const compositions = new Set<string>();
   for (const profileId of profiles) {
-    await page.goto(`/p10b-11-pdp-proof?profile=${profileId}`);
+    await navigateWithAttachment(page, testInfo, profileId, "distinct");
     const root = page.locator(`[data-p10b-11-pdp-profile="${profileId}"]`);
     fingerprints.add((await root.getAttribute("data-structural-fingerprint"))!);
     compositions.add(

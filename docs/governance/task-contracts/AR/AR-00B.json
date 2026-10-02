@@ -30,7 +30,8 @@
     "AGENTS.md",
     "ADR-001 through ADR-004",
     "Owner BATCH-17 launch and /Users/leo/Downloads/BATCH-17_Codex_Runbook.md",
-    "Pinned support /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-02/hashes.json SHA256 a0c346015966262f9b7d7899d95a5d985a4c26dfbb7f5155ca5333460732ca5b"
+    "Pinned support /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-04/hashes.json SHA256 707689821521f2abe9c95ed8c336ab08f7483af6e43474376cc1832f513f254a",
+    "Owner2026-10-02 bounded PDP test-server diagnosis/correction authority; preserve complete prior BATCH17 policy acceptance and all original evidence."
   ],
   "ownedPaths": [
     "AGENTS.md",
@@ -51,7 +52,16 @@
     "scripts/export-development-delivery-tracker-docx.mjs",
     "docs/VESKIFY_SDD_v1.3.0.docx",
     "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
-    "scripts/validate-documentation.mjs"
+    "scripts/validate-documentation.mjs",
+    "playwright.p10b-11.config.ts",
+    "tests/e2e/p10b-11-commercial-pdp-profile-library.spec.ts",
+    "playwright.config.ts",
+    "scripts/playwright-ci.mjs",
+    "tests/unit/devx-01e-playwright-ci.test.ts",
+    "tests/unit/devx-01f-playwright-ci.test.ts",
+    "tests/unit/ar-00b-pdp-server-readiness.test.ts",
+    ".github/workflows/ci.yml",
+    "tests/helpers/ar-00b-pdp-diagnostics.ts"
   ],
   "allowedPaths": [
     "AGENTS.md",
@@ -81,18 +91,25 @@
     "docs/Veskify_Architecture_Reset/manifest.json",
     "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
     "docs/Veskify_Architecture_Reset/00_START_HERE.md",
-    "scripts/validate-documentation.mjs"
+    "scripts/validate-documentation.mjs",
+    "playwright.p10b-11.config.ts",
+    "tests/e2e/p10b-11-commercial-pdp-profile-library.spec.ts",
+    "playwright.config.ts",
+    "scripts/playwright-ci.mjs",
+    "tests/unit/devx-01e-playwright-ci.test.ts",
+    "tests/unit/devx-01f-playwright-ci.test.ts",
+    "tests/unit/ar-00b-pdp-server-readiness.test.ts",
+    ".github/workflows/ci.yml",
+    "tests/helpers/ar-00b-pdp-diagnostics.ts"
   ],
   "forbiddenPaths": [
     "src/**",
     ".git/**",
-    ".github/**",
     ".codex/**",
     ".agents/**",
     "package.json",
     "pnpm-lock.yaml",
     "next.config.*",
-    "playwright*.ts",
     "vitest*.ts",
     "scripts/check-storefront-build-budgets.mjs",
     "tests/fixtures/**",
@@ -102,9 +119,11 @@
     "ZERO application/runtime changes; all schema scope-budget constants remain standard.",
     "Nine untracked original architecture inputs are allowlisted solely for complete native identity; exact preflight hashes remain unchanged and originals must not be staged or published.",
     "Prior task contracts/locks/verdicts/build/browser identities and historical evidence remain immutable; no historical rebaselining.",
-    "No role/permission/dependency/build/CI/budget/fixture changes, model calls, local browser/build, new worktree, VerifyAI activity or successor execution.",
+    "No role/permission/dependency/build/CI-workflow/budget/fixture changes, model calls, productionbuild, newworktree, VerifyAIactivity or successor. Only up to SIX total local Playwright invocations (oneworker, zeroretries), bounded localdevserver/HTTP diagnostics, trace/captures and named test-support edits authorized; all earlier executions retained. Sharedbaseconfig/runner edits only after demonstrated cause; other configs and suite inventory/grouping unchanged.",
     "Cleanup only completed owned export/worktree caches and reproducible dependencies per runbook; root node_modules, profiles/IndexedDB/saved drafts, source and required proof protected.",
-    "Public disclosure only reviewed task diff and sanitized description, never raw local evidence or credentials."
+    "Public disclosure only reviewed task diff and sanitized description, never raw local evidence or credentials.",
+    "Do not poll/reload a failed PDP route until pass, skip any17cases, accept404, increasetimeouts, patchdependencies, changeapplication or fake responses. Preserve prior policy635tests under original attribution; no cleanuprepeat. Direct runner tests changed only if affected. Task-owned small readiness unit test allowed for demonstrated config/spec correction.",
+    "All .github content unchanged except one bounded14day PDPdiagnostic artifact upload in ci.yml. Instrumentation must not change readiness, server command/ports, retries, timeouts, dependencies, assertions, grouping, permission or product behavior."
   ],
   "scopeBudget": {
     "targetMaxNetProductionLines": 1000,
@@ -136,7 +155,7 @@
     "secretFilesAllowed": []
   },
   "implementationApproach": {
-    "selectedApproach": "Dated normative amendment in existing SDD/addendum, actual slice eligibility/crosswalk and ONE next-task brief in the existing roadmap, factual tracker and bounded projections; extend existing documentation checks/exporters only as needed; reuse retirement procedures and record zero eligible cleanup honestly.",
+    "selectedApproach": "Dated normative amendment in existing SDD/addendum, actual slice eligibility/crosswalk and ONE next-task brief in the existing roadmap, factual tracker and bounded projections; extend existing documentation checks/exporters only as needed; reuse retirement procedures and record zero eligible cleanup honestly. Owner2026-10-02 diagnostic-only exception: use existing Playwright initial-attempt failure traces, piped server logs and task-owned bounded read-only metadata attachments. Add no prewarming, polling, reload, alternate renderer or forced outcome.",
     "canonicalAuthorityExtended": "Existing AR delivery policy; StorefrontSnapshot, BrandSystem/Design DNA, PageBlueprint and registered components retain sole product ownership.",
     "namedCurrentConsumers": [
       "Roadmap task scheduling and tracker status",
@@ -190,17 +209,24 @@
     },
     {
       "id": "AC-06",
-      "requirement": "Accepted delivery: Precommit review verifies preserved standing authorization and mandatory independent/native PASS, exactly one automatic review, resolved findings, final-head CI and expected-head protected merge policy. AC06 delivery itself closes only after actual accepted merge/safe synchronization; precommit PASS must not claim future events already occurred. Coordinator records actual postmerge evidence/closeout, no successor execution.",
+      "requirement": "Accepted delivery: Precommit review verifies preserved standing authorization and mandatory independent/native PASS, exactly one automatic review, resolved findings, final-head CI and expected-head protected merge policy. AC06 delivery itself closes only after actual accepted merge/safe synchronization; precommit PASS must not claim future events already occurred. Coordinator records actual postmerge evidence/closeout, no successor execution. EXPLICIT OWNER EXCEPTION: one instrumentation-only commit/push before overallPASS is permitted after independent diagnostic scope/safety/assertion/static/output-retention review. Whole task remains BLOCKED pending LinuxCI; do not manufacture nativePASS. Schema commitPolicy retains its normal invariant; this named owner exception overrides it only for that single diagnostic delivery. No exception to final merge gates.",
       "verificationClass": "documentation",
       "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-05", "EVIDENCE-06"],
       "failureBehavior": "FAIL or BLOCKED for missing proof, contradictory authority, weakened requirement or out-of-scope action; retain actual pending delivery gates."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Collect missing PDP evidence in original LinuxCI workflow, suiteorder/dependencies/browser/assertions, through initial failure-retained traces, server stdout/stderr, existing navigation URL/status/finalURL and bounded safe failure body/process/cwd/route metadata. No routewarmup, polling/reload, readiness/port/retry/timeout change. Preserve17PDPcases, commerce/fourwidths/structuraldistinction. At most1diagnosticCIrun plus1evidence-backed correctionrun. If404recurs, establish first server/route cause before minimal authorized repair. If all required final-headCI including17PDP pass, explicitly record Original404notreproduced;rootcauseremainsunproven. Owner permits delivery with that residual uncertainty only after independent acceptance of complete evidence and no concrete blocker. LocalPW4of6used; remaining2onlyifgenuinelyuseful, no localbuild/modelcall.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-05", "EVIDENCE-07"],
+      "failureBehavior": "Keep whole task BLOCKED before Linuxevidence. No unexplainedCIretry, speculativefix, relabelledoldfailure, currentfailurewaiver or earlymerge."
     }
   ],
   "requiredValidation": [
     {
       "id": "VALIDATION-01",
-      "command": "pnpm exec vitest run tests/unit/ar-00-architecture-reset-adoption.test.ts --maxWorkers=1",
-      "purpose": "Existing focused policy/current status/ownership/negative mutation controls",
+      "command": "pnpm exec vitest run tests/unit/ar-00b-pdp-server-readiness.test.ts tests/unit/devx-01f-playwright-ci.test.ts --maxWorkers=1 tests/unit/devx-01e-ci-workflow.test.ts tests/unit/devx-01f-ci-workflow.test.ts",
+      "purpose": "Diagnostic safety/retention/unchangedbehavior controls plus existing strict groupartifact validation.",
       "requiredEvidence": ["EVIDENCE-03"]
     },
     {
@@ -211,13 +237,13 @@
     },
     {
       "id": "VALIDATION-03",
-      "command": "pnpm exec eslint scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/validate-documentation.mjs",
+      "command": "pnpm exec eslint scripts/check-architecture-reset-adoption.mjs scripts/export-development-delivery-tracker-docx.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/validate-documentation.mjs playwright.p10b-11.config.ts tests/e2e/p10b-11-commercial-pdp-profile-library.spec.ts tests/unit/ar-00b-pdp-server-readiness.test.ts tests/helpers/ar-00b-pdp-diagnostics.ts",
       "purpose": "Scoped lint of allowed changed support/test code",
       "requiredEvidence": ["EVIDENCE-03"]
     },
     {
       "id": "VALIDATION-04",
-      "command": "pnpm exec prettier --check AGENTS.md README.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md docs/BATCH_17_EXECUTION.md docs/governance/task-contracts/AR/AR-00B.json scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs scripts/validate-documentation.mjs",
+      "command": "pnpm exec prettier --check AGENTS.md README.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/AR_00_SOURCE_DISPOSITION_AND_ACCEPTANCE.md docs/BATCH_17_EXECUTION.md docs/governance/task-contracts/AR/AR-00B.json scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/export-development-delivery-tracker-docx.mjs scripts/validate-documentation.mjs playwright.p10b-11.config.ts tests/e2e/p10b-11-commercial-pdp-profile-library.spec.ts tests/unit/ar-00b-pdp-server-readiness.test.ts tests/helpers/ar-00b-pdp-diagnostics.ts .github/workflows/ci.yml",
       "purpose": "Scoped textual formatting",
       "requiredEvidence": ["EVIDENCE-03"]
     },
@@ -225,13 +251,13 @@
       "id": "VALIDATION-05",
       "command": "pnpm docs:validate",
       "purpose": "Existing documentation authority/status/link/adoption checks including BOTH deterministic DOCX check-only exports",
-      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+      "requiredEvidence": ["EVIDENCE-03"]
     },
     {
       "id": "VALIDATION-06",
       "command": "pnpm docs:check:requirements",
       "purpose": "Existing retained requirement traceability",
-      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03"]
+      "requiredEvidence": ["EVIDENCE-03"]
     },
     {
       "id": "VALIDATION-07",
@@ -241,15 +267,21 @@
     },
     {
       "id": "VALIDATION-08",
-      "command": "node scripts/task-governance.mjs identity --contract /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/contract-02/contract.json --expected-file-sha256 \"$AR00B_CONTRACT_SHA256\"",
+      "command": "node scripts/task-governance.mjs identity --contract /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/contract-06/contract.json --expected-file-sha256 \"$AR00B_CONTRACT_SHA256\"",
       "purpose": "Complete native identity, including untracked original inputs and final corrected diff",
       "requiredEvidence": ["EVIDENCE-05"]
     },
     {
       "id": "VALIDATION-09",
-      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-02/check-preservation.py",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-06/check-preservation.py",
       "purpose": "Exact scope/originals/budget/historical/AR06\u201330 acceptance and T01\u201324 preservation",
-      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-05"]
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/support-06/check-linux-evidence.py",
+      "purpose": "Final independent offline reconciliation of authentically retrieved final-headLinuxCI and17PDPblob, pending at diagnostic pre-push review. Localcompletebrowser runs onlyifuseful under remaining2slots.",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-07"]
     }
   ],
   "requiredEvidence": [
@@ -270,7 +302,7 @@
     {
       "id": "EVIDENCE-03",
       "type": "command",
-      "description": "Actual independent focused policy/typecheck/lint/format/documentation command logs and exit results.",
+      "description": "Actual independent focused policy/typecheck/lint/format/documentation command logs and exit results. Earlier635policytests retained at independent-correction-01 originalcontract/head; finalverifier verifies applicability separately. Fresh affectedcheck execution is not oldcampaign rerun.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     },
@@ -291,7 +323,14 @@
     {
       "id": "EVIDENCE-06",
       "type": "document",
-      "description": "Complete verifier-authored native report at /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/independent-correction-01/verdict.json. Verifier writes own exact bytes; separate evidence-06.json/provenance.json records assignment and author/tool provenance without self-referential hash. Any correction uses fresh assigned persistent paths. Native reconciliation only against full authentic report, no coordinator reconstruction.",
+      "description": "Complete verifier-authored final native report at /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/independent-linux-final-01/verdict.json with own provenance and actual commands. Separate instrumentation-only review at /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/independent-instrumentation-01/review.json expressly does not constitute overall nativePASS. Preserve earlier BLOCKED/FAIL/PASS unchanged.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-07",
+      "type": "document",
+      "description": "Prior pdp-diagnosis-01 preserved. New diagnostic scope review, exact once-only commit binding and authentic LinuxCI logs/artifacts under /Users/leo/veskify-batch-runs/BATCH-17/AR-00B/delivery/diagnostic-ci-01. Keep original404uncertainty unless evidenceestablishescause. Distinct PDPartifact name,14dayretention, all canonical artifactguards unchanged.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     }
