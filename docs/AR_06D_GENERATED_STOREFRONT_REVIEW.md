@@ -1,7 +1,6 @@
 # AR-06D — generated storefront review
 
-AR-06D is in progress under BATCH-18 on the accepted AR-00B base
-`fa6c200621e5fd093b5e112285e85e78d810762b`. The owner accepts its honest technical baseline, with visual quality below target. Final PR review, CI and merge remain pending; commercial-quality acceptance and production approval are not granted.
+AR-06D is Baseline / closed at PR #263, accepted head `496664011c0b7553233ee160b70e2d89fc795eb2`, merged as `970b6cd00a7df90cd7b2ff1008916e8c602127d0` on 16 October 2026. Independent/native verification, the single automatic review and all twelve final-head CI jobs passed. The owner accepts its honest technical baseline, with visual quality below target; commercial-quality acceptance and production approval are not granted. The historical execution below used the accepted AR-00B base `fa6c200621e5fd093b5e112285e85e78d810762b`.
 AR-06 remains Partial; completed predecessors remain closed.
 
 ## Outcome and authority
@@ -111,5 +110,5 @@ remain, without reconstruction.
 
 The owner's original English-desktop observation is retained verbatim: “Much better structurally
 but still the same or close to i”. The detailed visual diagnoses remain coordinator hypotheses.
-BATCH-19 authorizes AR-10A only after accepted AR-06D merge; implementation remains unstarted.
+AR-10A is In progress under BATCH-19 launch on the accepted AR-06D merge. It uses the preserved generated candidate with zero additional paid calls; its own visual disposition, independent verification, review, CI and merge remain required.
 AR-10A requires its own actual visual checkpoint before merge.

@@ -1,0 +1,4527 @@
+{
+  "project": {
+    "id": "project_p10b16p04_aurum_commercial_acceptance",
+    "name": "Aurum Nordic",
+    "mode": "salesDemo",
+    "industry": "jewellery",
+    "primaryLocale": "en",
+    "enabledLocales": [
+      "en",
+      "fi"
+    ],
+    "businessProfile": {
+      "name": "Aurum Nordic",
+      "description": "A fictional Helsinki jewellery house pairing Nordic restraint with warm, lasting materials.",
+      "audience": "Design-conscious customers looking for meaningful jewellery and dependable watches.",
+      "market": "Finland",
+      "sourceReferences": [
+        "https://aurum.example/p10b-16p-04j/"
+      ]
+    },
+    "publishedSnapshotId": "snapshot_p10b16p04_aurum_commercial_published",
+    "draftSnapshotId": "snapshot_p10b16p04_aurum_commercial_draft",
+    "revision": 0,
+    "createdAt": "2026-08-14T09:00:00.000Z",
+    "updatedAt": "2026-08-14T09:00:00.000Z"
+  },
+  "catalogue": {
+    "id": "catalogue_p10b16p04_aurum_commercial_acceptance",
+    "products": [
+      {
+        "id": "product_aurora_ring_585",
+        "sku": "RING-AUR-585",
+        "title": {
+          "en": "Aurora Ring 585",
+          "fi": "Aurora-sormus 585"
+        },
+        "description": {
+          "en": "A slender yellow-gold diamond ring with a soft comfort profile.",
+          "fi": "Siro keltakultainen timanttisormus pehmeällä comfort-profiililla."
+        },
+        "price": {
+          "amount": 1290,
+          "currency": "EUR"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "asset_aurora_ring",
+            "url": "/seed-assets/aurora-ring.svg",
+            "alt": {
+              "en": "Aurora yellow-gold diamond ring",
+              "fi": "Aurora-keltakultainen timanttisormus"
+            },
+            "decorative": false
+          },
+          {
+            "id": "asset_aurora_ring_detail",
+            "url": "/seed-assets/aurora-ring.svg",
+            "alt": {
+              "en": "Aurora ring side detail",
+              "fi": "Aurora-sormuksen sivuyksityiskohta"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "ring",
+        "attributes": {
+          "material": "gold",
+          "fineness": "585",
+          "karat": "14K",
+          "metalColour": "yellow",
+          "stoneType": "diamond",
+          "stoneShape": "round",
+          "stoneColour": "colourless",
+          "stoneSetting": "prong",
+          "ringSizes": [
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21"
+          ],
+          "ringWidthMm": 2.2,
+          "ringProfile": "comfort",
+          "engraving": "available",
+          "audience": "unisex",
+          "styleTags": [
+            "minimal",
+            "timeless",
+            "bridal"
+          ]
+        },
+        "variants": [],
+        "orderOptions": [
+          {
+            "id": "option_aurora_size",
+            "type": "selection",
+            "label": {
+              "en": "Ring size",
+              "fi": "Sormuskoko"
+            },
+            "required": true,
+            "values": [
+              {
+                "en": "15",
+                "fi": "15"
+              },
+              {
+                "en": "16",
+                "fi": "16"
+              },
+              {
+                "en": "17",
+                "fi": "17"
+              },
+              {
+                "en": "18",
+                "fi": "18"
+              },
+              {
+                "en": "19",
+                "fi": "19"
+              },
+              {
+                "en": "20",
+                "fi": "20"
+              },
+              {
+                "en": "21",
+                "fi": "21"
+              }
+            ]
+          },
+          {
+            "id": "option_aurora_engraving",
+            "type": "text",
+            "label": {
+              "en": "Engraving",
+              "fi": "Kaiverrus"
+            },
+            "required": false,
+            "maxLength": 20
+          }
+        ],
+        "seo": {
+          "title": {
+            "en": "Aurora Ring 585 | Aurum Nordic",
+            "fi": "Aurora-sormus 585 | Aurum Nordic"
+          },
+          "metaDescription": {
+            "en": "Yellow-gold diamond ring in sizes 15–21.",
+            "fi": "Keltakultainen timanttisormus koossa 15–21."
+          }
+        }
+      },
+      {
+        "id": "product_lumi_halo_ring",
+        "sku": "RING-LUM-HALO",
+        "title": {
+          "en": "Lumi Halo Ring",
+          "fi": "Lumi Halo -sormus"
+        },
+        "description": {
+          "en": "A white-gold halo ring centred on a brilliant round diamond.",
+          "fi": "Valkokultainen halosormus, jonka keskellä säihkyy pyöreä timantti."
+        },
+        "price": {
+          "amount": 1890,
+          "currency": "EUR"
+        },
+        "stockStatus": "lowStock",
+        "images": [
+          {
+            "id": "asset_lumi_ring",
+            "url": "/seed-assets/lumi-halo-ring.svg",
+            "alt": {
+              "en": "Lumi white-gold halo ring",
+              "fi": "Lumi-valkokultainen halosormus"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "ring",
+        "attributes": {
+          "material": "gold",
+          "fineness": "585",
+          "karat": "14K",
+          "metalColour": "white",
+          "stoneType": "diamond",
+          "stoneShape": "round",
+          "stoneColour": "colourless",
+          "stoneSetting": "halo",
+          "ringSizes": [
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20"
+          ],
+          "ringWidthMm": 2.5,
+          "audience": "women",
+          "styleTags": [
+            "halo",
+            "brilliant",
+            "celebration"
+          ]
+        },
+        "variants": [],
+        "orderOptions": [
+          {
+            "id": "option_lumi_size",
+            "type": "selection",
+            "label": {
+              "en": "Ring size",
+              "fi": "Sormuskoko"
+            },
+            "required": true,
+            "values": [
+              {
+                "en": "15",
+                "fi": "15"
+              },
+              {
+                "en": "16",
+                "fi": "16"
+              },
+              {
+                "en": "17",
+                "fi": "17"
+              },
+              {
+                "en": "18",
+                "fi": "18"
+              },
+              {
+                "en": "19",
+                "fi": "19"
+              },
+              {
+                "en": "20",
+                "fi": "20"
+              }
+            ]
+          }
+        ],
+        "seo": {
+          "title": {
+            "en": "Lumi Halo Ring | Aurum Nordic",
+            "fi": "Lumi Halo -sormus | Aurum Nordic"
+          },
+          "metaDescription": {
+            "en": "White-gold halo diamond ring.",
+            "fi": "Valkokultainen halo-timanttisormus."
+          }
+        }
+      },
+      {
+        "id": "product_aava_necklace_925",
+        "sku": "NECK-AAVA-925",
+        "title": {
+          "en": "Aava Silver Necklace",
+          "fi": "Aava-hopeakaulakoru"
+        },
+        "description": {
+          "en": "A calm sterling-silver pendant with two chain lengths.",
+          "fi": "Rauhallinen sterlinghopeariipus kahdella ketjupituudella."
+        },
+        "price": {
+          "amount": 149,
+          "currency": "EUR"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "asset_aava_necklace",
+            "url": "/seed-assets/aava-necklace.svg",
+            "alt": {
+              "en": "Aava sterling-silver necklace",
+              "fi": "Aava-sterlinghopeakaulakoru"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "necklace",
+        "attributes": {
+          "material": "silver",
+          "fineness": "925",
+          "metalColour": "white",
+          "chainLengthsCm": [
+            "45",
+            "50"
+          ],
+          "audience": "unisex",
+          "styleTags": [
+            "minimal",
+            "everyday",
+            "Nordic"
+          ]
+        },
+        "variants": [
+          {
+            "id": "variant_aava_45",
+            "label": {
+              "en": "45 cm",
+              "fi": "45 cm"
+            },
+            "attributes": {
+              "chainLengthCm": 45
+            }
+          },
+          {
+            "id": "variant_aava_50",
+            "label": {
+              "en": "50 cm",
+              "fi": "50 cm"
+            },
+            "attributes": {
+              "chainLengthCm": 50
+            }
+          }
+        ],
+        "seo": {
+          "title": {
+            "en": "Aava Silver Necklace | Aurum Nordic",
+            "fi": "Aava-hopeakaulakoru | Aurum Nordic"
+          },
+          "metaDescription": {
+            "en": "Sterling-silver necklace in 45 and 50 cm.",
+            "fi": "Sterlinghopeakaulakoru 45 ja 50 cm pituisena."
+          }
+        }
+      },
+      {
+        "id": "product_sisu_automatic_watch",
+        "sku": "WATCH-SISU-AUTO",
+        "title": {
+          "en": "Sisu Automatic Watch",
+          "fi": "Sisu-automaattikello"
+        },
+        "description": {
+          "en": "A restrained steel automatic watch built for everyday resilience.",
+          "fi": "Hillitty teräksinen automaattikello jokapäiväiseen käyttöön."
+        },
+        "price": {
+          "amount": 690,
+          "currency": "EUR"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "asset_sisu_watch",
+            "url": "/seed-assets/sisu-watch.svg",
+            "alt": {
+              "en": "Sisu steel automatic watch",
+              "fi": "Sisu-teräsautomaattikello"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "watch",
+        "attributes": {
+          "material": "steel",
+          "metalColour": "silver",
+          "watchBrand": "Aurum Nordic",
+          "watchModel": "Sisu Automatic",
+          "caseSizeMm": 40,
+          "strapMaterial": "steel",
+          "movement": "automatic",
+          "waterResistance": "10 ATM",
+          "audience": "unisex",
+          "styleTags": [
+            "sport",
+            "minimal",
+            "everyday"
+          ]
+        },
+        "variants": [],
+        "seo": {
+          "title": {
+            "en": "Sisu Automatic Watch | Aurum Nordic",
+            "fi": "Sisu-automaattikello | Aurum Nordic"
+          },
+          "metaDescription": {
+            "en": "40 mm steel automatic watch with 10 ATM resistance.",
+            "fi": "40 mm teräksinen automaattikello 10 ATM vesitiiviydellä."
+          }
+        }
+      },
+      {
+        "id": "product_kajo_earrings_585",
+        "sku": "EAR-KAJO-585",
+        "title": {
+          "en": "Kajo Rose Earrings",
+          "fi": "Kajo-rosekultakorvakorut"
+        },
+        "description": {
+          "en": "Rose-gold earrings with bright zirconia details, sold as a pair.",
+          "fi": "Rosekultaiset korvakorut kirkkailla zirkonioilla, myydään parina."
+        },
+        "price": {
+          "amount": 490,
+          "currency": "EUR"
+        },
+        "stockStatus": "lowStock",
+        "images": [
+          {
+            "id": "asset_kajo_earrings",
+            "url": "/seed-assets/kajo-earrings.svg",
+            "alt": {
+              "en": "Pair of Kajo rose-gold earrings",
+              "fi": "Kajo-rosekultakorvakorupari"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "earrings",
+        "attributes": {
+          "material": "gold",
+          "fineness": "585",
+          "karat": "14K",
+          "metalColour": "rose",
+          "stoneType": "zirconia",
+          "stoneShape": "round",
+          "stoneColour": "colourless",
+          "stoneSetting": "bezel",
+          "soldAs": "pair",
+          "audience": "women",
+          "styleTags": [
+            "warm",
+            "gift",
+            "evening"
+          ]
+        },
+        "variants": [],
+        "seo": {
+          "title": {
+            "en": "Kajo Rose Earrings | Aurum Nordic",
+            "fi": "Kajo-rosekultakorvakorut | Aurum Nordic"
+          },
+          "metaDescription": {
+            "en": "Rose-gold 585 zirconia earrings.",
+            "fi": "Rosekultaiset 585-zirkoniakorvakorut."
+          }
+        }
+      },
+      {
+        "id": "product_meri_bracelet_925",
+        "sku": "BRAC-MERI-925",
+        "title": {
+          "en": "Meri Bracelet",
+          "fi": "Meri-rannekoru"
+        },
+        "description": {
+          "en": "A fluid sterling-silver bracelet in three considered lengths.",
+          "fi": "Sulavalinjainen sterlinghopearannekoru kolmessa pituudessa."
+        },
+        "price": {
+          "amount": 179,
+          "currency": "EUR"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "asset_meri_bracelet",
+            "url": "/seed-assets/meri-bracelet.svg",
+            "alt": {
+              "en": "Meri sterling-silver bracelet",
+              "fi": "Meri-sterlinghopearannekoru"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "bracelet",
+        "attributes": {
+          "material": "silver",
+          "fineness": "925",
+          "metalColour": "white",
+          "braceletLengthsCm": [
+            "17",
+            "19",
+            "21"
+          ],
+          "audience": "unisex",
+          "styleTags": [
+            "fluid",
+            "minimal",
+            "everyday"
+          ]
+        },
+        "variants": [
+          {
+            "id": "variant_meri_17",
+            "label": {
+              "en": "17 cm",
+              "fi": "17 cm"
+            },
+            "attributes": {
+              "braceletLengthCm": 17
+            }
+          },
+          {
+            "id": "variant_meri_19",
+            "label": {
+              "en": "19 cm",
+              "fi": "19 cm"
+            },
+            "attributes": {
+              "braceletLengthCm": 19
+            }
+          },
+          {
+            "id": "variant_meri_21",
+            "label": {
+              "en": "21 cm",
+              "fi": "21 cm"
+            },
+            "attributes": {
+              "braceletLengthCm": 21
+            }
+          }
+        ],
+        "seo": {
+          "title": {
+            "en": "Meri Bracelet | Aurum Nordic",
+            "fi": "Meri-rannekoru | Aurum Nordic"
+          },
+          "metaDescription": {
+            "en": "Sterling-silver bracelet in 17, 19 and 21 cm.",
+            "fi": "Sterlinghopearannekoru 17, 19 ja 21 cm pituisena."
+          }
+        }
+      }
+    ],
+    "collections": [
+      {
+        "id": "collection_rings",
+        "slug": "rings",
+        "title": {
+          "en": "Rings",
+          "fi": "Sormukset"
+        },
+        "description": {
+          "en": "Gold rings for lasting moments.",
+          "fi": "Kultasormuksia elämän tärkeisiin hetkiin."
+        },
+        "productIds": [
+          "product_aurora_ring_585",
+          "product_lumi_halo_ring"
+        ]
+      },
+      {
+        "id": "collection_everyday",
+        "slug": "everyday-icons",
+        "title": {
+          "en": "Everyday icons",
+          "fi": "Arjen ikonit"
+        },
+        "description": {
+          "en": "Quietly distinctive pieces for every day.",
+          "fi": "Hillityn tunnistettavia koruja jokaiseen päivään."
+        },
+        "productIds": [
+          "product_aava_necklace_925",
+          "product_sisu_automatic_watch",
+          "product_kajo_earrings_585",
+          "product_meri_bracelet_925"
+        ]
+      }
+    ]
+  },
+  "snapshots": [
+    {
+      "id": "snapshot_p10b16p04_aurum_commercial_draft",
+      "projectId": "project_p10b16p04_aurum_commercial_acceptance",
+      "revision": 0,
+      "brandSystem": {
+        "colors": {
+          "primary": "#202020",
+          "secondary": "#4A4A4A",
+          "accent": "#666666",
+          "background": "#FFFFFF",
+          "surface": "#FFFFFF",
+          "text": "#111111",
+          "mutedText": "#595959",
+          "border": "#D8D8D8"
+        },
+        "typography": {
+          "headingFont": "georgia",
+          "bodyFont": "inter",
+          "baseSize": 16,
+          "scaleRatio": 1.3,
+          "headingWeight": 500,
+          "bodyWeight": 400
+        },
+        "shape": {
+          "radius": "subtle"
+        },
+        "spacing": {
+          "density": "balanced"
+        },
+        "imagery": {
+          "style": "editorial"
+        },
+        "voice": {
+          "formality": "balanced",
+          "detail": "concise",
+          "positioning": "accessible",
+          "warmth": "neutral",
+          "energy": "direct"
+        },
+        "visualSystem": {
+          "preset": "premiumEditorial",
+          "contentWidth": "wide",
+          "surface": "layered",
+          "divider": "subtle",
+          "buttonHierarchy": "balanced",
+          "imageTreatment": "editorial",
+          "theme": "light",
+          "surfaceDepth": "layered"
+        },
+        "designDna": {
+          "version": "1.0.0",
+          "colour": {
+            "page": "#FFFFFF",
+            "surface": "#FFFFFF",
+            "mutedSurface": "#FFFFFF",
+            "contrastSurface": "#4A4A4A",
+            "text": "#111111",
+            "mutedText": "#595959",
+            "contrastText": "#FFFFFF",
+            "border": "#D8D8D8",
+            "accent": "#666666",
+            "primaryAction": "#202020",
+            "primaryActionText": "#FFFFFF",
+            "secondaryAction": "#4A4A4A",
+            "secondaryActionText": "#FFFFFF",
+            "success": "#237A45",
+            "warning": "#9A5B13",
+            "unavailable": "#595959",
+            "surfaceRelationship": "layered",
+            "actionRelationship": "primary-led"
+          },
+          "typography": {
+            "pairing": "serif-led",
+            "scale": {
+              "posture": "expressive",
+              "ratio": 1.333
+            },
+            "weightPosture": "medium",
+            "lineHeightPosture": "relaxed",
+            "trackingPosture": "tight",
+            "roles": {
+              "display": {
+                "font": "georgia",
+                "scaleStep": 5,
+                "weight": 500,
+                "lineHeight": "tight",
+                "tracking": "tight"
+              },
+              "heading": {
+                "font": "georgia",
+                "scaleStep": 3,
+                "weight": 600,
+                "lineHeight": "tight",
+                "tracking": "tight"
+              },
+              "body": {
+                "font": "inter",
+                "scaleStep": 0,
+                "weight": 400,
+                "lineHeight": "relaxed",
+                "tracking": "normal"
+              },
+              "utility": {
+                "font": "inter",
+                "scaleStep": -1,
+                "weight": 500,
+                "lineHeight": "balanced",
+                "tracking": "open"
+              },
+              "price": {
+                "font": "georgia",
+                "scaleStep": 1,
+                "weight": 600,
+                "lineHeight": "tight",
+                "tracking": "normal"
+              }
+            }
+          },
+          "spacing": {
+            "scale": "balanced",
+            "sectionRhythm": "balanced",
+            "pageGutter": "standard",
+            "gridGap": "standard",
+            "cardInset": "standard",
+            "containers": {
+              "reading": "narrow",
+              "content": "wide",
+              "commerce": "wide",
+              "wide": "full",
+              "fullWidth": "contained"
+            }
+          },
+          "surfaces": {
+            "posture": "layered",
+            "border": "subtle",
+            "radius": "subtle",
+            "elevation": "raised"
+          },
+          "controls": {
+            "primaryAction": "solid",
+            "secondaryAction": "outline",
+            "height": "standard",
+            "density": "balanced",
+            "shape": "subtle",
+            "emphasis": "balanced"
+          },
+          "density": {
+            "posture": "balanced",
+            "navigation": "balanced",
+            "content": "balanced",
+            "commerce": "balanced"
+          },
+          "media": {
+            "posture": "editorial",
+            "ratio": "portrait",
+            "crop": "editorial",
+            "overlay": "gradient",
+            "prominence": "leading"
+          }
+        }
+      },
+      "navigation": {
+        "primary": [
+          {
+            "id": "nav_90f0b42004c14c20a321e453",
+            "label": {
+              "en": "Home",
+              "fi": "Etusivu"
+            },
+            "target": {
+              "type": "page",
+              "pageId": "page_p10b16p04_aurum_raw_home"
+            }
+          },
+          {
+            "id": "nav_1a13d418068d63603a6bca4e",
+            "label": {
+              "en": "Rings",
+              "fi": "Sormukset"
+            },
+            "target": {
+              "type": "dynamic-commerce-route",
+              "routeId": "page_63ba8fa656e7bd55c95664d9"
+            }
+          },
+          {
+            "id": "nav_394c1fdd31cb2bf2d51e14b0",
+            "label": {
+              "en": "Everyday icons",
+              "fi": "Arjen ikonit"
+            },
+            "target": {
+              "type": "dynamic-commerce-route",
+              "routeId": "page_830e13e05a1b867c5a8a8e55"
+            }
+          },
+          {
+            "id": "nav_879bb39b14661e1b22198232",
+            "label": {
+              "en": "Search",
+              "fi": "Haku"
+            },
+            "target": {
+              "type": "dynamic-commerce-route",
+              "routeId": "page_fbbca2c182acd2bfcccbd1a3"
+            }
+          }
+        ],
+        "footer": [
+          {
+            "id": "nav_c2f1d3d2a21a3f20eaf41064",
+            "label": {
+              "en": "About",
+              "fi": "Meistä"
+            },
+            "target": {
+              "type": "page",
+              "pageId": "page_dac06828f8346f5706572340"
+            }
+          }
+        ]
+      },
+      "sharedFrame": {
+        "id": "shared_frame_5df2145667abf5b244461fe7",
+        "profileId": "editorial-masthead",
+        "profileVersion": "1.0.0",
+        "authorityFingerprint": "shared-frame-v1_515_8f4b256ab6a2b969b5f6dadd5525d36abff86ee1e1148c4ae5dd51dfd1818447",
+        "header": {
+          "id": "section_p10b16p04j_neutral_frame_header",
+          "component": "header",
+          "variant": "editorial",
+          "visible": true,
+          "content": {
+            "brandName": "Aurum Nordic"
+          },
+          "props": {
+            "showSearch": true,
+            "showCart": true
+          },
+          "approvedAssetPlacements": [
+            {
+              "type": "PLACE_APPROVED_SOURCE_ASSET",
+              "pageId": "page_p10b16p04_aurum_raw_home",
+              "componentId": "section_p10b16p04j_neutral_frame_header",
+              "componentType": "header",
+              "assetSlotId": "brandLogo",
+              "assetId": "asset_p10b18b06_aurum_logo",
+              "role": "logo",
+              "assetRevision": "1:p10b16p04j-approved",
+              "materialFingerprint": "p10b18b06-fictional-aurum-logo-v1",
+              "sourceReferenceId": "source_p10b16p04_aurum_repository_fixture",
+              "sourceProvenanceKind": "sourceDiscovered",
+              "placementContext": "sharedFrame",
+              "placementPurpose": "brand-identity",
+              "reusePolicy": "identity-reusable",
+              "affinity": "exact-role-exact-purpose",
+              "required": false
+            }
+          ],
+          "approvedAssetPresentations": [
+            {
+              "assetId": "asset_p10b18b06_aurum_logo",
+              "role": "logo",
+              "revision": "1:p10b16p04j-approved",
+              "materialFingerprint": "p10b18b06-fictional-aurum-logo-v1",
+              "asset": {
+                "id": "asset_p10b18b06_aurum_logo",
+                "url": "/seed-assets/aurum-nordic-logo.svg",
+                "alt": {
+                  "en": "Aurum Nordic",
+                  "fi": "Aurum Nordic"
+                },
+                "decorative": false
+              },
+              "artDirection": {
+                "source": {
+                  "assetId": "asset_p10b18b06_aurum_logo",
+                  "role": "logo",
+                  "revision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "p10b18b06-fictional-aurum-logo-v1",
+                  "provenanceKind": "sourceDiscovered",
+                  "sourceOwnerId": "source_p10b16p04_aurum_repository_fixture"
+                },
+                "placement": {
+                  "componentType": "header",
+                  "componentVersion": "1.0.0",
+                  "variant": "editorial",
+                  "anatomyContractVersion": "1.0.0",
+                  "anatomyIdentity": "header.commercialSharedFrameAnatomy",
+                  "anatomyVersion": "1.0.0",
+                  "anatomyRegion": "frame",
+                  "assetSlotId": "brandLogo",
+                  "required": false
+                },
+                "sourceTreatment": {
+                  "ratio": "portrait",
+                  "crop": {
+                    "mode": "editorial"
+                  },
+                  "focalPoint": {
+                    "x": 0.5,
+                    "y": 0.5
+                  },
+                  "overlay": "gradient"
+                },
+                "responsiveTreatments": [
+                  {
+                    "breakpoint": "mobile",
+                    "treatment": {
+                      "ratio": "portrait",
+                      "crop": {
+                        "mode": "editorial"
+                      },
+                      "focalPoint": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "overlay": "gradient"
+                    }
+                  },
+                  {
+                    "breakpoint": "tablet",
+                    "treatment": {
+                      "ratio": "portrait",
+                      "crop": {
+                        "mode": "editorial"
+                      },
+                      "focalPoint": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "overlay": "gradient"
+                    }
+                  },
+                  {
+                    "breakpoint": "desktop",
+                    "treatment": {
+                      "ratio": "portrait",
+                      "crop": {
+                        "mode": "editorial"
+                      },
+                      "focalPoint": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "overlay": "gradient"
+                    }
+                  },
+                  {
+                    "breakpoint": "wide",
+                    "treatment": {
+                      "ratio": "portrait",
+                      "crop": {
+                        "mode": "editorial"
+                      },
+                      "focalPoint": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "overlay": "gradient"
+                    }
+                  }
+                ],
+                "derivatives": [],
+                "contractVersion": "1.1.0",
+                "responsiveSources": [],
+                "fingerprint": "v1_1280_d9ab0c6d000344ac617c554efa8098877c8401ba60515b357a8058fba355f064"
+              }
+            }
+          ]
+        },
+        "footer": {
+          "id": "section_p10b16p04j_neutral_frame_footer",
+          "component": "footer",
+          "variant": "editorial",
+          "visible": true,
+          "content": {
+            "brandName": "Aurum Nordic",
+            "contact": {
+              "en": "Helsinki, Finland",
+              "fi": "Helsinki, Suomi"
+            },
+            "policyLabel": {
+              "en": "Policies",
+              "fi": "Käytännöt"
+            },
+            "copyright": {
+              "en": "© 2026 Aurum Nordic",
+              "fi": "© 2026 Aurum Nordic"
+            }
+          },
+          "props": {
+            "showPolicies": false
+          },
+          "approvedAssetPlacements": [],
+          "approvedAssetPresentations": []
+        }
+      },
+      "pages": [
+        {
+          "id": "page_p10b16p04_aurum_raw_home",
+          "type": "home",
+          "slug": "/",
+          "title": {
+            "en": "Home",
+            "fi": "Etusivu"
+          },
+          "seo": {
+            "title": {
+              "en": "Home",
+              "fi": "Etusivu"
+            },
+            "metaDescription": {
+              "en": "Nordic jewellery and watches with lasting character.",
+              "fi": "Pohjoismaisia koruja ja kelloja, joissa on kestävää luonnetta."
+            }
+          },
+          "pageFamily": {
+            "familyId": "home",
+            "familyVersion": "1.0.0",
+            "profileId": "homepage-high-consideration",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "read-only-presentation",
+            "navigationAreas": [
+              "primary"
+            ],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "component_product_b9487ad6d6b6f995f1dd92aa",
+              "component": "homepageHero",
+              "variant": "editorialSplit",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Aurum Nordic"
+                },
+                "eyebrow": {
+                  "en": "Aurum Nordic"
+                },
+                "supportingCopy": {
+                  "en": "A Nordic jewellery and watch presentation with restrained warmth and clear product discovery."
+                },
+                "primaryActionLabel": {
+                  "en": "Explore the collection",
+                  "fi": "Tutustu mallistoon"
+                }
+              },
+              "props": {
+                "mediaPosition": "right",
+                "imagePresentation": "contain",
+                "textAlignment": "left",
+                "contentWidth": "wide",
+                "overlayContrast": "soft"
+              },
+              "approvedAssetPlacements": [
+                {
+                  "type": "PLACE_APPROVED_SOURCE_ASSET",
+                  "pageId": "page_p10b16p04_aurum_raw_home",
+                  "componentId": "component_product_b9487ad6d6b6f995f1dd92aa",
+                  "componentType": "homepageHero",
+                  "assetSlotId": "heroMedia",
+                  "assetId": "asset_p10b16p04_aurum_hero",
+                  "role": "heroDesktop",
+                  "assetRevision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "760c534fc97a4686f57c575534c0debed386701100b2dc9b4a4a088f275c5c77",
+                  "sourceReferenceId": "source_p10b16p04_aurum_repository_fixture",
+                  "sourceProvenanceKind": "sourceDiscovered",
+                  "placementContext": "page",
+                  "placementPurpose": "hero-primary",
+                  "reusePolicy": "unique-high-salience",
+                  "affinity": "exact-role-exact-purpose",
+                  "responsiveSourceAssetIds": [
+                    "asset_p10b18b06_aurum_hero_mobile"
+                  ],
+                  "required": false
+                }
+              ],
+              "approvedAssetPresentations": [
+                {
+                  "assetId": "asset_p10b16p04_aurum_hero",
+                  "role": "heroDesktop",
+                  "revision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "760c534fc97a4686f57c575534c0debed386701100b2dc9b4a4a088f275c5c77",
+                  "asset": {
+                    "id": "asset_p10b16p04_aurum_hero",
+                    "url": "/seed-assets/aurora-ring.svg",
+                    "alt": {
+                      "en": "Aurora yellow-gold diamond ring",
+                      "fi": "Aurora-keltakultainen timanttisormus"
+                    },
+                    "decorative": false
+                  },
+                  "artDirection": {
+                    "source": {
+                      "assetId": "asset_p10b16p04_aurum_hero",
+                      "role": "heroDesktop",
+                      "revision": "1:p10b16p04j-approved",
+                      "materialFingerprint": "760c534fc97a4686f57c575534c0debed386701100b2dc9b4a4a088f275c5c77",
+                      "provenanceKind": "sourceDiscovered",
+                      "sourceOwnerId": "source_p10b16p04_aurum_repository_fixture"
+                    },
+                    "placement": {
+                      "componentType": "homepageHero",
+                      "componentVersion": "2.0.0",
+                      "variant": "editorialSplit",
+                      "anatomyContractVersion": "1.0.0",
+                      "anatomyIdentity": "homepageHero.anatomy",
+                      "anatomyVersion": "1.1.0",
+                      "anatomyRegion": "media",
+                      "assetSlotId": "heroMedia",
+                      "required": false
+                    },
+                    "sourceTreatment": {
+                      "ratio": "portrait",
+                      "crop": {
+                        "mode": "editorial"
+                      },
+                      "focalPoint": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "overlay": "gradient"
+                    },
+                    "responsiveTreatments": [
+                      {
+                        "breakpoint": "mobile",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.38
+                          },
+                          "overlay": "gradient",
+                          "approvedCropId": "crop_p10b18b06_aurum_hero_mobile",
+                          "approvedAspectRatio": "4:5"
+                        }
+                      },
+                      {
+                        "breakpoint": "tablet",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "overlay": "gradient"
+                        }
+                      },
+                      {
+                        "breakpoint": "desktop",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "overlay": "gradient"
+                        }
+                      },
+                      {
+                        "breakpoint": "wide",
+                        "treatment": {
+                          "ratio": "wide",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.58,
+                            "y": 0.45
+                          },
+                          "overlay": "gradient",
+                          "approvedCropId": "crop_p10b18b06_aurum_hero_wide",
+                          "approvedAspectRatio": "16:9"
+                        }
+                      }
+                    ],
+                    "derivatives": [],
+                    "contractVersion": "1.1.0",
+                    "responsiveSources": [
+                      {
+                        "breakpoint": "mobile",
+                        "source": {
+                          "assetId": "asset_p10b18b06_aurum_hero_mobile",
+                          "role": "heroMobile",
+                          "revision": "1:p10b16p04j-approved",
+                          "materialFingerprint": "p10b18b06-fictional-aurum-mobile-hero-v1",
+                          "provenanceKind": "sourceDiscovered",
+                          "sourceOwnerId": "source_p10b16p04_aurum_repository_fixture"
+                        }
+                      }
+                    ],
+                    "fingerprint": "v1_1768_24cd67af260fabcd983c78bb8a7400580027bd7ecd24e3daba3b1984d23147f6"
+                  },
+                  "responsiveSources": [
+                    {
+                      "breakpoints": [
+                        "mobile"
+                      ],
+                      "assetId": "asset_p10b18b06_aurum_hero_mobile",
+                      "role": "heroMobile",
+                      "revision": "1:p10b16p04j-approved",
+                      "materialFingerprint": "p10b18b06-fictional-aurum-mobile-hero-v1",
+                      "asset": {
+                        "id": "asset_p10b18b06_aurum_hero_mobile",
+                        "url": "/seed-assets/aurum-mobile-hero.svg",
+                        "alt": {
+                          "en": "Portrait crop of the Aurora ring",
+                          "fi": "Pystyrajaus Aurora-sormuksesta"
+                        },
+                        "decorative": false
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "component_product_d4755de67eeefc8512466897",
+              "component": "homepageEditorial",
+              "variant": "craftProcess",
+              "visible": true,
+              "content": {
+                "eyebrow": {
+                  "en": "Aurum Nordic",
+                  "fi": "Aurum Nordic"
+                },
+                "heading": {
+                  "en": "Quiet forms, lasting meaning",
+                  "fi": "Hiljaisia muotoja, kestävää merkitystä"
+                },
+                "body": {
+                  "en": "Jewellery and watches shaped by Nordic clarity and warm materials.",
+                  "fi": "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista."
+                },
+                "steps": [
+                  {
+                    "id": "approved_process_context",
+                    "title": {
+                      "en": "Aurum Nordic"
+                    },
+                    "description": {
+                      "en": "A Nordic jewellery and watch presentation with restrained warmth and clear product discovery."
+                    }
+                  }
+                ]
+              },
+              "props": {
+                "mediaPosition": "right",
+                "textAlignment": "left",
+                "galleryColumns": 2
+              },
+              "approvedAssetPlacements": [
+                {
+                  "type": "PLACE_APPROVED_SOURCE_ASSET",
+                  "pageId": "page_p10b16p04_aurum_raw_home",
+                  "componentId": "component_product_d4755de67eeefc8512466897",
+                  "componentType": "homepageEditorial",
+                  "assetSlotId": "storyMedia",
+                  "assetId": "asset_p10b16p04_aurum_editorial",
+                  "role": "editorialImage",
+                  "assetRevision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "ca09620254bd8821899d215447825818b32295763efc75bd042de1889aad83a9",
+                  "sourceReferenceId": "source_p10b16p04_aurum_repository_fixture",
+                  "sourceProvenanceKind": "sourceDiscovered",
+                  "placementContext": "page",
+                  "placementPurpose": "editorial-story",
+                  "reusePolicy": "bounded-editorial",
+                  "affinity": "exact-role-exact-purpose",
+                  "required": false
+                }
+              ],
+              "approvedAssetPresentations": [
+                {
+                  "assetId": "asset_p10b16p04_aurum_editorial",
+                  "role": "editorialImage",
+                  "revision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "ca09620254bd8821899d215447825818b32295763efc75bd042de1889aad83a9",
+                  "asset": {
+                    "id": "asset_p10b16p04_aurum_editorial",
+                    "url": "/seed-assets/aava-necklace.svg",
+                    "alt": {
+                      "en": "Aava sterling-silver necklace",
+                      "fi": "Aava-sterlinghopeakaulakoru"
+                    },
+                    "decorative": false
+                  }
+                }
+              ]
+            },
+            {
+              "id": "component_product_1789fd901c2f51480c954415",
+              "component": "homepageProof",
+              "variant": "proofGrid",
+              "visible": true,
+              "content": {
+                "items": [
+                  {
+                    "id": "approved_story_helsinki-origin",
+                    "kind": "brandFact",
+                    "statement": {
+                      "en": "Designed in Finland",
+                      "fi": "Suunniteltu Suomessa"
+                    },
+                    "attribution": {
+                      "en": "Helsinki",
+                      "fi": "Helsinki"
+                    },
+                    "evidence": {
+                      "source": "approved-source-evidence",
+                      "authorityId": "evidence_p10b16p04_aurum_about",
+                      "revision": "1",
+                      "status": "approved",
+                      "approvalAuthorityId": "brief_p10b16p04_aurum_commercial_acceptance",
+                      "approvalFingerprint": "v1_174_8a7e396a9b97626c0ee85c87bd79e9b386e4139fe8693e3e546935fd4727004b"
+                    }
+                  }
+                ],
+                "heading": {
+                  "en": "Aurum Nordic",
+                  "fi": "Aurum Nordic"
+                }
+              },
+              "props": {
+                "columns": 3,
+                "textAlignment": "left"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            },
+            {
+              "id": "component_product_86d91a206a3544d6993c23a9",
+              "component": "homepageFeaturedProducts",
+              "variant": "editorial",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Explore the collection",
+                  "fi": "Tutustu mallistoon"
+                },
+                "mediaPlaceholderLabel": {
+                  "en": "Product image unavailable",
+                  "fi": "Tuotekuva ei ole saatavilla"
+                },
+                "emptyStateMessage": {
+                  "en": "Products will appear here.",
+                  "fi": "Tuotteet näkyvät täällä."
+                },
+                "productIds": [
+                  "product_aurora_ring_585",
+                  "product_lumi_halo_ring"
+                ]
+              },
+              "props": {
+                "layout": "grid",
+                "cardVariant": "horizontal",
+                "columns": 4
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            },
+            {
+              "id": "component_product_1fc6d95385db0ac5e9e5ff83",
+              "component": "homepageTrust",
+              "variant": "cards",
+              "visible": true,
+              "content": {
+                "items": [
+                  {
+                    "id": "support",
+                    "kind": "service",
+                    "title": {
+                      "en": "Here to help",
+                      "fi": "Autamme mielellämme"
+                    },
+                    "description": {
+                      "en": "Review store support before ordering.",
+                      "fi": "Tarkista kaupan tuki ennen tilausta."
+                    }
+                  }
+                ]
+              },
+              "props": {
+                "columns": 3,
+                "textAlignment": "left"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            },
+            {
+              "id": "component_product_f5ed59f1873bc5410e26e3aa",
+              "component": "homepageEditorial",
+              "variant": "brandStory",
+              "visible": true,
+              "content": {
+                "eyebrow": {
+                  "en": "Aurum Nordic",
+                  "fi": "Aurum Nordic"
+                },
+                "heading": {
+                  "en": "Quiet forms, lasting meaning",
+                  "fi": "Hiljaisia muotoja, kestävää merkitystä"
+                },
+                "body": {
+                  "en": "Jewellery and watches shaped by Nordic clarity and warm materials.",
+                  "fi": "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista."
+                },
+                "steps": []
+              },
+              "props": {
+                "mediaPosition": "right",
+                "textAlignment": "left",
+                "galleryColumns": 2
+              },
+              "approvedAssetPlacements": [
+                {
+                  "type": "PLACE_APPROVED_SOURCE_ASSET",
+                  "pageId": "page_p10b16p04_aurum_raw_home",
+                  "componentId": "component_product_f5ed59f1873bc5410e26e3aa",
+                  "componentType": "homepageEditorial",
+                  "assetSlotId": "storyMedia",
+                  "assetId": "asset_p10b18b06_aurum_studio_detail",
+                  "role": "editorialImage",
+                  "assetRevision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "p10b18b06-fictional-aurum-studio-detail-v1",
+                  "sourceReferenceId": "source_p10b16p04_aurum_repository_fixture",
+                  "sourceProvenanceKind": "sourceDiscovered",
+                  "placementContext": "page",
+                  "placementPurpose": "editorial-story",
+                  "reusePolicy": "bounded-editorial",
+                  "affinity": "exact-role-exact-purpose",
+                  "required": false
+                }
+              ],
+              "approvedAssetPresentations": [
+                {
+                  "assetId": "asset_p10b18b06_aurum_studio_detail",
+                  "role": "editorialImage",
+                  "revision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "p10b18b06-fictional-aurum-studio-detail-v1",
+                  "asset": {
+                    "id": "asset_p10b18b06_aurum_studio_detail",
+                    "url": "/seed-assets/aurum-studio-detail.svg",
+                    "alt": {
+                      "en": "Aurum studio jewellery detail",
+                      "fi": "Aurum-studion koruyksityiskohta"
+                    },
+                    "decorative": false
+                  },
+                  "artDirection": {
+                    "source": {
+                      "assetId": "asset_p10b18b06_aurum_studio_detail",
+                      "role": "editorialImage",
+                      "revision": "1:p10b16p04j-approved",
+                      "materialFingerprint": "p10b18b06-fictional-aurum-studio-detail-v1",
+                      "provenanceKind": "sourceDiscovered",
+                      "sourceOwnerId": "source_p10b16p04_aurum_repository_fixture"
+                    },
+                    "placement": {
+                      "componentType": "homepageEditorial",
+                      "componentVersion": "2.0.0",
+                      "variant": "brandStory",
+                      "anatomyContractVersion": "1.0.0",
+                      "anatomyIdentity": "homepageEditorial.anatomy",
+                      "anatomyVersion": "1.1.0",
+                      "anatomyRegion": "media",
+                      "assetSlotId": "storyMedia",
+                      "required": false
+                    },
+                    "sourceTreatment": {
+                      "ratio": "portrait",
+                      "crop": {
+                        "mode": "editorial"
+                      },
+                      "focalPoint": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "overlay": "gradient"
+                    },
+                    "responsiveTreatments": [
+                      {
+                        "breakpoint": "mobile",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "overlay": "gradient"
+                        }
+                      },
+                      {
+                        "breakpoint": "tablet",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "overlay": "gradient"
+                        }
+                      },
+                      {
+                        "breakpoint": "desktop",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "overlay": "gradient"
+                        }
+                      },
+                      {
+                        "breakpoint": "wide",
+                        "treatment": {
+                          "ratio": "portrait",
+                          "crop": {
+                            "mode": "editorial"
+                          },
+                          "focalPoint": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "overlay": "gradient"
+                        }
+                      }
+                    ],
+                    "derivatives": [],
+                    "contractVersion": "1.1.0",
+                    "responsiveSources": [],
+                    "fingerprint": "v1_1311_a7253082be7aa6a82635a7f907082a350e3b0be8b343f379c94c494fb4061e0c"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "component_product_fc4ff436f0d7b858ee7fe315",
+              "component": "homepageEditorial",
+              "variant": "continuationCta",
+              "visible": true,
+              "content": {
+                "eyebrow": {
+                  "en": "Aurum Nordic"
+                },
+                "heading": {
+                  "en": "Continue exploring",
+                  "fi": "Jatka tutustumista"
+                },
+                "body": {
+                  "en": "Quietly distinctive pieces for every day.",
+                  "fi": "Hillityn tunnistettavia koruja jokaiseen päivään."
+                },
+                "steps": [],
+                "actionLabel": {
+                  "en": "Explore Everyday icons",
+                  "fi": "Tutustu: Arjen ikonit"
+                }
+              },
+              "props": {
+                "mediaPosition": "right",
+                "textAlignment": "left",
+                "galleryColumns": 2
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_decc54e2104f48dc1edfe909",
+          "type": "cart",
+          "slug": "/cart",
+          "title": {
+            "en": "Cart",
+            "fi": "Ostoskori"
+          },
+          "seo": {
+            "title": {
+              "en": "Cart",
+              "fi": "Ostoskori"
+            },
+            "metaDescription": {
+              "en": "Cart",
+              "fi": "Ostoskori"
+            }
+          },
+          "pageFamily": {
+            "familyId": "cart",
+            "familyVersion": "1.0.0",
+            "profileId": "commerce-utility-cart",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "presentation-only",
+            "navigationAreas": [],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "section_8db877566d0ac8cb0f3e4a7a",
+              "component": "commerceUtility",
+              "variant": "cart",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Cart",
+                  "fi": "Ostoskori"
+                },
+                "body": {
+                  "en": "Review your items before continuing to checkout.",
+                  "fi": "Tarkista tuotteet ennen kassalle jatkamista."
+                }
+              },
+              "props": {
+                "summaryPlacement": "aside"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_f036f6a7b9b9eedb08f7a107",
+          "type": "checkout",
+          "slug": "/checkout",
+          "title": {
+            "en": "Checkout",
+            "fi": "Kassa"
+          },
+          "seo": {
+            "title": {
+              "en": "Checkout",
+              "fi": "Kassa"
+            },
+            "metaDescription": {
+              "en": "Checkout",
+              "fi": "Kassa"
+            }
+          },
+          "pageFamily": {
+            "familyId": "checkout",
+            "familyVersion": "1.0.0",
+            "profileId": "commerce-utility-checkout",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "presentation-only",
+            "navigationAreas": [],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "section_738f1797f91116b03d672b33",
+              "component": "commerceUtility",
+              "variant": "checkoutBoundary",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Checkout",
+                  "fi": "Kassa"
+                },
+                "body": {
+                  "en": "Review your order details before continuing.",
+                  "fi": "Tarkista tilauksesi tiedot ennen jatkamista."
+                }
+              },
+              "props": {
+                "summaryPlacement": "inline"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_18254c8922110fb59897b8c5",
+          "type": "content",
+          "slug": "/states/no-results",
+          "title": {
+            "en": "No results",
+            "fi": "Ei tuloksia"
+          },
+          "seo": {
+            "title": {
+              "en": "No results",
+              "fi": "Ei tuloksia"
+            },
+            "metaDescription": {
+              "en": "No results",
+              "fi": "Ei tuloksia"
+            }
+          },
+          "pageFamily": {
+            "familyId": "no-results",
+            "familyVersion": "1.0.0",
+            "profileId": "commerce-utility-no-results",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "presentation-only",
+            "navigationAreas": [],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "section_349ceb15e5862f8b88c9f1cf",
+              "component": "commerceUtility",
+              "variant": "noResults",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "No results",
+                  "fi": "Ei tuloksia"
+                },
+                "body": {
+                  "en": "No products matched",
+                  "fi": "Yksikään tuote ei vastannut hakua"
+                }
+              },
+              "props": {
+                "summaryPlacement": "inline"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_75bf4d71bb369e3ffb2207e4",
+          "type": "content",
+          "slug": "/states/empty",
+          "title": {
+            "en": "Empty",
+            "fi": "Tyhjä"
+          },
+          "seo": {
+            "title": {
+              "en": "Empty",
+              "fi": "Tyhjä"
+            },
+            "metaDescription": {
+              "en": "Empty",
+              "fi": "Tyhjä"
+            }
+          },
+          "pageFamily": {
+            "familyId": "empty-state",
+            "familyVersion": "1.0.0",
+            "profileId": "commerce-utility-empty",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "presentation-only",
+            "navigationAreas": [],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "section_3087721972ffca5eadeb9d65",
+              "component": "commerceUtility",
+              "variant": "emptyState",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Nothing here yet",
+                  "fi": "Täällä ei ole vielä mitään"
+                },
+                "body": {
+                  "en": "This storefront area is currently empty.",
+                  "fi": "Tämä kaupan alue on tällä hetkellä tyhjä."
+                }
+              },
+              "props": {
+                "summaryPlacement": "inline"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_13f5a510ae0796b966ca684c",
+          "type": "content",
+          "slug": "/states/error",
+          "title": {
+            "en": "Error",
+            "fi": "Virhe"
+          },
+          "seo": {
+            "title": {
+              "en": "Error",
+              "fi": "Virhe"
+            },
+            "metaDescription": {
+              "en": "Error",
+              "fi": "Virhe"
+            }
+          },
+          "pageFamily": {
+            "familyId": "error-state",
+            "familyVersion": "1.0.0",
+            "profileId": "commerce-utility-error",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "presentation-only",
+            "navigationAreas": [],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "section_1ccbf6029a29bf35250b8322",
+              "component": "commerceUtility",
+              "variant": "recoverableError",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Something needs attention",
+                  "fi": "Jokin tarvitsee huomiota"
+                },
+                "body": {
+                  "en": "The storefront could not complete that request.",
+                  "fi": "Kauppa ei voinut suorittaa pyyntöä."
+                }
+              },
+              "props": {
+                "summaryPlacement": "inline"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_1c1ce66e4ed4255ed4704d8b",
+          "type": "content",
+          "slug": "/404",
+          "title": {
+            "en": "Not found",
+            "fi": "Ei löytynyt"
+          },
+          "seo": {
+            "title": {
+              "en": "Not found",
+              "fi": "Ei löytynyt"
+            },
+            "metaDescription": {
+              "en": "Not found",
+              "fi": "Ei löytynyt"
+            }
+          },
+          "pageFamily": {
+            "familyId": "not-found",
+            "familyVersion": "1.0.0",
+            "profileId": "commerce-utility-not-found",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "presentation-only",
+            "navigationAreas": [],
+            "evidenceReferences": []
+          },
+          "sections": [
+            {
+              "id": "section_f88723deb94b5337f282892a",
+              "component": "commerceUtility",
+              "variant": "notFound",
+              "visible": true,
+              "content": {
+                "heading": {
+                  "en": "Page not found",
+                  "fi": "Sivua ei löytynyt"
+                },
+                "body": {
+                  "en": "The requested storefront page is not available.",
+                  "fi": "Pyydettyä kaupan sivua ei ole saatavilla."
+                }
+              },
+              "props": {
+                "summaryPlacement": "inline"
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        },
+        {
+          "id": "page_dac06828f8346f5706572340",
+          "type": "content",
+          "slug": "/pages/about",
+          "title": {
+            "en": "About Aurum Nordic",
+            "fi": "Tietoa Aurum Nordicista"
+          },
+          "seo": {
+            "title": {
+              "en": "About Aurum Nordic",
+              "fi": "Tietoa Aurum Nordicista"
+            },
+            "metaDescription": {
+              "en": "Nordic jewellery and watches shaped by clarity, warm materials and lasting character.",
+              "fi": "Pohjoismaisia koruja ja kelloja, joissa selkeys, lämpimät materiaalit ja kestävä luonne kohtaavat."
+            }
+          },
+          "pageFamily": {
+            "familyId": "about",
+            "familyVersion": "1.0.0",
+            "profileId": "content-about-story",
+            "profileVersion": "1.0.0",
+            "localeCoverage": [
+              "en",
+              "fi"
+            ],
+            "sharedFrameId": "blueprint-shared-storefront-frame",
+            "sharedFrameVersion": "1.0.0",
+            "commerceContext": {
+              "kind": "none"
+            },
+            "commerceOperationAuthority": "read-only-presentation",
+            "navigationAreas": [
+              "footer"
+            ],
+            "evidenceReferences": [
+              {
+                "source": "approved-source-evidence",
+                "authorityId": "evidence_p10b16p04_aurum_about",
+                "revision": "1",
+                "status": "approved",
+                "approvalAuthorityId": "brief_p10b16p04_aurum_commercial_acceptance",
+                "approvalFingerprint": "v1_174_8a7e396a9b97626c0ee85c87bd79e9b386e4139fe8693e3e546935fd4727004b"
+              }
+            ]
+          },
+          "sections": [
+            {
+              "id": "section_0586ce24609a8856eb773d9b",
+              "component": "contentSupport",
+              "variant": "aboutStory",
+              "visible": true,
+              "content": {
+                "factDocumentId": "evidence_p10b16p04_aurum_about"
+              },
+              "props": {
+                "readingWidth": "standard",
+                "textAlignment": "left"
+              },
+              "approvedAssetPlacements": [
+                {
+                  "type": "PLACE_APPROVED_SOURCE_ASSET",
+                  "pageId": "page_dac06828f8346f5706572340",
+                  "componentId": "section_0586ce24609a8856eb773d9b",
+                  "componentType": "contentSupport",
+                  "assetSlotId": "contentSupportMedia",
+                  "assetId": "asset_p10b16p04_aurum_editorial",
+                  "role": "editorialImage",
+                  "assetRevision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "ca09620254bd8821899d215447825818b32295763efc75bd042de1889aad83a9",
+                  "sourceReferenceId": "source_p10b16p04_aurum_repository_fixture",
+                  "sourceProvenanceKind": "sourceDiscovered",
+                  "placementContext": "page",
+                  "placementPurpose": "content-support",
+                  "reusePolicy": "bounded-editorial",
+                  "affinity": "exact-role-exact-purpose",
+                  "required": false
+                }
+              ],
+              "approvedAssetPresentations": [
+                {
+                  "assetId": "asset_p10b16p04_aurum_editorial",
+                  "role": "editorialImage",
+                  "revision": "1:p10b16p04j-approved",
+                  "materialFingerprint": "ca09620254bd8821899d215447825818b32295763efc75bd042de1889aad83a9",
+                  "asset": {
+                    "id": "asset_p10b16p04_aurum_editorial",
+                    "url": "/seed-assets/aava-necklace.svg",
+                    "alt": {
+                      "en": "Aava sterling-silver necklace",
+                      "fi": "Aava-sterlinghopeakaulakoru"
+                    },
+                    "decorative": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "dynamicCommercePresentation": {
+        "contractVersion": "1.0.0",
+        "authorityId": "dynamic_commerce_821ab706c67e276f8dcdeb4b",
+        "authorityRevision": 2,
+        "routeInventory": [
+          {
+            "id": "page_830e13e05a1b867c5a8a8e55",
+            "kind": "collection",
+            "route": "/collections/everyday-icons",
+            "collectionId": "collection_everyday"
+          },
+          {
+            "id": "page_63ba8fa656e7bd55c95664d9",
+            "kind": "collection",
+            "route": "/collections/rings",
+            "collectionId": "collection_rings"
+          },
+          {
+            "id": "page_6f72561b0f2e26405edfd49e",
+            "kind": "product",
+            "route": "/products/aava-necklace-925",
+            "productId": "product_aava_necklace_925",
+            "relatedProductIds": [
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585",
+              "product_meri_bracelet_925",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_71a52e29d40bb7c798826df3",
+            "kind": "product",
+            "route": "/products/aurora-ring-585",
+            "productId": "product_aurora_ring_585",
+            "relatedProductIds": [
+              "product_lumi_halo_ring",
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585"
+            ]
+          },
+          {
+            "id": "page_649f3638987871071f54d104",
+            "kind": "product",
+            "route": "/products/kajo-earrings-585",
+            "productId": "product_kajo_earrings_585",
+            "relatedProductIds": [
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_meri_bracelet_925",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_26799b9c4069106a88b6151c",
+            "kind": "product",
+            "route": "/products/lumi-halo-ring",
+            "productId": "product_lumi_halo_ring",
+            "relatedProductIds": [
+              "product_aurora_ring_585",
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585"
+            ]
+          },
+          {
+            "id": "page_358e40dd2e72b7408bb6d685",
+            "kind": "product",
+            "route": "/products/meri-bracelet-925",
+            "productId": "product_meri_bracelet_925",
+            "relatedProductIds": [
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_6ddeb507636c20e932205f9b",
+            "kind": "product",
+            "route": "/products/sisu-automatic-watch",
+            "productId": "product_sisu_automatic_watch",
+            "relatedProductIds": [
+              "product_aava_necklace_925",
+              "product_kajo_earrings_585",
+              "product_meri_bracelet_925",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_fbbca2c182acd2bfcccbd1a3",
+            "kind": "search",
+            "route": "/search"
+          }
+        ],
+        "collectionSearchArchetypes": [
+          {
+            "id": "archetype_collection_campaign",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-campaign-led-discovery",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1840_e4a694e16bf15eec695a0d8b2449d5aa3fc68a1ac8bfb4421d5642ab16460de3"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "campaignLedDiscovery",
+                "anatomyId": "imageFirst",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "spacious",
+                  "cardVariant": "imageFirst",
+                  "filterLayout": "horizontal",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 1,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "campaignLeadStack",
+                  "campaignFilterDisclosure",
+                  "imageFirstReorder"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "campaignLeadStack",
+                  "campaignFilterDisclosure"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          },
+          {
+            "id": "archetype_collection_comparison",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-catalogue-comparison",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1824_28cb5072c7b02fb29860a91019bed143f6a917c3f6180b0dddd66bb9a54378a0"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "commerce-utility",
+              "compact-technical"
+            ],
+            "defaultSharedFrameProfileId": "commerce-utility",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "catalogueComparison",
+                "anatomyId": "standard",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "standard",
+                  "cardVariant": "standard",
+                  "filterLayout": "sidebar",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 3,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "comparisonFilterDisclosure",
+                  "comparisonGridReflow",
+                  "standardCondense"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "comparisonFilterDisclosure",
+                  "comparisonGridReflow"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": [
+                  "comparisonGridReflow"
+                ]
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": [
+                  "comparisonGridReflow"
+                ]
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "natural",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection",
+              "search"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          },
+          {
+            "id": "archetype_collection_editorial",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-editorial-discovery",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1798_0aebace21c04b6c96435bb769c9ec83938f72d1314721adce781a5673f0c471f"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "editorialDiscovery",
+                "anatomyId": "editorial",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "spacious",
+                  "cardVariant": "editorial",
+                  "filterLayout": "horizontal",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 2,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "editorialCollectionStack",
+                  "collectionFilterDisclosure",
+                  "editorialStack"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "editorialCollectionStack",
+                  "collectionFilterDisclosure"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          },
+          {
+            "id": "archetype_collection_search_dense",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-dense-search",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1871_cc662d40031e3ff71a422d2e0a73348e5d02af3d0aea9386b951b0a31f0f8e79"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "commerce-utility",
+              "compact-technical",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "compact-technical",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained",
+                "editorial"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "denseSearch",
+                "anatomyId": "horizontal",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "compact",
+                  "cardVariant": "horizontal",
+                  "filterLayout": "horizontal",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 2,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "denseFilterDisclosure",
+                  "denseGridReflow",
+                  "denseReflow"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "denseFilterDisclosure",
+                  "denseGridReflow",
+                  "denseReflow"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": [
+                  "denseGridReflow"
+                ]
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": [
+                  "denseGridReflow"
+                ]
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "natural",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection",
+              "search"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          }
+        ],
+        "productDetailArchetypes": [
+          {
+            "id": "archetype_pdp_gallery",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-gallery-led",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1954_7a35223a1cd47c2cc38ce60755b667c27374c62f270be0b05a794c63e6f23ea3"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "commerce-utility",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "galleryDominant",
+                "anatomyId": "imageFirst",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "grid",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "groups",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": true,
+                  "mediaTreatment": "editorial",
+                  "relatedCardVariant": "imageFirst"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpGalleryLedContain"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpGalleryLedContain"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          },
+          {
+            "id": "archetype_pdp_generic_fallback",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-standard-commerce",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1908_b473d2f08d52936fb3f53737393e6b17599bf3ca0f85b4bc067641da54fe6b38"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "commerce-utility",
+              "compact-technical",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "commerce-utility",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained",
+                "editorial"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "balanced",
+                "anatomyId": "standard",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "thumbnails",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "groups",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": true,
+                  "mediaTreatment": "contained",
+                  "relatedCardVariant": "standard"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "portrait",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          },
+          {
+            "id": "archetype_pdp_high_consideration",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-high-consideration",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_2179_f49484f3dac69795c0435ef98075832cb0338564b6de5d8b7dcba9b9c670f8fa"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "editorialSplit",
+                "anatomyId": "editorial",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "grid",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "table",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": false,
+                  "mediaTreatment": "editorial",
+                  "relatedCardVariant": "editorial"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpHighConsiderationReflow"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpHighConsiderationReflow"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          },
+          {
+            "id": "archetype_pdp_standard",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-standard-commerce",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1908_b473d2f08d52936fb3f53737393e6b17599bf3ca0f85b4bc067641da54fe6b38"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "commerce-utility",
+              "compact-technical",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "commerce-utility",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained",
+                "editorial"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "balanced",
+                "anatomyId": "standard",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "thumbnails",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "groups",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": true,
+                  "mediaTreatment": "contained",
+                  "relatedCardVariant": "standard"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "portrait",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          }
+        ],
+        "collectionRouteMappings": [
+          {
+            "routeId": "page_63ba8fa656e7bd55c95664d9",
+            "archetypeId": "archetype_collection_editorial"
+          },
+          {
+            "routeId": "page_830e13e05a1b867c5a8a8e55",
+            "archetypeId": "archetype_collection_editorial"
+          }
+        ],
+        "collectionContextRules": [
+          {
+            "id": "collection_rule_default",
+            "priority": 0,
+            "match": {
+              "childCollections": "any",
+              "campaignEvidence": "any",
+              "merchandisingDensity": "any"
+            },
+            "archetypeId": "archetype_collection_editorial"
+          },
+          {
+            "id": "collection_rule_dense",
+            "priority": 70,
+            "match": {
+              "productCount": {
+                "minimum": 12,
+                "maximum": 100000
+              },
+              "childCollections": "any",
+              "campaignEvidence": "any",
+              "merchandisingDensity": "compact"
+            },
+            "archetypeId": "archetype_collection_editorial"
+          },
+          {
+            "id": "collection_rule_children",
+            "priority": 80,
+            "match": {
+              "childCollections": "present",
+              "campaignEvidence": "any",
+              "merchandisingDensity": "any"
+            },
+            "archetypeId": "archetype_collection_editorial"
+          },
+          {
+            "id": "collection_rule_campaign",
+            "priority": 90,
+            "match": {
+              "childCollections": "any",
+              "campaignEvidence": "present",
+              "merchandisingDensity": "spacious"
+            },
+            "archetypeId": "archetype_collection_editorial"
+          }
+        ],
+        "productTypeMappings": [
+          {
+            "productTypeId": "product-type-v1_10_441ee335406bbd886e",
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "productTypeId": "product-type-v1_10_58ea216c6924031d9c",
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "productTypeId": "product-type-v1_10_6512204eb14db5b6b0",
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "productTypeId": "product-type-v1_6_d37b4cb06465c4847b3",
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "productTypeId": "product-type-v1_7_73da76bff71a604995d",
+            "archetypeId": "archetype_pdp_standard"
+          }
+        ],
+        "productComplexityRules": [
+          {
+            "id": "product_rule_simple",
+            "priority": 0,
+            "match": {
+              "optionStructure": "simple",
+              "configurationComplexity": "simple",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "excluded"
+            },
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "id": "product_rule_configurable",
+            "priority": 80,
+            "match": {
+              "optionStructure": "configurable",
+              "optionGroupCount": {
+                "minimum": 1,
+                "maximum": 100
+              },
+              "configurationComplexity": "any",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "any"
+            },
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "id": "product_rule_gallery",
+            "priority": 85,
+            "match": {
+              "optionStructure": "any",
+              "optionGroupCount": {
+                "minimum": 0,
+                "maximum": 3
+              },
+              "configurationComplexity": "any",
+              "mediaAvailability": "multiple",
+              "mediaCount": {
+                "minimum": 3,
+                "maximum": 100
+              },
+              "mediaDepth": "rich",
+              "highConsideration": "excluded"
+            },
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "id": "product_rule_options",
+            "priority": 90,
+            "match": {
+              "optionStructure": "configurable",
+              "optionGroupCount": {
+                "minimum": 1,
+                "maximum": 100
+              },
+              "configurationComplexity": "complex",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "any"
+            },
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "id": "product_rule_considered",
+            "priority": 100,
+            "match": {
+              "optionStructure": "configurable",
+              "optionGroupCount": {
+                "minimum": 1,
+                "maximum": 100
+              },
+              "configurationComplexity": "any",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "required"
+            },
+            "archetypeId": "archetype_pdp_high_consideration"
+          }
+        ],
+        "searchArchetypeId": "archetype_collection_search_dense",
+        "fallbacks": {
+          "collectionArchetypeId": "archetype_collection_editorial",
+          "searchArchetypeId": "archetype_collection_search_dense",
+          "productDetailArchetypeId": "archetype_pdp_generic_fallback"
+        },
+        "authorityFingerprint": "dynamic-commerce-presentation-v1_21286_783ea59563c319fa2e481a70566c14935e3491ea27d72eebeffa336f0af59173"
+      },
+      "contentSupportFactDocuments": [
+        {
+          "id": "evidence_p10b16p04_aurum_about",
+          "evidence": {
+            "source": "approved-source-evidence",
+            "authorityId": "evidence_p10b16p04_aurum_about",
+            "revision": "1",
+            "status": "approved",
+            "approvalAuthorityId": "brief_p10b16p04_aurum_commercial_acceptance",
+            "approvalFingerprint": "v1_174_8a7e396a9b97626c0ee85c87bd79e9b386e4139fe8693e3e546935fd4727004b"
+          },
+          "payload": {
+            "title": {
+              "en": "About Aurum Nordic",
+              "fi": "Tietoa Aurum Nordicista"
+            },
+            "introduction": {
+              "en": "Nordic jewellery and watches shaped by clarity, warm materials and lasting character.",
+              "fi": "Pohjoismaisia koruja ja kelloja, joissa selkeys, lämpimät materiaalit ja kestävä luonne kohtaavat."
+            },
+            "blocks": [
+              {
+                "kind": "paragraph",
+                "id": "northern-light-story",
+                "body": {
+                  "en": "Jewellery and watches shaped by Nordic clarity and warm materials.",
+                  "fi": "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista."
+                }
+              },
+              {
+                "kind": "paragraph",
+                "id": "material-stories",
+                "body": {
+                  "en": "New pieces, material stories and quiet inspiration.",
+                  "fi": "Uutuuksia, materiaalitarinoita ja rauhallista inspiraatiota."
+                }
+              }
+            ],
+            "story": {
+              "eyebrow": {
+                "en": "Aurum Nordic",
+                "fi": "Aurum Nordic"
+              },
+              "heading": {
+                "en": "Quiet forms, lasting meaning",
+                "fi": "Hiljaisia muotoja, kestävää merkitystä"
+              },
+              "body": {
+                "en": "Jewellery and watches shaped by Nordic clarity and warm materials.",
+                "fi": "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista."
+              },
+              "steps": [
+                {
+                  "id": "helsinki-origin",
+                  "title": {
+                    "en": "Helsinki",
+                    "fi": "Helsinki"
+                  },
+                  "description": {
+                    "en": "Designed in Finland",
+                    "fi": "Suunniteltu Suomessa"
+                  }
+                }
+              ]
+            },
+            "campaign": {
+              "eyebrow": {
+                "en": "Winter light",
+                "fi": "Talven valo"
+              },
+              "heading": {
+                "en": "Light, held close",
+                "fi": "Valo lähelläsi"
+              },
+              "description": {
+                "en": "Discover white gold and silver pieces inspired by winter light.",
+                "fi": "Löydä talven valosta inspiroituneet valkokulta- ja hopeakorut."
+              },
+              "actionLabel": {
+                "en": "View the edit",
+                "fi": "Katso valikoima"
+              }
+            },
+            "familyId": "about"
+          },
+          "fingerprint": "content-support-facts-v1_v1_1849_134e2b9bc82731563c14eda3676f1047b4fcf56ebb945269c8441c2579e0015b"
+        }
+      ],
+      "catalogueRef": "catalogue_p10b16p04_aurum_commercial_acceptance",
+      "createdAt": "2026-08-14T09:00:00.000Z",
+      "createdBy": "user"
+    },
+    {
+      "id": "snapshot_p10b16p04_aurum_commercial_published",
+      "projectId": "project_p10b16p04_aurum_commercial_acceptance",
+      "revision": 0,
+      "brandSystem": {
+        "colors": {
+          "primary": "#202020",
+          "secondary": "#4A4A4A",
+          "accent": "#666666",
+          "background": "#FFFFFF",
+          "surface": "#FFFFFF",
+          "text": "#111111",
+          "mutedText": "#595959",
+          "border": "#D8D8D8"
+        },
+        "typography": {
+          "headingFont": "system-sans",
+          "bodyFont": "system-sans",
+          "baseSize": 16,
+          "scaleRatio": 1.125,
+          "headingWeight": 500,
+          "bodyWeight": 400
+        },
+        "shape": {
+          "radius": "square"
+        },
+        "spacing": {
+          "density": "balanced"
+        },
+        "imagery": {
+          "style": "product-focused"
+        },
+        "voice": {
+          "formality": "balanced",
+          "detail": "concise",
+          "positioning": "accessible",
+          "warmth": "neutral",
+          "energy": "direct"
+        }
+      },
+      "navigation": {
+        "primary": [],
+        "footer": []
+      },
+      "pages": [
+        {
+          "id": "page_p10b16p04_aurum_raw_home",
+          "type": "home",
+          "slug": "/",
+          "title": {
+            "en": "Aurum Nordic",
+            "fi": "Aurum Nordic"
+          },
+          "seo": {
+            "title": {
+              "en": "Aurum Nordic",
+              "fi": "Aurum Nordic"
+            },
+            "metaDescription": {
+              "en": "Nordic jewellery and watches with lasting character.",
+              "fi": "Pohjoismaisia koruja ja kelloja, joissa on kestävää luonnetta."
+            }
+          },
+          "sections": [
+            {
+              "id": "section_p10b16p04j_neutral_frame_header",
+              "component": "header",
+              "variant": "centered",
+              "visible": true,
+              "content": {
+                "brandName": "Aurum Nordic"
+              },
+              "props": {
+                "showSearch": true,
+                "showCart": true
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            },
+            {
+              "id": "section_p10b16p04j_neutral_frame_footer",
+              "component": "footer",
+              "variant": "columns",
+              "visible": true,
+              "content": {
+                "brandName": "Aurum Nordic",
+                "contact": {
+                  "en": "Helsinki, Finland",
+                  "fi": "Helsinki, Suomi"
+                },
+                "policyLabel": {
+                  "en": "Policies",
+                  "fi": "Käytännöt"
+                },
+                "copyright": {
+                  "en": "© 2026 Aurum Nordic",
+                  "fi": "© 2026 Aurum Nordic"
+                }
+              },
+              "props": {
+                "showPolicies": false
+              },
+              "approvedAssetPlacements": [],
+              "approvedAssetPresentations": []
+            }
+          ]
+        }
+      ],
+      "dynamicCommercePresentation": {
+        "contractVersion": "1.0.0",
+        "authorityId": "dynamic_commerce_821ab706c67e276f8dcdeb4b",
+        "authorityRevision": 1,
+        "routeInventory": [
+          {
+            "id": "page_830e13e05a1b867c5a8a8e55",
+            "kind": "collection",
+            "route": "/collections/everyday-icons",
+            "collectionId": "collection_everyday"
+          },
+          {
+            "id": "page_63ba8fa656e7bd55c95664d9",
+            "kind": "collection",
+            "route": "/collections/rings",
+            "collectionId": "collection_rings"
+          },
+          {
+            "id": "page_6f72561b0f2e26405edfd49e",
+            "kind": "product",
+            "route": "/products/aava-necklace-925",
+            "productId": "product_aava_necklace_925",
+            "relatedProductIds": [
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585",
+              "product_meri_bracelet_925",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_71a52e29d40bb7c798826df3",
+            "kind": "product",
+            "route": "/products/aurora-ring-585",
+            "productId": "product_aurora_ring_585",
+            "relatedProductIds": [
+              "product_lumi_halo_ring",
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585"
+            ]
+          },
+          {
+            "id": "page_649f3638987871071f54d104",
+            "kind": "product",
+            "route": "/products/kajo-earrings-585",
+            "productId": "product_kajo_earrings_585",
+            "relatedProductIds": [
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_meri_bracelet_925",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_26799b9c4069106a88b6151c",
+            "kind": "product",
+            "route": "/products/lumi-halo-ring",
+            "productId": "product_lumi_halo_ring",
+            "relatedProductIds": [
+              "product_aurora_ring_585",
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585"
+            ]
+          },
+          {
+            "id": "page_358e40dd2e72b7408bb6d685",
+            "kind": "product",
+            "route": "/products/meri-bracelet-925",
+            "productId": "product_meri_bracelet_925",
+            "relatedProductIds": [
+              "product_aava_necklace_925",
+              "product_sisu_automatic_watch",
+              "product_kajo_earrings_585",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_6ddeb507636c20e932205f9b",
+            "kind": "product",
+            "route": "/products/sisu-automatic-watch",
+            "productId": "product_sisu_automatic_watch",
+            "relatedProductIds": [
+              "product_aava_necklace_925",
+              "product_kajo_earrings_585",
+              "product_meri_bracelet_925",
+              "product_aurora_ring_585"
+            ]
+          },
+          {
+            "id": "page_fbbca2c182acd2bfcccbd1a3",
+            "kind": "search",
+            "route": "/search"
+          }
+        ],
+        "collectionSearchArchetypes": [
+          {
+            "id": "archetype_collection_campaign",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-campaign-led-discovery",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1840_e4a694e16bf15eec695a0d8b2449d5aa3fc68a1ac8bfb4421d5642ab16460de3"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "campaignLedDiscovery",
+                "anatomyId": "imageFirst",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "spacious",
+                  "cardVariant": "imageFirst",
+                  "filterLayout": "horizontal",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 1,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "campaignLeadStack",
+                  "campaignFilterDisclosure",
+                  "imageFirstReorder"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "campaignLeadStack",
+                  "campaignFilterDisclosure"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          },
+          {
+            "id": "archetype_collection_comparison",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-catalogue-comparison",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1824_28cb5072c7b02fb29860a91019bed143f6a917c3f6180b0dddd66bb9a54378a0"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "commerce-utility",
+              "compact-technical"
+            ],
+            "defaultSharedFrameProfileId": "commerce-utility",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "catalogueComparison",
+                "anatomyId": "standard",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "standard",
+                  "cardVariant": "standard",
+                  "filterLayout": "sidebar",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 3,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "comparisonFilterDisclosure",
+                  "comparisonGridReflow",
+                  "standardCondense"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "comparisonFilterDisclosure",
+                  "comparisonGridReflow"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": [
+                  "comparisonGridReflow"
+                ]
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": [
+                  "comparisonGridReflow"
+                ]
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "natural",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection",
+              "search"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          },
+          {
+            "id": "archetype_collection_editorial",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-editorial-discovery",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1798_0aebace21c04b6c96435bb769c9ec83938f72d1314721adce781a5673f0c471f"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "editorialDiscovery",
+                "anatomyId": "editorial",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "spacious",
+                  "cardVariant": "editorial",
+                  "filterLayout": "horizontal",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 0,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "editorialCollectionStack",
+                  "collectionFilterDisclosure",
+                  "editorialStack"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "editorialCollectionStack",
+                  "collectionFilterDisclosure"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          },
+          {
+            "id": "archetype_collection_search_dense",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "collection-dense-search",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1871_cc662d40031e3ff71a422d2e0a73348e5d02af3d0aea9386b951b0a31f0f8e79"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "commerce-utility",
+              "compact-technical",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "compact-technical",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained",
+                "editorial"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "collection-commerce",
+                "component": "dynamicCollectionCommerce",
+                "variant": "denseSearch",
+                "anatomyId": "horizontal",
+                "visible": true,
+                "content": {
+                  "filtersHeading": {
+                    "en": "Filters",
+                    "fi": "Suodattimet"
+                  },
+                  "productsHeading": {
+                    "en": "Products",
+                    "fi": "Tuotteet"
+                  },
+                  "sortLabel": {
+                    "en": "Sort products",
+                    "fi": "Lajittele tuotteet"
+                  },
+                  "clearLabel": {
+                    "en": "Clear",
+                    "fi": "Tyhjennä"
+                  },
+                  "clearAllLabel": {
+                    "en": "Clear all filters",
+                    "fi": "Tyhjennä kaikki suodattimet"
+                  },
+                  "filterTriggerLabel": {
+                    "en": "Show filters",
+                    "fi": "Näytä suodattimet"
+                  },
+                  "loadingLabel": {
+                    "en": "Loading products",
+                    "fi": "Ladataan tuotteita"
+                  },
+                  "mediaPlaceholderLabel": {
+                    "en": "Product image unavailable",
+                    "fi": "Tuotekuva ei ole saatavilla"
+                  }
+                },
+                "props": {
+                  "gridDensity": "compact",
+                  "cardVariant": "horizontal",
+                  "filterLayout": "horizontal",
+                  "showDescription": true,
+                  "showProductCount": true,
+                  "showBadges": true,
+                  "conciseAttributeLimit": 2,
+                  "showChildCollections": true
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "denseFilterDisclosure",
+                  "denseGridReflow",
+                  "denseReflow"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "denseFilterDisclosure",
+                  "denseGridReflow",
+                  "denseReflow"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": [
+                  "denseGridReflow"
+                ]
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": [
+                  "denseGridReflow"
+                ]
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "natural",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "collection-search",
+            "supportedContexts": [
+              "collection",
+              "search"
+            ],
+            "commerceBindingPolicy": "runtime-collection-membership"
+          }
+        ],
+        "productDetailArchetypes": [
+          {
+            "id": "archetype_pdp_generic_fallback",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-standard-commerce",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1908_b473d2f08d52936fb3f53737393e6b17599bf3ca0f85b4bc067641da54fe6b38"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "commerce-utility",
+              "compact-technical",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "commerce-utility",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained",
+                "editorial"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "balanced",
+                "anatomyId": "standard",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "thumbnails",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "groups",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": true,
+                  "mediaTreatment": "contained",
+                  "relatedCardVariant": "standard"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "portrait",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          },
+          {
+            "id": "archetype_pdp_high_consideration",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-high-consideration",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_2179_f49484f3dac69795c0435ef98075832cb0338564b6de5d8b7dcba9b9c670f8fa"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "editorial-masthead",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "editorial",
+                "immersive"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "editorialSplit",
+                "anatomyId": "editorial",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "grid",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "table",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": false,
+                  "mediaTreatment": "editorial",
+                  "relatedCardVariant": "editorial"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpHighConsiderationReflow"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpHighConsiderationReflow"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "editorial",
+              "ratio": "natural",
+              "crop": "editorial",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          },
+          {
+            "id": "archetype_pdp_standard",
+            "archetypeVersion": "1.0.0",
+            "profile": {
+              "profileId": "pdp-standard-commerce",
+              "profileVersion": "1.0.0",
+              "fingerprint": "page-blueprint-v1_1908_b473d2f08d52936fb3f53737393e6b17599bf3ca0f85b4bc067641da54fe6b38"
+            },
+            "compatibleSharedFrameProfileIds": [
+              "centered-minimal",
+              "commerce-utility",
+              "compact-technical",
+              "editorial-masthead"
+            ],
+            "defaultSharedFrameProfileId": "commerce-utility",
+            "designDnaNarrowing": {
+              "spacingDensity": [
+                "compact",
+                "spacious",
+                "standard"
+              ],
+              "surfaceDepth": [
+                "flat",
+                "layered",
+                "subtle"
+              ],
+              "imagePosture": [
+                "contained",
+                "editorial"
+              ]
+            },
+            "componentPresentations": [
+              {
+                "slotId": "dynamic-product-detail",
+                "component": "dynamicProductDetail",
+                "variant": "balanced",
+                "anatomyId": "standard",
+                "visible": true,
+                "content": {
+                  "trustItems": [],
+                  "relatedHeading": {
+                    "en": "You may also like",
+                    "fi": "Saatat myös pitää"
+                  },
+                  "primaryActionLabel": {
+                    "en": "Add to cart",
+                    "fi": "Lisää ostoskoriin"
+                  }
+                },
+                "props": {
+                  "galleryLayout": "thumbnails",
+                  "optionDensity": "comfortable",
+                  "attributeLayout": "groups",
+                  "showDescription": true,
+                  "showSku": true,
+                  "stickyMobileAction": true,
+                  "mediaTreatment": "contained",
+                  "relatedCardVariant": "standard"
+                },
+                "styleOverrides": {
+                  "surfaceTreatment": "plain"
+                },
+                "boundedParameters": {},
+                "approvedAssetSelections": []
+              }
+            ],
+            "responsivePosture": [
+              {
+                "breakpoint": "mobile",
+                "viewport": 375,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "tablet",
+                "viewport": 768,
+                "transformationIds": [
+                  "pdpStandardStack"
+                ]
+              },
+              {
+                "breakpoint": "desktop",
+                "viewport": 1024,
+                "transformationIds": []
+              },
+              {
+                "breakpoint": "wide",
+                "viewport": 1440,
+                "transformationIds": []
+              }
+            ],
+            "artDirectionPosture": {
+              "imagePosture": "contained",
+              "ratio": "portrait",
+              "crop": "contain",
+              "overlay": "none"
+            },
+            "fallbackBehavior": "use-family-fallback",
+            "family": "product-detail",
+            "optionArchitecture": "generic-canonical-options",
+            "commerceBindingPolicy": "runtime-protected-product"
+          }
+        ],
+        "collectionRouteMappings": [
+          {
+            "routeId": "page_63ba8fa656e7bd55c95664d9",
+            "archetypeId": "archetype_collection_search_dense"
+          },
+          {
+            "routeId": "page_830e13e05a1b867c5a8a8e55",
+            "archetypeId": "archetype_collection_search_dense"
+          }
+        ],
+        "collectionContextRules": [
+          {
+            "id": "collection_rule_default",
+            "priority": 0,
+            "match": {
+              "childCollections": "any",
+              "campaignEvidence": "any",
+              "merchandisingDensity": "any"
+            },
+            "archetypeId": "archetype_collection_search_dense"
+          },
+          {
+            "id": "collection_rule_dense",
+            "priority": 70,
+            "match": {
+              "productCount": {
+                "minimum": 12,
+                "maximum": 100000
+              },
+              "childCollections": "any",
+              "campaignEvidence": "any",
+              "merchandisingDensity": "compact"
+            },
+            "archetypeId": "archetype_collection_search_dense"
+          },
+          {
+            "id": "collection_rule_children",
+            "priority": 80,
+            "match": {
+              "childCollections": "present",
+              "campaignEvidence": "any",
+              "merchandisingDensity": "any"
+            },
+            "archetypeId": "archetype_collection_editorial"
+          },
+          {
+            "id": "collection_rule_campaign",
+            "priority": 90,
+            "match": {
+              "childCollections": "any",
+              "campaignEvidence": "present",
+              "merchandisingDensity": "spacious"
+            },
+            "archetypeId": "archetype_collection_campaign"
+          }
+        ],
+        "productTypeMappings": [
+          {
+            "productTypeId": "product-type-v1_10_441ee335406bbd886e",
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "productTypeId": "product-type-v1_10_58ea216c6924031d9c",
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "productTypeId": "product-type-v1_10_6512204eb14db5b6b0",
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "productTypeId": "product-type-v1_6_d37b4cb06465c4847b3",
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "productTypeId": "product-type-v1_7_73da76bff71a604995d",
+            "archetypeId": "archetype_pdp_standard"
+          }
+        ],
+        "productComplexityRules": [
+          {
+            "id": "product_rule_simple",
+            "priority": 0,
+            "match": {
+              "optionStructure": "simple",
+              "configurationComplexity": "simple",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "excluded"
+            },
+            "archetypeId": "archetype_pdp_standard"
+          },
+          {
+            "id": "product_rule_configurable",
+            "priority": 80,
+            "match": {
+              "optionStructure": "configurable",
+              "optionGroupCount": {
+                "minimum": 1,
+                "maximum": 100
+              },
+              "configurationComplexity": "any",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "any"
+            },
+            "archetypeId": "archetype_pdp_generic_fallback"
+          },
+          {
+            "id": "product_rule_gallery",
+            "priority": 85,
+            "match": {
+              "optionStructure": "any",
+              "optionGroupCount": {
+                "minimum": 0,
+                "maximum": 3
+              },
+              "configurationComplexity": "any",
+              "mediaAvailability": "multiple",
+              "mediaCount": {
+                "minimum": 3,
+                "maximum": 100
+              },
+              "mediaDepth": "rich",
+              "highConsideration": "excluded"
+            },
+            "archetypeId": "archetype_pdp_generic_fallback"
+          },
+          {
+            "id": "product_rule_options",
+            "priority": 90,
+            "match": {
+              "optionStructure": "configurable",
+              "optionGroupCount": {
+                "minimum": 1,
+                "maximum": 100
+              },
+              "configurationComplexity": "complex",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "any"
+            },
+            "archetypeId": "archetype_pdp_high_consideration"
+          },
+          {
+            "id": "product_rule_considered",
+            "priority": 100,
+            "match": {
+              "optionStructure": "configurable",
+              "optionGroupCount": {
+                "minimum": 1,
+                "maximum": 100
+              },
+              "configurationComplexity": "any",
+              "mediaAvailability": "any",
+              "mediaDepth": "any",
+              "highConsideration": "required"
+            },
+            "archetypeId": "archetype_pdp_high_consideration"
+          }
+        ],
+        "searchArchetypeId": "archetype_collection_search_dense",
+        "fallbacks": {
+          "collectionArchetypeId": "archetype_collection_search_dense",
+          "searchArchetypeId": "archetype_collection_search_dense",
+          "productDetailArchetypeId": "archetype_pdp_generic_fallback"
+        },
+        "authorityFingerprint": "dynamic-commerce-presentation-v1_19536_842700cbd8788a5679400771ca22e6f40c99e7eca0c25bfda8abaf8044b8ade3"
+      },
+      "contentSupportFactDocuments": [],
+      "catalogueRef": "catalogue_p10b16p04_aurum_commercial_acceptance",
+      "createdAt": "2026-08-14T09:00:00.000Z",
+      "createdBy": "system"
+    }
+  ]
+}

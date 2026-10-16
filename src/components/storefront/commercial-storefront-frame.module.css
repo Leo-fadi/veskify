@@ -248,7 +248,8 @@
   font: inherit;
 }
 
-.brand {
+.desktopFrame .brand,
+.mobileFrame .brand {
   overflow-wrap: anywhere;
   font-family: var(--brand-font-display, var(--brand-font-heading, inherit));
   font-weight: var(--brand-type-display-weight, 600);

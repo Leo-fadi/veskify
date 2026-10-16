@@ -43,11 +43,16 @@
 
 .media img {
   display: block;
+  background: var(--brand-color-surface);
+}
+
+.card:not(.anatomy_horizontal) .media img,
+.anatomy_horizontal .media > figure > img,
+.anatomy_horizontal .media > img {
   width: 100%;
   height: 100%;
   min-height: calc(12rem * min(var(--brand-media-prominence, 1), 1.2));
   max-height: 30rem;
-  background: var(--brand-color-surface);
 }
 
 /* P10B-04 art-direction wrappers own their image fit. This fallback applies only
@@ -71,7 +76,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   font-family: var(--brand-font-heading);
-  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-size: clamp(1rem, 4.5cqi, calc(var(--brand-type-heading-size, 2.4rem) * 0.5));
   font-weight: var(--brand-type-heading-weight, 600);
   letter-spacing: var(--brand-type-heading-tracking, normal);
   line-height: var(--brand-type-heading-line-height, 1.15);
@@ -294,24 +299,40 @@
 
 .horizontalFrame {
   display: grid;
-  grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr) minmax(7rem, auto);
+  grid-template-columns:
+    minmax(7rem, calc(10rem * var(--brand-density-commerce, 1))) minmax(0, 1fr)
+    minmax(7rem, auto);
   align-items: center;
   gap: calc(var(--brand-grid-gap, 1rem) * var(--brand-density-commerce, 1));
   padding: max(0.75rem, calc(var(--brand-card-inset, 1rem) * 0.75));
 }
 
-.anatomy_horizontal .media img,
+.anatomy_horizontal .media > figure > img,
+.anatomy_horizontal .media > img,
 .anatomy_horizontal .mediaPlaceholder {
   min-height: 8rem;
   max-height: 11rem;
   aspect-ratio: 1;
 }
 
+/* Size the slot, not the protected image inside the registered art-direction
+   wrapper. Competing max-height on img left a tall portrait-sized empty frame. */
+.horizontalFrame .media {
+  width: min(100%, calc(10rem * var(--brand-density-commerce, 1)));
+  height: auto;
+  justify-self: center;
+}
+
+.horizontalFrame .media figure,
+.horizontalFrame .media > span {
+  height: auto;
+}
+
 /* Horizontal anatomy responds to its actual merchandising column, not only the viewport.
    A wide viewport may still place the card inside a narrow four-column collection grid. */
 @container (max-width: 32rem) {
   .horizontalFrame {
-    grid-template-columns: minmax(6rem, 0.65fr) minmax(0, 1.35fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   }
 
   .horizontalFrame > .actions {
@@ -323,7 +344,7 @@
    cannot remain legible inside a bounded two-column merchandising grid. */
 @media (min-width: 48rem) and (max-width: 63.999rem) {
   .card[data-responsive-tablet~="denseReflow"] .horizontalFrame {
-    grid-template-columns: minmax(6rem, 0.65fr) minmax(0, 1.35fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   }
 
   .card[data-responsive-tablet~="denseReflow"] .horizontalFrame > .actions {
@@ -334,7 +355,6 @@
 @media (max-width: 767px) {
   .title {
     overflow-wrap: anywhere;
-    font-size: 1rem;
   }
 
   .attributes div {
@@ -404,7 +424,8 @@
     grid-row: 2;
   }
 
-  .card[data-responsive-transformations~="denseReflow"] .media img,
+  .card[data-responsive-transformations~="denseReflow"] .media > figure > img,
+  .card[data-responsive-transformations~="denseReflow"] .media > img,
   .card[data-responsive-transformations~="denseReflow"] .mediaPlaceholder {
     min-height: 0;
     max-height: 13rem;
