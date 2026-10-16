@@ -8,6 +8,7 @@ import type {
   OpenAiResponseRequestOptions,
   OpenAiResponsesRequest,
 } from "./strict-output-contract";
+import { createAr06dLiveReviewTransport } from "../ar-06d-live-review-support.server";
 import { defaultOpenAiModel, defaultOpenAiTimeoutMs } from "./provider-defaults";
 import {
   OpenAiPromptedStorefrontDesignIntentV2Provider,
@@ -186,11 +187,18 @@ export function selectServerPromptedStorefrontDesignIntentProviderConfiguration(
   environment = process.env,
   sdkEnvironment = environment,
   telemetry,
+  liveReviewPolicyPath,
+  liveReviewTaskRoot,
+  liveReviewPolicySha256,
 }: {
   environment?: Environment;
   /** Mirrors the environment that the SDK itself can read; injectable only for zero-network tests. */
   sdkEnvironment?: Environment;
   telemetry?: PromptedStorefrontDesignIntentProviderTelemetry;
+  /** Task-only P04 live review policy; absent for every ordinary provider selection. */
+  liveReviewPolicyPath?: string;
+  liveReviewTaskRoot?: string;
+  liveReviewPolicySha256?: string;
 } = {}): ServerPromptedStorefrontDesignIntentProviderConfiguration {
   const transport = resolveTrustedTransportAuthority(environment, sdkEnvironment);
   if (environment.VESKIFY_AI_PROVIDER?.trim() !== "openai") {
@@ -224,10 +232,24 @@ export function selectServerPromptedStorefrontDesignIntentProviderConfiguration(
       model: model.data,
       timeoutMs: timeout,
       telemetry,
-      responses: {
-        create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
-          client.responses.create(request, options),
-      },
+      responses:
+        liveReviewPolicyPath !== undefined
+          ? createAr06dLiveReviewTransport({
+              policyPath: liveReviewPolicyPath,
+              taskRoot: liveReviewTaskRoot ?? "",
+              expectedPolicySha256: liveReviewPolicySha256 ?? "",
+              count: {
+                count: (request, options) => client.responses.inputTokens.count(request, options),
+              },
+              create: {
+                create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
+                  client.responses.create(request, options),
+              },
+            })
+          : {
+              create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
+                client.responses.create(request, options),
+            },
     }),
     modelId: model.data,
     timeoutMs: timeout,

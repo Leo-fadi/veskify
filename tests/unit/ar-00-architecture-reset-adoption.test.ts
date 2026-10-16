@@ -422,16 +422,22 @@ describe("existing delivery-ownership declarations", () => {
 });
 
 describe("post-pilot repository state and PR lifecycle", () => {
-  it("accepts the intended candidate state without asserting that the PR has merged", () => {
+  it("accepts the AR-06D technical-baseline disposition without asserting merge or commercial acceptance", () => {
     const directory = fixture();
     try {
       const tracker = readFileSync(
         join(directory, "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md"),
         "utf8",
       );
-      expect(tracker).toContain("AR-00B visual-feedback policy amendment");
+      expect(tracker).toContain("AR-00B is Baseline / closed. Its accepted merge is fa6c200.");
       expect(tracker).toContain("AR-06C is Baseline / closed");
-      expect(tracker).toContain("AR-06D is the exact selected next child, Planned and unstarted");
+      expect(tracker).toContain("AR-06D is In progress under BATCH-18 launch");
+      expect(tracker).toContain(
+        "One real model call and one official input-count request have executed.",
+      );
+      expect(tracker).toContain(
+        "The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending.",
+      );
       expect(tracker).toContain("**Baseline / closed.** AR-01 is **Baseline / closed.**");
       expect(tracker).toContain("AR-23 depends on AR-01");
       matrixCheck(
@@ -649,7 +655,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is a policy amendment under review until its accepted merge. AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch. No successor implementation is authorized.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is In progress under BATCH-18 launch. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending. BATCH-19 authorizes AR-10A only after accepted AR-06D merge; implementation remains unstarted.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -666,7 +672,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is a policy amendment under review until its accepted merge. AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch. No successor implementation is authorized.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is In progress under BATCH-18 launch. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending. BATCH-19 authorizes AR-10A only after accepted AR-06D merge; implementation remains unstarted.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
@@ -975,13 +981,23 @@ describe("AR-00B visual-feedback eligibility", () => {
       "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
       "An inspectable genuine output, owner-accepted visual quality, and production readiness are separate outcomes.",
     ],
-    ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", "BATCH-17 grants zero calls"],
+    ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", "BATCH-17 granted zero calls"],
     [
       "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
       "same running server process and same authorized P04 request context",
     ],
     ["docs/DEVELOPMENT_GUIDE.md", "Silence is not acceptance."],
-  ])("rejects removal of the bounded policy in %s", (relativePath, clause) => {
+    [
+      "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+      "One real model call and one official input-count request have executed.",
+      /active AR-06D single-generation review are required/,
+    ],
+    [
+      "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+      "The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending.",
+      /active AR-06D single-generation review are required/,
+    ],
+  ])("rejects removal of the bounded policy in %s", (relativePath, clause, error = /missing/) => {
     const directory = fixture();
     try {
       const path = join(directory, relativePath);
@@ -989,7 +1005,7 @@ describe("AR-00B visual-feedback eligibility", () => {
       const changed = original.replace(clause, "Removed policy.");
       expect(changed).not.toBe(original);
       writeFileSync(path, changed);
-      expect(() => check(directory)).toThrow(/missing/);
+      expect(() => check(directory)).toThrow(error);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -1003,8 +1019,8 @@ describe("AR-00B visual-feedback eligibility", () => {
       writeFileSync(
         path,
         original.replace(
-          "AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch.",
-          "AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch. AR-06D is the exact next task.",
+          "AR-06D is In progress under BATCH-18 launch.",
+          "AR-06D is In progress under BATCH-18 launch. AR-06D is the exact next task.",
         ),
       );
       expect(() => check(directory)).toThrow(/current authority assigns/);

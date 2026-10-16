@@ -37,8 +37,9 @@ for (const [path, clauses] of [
       "### Early-slice eligibility crosswalk",
       "same running server process and same authorized P04 request context",
       "Plan one baseline request and zero automatic retries",
-      "BATCH-17 grants zero calls",
-      "Do not execute AR-06D in BATCH-17.",
+      "BATCH-17 granted zero calls",
+      "AR-06D is In progress under BATCH-18 launch. One real model call and one official input-count request have executed.",
+      "The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending.",
     ],
   ],
   [
@@ -464,6 +465,8 @@ statusExpectation.set("AR-06", "Partial");
 statusExpectation.set("AR-06A", "Baseline");
 statusExpectation.set("AR-06B", "Baseline");
 statusExpectation.set("AR-06C", "Baseline");
+statusExpectation.set("AR-06D", "In");
+statusExpectation.set("AR-00B", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
@@ -556,13 +559,17 @@ for (const record of statusRecords) {
                             ? /^closed$/iu
                             : record.subject === "AR-06C"
                               ? /^closed$/iu
-                              : ["AR-05", "AR-05B"].includes(record.subject)
-                                ? /^closed$/iu
-                                : record.subject === "AR-05A"
+                              : record.subject === "AR-06D"
+                                ? /^progress under BATCH-18 launch$/iu
+                                : record.subject === "AR-00B"
                                   ? /^closed$/iu
-                                  : /^AR-\d{2}$/u.test(record.subject)
-                                    ? /^$/u
-                                    : /^(?:closed)?$/iu;
+                                  : ["AR-05", "AR-05B"].includes(record.subject)
+                                    ? /^closed$/iu
+                                    : record.subject === "AR-05A"
+                                      ? /^closed$/iu
+                                      : /^AR-\d{2}$/u.test(record.subject)
+                                        ? /^$/u
+                                        : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -594,12 +601,7 @@ const nextTaskIds = (block) =>
   ].map(([, id]) => id);
 for (const [path, block] of allCurrentAuthorities) {
   const declaredNext = nextTaskIds(block);
-  if (
-    declaredNext.some((id) => id !== "AR-06D") ||
-    declaredNext.filter((id) => id === "AR-06D").length > 1 ||
-    (declaredNext.includes("AR-06D") &&
-      !block.includes("AR-06D is the exact selected next child, Planned and unstarted"))
-  ) {
+  if (declaredNext.length > 0) {
     throw new Error(`${path}: current authority assigns ${declaredNext[0]} as next`);
   }
 }
@@ -637,18 +639,21 @@ if (
     "AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed.",
   ) ||
   !trackerCurrent.includes("BATCH-05 is complete.") ||
-  !trackerCurrent.includes("No successor implementation is authorized.") ||
+  !trackerCurrent.includes(
+    "BATCH-19 authorizes AR-10A only after accepted AR-06D merge; implementation remains unstarted.",
+  ) ||
   !trackerCurrent.includes("BATCH-03 is complete") ||
   !trackerCurrent.includes("BATCH-04 is complete.") ||
   !trackerCurrent.includes(
-    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is a policy amendment under review until its accepted merge. AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch.",
+    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is In progress under BATCH-18 launch. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending.",
   ) ||
-  !trackerCurrent.includes("No successor implementation is authorized.") ||
-  nextTaskIds(trackerCurrent).some((id) => id !== "AR-06D") ||
-  !nextTaskIds(trackerCurrent).includes("AR-06D")
+  !trackerCurrent.includes(
+    "BATCH-19 authorizes AR-10A only after accepted AR-06D merge; implementation remains unstarted.",
+  ) ||
+  nextTaskIds(trackerCurrent).length !== 0
 ) {
   throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B verified closure and AR-06C accepted closure, AR-06 Partial, and the qualified AR-06D selection are required",
+    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B verified closure and AR-06C accepted closure, AR-06 Partial, and the active AR-06D single-generation review are required",
   );
 }
 if (
@@ -664,7 +669,7 @@ const roadmapCurrent = currentAuthorities.find(([path]) =>
 )?.[1];
 if (
   !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is a policy amendment under review until its accepted merge. AR-06D is the exact selected next child, Planned and unstarted; it requires a separate launch. No successor implementation is authorized.",
+    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is In progress under BATCH-18 launch. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending. BATCH-19 authorizes AR-10A only after accepted AR-06D merge; implementation remains unstarted.",
   )
 ) {
   throw new Error("roadmap: current scheduling declaration is required");
