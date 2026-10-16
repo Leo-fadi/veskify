@@ -332,7 +332,7 @@
    A wide viewport may still place the card inside a narrow four-column collection grid. */
 @container (max-width: 32rem) {
   .horizontalFrame {
-    grid-template-columns: minmax(6rem, 8rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   }
 
   .horizontalFrame > .actions {
@@ -344,7 +344,7 @@
    cannot remain legible inside a bounded two-column merchandising grid. */
 @media (min-width: 48rem) and (max-width: 63.999rem) {
   .card[data-responsive-tablet~="denseReflow"] .horizontalFrame {
-    grid-template-columns: minmax(6rem, 8rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   }
 
   .card[data-responsive-tablet~="denseReflow"] .horizontalFrame > .actions {

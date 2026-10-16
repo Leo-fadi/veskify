@@ -1,6 +1,98 @@
-import type { Page } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { parseP10B18DAcceptanceInspectionResponse } from "./p10b-18d-live-safe-evidence";
+
+/** APIRequestContext requests are not observed by page network listeners. */
+export async function ar10aInspectAcceptance({
+  request,
+  origin,
+  token,
+  retain,
+}: {
+  request: Pick<APIRequestContext, "get">;
+  origin: string;
+  token: string;
+  retain: (observation: Record<string, unknown>) => Promise<void>;
+}) {
+  const started = performance.now();
+  const stages: Record<string, unknown>[] = [];
+  const mark = (stage: string, details: Record<string, unknown> = {}) =>
+    stages.push({
+      stage,
+      at: new Date().toISOString(),
+      elapsedMs: performance.now() - started,
+      ...details,
+    });
+  let outcome = "FAIL";
+  mark("request-start");
+  try {
+    const response = await request.get(`${origin}/api/demo/p10b-16p-04`, {
+      headers: { "x-veskify-p10b-16p-04-acceptance-token": token },
+      timeout: 120_000,
+      maxRetries: 0,
+      maxRedirects: 0,
+    });
+    mark("response-returned", { status: response.status() });
+    assert.equal(response.status(), 200, "Inspection response must be successful");
+    const body: unknown = await response.json();
+    mark("body-read");
+    const acceptance = parseP10B18DAcceptanceInspectionResponse(body);
+    mark("schema-validated", {
+      responseOk: true,
+      projectId: acceptance.projectId,
+      callBudget: acceptance.callBudget,
+      status: acceptance.status,
+      providerCallCount: acceptance.providerCallCount,
+      retryCount: acceptance.retryCount,
+      selectedTransportKind: acceptance.selectedTransport.kind,
+      caseCount: acceptance.cases.length,
+      hasFailureClassification: acceptance.failureClassification !== null,
+      hasActiveAttempt: acceptance.activeAttempt !== null,
+      hasFailedAttempt: acceptance.failedAttempt !== null,
+    });
+    ar10aAssertZeroCallReadiness(acceptance);
+    mark("zero-call-ready");
+    outcome = "PASS";
+    return acceptance;
+  } catch (error) {
+    // Request errors can include headers/cookies after their first line. Retain
+    // the actual error category and first line without copying those secrets.
+    const name = error instanceof Error ? error.name : "Error";
+    const message = (error instanceof Error ? error.message : String(error))
+      .split("\n")[0]
+      .replaceAll(token, "[redacted]")
+      .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
+      .slice(0, 2000);
+    mark("error", { name, message });
+    const retained = new Error(message);
+    retained.name = name;
+    throw retained;
+  } finally {
+    await retain({
+      operation: "GET /api/demo/p10b-16p-04",
+      deadlineMs: 120_000,
+      timingMeaning:
+        "APIRequestContext.get completion, not first-byte latency; body and schema completion are separate stages.",
+      outcome,
+      stages,
+      elapsedMs: performance.now() - started,
+    });
+  }
+}
+
+export function ar10aAssertZeroCallReadiness(
+  value: ReturnType<typeof parseP10B18DAcceptanceInspectionResponse>,
+) {
+  assert.equal(value.selectedTransport.kind, "mock");
+  assert.equal(value.status, "ready");
+  assert.equal(value.providerCallCount, 0);
+  assert.equal(value.retryCount, 0);
+  assert.equal(value.failureClassification, null);
+  assert.equal(value.activeAttempt, null);
+  assert.equal(value.failedAttempt, null);
+  assert.deepEqual(value.cases, []);
+}
 
 /** Reuse the preserved candidate's non-evaluating Flight extraction; never accept URL intent alone. */
 export function ar10aVerifySerializedCandidate(scripts: string[], expected: string) {

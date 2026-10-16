@@ -131,7 +131,7 @@ const paths = execFileSync(
       (/^(src\/|public\/|patches\/|tests\/helpers\/|tests\/fixtures\/ar-10a\/|tests\/e2e\/storefront-(geometry|accessibility)\.ts$|tests\/acceptance\/ar-10a-visual-realization\.spec\.ts$)/.test(
         path,
       ) ||
-        /^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|next\.config\.[^/]+|postcss\.config\.mjs|tsconfig\.json|playwright\.ar-10a\.config\.ts|scripts\/ar-10a-review\.mjs)$/.test(
+        /^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|next\.config\.[^/]+|postcss\.config\.mjs|tsconfig\.json|playwright\.ar-10a\.config\.ts|scripts\/ar-10a-review\.mjs|tests\/unit\/ar-10a-visual-realization\.test\.tsx)$/.test(
           path,
         )),
   );
@@ -144,6 +144,33 @@ async function freeze() {
     sourceFingerprint: sha(JSON.stringify(records)),
     head: execFileSync("git", ["rev-parse", "HEAD"], { cwd: repository, encoding: "utf8" }).trim(),
   };
+}
+function processIds(args) {
+  try {
+    return execFileSync("lsof", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(Number);
+  } catch (error) {
+    if (error.status === 1 && !error.stdout?.length) return [];
+    throw error;
+  }
+}
+// Never start a second task server against the original checkout's output tree.
+if (mode !== "production") {
+  const rows = execFileSync("ps", ["-axo", "pid=,comm="], { encoding: "utf8" }).split("\n");
+  for (const row of rows) {
+    const match = /^\s*(\d+)\s+next-server/.exec(row);
+    if (!match) continue;
+    const cwd = execFileSync("lsof", ["-a", "-p", match[1], "-d", "cwd", "-Fn"], {
+      encoding: "utf8",
+    });
+    if (cwd.split("\n").includes("n" + repository))
+      throw new Error("Original-checkout server already active");
+  }
+  if (processIds(["-t", join(repository, ".next/dev/lock")]).length)
+    throw new Error("Development output tree is already in use");
 }
 await mkdir(output, { mode: 0o700 });
 const inputs = await freeze();
@@ -271,7 +298,7 @@ const sampleResources = () => {
 };
 // Read-only samples of this invocation's process tree; no unrelated process
 // command lines, environment, project paths or process-control actions.
-const resourceInterval = ["diagnostic", "about-diagnostic"].includes(mode)
+let resourceInterval = ["diagnostic", "about-diagnostic", "full"].includes(mode)
   ? setInterval(sampleResources, 5000)
   : undefined;
 if (resourceInterval) sampleResources();
@@ -285,14 +312,17 @@ await record(join(output, "session.json"), {
 });
 let context,
   stopped = false;
+async function stopResourceSamples(destination) {
+  if (!resourceInterval) return;
+  clearInterval(resourceInterval);
+  resourceInterval = undefined;
+  sampleResources();
+  await record(destination, resourceSamples);
+}
 async function stop() {
   if (stopped) return;
   stopped = true;
-  if (resourceInterval) {
-    clearInterval(resourceInterval);
-    sampleResources();
-    await record(join(output, "resource-samples.json"), resourceSamples);
-  }
+  await stopResourceSamples(join(output, "resource-samples.json"));
   if (context) await context.close();
   if (server.exitCode === null) server.kill("SIGTERM");
   await serverClosed;
@@ -336,6 +366,114 @@ try {
     });
     if (response.status !== 404) throw new Error("Production replay was not rejected");
   } else {
+    if (mode === "full") {
+      const apiOutput = join(output, "api-readiness");
+      await mkdir(apiOutput);
+      const apiCounters = join(root, "api-readiness-executions");
+      await mkdir(apiCounters, { recursive: true });
+      const apiAttempt =
+        (await readdir(apiCounters)).filter((p) => /^attempt-\d{2}\.json$/.test(p)).length + 1;
+      if (apiAttempt > 2) throw new Error("API-only readiness allowance exhausted");
+      sampleResources();
+      const owned = resourceSamples.at(-1)?.ownedProcesses;
+      if (!owned) throw new Error("Task server process ownership unavailable");
+      const listeners = processIds(["-nP", "-t", "-iTCP:" + serverPort, "-sTCP:LISTEN"]);
+      const lockHolders = processIds(["-t", join(repository, ".next/dev/lock")]);
+      if (
+        listeners.length !== 1 ||
+        !owned.some((row) => row.pid === listeners[0]) ||
+        !lockHolders.includes(listeners[0]) ||
+        lockHolders.some((pid) => !owned.some((row) => row.pid === pid))
+      )
+        throw new Error("Server port/output tree ownership mismatch");
+      const cwd = execFileSync("lsof", ["-a", "-p", String(listeners[0]), "-d", "cwd", "-Fn"], {
+        encoding: "utf8",
+      });
+      if (
+        !cwd.split("\n").includes("n" + repository) ||
+        (await realpath(join(repository, ".next/dev"))) !== join(repository, ".next/dev")
+      )
+        throw new Error("Server workspace/output path mismatch");
+      const serverIdentity = {
+        runnerPid: process.pid,
+        serverPid: server.pid,
+        listenerPid: listeners[0],
+        origin,
+        workspace: repository,
+        outputTree: join(repository, ".next/dev"),
+        sourceFingerprint: inputs.sourceFingerprint,
+      };
+      await record(join(apiOutput, "server-identity.json"), serverIdentity);
+      const apiEnv = {
+        ...process.env,
+        AR10A_MODE: "api-readiness",
+        AR10A_OUTPUT_DIR: apiOutput,
+        AR10A_ORIGIN: origin,
+        AR10A_ACCEPTANCE_TOKEN: token,
+      };
+      for (const key of Object.keys(apiEnv))
+        if (/^OPENAI_|^VESKIFY_|^AR10A_CDP_URL$/.test(key)) delete apiEnv[key];
+      const apiArgv = [
+        "exec",
+        "playwright",
+        "test",
+        "--config",
+        "playwright.ar-10a.config.ts",
+        "--grep",
+        "prepares the protected inspection endpoint without Chromium",
+      ];
+      await record(join(apiCounters, "attempt-" + String(apiAttempt).padStart(2, "0") + ".json"), {
+        attempt: apiAttempt,
+        output: apiOutput,
+        startedAt: new Date().toISOString(),
+        argv: ["pnpm", ...apiArgv],
+        serverIdentity,
+        browserLaunched: false,
+      });
+      const apiLog = createWriteStream(join(apiOutput, "check.log"), { flags: "wx", mode: 0o600 });
+      let apiCode;
+      try {
+        const check = spawn("pnpm", apiArgv, {
+          cwd: repository,
+          env: apiEnv,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+        logStream(check.stdout, apiLog);
+        logStream(check.stderr, apiLog);
+        apiCode = await new Promise((yes, no) => {
+          check.once("error", no);
+          check.once("close", (code) => yes(code ?? 1));
+        });
+      } finally {
+        await new Promise((yes) => apiLog.end(yes));
+        await record(join(apiOutput, "resource-samples.json"), resourceSamples);
+        await record(join(apiOutput, "execution-result.json"), {
+          exitCode: apiCode ?? null,
+          completedAt: new Date().toISOString(),
+          browserLaunched: false,
+        });
+      }
+      if (apiCode !== 0) throw new Error("Protected API readiness failed; Chromium not launched");
+      const proof = JSON.parse(await readFile(join(apiOutput, "api-readiness.json"), "utf8"));
+      const current = await freeze();
+      const currentListeners = processIds(["-nP", "-t", "-iTCP:" + serverPort, "-sTCP:LISTEN"]);
+      if (
+        !proof.passed ||
+        proof.browserLaunched !== false ||
+        server.exitCode !== null ||
+        current.sourceFingerprint !== inputs.sourceFingerprint ||
+        JSON.stringify(currentListeners) !== JSON.stringify(listeners)
+      )
+        throw new Error("Prepared server/input identity changed before browser handoff");
+      await record(join(output, "prepared-server-handoff.json"), {
+        ...serverIdentity,
+        apiAttempt,
+        preparedAt: new Date().toISOString(),
+        sameServer: true,
+        label:
+          "Prepared-development-server visual proof; API readiness is not candidate identity, cold-start acceptance or a proven cause of the prior stall.",
+      });
+    }
     const counters = join(root, "browser-executions");
     await mkdir(counters, { recursive: true });
     const invocation =
@@ -383,13 +521,23 @@ try {
       AR10A_CDP_URL: `http://127.0.0.1:${browserPort}`,
       AR10A_ACCEPTANCE_TOKEN: token,
       AR10A_SOURCE_FINGERPRINT: inputs.sourceFingerprint,
+      AR10A_SERVER_PREPARATION:
+        mode === "full" ? "protected API prepared on same server" : "unprepared",
     };
     for (const key of Object.keys(browserEnv))
       if (/^OPENAI_|^VESKIFY_/.test(key)) delete browserEnv[key];
     const log = createWriteStream(join(output, "browser.log"), { flags: "wx", mode: 0o600 });
     const check = spawn(
       "pnpm",
-      ["exec", "playwright", "test", "--config", "playwright.ar-10a.config.ts"],
+      [
+        "exec",
+        "playwright",
+        "test",
+        "--config",
+        "playwright.ar-10a.config.ts",
+        "--grep",
+        "re-renders the pinned genuine candidate without generation or persistence",
+      ],
       { cwd: repository, env: browserEnv, stdio: ["ignore", "pipe", "pipe"] },
     );
     logStream(check.stdout, log);
@@ -441,6 +589,7 @@ try {
       invocation,
       completedAt: new Date().toISOString(),
     });
+    await stopResourceSamples(join(output, "resource-samples.json"));
     process.exitCode = code;
   }
   const after = await freeze();

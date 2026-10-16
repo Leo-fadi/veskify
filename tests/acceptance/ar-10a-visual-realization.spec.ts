@@ -2,7 +2,6 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium, expect, test, type Request } from "@playwright/test";
 import { p10b18dCaptureSurfaces } from "../helpers/p10b-18d-preview-evidence";
-import { parseP10B18DAcceptanceInspectionResponse } from "../helpers/p10b-18d-live-safe-evidence";
 import {
   ar06dCapture,
   ar06dHeader,
@@ -15,6 +14,8 @@ import {
 } from "../helpers/ar-06d-review-browser";
 import {
   ar10aActualFonts,
+  ar10aAssertZeroCallReadiness,
+  ar10aInspectAcceptance,
   ar10aMeasure,
   ar10aReadCandidateIdentity,
 } from "../helpers/ar-10a-review-browser";
@@ -25,10 +26,33 @@ const output = process.env.AR10A_OUTPUT_DIR!,
 const mode = process.env.AR10A_MODE;
 const fingerprint = "v1_50184_0784a748aa03ccbb5e081601548c20c63070658d24a5e3fa5344ef6093da9061";
 if (
-  !["trace", "diagnostic", "about-diagnostic", "full"].includes(mode ?? "") ||
+  !["trace", "diagnostic", "about-diagnostic", "api-readiness", "full"].includes(mode ?? "") ||
   Buffer.byteLength(token ?? "") < 32
 )
   throw new Error("Missing offline execution assignment");
+
+test("prepares the protected inspection endpoint without Chromium", async ({ request }) => {
+  expect(mode).toBe("api-readiness");
+  let passed = false;
+  try {
+    const acceptance = await ar10aInspectAcceptance({
+      request,
+      origin,
+      token,
+      retain: (observation) => ar06dRecord(join(output, "api-inspection.json"), observation),
+    });
+    ar10aAssertZeroCallReadiness(acceptance);
+    passed = true;
+  } finally {
+    await ar06dRecord(join(output, "api-readiness.json"), {
+      passed,
+      browserLaunched: false,
+      candidateIdentityEstablished: false,
+      label:
+        "Protected endpoint preparation only; canonical candidate and protected-state checks remain in the browser campaign.",
+    });
+  }
+});
 
 test("re-renders the pinned genuine candidate without generation or persistence", async () => {
   const browser = await chromium.connectOverCDP(process.env.AR10A_CDP_URL!);
@@ -140,13 +164,15 @@ test("re-renders the pinned genuine candidate without generation or persistence"
   await page.goto(origin, { waitUntil: "domcontentloaded" });
   await ar06dHideDevelopmentTools(page);
   const storedBefore = await ar06dStoredAuthority(page);
-  const inspect = async () => {
-    const response = await context.request.get(`${origin}/api/demo/p10b-16p-04`, {
-      headers: { [ar06dHeader]: token },
+  let inspectionNumber = 0;
+  const inspect = () =>
+    ar10aInspectAcceptance({
+      request: context.request,
+      origin,
+      token,
+      retain: (observation) =>
+        ar06dRecord(join(output, `api-inspection-${++inspectionNumber}.json`), observation),
     });
-    expect(response.status()).toBe(200);
-    return parseP10B18DAcceptanceInspectionResponse(await response.json());
-  };
   expect((await inspect()).providerCallCount).toBe(0);
   const home = p10b18dCaptureSurfaces[0];
   const protectedUrl = ar06dPreviewUrl(origin, home, fingerprint, "en");
@@ -310,6 +336,7 @@ test("re-renders the pinned genuine candidate without generation or persistence"
           join(output, `loading-ready-${locale}-${width}-${surface.id}.json`),
           await loadingObservation(),
         );
+        const identity = await ar10aReadCandidateIdentity(page, fingerprint);
         await ar06dSurfaceChecks(page, surface, locale);
         const media = await ar06dSettleMedia(page);
         await page.evaluate(() => window.scrollTo(0, 0));
@@ -323,6 +350,7 @@ test("re-renders the pinned genuine candidate without generation or persistence"
           measured,
           fonts,
           candidateFingerprint: fingerprint,
+          identity,
         };
         cases.push(result);
         await ar06dRecord(join(output, `case-${locale}-${width}-${surface.id}.json`), result);
@@ -424,6 +452,7 @@ test("re-renders the pinned genuine candidate without generation or persistence"
     mode,
     label:
       "Offline re-render of the preserved BATCH-18 generated candidate, not another generation",
+    serverPreparation: process.env.AR10A_SERVER_PREPARATION ?? "unprepared",
     candidateFingerprint: fingerprint,
     sourceFingerprint: process.env.AR10A_SOURCE_FINGERPRINT,
     cases,

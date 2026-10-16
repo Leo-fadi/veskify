@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
-if (!process.env.AR10A_OUTPUT_DIR || !process.env.AR10A_ORIGIN || !process.env.AR10A_CDP_URL)
+if (
+  !process.env.AR10A_OUTPUT_DIR ||
+  !process.env.AR10A_ORIGIN ||
+  (process.env.AR10A_MODE !== "api-readiness" && !process.env.AR10A_CDP_URL)
+)
   throw new Error("Use the assigned AR-10A offline runner");
 export default defineConfig({
   testDir: "./tests/acceptance",

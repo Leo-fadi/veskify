@@ -60,19 +60,19 @@ The coordinator's complete campaign passed all 56 surface/locale/width cases, re
 checks. Its production build, all six unchanged raw/gzip budgets and flag-enabled
 production-404 check passed. Focused static and documentation checks passed; the strict
 policy tests' two remaining current-heading failures were corrected and their 82-case
-focused selection passed. Independent verification must still execute the complete
-637-case policy selection on the final source.
+focused selection passed. The first independent attempt subsequently completed the
+full 637-case policy selection under its original source identity, as recorded below.
 
 Next retained the exact non-sensitive comparison fixture in seven server packaging
 traces. Each retained entry was resolved and hashed against the reviewed input. Client
 registration checks passed. Production 404 does not establish that the fixture is absent
 from server output or incapable of execution.
 
-Independent execution, per-original image inspection, fresh final-source build and
-complete native reconciliation remain required. Results and exact identities are retained
-in persistent task evidence; this document does not pre-attest pending checks. The public
-PR, single automatic review, final-head CI and actual owner visual disposition remain
-separate delivery gates.
+Independent execution, per-original image inspection, applicable final-source build and
+native reconciliation are separate mandatory gates. Their historical and current outcomes
+are distinguished below and retained with exact identities in persistent task evidence.
+The single automatic review, final-head CI and actual owner visual disposition remain
+separate from precommit technical verification.
 
 The first independent attempt passed 854 tests, static/documentation checks and its
 production build, budgets and production-404 check. Its browser run stopped after
@@ -114,3 +114,109 @@ visible limitations. This does not establish broader model diversity, a new fami
 normal Studio rollout, executable composed commerce, publication, commercial quality or
 production readiness. AR-02/03/04/05 and accepted AR-06A/B/C/D stay closed; AR-06 stays Partial.
 No automatic successor is authorized.
+
+## PR correction and current evidence
+
+Submitted head `59bb44c08b18a4cc51ceaa137372f04e38584651` received independent/native
+technical PASS with 56 cases and 36 directly inspected originals. That evidence retains
+its original attribution. It does not establish expanded AI design capability or owner
+visual acceptance.
+
+CI run `38896495215` subsequently found a genuine compatibility defect in the existing
+P10B-17 normal-P04 collection: at 1440px, a horizontal card was 247px wide, but its
+fixed 128px image track crowded the facts. “Limited availability” extended 2.75px
+beyond the card. This was a different deterministic candidate from the pinned A0,
+whose collection uses image-first cards. The existing narrow-card and tablet reflows
+now allocate two parts to media and three to facts within the available width.
+Content, typography, controls, anatomy, protected media and clipping assertions remain
+unchanged. The original CI failure is retained; corrected browser/build proof and
+final-head CI remain required. The review's stale AR-06D delivery sentence is also
+corrected without changing D's accepted status.
+
+The comparison remains A0 versus the same input under A1's reusable rendering changes.
+There is no A2 presentation successor, new generation or visual acceptance. Previous
+captures remain earlier-candidate evidence where the CSS correction affects pixels.
+
+## Current API-readiness continuation
+
+Independent invocation 11 stopped on the unchanged P10B17 inspection request's
+120-second deadline before card geometry. Its FAIL and unproven server cause remain
+retained. The bounded card correction is unchanged. A separately counted API-only
+phase now records request return, status, body/schema completion and sanitized errors
+in a finally path. It requires the existing protected endpoint and zero-call mock
+state before Chromium. The same identified server then supplies the final 56-case,
+36-image campaign; this is prepared-development-server proof, not cold-start or
+production-latency acceptance. Candidate, protected-state and geometry checks remain
+separate and unchanged. At most two API-only attempts are allowed; no automatic retry.
+The CSS correction still requires a fresh independent production build and all six
+budgets. Browser/build counters remain 11/12 and 2/4 before this continuation.
+Pre-execution independent review also found that the existing serialized-aggregate
+identity check ran only in the About diagnostic. The full campaign now applies
+that same check to each visible surface and retains its actual result before capture;
+earlier captures are not relabelled as having performed that check.
+
+## Proposed successor brief — unstarted
+
+**Question:** can the AI express independent design choices, and can the compiler
+preserve them into a visibly different, coherent storefront? This is a proposed bounded
+AR-09 design-control experiment, not another AR-10A polishing campaign. It requires a
+separate launch after accepted AR-10A delivery. AR-10 and AR-12 are consumers; the
+[current roadmap](VESKIFY_DEVELOPMENT_ROADMAP.md) retains their parent acceptance and
+AR-18 integration obligations. AR-00B permits a separately approved early visual slice
+without declaring those parents complete. No historical sequence is reinstated.
+
+### Source-backed boundary
+
+| Boundary                               | Actual source and finding                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Merchant request → provider fields     | `semanticProviderDriverPaths` and `semanticStorefrontDesignIntentV1MaterialSchema` in `src/application/prompted-storefront-design-intent/semantic-contract.ts` expose global density and navigation posture, but no independent navigation density. The strict wire schema is built in `src/integrations/ai/openai/prompted-storefront-design-intent-v2-provider.server.ts`. |
+| Semantic decision → compiler selection | `semantic-capability-features.ts` maps global density to `spacing-density`; `semantic-influence-authority.ts` declares its compound influence. `compiler.ts` forwards spacing density and surface depth to `registeredBrandSystemForDirection`; the bounded synthesizer has the same narrowing.                                                                              |
+| Selection → canonical value            | `applyRegisteredDensityDomain` in `src/application/storefront-design-system/registered-brand-system.ts` derives navigation and content density from the same spacing choice. Commerce is also derived, with spacious commerce capped at balanced. This is the current registered coupling, not evidence that an independent provider instruction was discarded.              |
+| Canonical value → rendering            | `DesignDna.density.navigation/content/commerce` already exist. `projectDesignDna` emits separate variables; the shared frame, homepage and card CSS consume the corresponding variables. `premiumEditorialDesignDna` already demonstrates nonuniform regional density. No second design system is needed.                                                                    |
+
+The demonstrated gap is **unexpressible independent navigation density in the registered
+provider/compiler path**, despite existing canonical and renderer support. Whether the
+coupling is unnecessary is what the experiment tests. There is no recovered historical
+provider response proving substitution/discard; D's missing intent bodies stay unavailable.
+AR-10A's header/hero and card findings concern realization of valid values, a different
+category. No missing component/layout capability is established for this experiment.
+
+### One small end-to-end experiment
+
+Propose one bounded optional navigation-density intent, admitted only by a registered
+direction capability, and carry its resolved decision through the existing compiler and
+synthesis selection to `designDna.density.navigation`. Reuse the current strict semantic
+schema, decision fingerprints, registered BrandSystem materializer, CSS projection and
+shared frame. Preserve old payload/default/version behavior and historical identities;
+choose explicit compatible version dispatch where the existing authority requires it.
+Do not add arbitrary styles, a new preset engine or an unconsumed schema.
+
+Compile a deterministic matched pair with the same registered direction, generous
+content spacing, catalogue, images, copy, locales, routes and card anatomy. Change only
+the supported navigation-density decision. Expected evidence is visibly tighter header
+spacing at 375/768/1024/1440 in EN/FI, while hero/content rhythm, commerce/card spacing,
+surface elevation, media, controls, prices and protected facts remain unchanged. “Quiet
+cards” is a separate surface/anatomy question; balanced commerce density does not prove it.
+Use the actual registered renderer and provide a usable storefront and matched boards.
+
+Negative/compatibility checks must reject unknown/unavailable values and stale authority,
+preserve exact legacy behavior when the new decision is absent, bind the resolved choice
+to its selection identity, and prove no collateral content/commerce or persistence change.
+Existing anchors include `p10b-16p-04f-semantic-scale-and-influence.test.ts`,
+`p10b-18b-01-design-dna-shared-frames.test.tsx` and AR-10A's shared-renderer checks.
+
+This deterministic experiment proves capability and compiler preservation. A later live
+prompt comparison would test whether the model chooses the requested combination; it
+needs its own exact model, call count and spending approval. None is authorized here.
+
+### Puck comparison, not adoption
+
+Official [Puck AI overview](https://puckeditor.com/docs/ai/overview) distinguishes Assembly,
+which uses configured components, from Design mode, which generates new component types.
+[Assembly configuration](https://puckeditor.com/docs/ai/ai-configuration) documents
+component/field instructions, exclusions and schemas for custom fields. Those are useful
+comparisons for exposing bounded choices, not evidence of measured design quality.
+[Design mode](https://puckeditor.com/docs/ai/design-mode) instead produces dynamic
+HTML/CSS and optionally JavaScript, stored through its dynamic configuration. It is not
+the proposed Veskify boundary. No Puck AI/Cloud installation, persisted Puck tree,
+arbitrary generated code or canonical-ownership change is proposed.

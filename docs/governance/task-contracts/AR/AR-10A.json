@@ -28,7 +28,8 @@
     "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md including AR-00B; roadmap order and tracker sole current status",
     "Owner BATCH-19 launch and Desktop runbook SHA256 e68434c204ee67260faf007ff40fb309c0e4a74d6f719db22308e83d13f3ae87",
     "Preserved A0 original aggregate SHA256 355a1ab4188ea6e30e711ab84d3ba8ecbd853cab26fe6e8dbda4d6cf27b6bc5d; candidate v1_50184_0784a748aa03ccbb5e081601548c20c63070658d24a5e3fa5344ef6093da9061; original 36 captures and preservation verifier report remain immutable",
-    "Direct owner About-route-readiness continuation: one AboutEN375 diagnostic total180seconds; conditional one-pass route-module preparation after demonstrated devcompilation cause; existing visual60snav/30sassertions unchanged; browserceiling12 with8used; build2/4 andpaid0 unchanged."
+    "Direct owner About-route-readiness continuation: one AboutEN375 diagnostic total180seconds; conditional one-pass route-module preparation after demonstrated devcompilation cause; existing visual60snav/30sassertions unchanged; browserceiling12 with8used; build2/4 andpaid0 unchanged.",
+    "Direct owner API-readiness continuation: <=2 separately recorded API-only executions, first instrumented attempt, second only evidence-backed; keep120s, no retries/redirect escape; same prepared server then final browser12. Preserve11FAIL and2/4 builds; no product/API/dependency changes."
   ],
   "ownedPaths": [
     "src/components/storefront/commercial-storefront-frame.module.css",
@@ -161,13 +162,13 @@
     "externalImageActivityAllowed": false,
     "networkPolicy": "allowlisted",
     "allowlistedActivities": [
-      "Loopback-only task-owned development/production server and Chromium, no external browser requests or application writes.",
+      "Loopback-only task-owned development/production servers and Chromium; pinned replay read-only. Existing completed P10B17 invocation11 deterministic lifecycle remains historicalFAIL. New API-only readiness uses protected GET with mock transport and zero-call state, at most2 attempts, no Chromium or provider calls. Same server then fullbrowser12; no paid/provider/Vesko/publication activity.",
       "Authorized public Leo-fadi/veskify GitHub delivery and bounded CI observation after independent/native technical PASS."
     ],
     "secretFilesAllowed": []
   },
   "implementationApproach": {
-    "selectedApproach": "First add a dedicated flag-gated fixed repository-fixture replay inside existing P04 proposal-preview authority, after existing authorization and before state lookup. Verify raw/canonical aggregate and draft pins before returning isolated clones. No arbitrary import/API/map mutation. Measure A0 with untouched CSS and record three-row source/computed-geometry trace; set concrete criteria before first correction campaign. Correct only demonstrated duplicate spacing, sizing and role realization in listed shared CSS. Preserve canonical tokens and all semantic versions. Reuse D media/accessibility helpers with new zero-call browser spec/runner and original installed dependencies. Bounded continuation observes About EN375 once and optionally one explicitly labelled subsequent navigation within a total180second diagnostic window; timestamps server compilation/request/headers/document/readiness. No production edits. Only if dev preparation is established as deadline cause, prepare each required module once via normal authority with successful response and exact candidate validation, preserving all timing/failure records. Label any resulting full proof prepared-development-server visual proof, not cold-start/production latency. Diagnostic9 completed both actualAboutnavigations below60seconds; firstserver3.7sNext/3.6sapplication. Originalstallcause remainsunproven; conditionalroutepreparation was NOT adopted. Final independentcampaign uses original60snav/30sassertions with no warming. Added supportparser independently verifies actualresponseaggregate against originalrawSHA,notURLalone. Separate verifiedsupportdefect:worker-ownedroutingisremovedonworkerdisposal (installedPlaywright1.61.1). ReuseDretainedcontext routing withstrictowned-originreadonlyguard;verifyactualowner navigationafterworkerexit. No token-globalheaders/applicationchange;doesnotexplainpriorAboutstall.",
+    "selectedApproach": "First add a dedicated flag-gated fixed repository-fixture replay inside existing P04 proposal-preview authority, after existing authorization and before state lookup. Verify raw/canonical aggregate and draft pins before returning isolated clones. No arbitrary import/API/map mutation. Measure A0 with untouched CSS and record three-row source/computed-geometry trace; set concrete criteria before first correction campaign. Correct only demonstrated duplicate spacing, sizing and role realization in listed shared CSS. Preserve canonical tokens and all semantic versions. Reuse D media/accessibility helpers with new zero-call browser spec/runner and original installed dependencies. Bounded continuation observes About EN375 once and optionally one explicitly labelled subsequent navigation within a total180second diagnostic window; timestamps server compilation/request/headers/document/readiness. No production edits. Only if dev preparation is established as deadline cause, prepare each required module once via normal authority with successful response and exact candidate validation, preserving all timing/failure records. Label any resulting full proof prepared-development-server visual proof, not cold-start/production latency. Diagnostic9 completed both actualAboutnavigations below60seconds; firstserver3.7sNext/3.6sapplication. Originalstallcause remainsunproven; conditionalroutepreparation was NOT adopted. Final independentcampaign uses original60snav/30sassertions with no warming. Added supportparser independently verifies actualresponseaggregate against originalrawSHA,notURLalone. Separate verifiedsupportdefect:worker-ownedroutingisremovedonworkerdisposal (installedPlaywright1.61.1). ReuseDretainedcontext routing withstrictowned-originreadonlyguard;verifyactualowner navigationafterworkerexit. No token-globalheaders/applicationchange;doesnotexplainpriorAboutstall. Post-review consolidation: fix demonstrated horizontal-card fact-column constraint in existing card CSS, preserve content/anatomy/actions/media and unchanged geometry thresholds. Correct stale D delivery sentence. Retain failed CI38896495215 and review4294368361. Existing unchanged P10B17 compatibility test is invocation11, independent full A0 proof is invocation12; fresh production build within existing4. Temporarily stop only confirmed idle owner runner after preserving profile/evidence, execute sequentially, restore verified review browser. No new visual direction or provider/compiler implementation. Proposed/unstarted independent navigation-density successor brief belongs in existing task handoff; no automatic successor. Administrative pre-execution support correction: existing P10B17 config already selects its sole exact test; remove invalid anchored grep without altering selection/assertions. Preserve independent05 actual212-test PASS and documentary-formatFAIL; no browser/build ran there. Successor formatted with explicit repository Prettier configuration before pinning. Brief qualifier describes current registered coupling, not unobserved historical intent. Current owner-authorized continuation supersedes the previous unfinished execution plan: retain compatibility11FAIL without another local P10B17 invocation; fresh independent build3 first while no server active, then API-only protected inspection preparation before Chromium on the SAME server. Reuse existing schema, exact120s request deadline, zero retries and redirects; retain request-start/return/status/body/schema/error in finally without TTFB claims, timed server log and owned-process/resource evidence. Only if successful and frozen input/server identity still match, execute fullbrowser12 with original56/36 and all visual/canonical/commerce assertions. Label prepared-development-server proof; originalstallcause stays unproven. Existing CI must still execute complete P10B17 on finalhead. No successor experiment changes.",
     "canonicalAuthorityExtended": "Existing shared CSS rendering of canonical StorefrontSnapshot/BrandSystem/card anatomy; no canonical schema or provider extension.",
     "namedCurrentConsumers": [
       "CommercialStorefrontFrame editorialMasthead plus other existing profiles",
@@ -239,8 +240,8 @@
   "requiredValidation": [
     {
       "id": "VALIDATION-01",
-      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-10a-visual-realization.test.tsx tests/integration/ar-10a-offline-replay.test.ts tests/unit/p10b-06-commercial-shared-frame-families.test.tsx tests/unit/p10b-18b-01-design-dna-shared-frames.test.tsx tests/unit/p10b-17-responsive-execution.test.ts tests/unit/homepage-commerce.test.tsx tests/unit/p10b-07-hero-editorial-campaign-proof-families.test.tsx tests/unit/p10b-08-canonical-product-card-family.test.tsx tests/unit/dynamic-collection-commerce.test.tsx tests/unit/p10b-09-commercial-homepage-profile-library.test.tsx tests/unit/p10b-10-commercial-collection-search-profile-library.test.tsx tests/integration/storefront-commerce-route-integration.test.tsx",
-      "purpose": "Affected positive/negative/transfer and shared consumer behavior; one worker.",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-10a-visual-realization.test.tsx tests/integration/ar-10a-offline-replay.test.ts",
+      "purpose": "Fresh affected readiness/helper/canonical replay controls. Preserve independent05 212/12 actualPASS; unchanged other ten files reusable only with applicability. Do not rerun unrelated expensive suites.",
       "requiredEvidence": ["EVIDENCE-03"]
     },
     {
@@ -305,14 +306,14 @@
     },
     {
       "id": "VALIDATION-12",
-      "command": "node scripts/ar-10a-review.mjs full --output /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/independent-04/browser",
-      "purpose": "Independent complete56cases/36originals with original60snav/30sassertions,oneworkerzeroretries; no route preparation adopted because condition notproved. Counters9/12used beforefinal. Inspecteachoriginal, retainsuccessfulsourceidentity andeverypriorFAIL. Retainedrunner origin-scopedreadonlyrouting must support actualpostworker ownernavigation underunchanged60/30deadlines; exactoutputowner-navigation.json; failureblocksPASS.",
+      "command": "node scripts/ar-10a-review.mjs full --output /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/independent-07/browser",
+      "purpose": "One sequential runner: protected API-only readiness before Chromium, same identified server then final56cases36originals browser12/12; all original60snav/30sassertions and guards intact. Direct original inspection and usable post-worker owner review required. Prepared-development-server proof, no retrospective coldPASS.",
       "requiredEvidence": ["EVIDENCE-04"]
     },
     {
       "id": "VALIDATION-13",
-      "command": "pnpm build:webpack",
-      "purpose": "Sequential coordinator then independent final-source build in original checkout, <=4 actual builds including two justified corrections. 2GiB reserve plus measured additional peak. Freeze build sources/dependencies/config; retain compiled proof outside live .next.",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/support-09/build-proof.py independent-07/build",
+      "purpose": "Fresh independent corrected-CSS production build3 of4 FIRST, then six budgets/prod404/trace; wrapper owns14/15 execution. No active dev server or concurrentheavyjob.",
       "requiredEvidence": ["EVIDENCE-05"]
     },
     {
@@ -323,15 +324,21 @@
     },
     {
       "id": "VALIDATION-15",
-      "command": "node scripts/ar-10a-review.mjs production --output /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/independent-01/production-smoke",
-      "purpose": "Existing completed build loopback smoke: replay flag and valid token still404; no generation/browser invocation or rebuild. Collect client registration/fixture trace status and integrity honestly.",
+      "command": "node scripts/ar-10a-review.mjs production --output /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/independent-07/production-smoke",
+      "purpose": "Fresh production flag-enabled404 and complete client/NFT integrity collection executed by build wrapper; no separate duplicate smoke.",
       "requiredEvidence": ["EVIDENCE-05"]
     },
     {
       "id": "VALIDATION-16",
       "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-10a-visual-realization.test.tsx",
-      "purpose": "Fresh seven tasktests include four readinessparser controls; inherited original208selection remains originalexecution ofunchanged three assertions/otherconsumers, notclaimnewcontrolsranpreviously. No unrelated campaign rerun for metadata.",
+      "purpose": "Readiness negative/success controls included in VALIDATION01 current actual execution; do not duplicate the same test file merely for an additional label.",
       "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "pnpm exec playwright test --config playwright.ar-10a.config.ts --grep \"prepares the protected inspection endpoint without Chromium\"",
+      "purpose": "API-only child phase executed once by VALIDATION12 runner before any Chromium launch; <=2 separate API counters with second only evidence-backed, no auto retry. Require protected200/schema/ready/zero-call mock, retain finally timing/errors and samePID/origin/outputtree/frozen input handoff. Endpoint does not prove candidate identity. Failure stops beforebrowser12.",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"]
     }
   ],
   "requiredEvidence": [
@@ -359,7 +366,7 @@
     {
       "id": "EVIDENCE-04",
       "type": "screenshot",
-      "description": "A0/A1 candidate/input identities,56cases36originals, per-image verifier observations and applicable matched comparison. Retain coordinator/diagnostic-01 (invocation6 FAIL navigation60s) and coordinator/diagnostic-02 (invocation7 PASS16cases) as historical diagnostic observations, not independent complete acceptance. Original independent loading stall remains unexplained. Final independent56/36 proof remains required without deadline changes. Preserve independent02 FAIL after5cases/5originals. NewAboutdiagnostic/coordinator/about-diagnostic-01 is diagnostic-only, not retroactivePASS. Retain cold/unprepared and explicitlysubsequent timings and any conditionalpreparation proof. Diagnostic9 actualPASS at coordinator/about-diagnostic-01,first8.625s/subsequent1.647s;no fullacceptanceclaim,no routewarming;originalcompilestallcauseunproven.",
+      "description": "A0/A1 candidate/input identities,56cases36originals, per-image verifier observations and applicable matched comparison. Retain coordinator/diagnostic-01 (invocation6 FAIL navigation60s) and coordinator/diagnostic-02 (invocation7 PASS16cases) as historical diagnostic observations, not independent complete acceptance. Original independent loading stall remains unexplained. Final independent56/36 proof remains required without deadline changes. Preserve independent02 FAIL after5cases/5originals. NewAboutdiagnostic/coordinator/about-diagnostic-01 is diagnostic-only, not retroactivePASS. Retain cold/unprepared and explicitlysubsequent timings and any conditionalpreparation proof. Diagnostic9 actualPASS at coordinator/about-diagnostic-01,first8.625s/subsequent1.647s;no fullacceptanceclaim,no routewarming;originalcompilestallcauseunproven. Preserveindependent06compatibility11FAIL beforegeometry. LatestownerexplicitlypermitsprotectedAPIpreparationwithoutclaimingoriginalcause; currentfullproof mustidentify prepared server and unchanged original browserassertions.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     },
@@ -373,14 +380,14 @@
     {
       "id": "EVIDENCE-06",
       "type": "document",
-      "description": "Task report/boards/usable offline browser and explicit before-merge owner disposition checkpoint; no future owner PASS.",
+      "description": "Task report/boards/usable offline browser and explicit before-merge owner disposition checkpoint; no future owner PASS. Updated final packet owner-review-03; proposed/unstarted source-backed AR09 control experiment in existing task report/handoff. Visual disposition still pending; no merge inferred.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     },
     {
       "id": "EVIDENCE-07",
       "type": "document",
-      "description": "Verifier own full native report at independent-04/native-verdict.json, image inspections at independent-04/image-inspections.json, logs under independent-04/checks, build under independent-04/build, complete input inventory independent-04/input-inventory.json; coordinator exact-byte/provenance retention and native reconciliation only after report exists. Fresh attempt directories if corrected; no overwritten reports. Preserve independent-01 native FAIL, ten partial originals and original identities; applicability may retain its successful854tests/build evidence only where actual reviewed inputs remain unchanged. Prior independent02 reports remain immutable; newreport must distinguish inherited evidence. Preserveindependent03inspection-only checkpoint; no browser/checkexecutionclaimedthere.",
+      "description": "Verifier own complete native report at independent-07/native-verdict.json with own execution attribution, per-original image inspections, complete input inventory and current diff. Preserve independent01/02 FAIL, independent03 inspection, independent04 PASS and all previous identities. CSS repair requires fresh build/browser evidence; unchanged historical checks may be reused only after exact applicability review. Support identities in support-09/IDENTITY.json; no reconstructed verdict. Preserve both complete independent06FAILreports, native reconciliation and outputmetadata corrections underoriginal identities; current own independent07report distinguishes fresh checks from inherited proof.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     }
@@ -402,7 +409,7 @@
     },
     {
       "id": "STOP-02",
-      "condition": "Execution budgets exhausted:12 browser invocations/3 complete improved36sets/4 production builds/0 paid calls;8browser and2build used before continuation. Fourremaining:focusedAboutdiagnosis,completeindependent,cause-backedcorrectionconfirmationifneeded,postreviewreserve. No resets/retries.",
+      "condition": "Execution limits remain12 browser invocations/3 complete improved36-image sets/4 builds/0 paid calls;11browser and2build used. Up to2 separately recorded API-only readiness executions nowauthorized, second only specific evidence-backed correction/comparison. No counter resets/retries; API failure stops beforeChromium.",
       "action": "STOP",
       "owner": "sprint-coordinator"
     },
