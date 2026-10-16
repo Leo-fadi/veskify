@@ -50,6 +50,10 @@ export const P10B_16P_04_LOCAL_ACCEPTANCE_NAMESPACE =
 export const P10B_16P_04_PROVIDER_CALL_BUDGET = 3 as const;
 export const P10B_16P_04_MOCK_MODEL_ID = "mocked-p10b-16p-04-design-intent-v2" as const;
 export const P10B_16P_04_MOCK_FAILURE_HEADER = "x-veskify-p10b-16p-04-mock-failure" as const;
+export const AR06D_LIVE_REVIEW_FLAG = "VESKIFY_AR06D_LIVE_REVIEW" as const;
+export const AR06D_SPEND_POLICY_PATH = "VESKIFY_AR06D_SPEND_POLICY_PATH" as const;
+export const AR06D_TASK_ROOT = "VESKIFY_AR06D_TASK_ROOT" as const;
+export const AR06D_SPEND_POLICY_SHA256 = "VESKIFY_AR06D_SPEND_POLICY_SHA256" as const;
 
 type AcceptanceEnvironment = Readonly<Record<string, string | undefined>>;
 type HeaderAuthority = Pick<Headers, "get">;
@@ -397,6 +401,17 @@ export function createP10B16P04PromptedStorefrontProviderSelector({
     if (!isP10B16P04RealStudioAcceptanceConfigured(environment)) {
       throw new ServerWholeStorefrontAuthorityError("unavailable");
     }
+    const liveReview = environment[AR06D_LIVE_REVIEW_FLAG] === "1";
+    if (
+      liveReview &&
+      [AR06D_TASK_ROOT, AR06D_SPEND_POLICY_PATH, AR06D_SPEND_POLICY_SHA256].some(
+        (key) => !environment[key]?.trim(),
+      )
+    )
+      throw new ServerWholeStorefrontAuthorityError("unavailable");
+    if (liveReview && environment[P10B_16P_04_MOCK_TRANSPORT_FLAG] === "1") {
+      throw new ServerWholeStorefrontAuthorityError("unavailable");
+    }
     if (environment[P10B_16P_04_MOCK_TRANSPORT_FLAG] === "1") {
       const requestedFailure = httpRequest.headers.get(P10B_16P_04_MOCK_FAILURE_HEADER);
       const failure = requestedFailure === "provider-transport" ? requestedFailure : undefined;
@@ -407,9 +422,23 @@ export function createP10B16P04PromptedStorefrontProviderSelector({
         }),
       );
     }
+    const hasLiveReviewBinding = [
+      AR06D_TASK_ROOT,
+      AR06D_SPEND_POLICY_PATH,
+      AR06D_SPEND_POLICY_SHA256,
+    ].some((key) => !!environment[key]);
+    if (hasLiveReviewBinding && !liveReview)
+      throw new ServerWholeStorefrontAuthorityError("unavailable");
     const configuration = selectServerPromptedStorefrontDesignIntentProviderConfiguration({
       environment,
       telemetry: { record: recordTelemetry },
+      ...(liveReview
+        ? {
+            liveReviewPolicyPath: environment[AR06D_SPEND_POLICY_PATH] ?? "",
+            liveReviewTaskRoot: environment[AR06D_TASK_ROOT] ?? "",
+            liveReviewPolicySha256: environment[AR06D_SPEND_POLICY_SHA256] ?? "",
+          }
+        : {}),
     });
     if (configuration.category !== "eligible") {
       throw new PromptedStorefrontDesignIntentError("credentials-unavailable");

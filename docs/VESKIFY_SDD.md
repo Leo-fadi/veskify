@@ -1234,7 +1234,7 @@ supplies those later bounded acceptance facts. Details are in
 
 The incorporated AR-00 addendum permits an internal, bounded review loop through an actual provider intent, canonical compilation and isolated pending proposal, registered rendering, mechanical QA, and retained owner feedback. It retains StorefrontSnapshot, BrandSystem, PageBlueprint, registered components, protected Vesko commerce, proposal isolation, and explicit Accept/Save/Publish as the sole authorities. An inspectable genuine output, owner-accepted visual quality, and production readiness remain distinct.
 
-AR-06D is the selected unstarted child for a guarded same-running-server-process and authorized-P04-request-context P10B-16P-04 run-to-cross-page review packet. It requires separate authorization for provider/model/calls/attempts/tokens/cost and a zero-call preflight. It may use the existing legacy/dynamic registered baseline, but does not prove composed dynamic rendering, normal tenant activation, publication, or AR-06 closure.
+AR-00B is Baseline / closed at accepted merge `fa6c200`. AR-06D is In progress under BATCH-18 launch for a guarded same-running-server-process and authorized-P04-request-context P10B-16P-04 run-to-cross-page review packet. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending. It may use the existing legacy/dynamic registered baseline, but does not prove composed dynamic rendering, normal tenant activation, publication, or AR-06 closure.
 
 ### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance
 

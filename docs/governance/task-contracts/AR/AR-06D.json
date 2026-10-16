@@ -1,0 +1,485 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Leo-fadi/veskify/main/docs/governance/task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "BATCH-18",
+  "taskId": "AR-06D",
+  "title": "Genuine generated-storefront visual review loop",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-06d-generated-storefront-review",
+  "baseCommit": "fa6c200621e5fd093b5e112285e85e78d810762b",
+  "objective": "Run exactly one owner-authorized Aurum Nordic generation through the existing P04 semantic provider, compiler, isolated canonical proposal and registered preview routes; present its actual result for owner feedback.",
+  "expectedOutcome": "One runnable same-server candidate, truthful cross-page mechanical and independently inspected original-image evidence, and a consolidated owner visual checkpoint before merge. AR-06 remains Partial. No claim of commercial acceptance or production readiness without separate proof.",
+  "dependencies": [
+    {
+      "taskId": "AR-00B",
+      "requiredState": "MERGED",
+      "commit": "fa6c200621e5fd093b5e112285e85e78d810762b"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "AGENTS.md; docs/VESKIFY_SDD.md sections4,6,7,10.19-10.24,13,14; ADR002/004; docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md section18.1; original retained requirements remain unchanged.",
+    "docs/DEVELOPMENT_GUIDE.md section4; docs/AGENT_TEAM_WORKFLOW.md; existing task-delivery and independent-verification skills; native contract/verdict schemas.",
+    "/Users/leo/veskify-batch-runs/BATCH-18/AR-06D/preflight-01/RUNBOOK.original.md SHA256 8c7d38efbad3468b2f3da625f143be00b30a9eb36731a430e16e22791969afb8",
+    "/Users/leo/veskify-batch-runs/BATCH-18/AR-06D/preflight-01/frontier-and-readiness.json SHA256 f7e71e373ab8ee311c5a9635c2b12ee332074bd803e7273899159549021bf591",
+    "Owner BATCH18 launch and 2026-10-04 clarification: one real generation gpt-5.6-sol after independent zero-call readiness; request-level service_tier default; USD1 generation ceiling under applicable published rates/surcharges. At most2 official exact input counts separately authorized with undocumented charges explicitly unknown, not zero; no guaranteed all-inclusive total. Actual owner baseline disposition required before merge. No account billing/project/default-model change.",
+    "Canonical remote origin and accepted base unchanged. Current assignment /Users/leo/veskify-batch-runs/BATCH-18/AR-06D/contract-05/execution-assignment-02.json SHA256 c3fbf13b73c0dd3f715da900a09472e88c4dcb71d105b213d44fa320926ca60d; earlier assignments remain historical.",
+    "Preservation-first semantic successor: service-tier-amendment-01/OWNER-AUTHORIZATION.md SHA256 28cc0b420b5210d8b98a3038638994bd8071f4c7449a1e94f581dfda3acdfc3d; prior contract-01 bytes/lock/fingerprint preserved. Added ancillary paths only synchronize current-status documentation and its directly dependent existing guards/export.",
+    "Owner bounded mock-test watchdog authorization: test-watchdog-amendment-01/OWNER-AUTHORIZATION.md. Only tests/integration/ar-06d-generated-review-preflight.test.ts mock canonical-compilation case changes its Vitest watchdog30000 to60000ms. No hook/global/production/provider/browser/performance acceptance change. Two additional focused test invocations: targeted coordinator case, complete39case independent selection, one worker and zero retries. Preserve priorFAIL and independently verify retained build applicability; no build solely for test/support changes.",
+    "Standing owner administrative/support correction authority; preservation-first same-branch/base capture continuation after successful sole generation and failed cold-route browser request. Original runtime remains frozen. External support reuses originalspec/helpers with zero generation, exactretainedcandidate identity and unchangedassertions/deadlines. No product acceptance, permission, browser/build allowance, spending or canonical semantics change. PriorFAILandmissingoriginalbeforeobservation disclosed.",
+    "Standing runbook section8 in-scope test/support repair and section9 preservation-first administrative succession. media-readiness-correction-01 preserves actual priorbytes and demonstrated PDP DOM enumeration race; only test helper/spec readiness checks change, no generated candidate/runtime/product/build input. Original36captures visualFAIL retained; one independent combined56case/36image corrected capture within original10browser/3capture-set limits."
+  ],
+  "ownedPaths": [
+    "src/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server.ts",
+    "src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts",
+    "src/integrations/ai/ar-06d-live-review-support.server.ts",
+    "tests/unit/ar-06d-live-review-guard.test.ts",
+    "tests/integration/ar-06d-generated-review-preflight.test.ts",
+    "tests/acceptance/ar-06d-generated-storefront-review.spec.ts",
+    "tests/helpers/ar-06d-review-input.ts",
+    "tests/helpers/ar-06d-review-browser.ts",
+    "playwright.ar-06d.config.ts",
+    "scripts/ar-06d-review.mjs",
+    "docs/AR_06D_GENERATED_STOREFRONT_REVIEW.md",
+    "docs/governance/task-contracts/AR/AR-06D.json",
+    "README.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs"
+  ],
+  "allowedPaths": [
+    "src/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server.ts",
+    "src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts",
+    "src/integrations/ai/ar-06d-live-review-support.server.ts",
+    "tests/unit/ar-06d-live-review-guard.test.ts",
+    "tests/integration/ar-06d-generated-review-preflight.test.ts",
+    "tests/acceptance/ar-06d-generated-storefront-review.spec.ts",
+    "tests/helpers/ar-06d-review-input.ts",
+    "tests/helpers/ar-06d-review-browser.ts",
+    "playwright.ar-06d.config.ts",
+    "scripts/ar-06d-review.mjs",
+    "docs/AR_06D_GENERATED_STOREFRONT_REVIEW.md",
+    "docs/governance/task-contracts/AR/AR-06D.json",
+    "README.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs"
+  ],
+  "forbiddenPaths": [
+    ".git/**",
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "AGENTS.md",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.*",
+    "src/domain/**",
+    "src/application/**",
+    "src/components/**",
+    "src/integrations/puck/**",
+    "src/services/**",
+    "src/data/**",
+    "src/app/**",
+    "tests/fixtures/**",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "scripts/check-storefront-build-budgets.mjs",
+    "docs/governance/task-contracts/AR/AR-06A.json",
+    "docs/governance/task-contracts/AR/AR-06B.json",
+    "docs/governance/task-contracts/AR/AR-06C.json",
+    "docs/governance/task-contracts/AR/AR-00B.json"
+  ],
+  "noTouchAreas": [
+    "Exactly three production paths in this initial contract; only required guarded request-budget and safe P04 evidence support. No preview connection edit is currently justified. Preserve compiler/materializer/renderer/fixture/content/assets/Puck/storage/proposal/Accept/Save/Publish and all legacy behavior when D is absent.",
+    "Nine untracked original inputs are preservation-only native identity context: compare hashes, never edit, stage or publish. Preserve all prior evidence, retired archives, other worktrees and hotfix changes; no broad cleanup/VerifyAI operations.",
+    "One implementation writer; pause reviewed writers for independent execution in original checkout. Freeze complete candidate including uncommitted work and verify after checks. Verifier writes its own complete report with provenance and direct image observations; no reconstructed verdict.",
+    "Persistent authoritative support/evidence under /Users/leo/veskify-batch-runs/BATCH-18/AR-06D. Every attempt uses a new path; immutable historical locks/verdicts/captures/counters remain. Preservation-first successors only within approved administrative scope.",
+    "ONE generation, <=TWO official input counts, 100000 full input tokens, 524288 UTF8 request bytes, 4000 output tokens including reasoning, 120000ms timeout, store:false, zero SDK/app retries/tools/fallback/best-of-many. Request-level service_tier default; USD1 ceiling applies to generation using current published rates/surcharges. Separately undocumented counting charges expressly authorized as unknown, not zero. No guaranteed all-in total; no cached-input discount assumed. Missing usage consumes conservative generation reservation.",
+    "Use exact approved runbook merchant prompt and Aurum fixture; no hidden aesthetic tuning or manual beautification. Existing P04 three-call state does not authorize more than D one. Dispatched/uncertain generation counts permanently; process restart never replenishes allowance.",
+    "Existing credentials via normal server environment only; never read/source/copy .env.local or print credentials. Ephemeral P04 token remains server/task-browser same-origin header only, stripped off-origin; never URLs/reports/traces/HAR/cookies. Official canonical Responses API; no account billing/project/service-tier-setting/model-default change; only this task generation request explicitly uses service_tier default.",
+    "Same uninterrupted loopback P04 server and exact successful compiler snapshot fingerprint for generation and all previews. No durable replay/import or reconstructed snapshot. Complete necessary builds and freeze source before live launch; retain server/browser for owner review while safe. A restart loses the candidate.",
+    "Ten local browser invocations total, one worker zero retries; <=3 complete live36-original capture sets plus small mock set. Four production builds total only when runtime or bundle-reaching inputs require fresh evidence, sequential coordinator/independent/corrections. Each actual attempt counted before launch; a stopped capacity check is not an execution.",
+    "Remeasure additional next-stage allocations plus unchanged2GiB OS reserve without double counting installed dependencies or sequential peaks. Reuse compatible dependencies; no concurrent heavy jobs. Only needed verified unused task caches/export dependencies may retire with append-only records; no original node_modules or unique artifacts.",
+    "All seven actual candidate surfaces at four widths and EN/FI where declared, exact36 required originals per full set:7surfaces*2locales*2edgewidths plushome/configurablePDP*2locales*2intermediatewidths. Preserve settled actual media, geometry, accessible controls, all configured options, commerce/media, samecandidate navigation and draft/history/publication unchanged. No mock as live proof.",
+    "Only truthful current status notices and direct status guard/test maintenance; keep original parent acceptance, historical task contracts/hashes/goldens and commercial/production distinctions. Re-export existing two deterministic DOCX projections only for changed inputs.",
+    "Independent technical PASS precedes commit/push/public PR. Exactly one automatic review; no second request. All required final-head CI incl browser,budgets,validate and resolved findings remain later delivery gates; bounded existing CI cadence. Actual owner baseline disposition permitting delivery is mandatory before expected-head-protected merge, no override/rebase/forcepush. No successor task.",
+    "Declared generated outputs: .next from counted build/dev, tsconfig.tsbuildinfo from typecheck; task output readiness/log/cache/temporary test fixtures under persistent assigned attempt directories via TMPDIR. No only-copy authoritative proof in temporary system folders. Existing original node_modules remains installed; no reinstall or package-store operation. Official-call atomic reservations and results only in live-01; supported spend policy only spend-policy-01/policy.json, hash verified with default request tier and separately unknown counting charges. Owner disposition only owner-review-01/DISPOSITION.json after actual owner reply. No speculative record of acceptance. Task-owned persistent Chromium browser-profile and loopback-only CDP session under each assigned browser output; ephemeral local live-review.sock only coordinates independent read-only checks in the retained same server/browser, never returns credentials. Input identities and count reservations are append-only; inspect mode never generates. Runtime/harness inputs are frozen across the live session; task documentation may truthfully record evidence without changing running source. Approved readiness-only successor binds two test-only input changes separately from unchanged original live runtime; exact current test/build applicability is checked. Current fullindependent viewing/capture uses assigned external support, no alteration of original live controller or candidate map."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "Guarded P04 run-to-review connection and one-attempt spending safety; target8files1000production additions/hard12files1500; this contract owns exactly3production paths.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing deterministic human-readable documentation projection only."
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing deterministic human-readable documentation projection only."
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 1,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "ONE official Responses generation gpt-5.6-sol with request-level service_tier default only after independent zero-call readiness and supported <=USD1 generation cost bound. At most TWO exact /v1/responses/input_tokens calls; separately undocumented charges explicitly accepted as unknown, never zero or guaranteed all-inclusive total.",
+      "Official documentation read-only; GitHub current-state/authorized reviewed public delivery; loopback guarded P04 browser and existing approved fixture asset reads only."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Reuse the existing P04 handler/provider/compiler and candidate map. Wrap only the official SDK transport with a task-scoped exact-count/byte/spend and create-once reservation guard. Preserve safe request/usage/compiler lineage. Task-owned runner and browser helper connect unchanged preview consumers.",
+    "canonicalAuthorityExtended": "Existing server-only P04 acceptance and official prompted semantic provider transport; StorefrontSnapshot, BrandSystem, PageBlueprint and registered renderers remain sole product authorities.",
+    "namedCurrentConsumers": [
+      "AR-06D fictional Aurum Nordic run-to-review experiment; existing P04 whole-storefront handler and guarded project previews."
+    ],
+    "rejectedShortcuts": [
+      "Reuse P04 three-call global limit or process restart to replenish generation.",
+      "Assume counting is free, claim guaranteed all-in USD1, use character/4, change account service-tier/settings, hidden retry/fallback or probe model access.",
+      "Hand-author or manually beautify a completed candidate, rebuild from a fingerprint, or add a second renderer/persisted tree.",
+      "Infer owner visual acceptance or independent image inspection from automated PASS."
+    ],
+    "expectedFailureBehavior": "Reject missing/unverified pricing, exact count, bound, token or input identity before generation. Persist dispatched/uncertain allowance and honest failure immediately, leave canonical draft/history/publication unchanged; no replacement generation or mock success.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Correct accepted base/task and full input identity; preserve nine originals/unrelated work and canonical/commerce boundaries.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-02"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Production-disabled token-authorized P04 request/view path, exact one-call/token/byte/spend/credential guard and genuine zero-model-call preflight, supported applicable pricing before live dispatch. Generation uses default request tier and separately authorized counting-cost uncertainty under the owner amendment.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Genuine provider-first generation from exact approved prompt/context; safe request/intent/compiled/candidate attribution and measured/bounded cost; no replacement mock success or hidden correction. Report generation estimate/actual token usage separately from unknown counting charges; no guaranteed all-inclusive amount.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-05"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Same-candidate complete-store navigation, all relevant canonical commerce controls, EN/FI, protected commerce/media and unchanged draft/history/publication.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-05", "EVIDENCE-06"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Required allfourwidth responsive/locale mechanical proof, settled actual media, direct independent inspection of all36originals and usable runnable/compact owner-review packet.",
+      "verificationClass": "visual-product-owner-checkpoint",
+      "requiredEvidence": ["EVIDENCE-06", "EVIDENCE-07"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Precommit technical verification: verifier authors and schema-validates its complete provenance-bound report, with affected static/doc checks and applicable unchanged allsixbudgets. Coordinator then performs native reconciliation before commit; report must not attest its own future reconciliation. Automatic review/resolved findings/allfinalheadCI are separately mandatory before merge, never claimed as future PASS.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-08", "EVIDENCE-09"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Precommit checkpoint readiness: truthful complete packet explicitly labels owner disposition pending and D not closed. Actual owner baseline disposition/feedback permitting delivery must then be retained and reconciled before merge/closure; only D may close, AR06 and quality/production limitations remain explicit. No silence or launch-as-acceptance.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-07", "EVIDENCE-09"],
+      "failureBehavior": "STOP; preserve evidence and report the first unsatisfied boundary without weakening acceptance."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run tests/unit/ar-06d-live-review-guard.test.ts tests/integration/ar-06d-generated-review-preflight.test.ts --maxWorkers=1",
+      "purpose": "D guard adversarial controls and approved prompt through real P04 compiler, no external calls. Only the mock compilation test has60000ms watchdog under owner authorization; every assertion unchanged and other test/hook deadlines unchanged. One independent complete39case execution after one targeted coordinator execution; no automatic retry.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run tests/unit/p10b-16p-04f-openai-semantic-provider.test.ts tests/unit/p10b-16p-02a-architecture-boundaries.test.ts tests/unit/p10b-16p-05a-production-path-architecture.test.ts tests/unit/openai-server-only.test.ts tests/unit/ar-04-generation-composition.test.ts",
+      "purpose": "Affected provider/production-disabled/secret/isolation regressions.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts",
+      "purpose": "Existing P04 guarded lifecycle compatibility; no live provider.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm typecheck",
+      "purpose": "Repository no-emit typecheck.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm exec eslint src/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server.ts src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts src/integrations/ai/ar-06d-live-review-support.server.ts tests/unit/ar-06d-live-review-guard.test.ts tests/integration/ar-06d-generated-review-preflight.test.ts tests/acceptance/ar-06d-generated-storefront-review.spec.ts tests/helpers/ar-06d-review-input.ts tests/helpers/ar-06d-review-browser.ts playwright.ar-06d.config.ts scripts/ar-06d-review.mjs scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/validate-documentation.mjs scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "All owned code/test/support static checks.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm exec prettier --check src/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server.ts src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts src/integrations/ai/ar-06d-live-review-support.server.ts tests/unit/ar-06d-live-review-guard.test.ts tests/integration/ar-06d-generated-review-preflight.test.ts tests/acceptance/ar-06d-generated-storefront-review.spec.ts tests/helpers/ar-06d-review-input.ts tests/helpers/ar-06d-review-browser.ts playwright.ar-06d.config.ts scripts/ar-06d-review.mjs docs/AR_06D_GENERATED_STOREFRONT_REVIEW.md docs/governance/task-contracts/AR/AR-06D.json README.md docs/VESKIFY_SDD.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/AR_06_RENDERING_ACCEPTANCE.md scripts/check-architecture-reset-adoption.mjs tests/unit/ar-00-architecture-reset-adoption.test.ts docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md scripts/validate-documentation.mjs scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "All owned textual files and documentary contract formatting.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm exec vitest run tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Current status guard and preserved negative acceptance controls.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm docs:validate",
+      "purpose": "Existing documentation/current-status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Existing documentation/current-status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation/current-status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Existing documentation/current-status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Existing documentation/current-status/export integrity.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "node scripts/ar-06d-review.mjs mock --output /Users/leo/veskify-batch-runs/BATCH-18/AR-06D/independent-readiness-03/mock",
+      "purpose": "Counted coordinator/independent mock browser preflight through real handler/compiler/preview; assigned fresh persistent output and exact installed dependencies. Coordinator output coordinator/mock-01; verifier output independent-readiness-03/mock; later attempts get fresh incremented assigned paths. Logs/cache/readiness/screenshots only under assigned output, no secrets.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "pnpm build:webpack",
+      "purpose": "Counted sequential production build before live session if runtime changes; frozen original inputs and retained persistent compiled proof. Conditional on changed runtime/bundle inputs; coordinator build before live and independent final build before live use original checkout sequentially. .next production outputs plus frozen input/artifact manifests and copied required proof under coordinator/build-01 and independent-readiness-01/build. Actual builds never repeated by final verifier merely to populate commandsRun; inherited execution attributed honestly.",
+      "requiredEvidence": ["EVIDENCE-08"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "pnpm build:check:storefront-budgets",
+      "purpose": "Unchanged six raw/gzip budgets for each applicable complete build. Runs on each actual complete build; proof locations match VALIDATION-14. If no runtime/bundle change, verifier independently establishes exact-base applicability instead; no fictitious execution.",
+      "requiredEvidence": ["EVIDENCE-08"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-18/AR-06D/live-capture-continuation-01/verify-generation-02.mjs",
+      "purpose": "Fresh read-only verification of the sole actual retained genuine generation/count/usage/compiler/candidate records. The original combined live command generated successfully but its browser stage timed out before screenshots; original FAIL remains immutable. This command never dispatches a request or claims a new generation. VALIDATION-18 requires complete same-session capture recovery, VALIDATION-17 independently verifies actual live candidate. All real generation acceptance, model/spend/token/one-attempt limits unchanged.",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-18/AR-06D/media-readiness-correction-01/run-independent-capture.mjs",
+      "purpose": "Independent complete same-candidate56case verification and36corrected originals in one invocation9/10. Review the exact two-file readiness-only diff and applicability, all original guards/assertions retained; unknowncandidate fetch uses original30000ms request bound. No generation/restart/production edit. Direct inspect every corrected original; finalreport ownobservations.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    },
+    {
+      "id": "VALIDATION-18",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-18/AR-06D/live-capture-continuation-01/run-capture-02.mjs",
+      "purpose": "Retained execution8/10 completed56cases36captures with unchangedinputs but independentlyvisualFAIL due five unsettled-media captures. Preserve command/result/originals; this old set is NOT acceptable visual proof. VALIDATION17 independently replaces required visual proof after demonstrated test-readiness correction; never rerunVALIDATION18.",
+      "requiredEvidence": ["EVIDENCE-06"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Preflight base/branch/remote predecessor/verifier readiness/original pin record.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "diff",
+      "description": "Native complete working tree including uncommitted diff identity, scope/unchanged preservation before and after verifier. Separate production ADDITIONS check enforces1000target/1500hard without deletion offsets, alongside native identity/budgets.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual focused unit/integration/static/docs commands and truthful outcomes with frozen inputs.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "browser",
+      "description": "Zero-model-call actual handler/compiler/registered preview proof; mock labelled; independent readiness before live.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "document",
+      "description": "Create-once count/generation reservations, exact approved safe inputs and model/pricing/count/usage/cost/compiler/candidate lineage; uncertainties and failure never erased.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-06",
+      "type": "screenshot",
+      "description": "Same-candidate allrequired surfaces/locales/fourwidth mechanical evidence,36 original captures, per-image independent direct inspection identity/observations. Fresh capture continuation under live-capture-continuation-01/browser; all36originals independent directinspection. Original live browserFAIL and missingoriginalpre-generationhash disclosed. New current/postcapture clientauthority observation plus independently verified frozen source/freshprofile/actuallineage establish persistence requirement without reconstructing earlier observations. Current corrected proof is independent-final-02/browser plus independent-final-02/image-inspections.json. Original independent-final-01 image inspection records visualFAIL for priorcapture; never substitute it for current acceptance.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-07",
+      "type": "document",
+      "description": "Runnable authorized browser, boards/readableoriginal links/promptcontextattribution and owner feedback form; before-merge actual owner disposition retained in append-only supplement.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-08",
+      "type": "command",
+      "description": "Applicable independent final-source build and budgets/production isolation, complete retained input/artifact identities; no futureCI claim.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-09",
+      "type": "document",
+      "description": "Pre-report execution assignment and provenance descriptor at contract-05/execution-assignment-02.json; verifier authors full native report at independent-final-02/native-verdict.json and direct per-image observations at independent-final-02/image-inspections.json; coordinator subsequently records exact report bytes/hash/provenance and native reconciliation at reconciliation-01/. No report attests future reconciliation/review/CI/owner PASS. Pre-live native report and separate phase readiness attestation reside under independent-readiness-03; originalFAILreports remain unchanged. Failed pre-live whole-taskreconciliation staysretained; full final actualevidence required beforecommit.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-merge",
+    "criteria": [
+      "Leo actual baseline-review disposition permits delivery; feedback retained verbatim or explicitly faithful summary and independently reconciled before merge.",
+      "Technical baseline, owner commercial-quality judgment and production readiness are separate; a quality-rejected baseline may deliver only if Leo explicitly permits it.",
+      "Inspect actual Aurum storefront and concise EN/FI cross-page fourwidth packet; no silence-as-approval."
+    ]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Before affected external dispatch: stop if supported generation pricing/default-request-tier/USD1 bound, credentials or pinned exact request identity is missing. The owner separately accepts undocumented charges for at most2 official counts; a counting-fee quote is not a gate. Zero-call implementation remains authorized. Exhausted allowance or actual resource conflict blocks only affected operation.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Scope/canonical/security/commerce or unchanged bundle acceptance defect outside approved envelope.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Managed substantive denial; never reroute or disguise equivalents. Timeout handling only under retained standing bounds.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Live server/input integrity loss, missing required unique artifact or failed genuine generation; never substitute/retry.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-05",
+      "condition": "Owner baseline disposition not yet permitting delivery: pause at consolidated visual checkpoint before merge.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "NONE",
+    "title": "No successor authorized",
+    "eligibility": "Stop after accepted AR06D delivery and BATCH18 closeout; feedback fixes require separate bounded launch."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
