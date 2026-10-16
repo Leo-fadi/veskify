@@ -1,6 +1,8 @@
 import "server-only";
 
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { readFileSync, realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   SemanticCompatibilityResolutionError,
   type SemanticCompatibilityDiagnostic,
@@ -18,6 +20,7 @@ import {
 } from "@/data/demo/p10b-16p-04-commercial-acceptance";
 import {
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   type PageFactEvidenceReference,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
@@ -38,6 +41,7 @@ import {
 import type { SelectServerPromptedStorefrontDesignIntentProvider } from "./prompted-storefront-studio-handler.server";
 import { ServerWholeStorefrontAuthorityError } from "./whole-storefront-runtime-authority";
 import type { ProjectAggregate } from "@/services/storage";
+import { validateProjectAggregate } from "@/services/storage/repository-validation";
 
 export const P10B_16P_04_LOCAL_ACCEPTANCE_FLAG = "VESKIFY_P10B_16P_04_LOCAL_ACCEPTANCE" as const;
 export const P10B_16P_04_LOCAL_ACCEPTANCE_TOKEN =
@@ -701,6 +705,47 @@ export function loadP10B16P04ProposalPreviewAuthority(
   input: PageAuthorityInput & { candidateFingerprint: string },
 ): ProjectAggregate | undefined {
   if (!hasAuthorizedPageAuthority(input)) return undefined;
+  // Offline re-render of the exact AR-06D result, never another generation or
+  // insertion into the live proposal map. The archive path is not caller input.
+  const environment = input.environment ?? process.env;
+  if (environment.VESKIFY_AR10A_OFFLINE_REPLAY === "1") {
+    if (
+      process.env.NODE_ENV === "production" ||
+      environment[P10B_16P_04_MOCK_TRANSPORT_FLAG] !== "1" ||
+      environment[AR06D_LIVE_REVIEW_FLAG] === "1" ||
+      !/^(localhost|127\.0\.0\.1|\[::1\])(?::[0-9]{1,5})?$/.test(
+        input.httpHeaders.get("host") ?? "",
+      ) ||
+      input.candidateFingerprint !==
+        "v1_50184_0784a748aa03ccbb5e081601548c20c63070658d24a5e3fa5344ef6093da9061"
+    )
+      return undefined;
+    try {
+      const archive = resolve(process.cwd(), "tests/fixtures/ar-10a/original-aggregate.json");
+      if (realpathSync(archive) !== archive) return undefined;
+      const bytes = readFileSync(archive);
+      if (
+        createHash("sha256").update(bytes).digest("hex") !==
+        "355a1ab4188ea6e30e711ab84d3ba8ecbd853cab26fe6e8dbda4d6cf27b6bc5d"
+      )
+        return undefined;
+      const parsed: unknown = JSON.parse(bytes.toString("utf8"));
+      const aggregate = validateProjectAggregate(parsed as ProjectAggregate);
+      const draft = aggregate.snapshots.find(({ id }) => id === aggregate.project.draftSnapshotId);
+      if (
+        aggregate.project.id !== input.projectId ||
+        !draft ||
+        canonicalStorefrontContentFingerprint(draft) !== input.candidateFingerprint ||
+        canonicalValueFingerprint(aggregate) !==
+          "v1_80868_81c32c3a086af857e8815787a2da67c4b28abe6ca8203878748db62640eaeb99"
+      )
+        return undefined;
+      return structuredClone(aggregate);
+    } catch {
+      // Missing, unreadable or invalid archive never falls back to a raw seed.
+      return undefined;
+    }
+  }
   const retained = acceptanceState().retainedProposalSnapshots.get(input.candidateFingerprint);
   if (!retained) return undefined;
   if (canonicalStorefrontContentFingerprint(retained) !== input.candidateFingerprint) {

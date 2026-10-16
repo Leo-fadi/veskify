@@ -1,0 +1,16 @@
+{
+  "kind": "A0 actual AR-06D generated aggregate; offline re-render input, not another generation",
+  "sourceTask": "AR-06D",
+  "sourceMerge": "970b6cd00a7df90cd7b2ff1008916e8c602127d0",
+  "sourceModel": "gpt-5.6-sol",
+  "rawSha256": "355a1ab4188ea6e30e711ab84d3ba8ecbd853cab26fe6e8dbda4d6cf27b6bc5d",
+  "byteLength": 153538,
+  "candidateFingerprint": "v1_50184_0784a748aa03ccbb5e081601548c20c63070658d24a5e3fa5344ef6093da9061",
+  "aggregateFingerprint": "v1_80868_81c32c3a086af857e8815787a2da67c4b28abe6ca8203878748db62640eaeb99",
+  "catalogueFingerprint": "v1_8176_3fed8c5f58e1fda958bd46886e603c82ed9cbc9dfc177305018cb412f58c0916",
+  "notes": [
+    "Fictional approved Aurum Nordic inputs, unchanged catalogue/copy/seed assets.",
+    "Complete original intent/decision bodies unavailable; do not reconstruct or claim new model attribution.",
+    "Owner technical baseline accepted; visual quality below target; no commercial or production acceptance."
+  ]
+}

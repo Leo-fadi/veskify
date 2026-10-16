@@ -1,0 +1,457 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Leo-fadi/veskify/main/docs/governance/task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "BATCH-19",
+  "taskId": "AR-10A",
+  "title": "Feedback-led frame, homepage and product-card realization",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/ar-10a-feedback-led-visual-realization",
+  "baseCommit": "970b6cd00a7df90cd7b2ff1008916e8c602127d0",
+  "objective": "Improve reusable storefront opening, typography and shopping-card proportions using the exact genuinely generated AR-06D candidate; no new generation, content or commerce changes.",
+  "expectedOutcome": "Usable labelled offline replay and matched EN/FI four-width before/after proof, with a separate actual owner visual checkpoint before merge.",
+  "dependencies": [
+    {
+      "taskId": "AR-06D",
+      "requiredState": "MERGED",
+      "commit": "970b6cd00a7df90cd7b2ff1008916e8c602127d0"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "AGENTS.md; docs/VESKIFY_SDD.md sections 4,7,10.1-10.3,10.5-10.12,10.21A-10.22,13,14 and Appendix A; ADR-001/002/004",
+    "StorefrontSnapshot / BrandSystem / existing Design DNA projection / canonical catalogue and PageBlueprint; one registered renderer",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md including AR-00B; roadmap order and tracker sole current status",
+    "Owner BATCH-19 launch and Desktop runbook SHA256 e68434c204ee67260faf007ff40fb309c0e4a74d6f719db22308e83d13f3ae87",
+    "Preserved A0 original aggregate SHA256 355a1ab4188ea6e30e711ab84d3ba8ecbd853cab26fe6e8dbda4d6cf27b6bc5d; candidate v1_50184_0784a748aa03ccbb5e081601548c20c63070658d24a5e3fa5344ef6093da9061; original 36 captures and preservation verifier report remain immutable",
+    "Direct owner About-route-readiness continuation: one AboutEN375 diagnostic total180seconds; conditional one-pass route-module preparation after demonstrated devcompilation cause; existing visual60snav/30sassertions unchanged; browserceiling12 with8used; build2/4 andpaid0 unchanged."
+  ],
+  "ownedPaths": [
+    "src/components/storefront/commercial-storefront-frame.module.css",
+    "src/components/storefront/homepage-commerce.module.css",
+    "src/components/storefront/canonical-product-card.module.css",
+    "src/components/storefront/dynamic-collection-commerce.module.css",
+    "src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts",
+    "tests/unit/ar-10a-visual-realization.test.tsx",
+    "tests/integration/ar-10a-offline-replay.test.ts",
+    "tests/helpers/ar-10a-review-browser.ts",
+    "tests/acceptance/ar-10a-visual-realization.spec.ts",
+    "tests/fixtures/ar-10a/original-aggregate.json",
+    "tests/fixtures/ar-10a/manifest.json",
+    "tests/unit/p10b-06-commercial-shared-frame-families.test.tsx",
+    "tests/unit/p10b-18b-01-design-dna-shared-frames.test.tsx",
+    "tests/unit/p10b-17-responsive-execution.test.ts",
+    "tests/unit/homepage-commerce.test.tsx",
+    "tests/unit/p10b-07-hero-editorial-campaign-proof-families.test.tsx",
+    "tests/unit/p10b-08-canonical-product-card-family.test.tsx",
+    "tests/unit/dynamic-collection-commerce.test.tsx",
+    "tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "README.md",
+    "docs/AR_10A_FEEDBACK_LED_VISUAL_REALIZATION.md",
+    "docs/AR_06D_GENERATED_STOREFRONT_REVIEW.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/governance/task-contracts/AR/AR-10A.json",
+    "scripts/ar-10a-review.mjs",
+    "playwright.ar-10a.config.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    ".prettierignore"
+  ],
+  "allowedPaths": [
+    "src/components/storefront/commercial-storefront-frame.module.css",
+    "src/components/storefront/homepage-commerce.module.css",
+    "src/components/storefront/canonical-product-card.module.css",
+    "src/components/storefront/dynamic-collection-commerce.module.css",
+    "src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts",
+    "tests/unit/ar-10a-visual-realization.test.tsx",
+    "tests/integration/ar-10a-offline-replay.test.ts",
+    "tests/helpers/ar-10a-review-browser.ts",
+    "tests/acceptance/ar-10a-visual-realization.spec.ts",
+    "tests/fixtures/ar-10a/original-aggregate.json",
+    "tests/fixtures/ar-10a/manifest.json",
+    "tests/unit/p10b-06-commercial-shared-frame-families.test.tsx",
+    "tests/unit/p10b-18b-01-design-dna-shared-frames.test.tsx",
+    "tests/unit/p10b-17-responsive-execution.test.ts",
+    "tests/unit/homepage-commerce.test.tsx",
+    "tests/unit/p10b-07-hero-editorial-campaign-proof-families.test.tsx",
+    "tests/unit/p10b-08-canonical-product-card-family.test.tsx",
+    "tests/unit/dynamic-collection-commerce.test.tsx",
+    "tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "README.md",
+    "docs/AR_10A_FEEDBACK_LED_VISUAL_REALIZATION.md",
+    "docs/AR_06D_GENERATED_STOREFRONT_REVIEW.md",
+    "docs/AR_06_RENDERING_ACCEPTANCE.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/governance/task-contracts/AR/AR-10A.json",
+    "scripts/ar-10a-review.mjs",
+    "playwright.ar-10a.config.ts",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/roadmap.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    ".prettierignore"
+  ],
+  "forbiddenPaths": [
+    ".env*",
+    ".codex/**",
+    ".agents/**",
+    ".github/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "public/**",
+    "src/domain/**",
+    "src/services/**",
+    "src/integrations/puck/**",
+    "scripts/check-storefront-build-budgets.mjs",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json"
+  ],
+  "noTouchAreas": [
+    "Nine original untracked architecture inputs are included in complete identity but must remain byte-identical and unpublished.",
+    "No new canonical vocabulary, registry, renderer, provider, generation, content/media/commerce edit, storage/publication change or family activation. No A2 is implemented by this initial approach; if faithful values prove unsuitable, the one owner-authorized governed presentation successor requires precise preservation-first scope/field enumeration before use.",
+    "No frame TSX change: retain its historical SHA256 61bba3a18bbcd2c1d62a0f579dc9ea51ee4158a464855809fd23de5f2eb8b6a5 and original historical pins/aggregate metrics. CSS corrections preserve semantic component versions while changing separately identified renderer/build/visual inputs.",
+    "No global timeout/tolerance increase, hidden retries, dependency changes, paid calls, external assets, VerifyAI/hotfix/newworktree/rebase. Sole owner exception: task-local About diagnostic total180seconds, not acceptance. Conditional route preparation finite deadline must be supported by observed timing; visual deadlines unchanged.",
+    "Application review chrome unchanged; selected profiles/anatomies, FI wrapping, touch targets, responsive transformations and protected media fitting/crop remain.",
+    "The sole .prettierignore amendment adds the exact tests/fixtures/ar-10a/original-aggregate.json path so formatting cannot rewrite recovered candidate bytes. Preserve existing entries; no directory wildcard or source exemption. Raw and canonical integrity assertions remain mandatory."
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "Reusable frame/home/card realization on the exact A0 candidate, plus one fixed-input server-only P04 replay branch. Enforce production additions (not net) <=1000 target/1500 hard and <=8 target/12 hard; current owned production paths five.",
+    "generatedFileExclusions": [],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Loopback-only task-owned development/production server and Chromium, no external browser requests or application writes.",
+      "Authorized public Leo-fadi/veskify GitHub delivery and bounded CI observation after independent/native technical PASS."
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "First add a dedicated flag-gated fixed repository-fixture replay inside existing P04 proposal-preview authority, after existing authorization and before state lookup. Verify raw/canonical aggregate and draft pins before returning isolated clones. No arbitrary import/API/map mutation. Measure A0 with untouched CSS and record three-row source/computed-geometry trace; set concrete criteria before first correction campaign. Correct only demonstrated duplicate spacing, sizing and role realization in listed shared CSS. Preserve canonical tokens and all semantic versions. Reuse D media/accessibility helpers with new zero-call browser spec/runner and original installed dependencies. Bounded continuation observes About EN375 once and optionally one explicitly labelled subsequent navigation within a total180second diagnostic window; timestamps server compilation/request/headers/document/readiness. No production edits. Only if dev preparation is established as deadline cause, prepare each required module once via normal authority with successful response and exact candidate validation, preserving all timing/failure records. Label any resulting full proof prepared-development-server visual proof, not cold-start/production latency. Diagnostic9 completed both actualAboutnavigations below60seconds; firstserver3.7sNext/3.6sapplication. Originalstallcause remainsunproven; conditionalroutepreparation was NOT adopted. Final independentcampaign uses original60snav/30sassertions with no warming. Added supportparser independently verifies actualresponseaggregate against originalrawSHA,notURLalone. Separate verifiedsupportdefect:worker-ownedroutingisremovedonworkerdisposal (installedPlaywright1.61.1). ReuseDretainedcontext routing withstrictowned-originreadonlyguard;verifyactualowner navigationafterworkerexit. No token-globalheaders/applicationchange;doesnotexplainpriorAboutstall.",
+    "canonicalAuthorityExtended": "Existing shared CSS rendering of canonical StorefrontSnapshot/BrandSystem/card anatomy; no canonical schema or provider extension.",
+    "namedCurrentConsumers": [
+      "CommercialStorefrontFrame editorialMasthead plus other existing profiles",
+      "HomepageCommerce hero/editorial and product merchandising",
+      "CanonicalProductCard in home, collection/search and related products",
+      "Existing protected P04 project preview and dynamic commerce routes"
+    ],
+    "rejectedShortcuts": [
+      "New generation or manual rewriting of Aurum copy/catalogue/assets",
+      "Fixture-specific injected CSS or another renderer",
+      "Changing canonical token meanings or inventing loaded Inter font evidence",
+      "Persisting Puck/proposal data or reinserting an offline fixture in the live generation map",
+      "Claiming commercial quality, whole parent completion or owner acceptance from technical PASS"
+    ],
+    "expectedFailureBehavior": "Missing flag, wrong auth/project/fingerprint, non-loopback authority, production mode, missing/changed/malformed fixture fail closed before rendering; invalid canonical authority never substitutes a seed. Preserve old failures. Scope/visual/integrity/resource failures stop affected execution without reruns disguised as evidence.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "D actual accepted merge and owner technical-baseline disposition retained; exact A0 aggregate recovered with raw/canonical/route/catalogue/media lineage, never reconstructed.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-01"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Three compact actual source/runtime traces distinguish defects, faithful preferences and unavailable intent. Record review chrome separately and actual fonts; concrete before/after criteria precede presentation correction.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-01", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "Reusable opening, rhythm, type and card balance improve beyond palette-only; same A0 input plus non-Aurum/contrasting-token regression; all profile/anatomy/semantic-version requirements preserved.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-03", "EVIDENCE-04"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "Pinned offline replay is guarded, production-disabled and read-only; canonical content, catalogue, protected facts/media, locale/routes and selected roles unchanged. A0 and A1 identities explicit; historical pins and nine originals unchanged.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-05"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "56 cases, 36 original captures and direct independent per-image inspection support a truthful matched EN/FI/four-width packet and usable local replay. Before-merge owner disposition remains a distinct future gate, never inferred from verifier or tests.",
+      "verificationClass": "visual-product-owner-checkpoint",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-06"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Independent technical execution/complete native report, affected static/docs/tests, current production build/production 404 and all six unchanged budgets; exact final diff and input/artifact identities. Later native reconciliation, one automatic review and final-head CI are delivery gates, not future successes attested by precommit report.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-02", "EVIDENCE-03", "EVIDENCE-05", "EVIDENCE-07"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Report actual D closure and AR10A state, honest model attribution/limitations/unchanged parent obligations. Deliver the consolidated owner checkpoint; child completion requires actual later visual disposition and delivery. Keep AR06 Partial and other closed work closed.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-06", "EVIDENCE-07"],
+      "failureBehavior": "FAIL for unmet present technical requirements; future owner/review/CI/merge gates remain explicitly pending and prevent delivery, never pre-attested."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-10a-visual-realization.test.tsx tests/integration/ar-10a-offline-replay.test.ts tests/unit/p10b-06-commercial-shared-frame-families.test.tsx tests/unit/p10b-18b-01-design-dna-shared-frames.test.tsx tests/unit/p10b-17-responsive-execution.test.ts tests/unit/homepage-commerce.test.tsx tests/unit/p10b-07-hero-editorial-campaign-proof-families.test.tsx tests/unit/p10b-08-canonical-product-card-family.test.tsx tests/unit/dynamic-collection-commerce.test.tsx tests/unit/p10b-09-commercial-homepage-profile-library.test.tsx tests/unit/p10b-10-commercial-collection-search-profile-library.test.tsx tests/integration/storefront-commerce-route-integration.test.tsx",
+      "purpose": "Affected positive/negative/transfer and shared consumer behavior; one worker.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts",
+      "purpose": "Existing P04 authorization/identity/provider-budget guards remain unchanged.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm typecheck",
+      "purpose": "Typecheck no emit; generated tsconfig.tsbuildinfo/.next/types cache only.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec eslint src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts tests/unit/ar-10a-visual-realization.test.tsx tests/integration/ar-10a-offline-replay.test.ts tests/helpers/ar-10a-review-browser.ts tests/acceptance/ar-10a-visual-realization.spec.ts tests/unit/p10b-06-commercial-shared-frame-families.test.tsx tests/unit/p10b-18b-01-design-dna-shared-frames.test.tsx tests/unit/p10b-17-responsive-execution.test.ts tests/unit/homepage-commerce.test.tsx tests/unit/p10b-07-hero-editorial-campaign-proof-families.test.tsx tests/unit/p10b-08-canonical-product-card-family.test.tsx tests/unit/dynamic-collection-commerce.test.tsx tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/ar-10a-review.mjs playwright.ar-10a.config.ts scripts/check-architecture-reset-adoption.mjs scripts/validate-documentation.mjs scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Scoped lint.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm exec prettier --check src/components/storefront/commercial-storefront-frame.module.css src/components/storefront/homepage-commerce.module.css src/components/storefront/canonical-product-card.module.css src/components/storefront/dynamic-collection-commerce.module.css src/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server.ts tests/unit/ar-10a-visual-realization.test.tsx tests/integration/ar-10a-offline-replay.test.ts tests/helpers/ar-10a-review-browser.ts tests/acceptance/ar-10a-visual-realization.spec.ts tests/fixtures/ar-10a/original-aggregate.json tests/fixtures/ar-10a/manifest.json tests/unit/p10b-06-commercial-shared-frame-families.test.tsx tests/unit/p10b-18b-01-design-dna-shared-frames.test.tsx tests/unit/p10b-17-responsive-execution.test.ts tests/unit/homepage-commerce.test.tsx tests/unit/p10b-07-hero-editorial-campaign-proof-families.test.tsx tests/unit/p10b-08-canonical-product-card-family.test.tsx tests/unit/dynamic-collection-commerce.test.tsx tests/integration/p10b-16p-04-controlled-studio-v2-preflight.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts README.md docs/AR_10A_FEEDBACK_LED_VISUAL_REALIZATION.md docs/AR_06D_GENERATED_STOREFRONT_REVIEW.md docs/AR_06_RENDERING_ACCEPTANCE.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/governance/task-contracts/AR/AR-10A.json scripts/ar-10a-review.mjs playwright.ar-10a.config.ts scripts/check-architecture-reset-adoption.mjs scripts/validate-documentation.mjs scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Scoped formatting uses the exact pinned-fixture ignore entry; raw SHA-256 and canonical validation independently enforce the original aggregate. All other owned textual source/test/docs/current documentary formatting remains required.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Current status positive and negative projection guards.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm docs:validate",
+      "purpose": "Existing documentation/export/traceability guard.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "Existing documentation/export/traceability guard.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation/export/traceability guard.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Existing documentation/export/traceability guard.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Existing documentation/export/traceability guard.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "node scripts/ar-10a-review.mjs full --output /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/independent-04/browser",
+      "purpose": "Independent complete56cases/36originals with original60snav/30sassertions,oneworkerzeroretries; no route preparation adopted because condition notproved. Counters9/12used beforefinal. Inspecteachoriginal, retainsuccessfulsourceidentity andeverypriorFAIL. Retainedrunner origin-scopedreadonlyrouting must support actualpostworker ownernavigation underunchanged60/30deadlines; exactoutputowner-navigation.json; failureblocksPASS.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "pnpm build:webpack",
+      "purpose": "Sequential coordinator then independent final-source build in original checkout, <=4 actual builds including two justified corrections. 2GiB reserve plus measured additional peak. Freeze build sources/dependencies/config; retain compiled proof outside live .next.",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "pnpm build:check:storefront-budgets",
+      "purpose": "All six unchanged raw/gzip ceilings after complete build. No exclusions or measurement changes.",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "node scripts/ar-10a-review.mjs production --output /Users/leo/veskify-batch-runs/BATCH-19/AR-10A/independent-01/production-smoke",
+      "purpose": "Existing completed build loopback smoke: replay flag and valid token still404; no generation/browser invocation or rebuild. Collect client registration/fixture trace status and integrity honestly.",
+      "requiredEvidence": ["EVIDENCE-05"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-10a-visual-realization.test.tsx",
+      "purpose": "Fresh seven tasktests include four readinessparser controls; inherited original208selection remains originalexecution ofunchanged three assertions/otherconsumers, notclaimnewcontrolsranpreviously. No unrelated campaign rerun for metadata.",
+      "requiredEvidence": ["EVIDENCE-03"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "D merge/preservation and compact preflight/3-decision trace with unavailable intent explicit.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "diff",
+      "description": "Complete working tree identity including untracked originals; production additions scope; frozen inputs before/after.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "test",
+      "description": "Actual focused/static/docs commands, counts, durations and outcomes.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "screenshot",
+      "description": "A0/A1 candidate/input identities,56cases36originals, per-image verifier observations and applicable matched comparison. Retain coordinator/diagnostic-01 (invocation6 FAIL navigation60s) and coordinator/diagnostic-02 (invocation7 PASS16cases) as historical diagnostic observations, not independent complete acceptance. Original independent loading stall remains unexplained. Final independent56/36 proof remains required without deadline changes. Preserve independent02 FAIL after5cases/5originals. NewAboutdiagnostic/coordinator/about-diagnostic-01 is diagnostic-only, not retroactivePASS. Retain cold/unprepared and explicitlysubsequent timings and any conditionalpreparation proof. Diagnostic9 actualPASS at coordinator/about-diagnostic-01,first8.625s/subsequent1.647s;no fullacceptanceclaim,no routewarming;originalcompilestallcauseunproven.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "command",
+      "description": "Actual current production build/budgets/production404, dependencies/config/source and retained complete artifact identity.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-06",
+      "type": "document",
+      "description": "Task report/boards/usable offline browser and explicit before-merge owner disposition checkpoint; no future owner PASS.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-07",
+      "type": "document",
+      "description": "Verifier own full native report at independent-04/native-verdict.json, image inspections at independent-04/image-inspections.json, logs under independent-04/checks, build under independent-04/build, complete input inventory independent-04/input-inventory.json; coordinator exact-byte/provenance retention and native reconciliation only after report exists. Fresh attempt directories if corrected; no overwritten reports. Preserve independent-01 native FAIL, ten partial originals and original identities; applicability may retain its successful854tests/build evidence only where actual reviewed inputs remain unchanged. Prior independent02 reports remain immutable; newreport must distinguish inherited evidence. Preserveindependent03inspection-only checkpoint; no browser/checkexecutionclaimedthere.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": true,
+    "timing": "before-merge",
+    "criteria": [
+      "Actual Leo visual disposition permits AR10A delivery after matched before/after usable review; silence or D baseline disposition does not accept AR10A.",
+      "Commercial quality and production readiness remain separate; AR06 stays Partial."
+    ]
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Genuine out-of-scope product/security/integrity defect or source-pin closure not resolved within explicit authority.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Execution budgets exhausted:12 browser invocations/3 complete improved36sets/4 production builds/0 paid calls;8browser and2build used before continuation. Fourremaining:focusedAboutdiagnosis,completeindependent,cause-backedcorrectionconfirmationifneeded,postreviewreserve. No resets/retries.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Measured next-operation capacity including unchanged2GiB reserve insufficient after eligible safe cleanup.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Managed substantive restriction; preserve exact error, no bypass or alternate executor.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-05",
+      "condition": "AR10A actual owner visual disposition remains pending: pause before merge with packet.",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "NONE",
+    "title": "No automatic successor authorized",
+    "eligibility": "Stop at owner visual checkpoint; after actual accepted merge close only AR10A/BATCH19 and stop."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}
