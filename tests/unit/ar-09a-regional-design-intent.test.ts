@@ -10,6 +10,10 @@ import { registeredBrandSystemForDirection } from "@/application/storefront-desi
 import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan/planner";
 import { wholeStorefrontGenerationPlanSchema } from "@/application/whole-storefront-generation-plan/contract";
 import {
+  requestWholeStorefrontGenerationPlan,
+  type WholeStorefrontPlanningProvider,
+} from "@/application/whole-storefront-generation-plan/provider";
+import {
   compileWholeStorefrontProposal,
   validateWholeStorefrontProposal,
 } from "@/application/whole-storefront-proposal-lifecycle";
@@ -41,6 +45,80 @@ function exactWithRegionalIntent() {
 }
 
 describe("AR-09A regional design intent", () => {
+  it("rejects provider-invented regional preferences while preserving generic direction choice", async () => {
+    const input = source.fixture.planningInput;
+    const before = JSON.stringify(input);
+    const invented = createWholeStorefrontGenerationPlan(input, {
+      directionId: "premiumEditorial",
+      designSystemNarrowing: {
+        spacingDensity: "spacious",
+        surfaceDepth: "flat",
+        expressiveVisualPreferences: exactWithRegionalIntent().expressiveVisualPreferences,
+      },
+    });
+    let calls = 0;
+    const provider: WholeStorefrontPlanningProvider = {
+      id: "ar09a-untrusted-provider",
+      capabilities: {
+        wholeStorefrontPlanning: true,
+        structuredPlanOutput: true,
+        approvedAssetReferences: true,
+      },
+      createPlan: () => {
+        calls += 1;
+        return Promise.resolve(structuredClone(invented));
+      },
+    };
+    await expect(
+      requestWholeStorefrontGenerationPlan({ provider, input, currentInput: () => input }),
+    ).rejects.toMatchObject({ code: "invalid-plan" });
+    expect(calls).toBe(1);
+    const ordinaryProvider: WholeStorefrontPlanningProvider = {
+      ...provider,
+      createPlan: (request) => Promise.resolve(request.planForDirection("modernTechnical")),
+    };
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: ordinaryProvider,
+        input,
+        currentInput: () => input,
+      }),
+    ).resolves.toEqual(
+      createWholeStorefrontGenerationPlan(input, { directionId: "modernTechnical" }),
+    );
+    expect(JSON.stringify(input)).toBe(before);
+  });
+
+  it("names regional spacing choices in merchant review without changing the legacy summary", () => {
+    const input = source.fixture.planningInput;
+    const legacy = createWholeStorefrontGenerationPlan(input, { directionId: "premiumEditorial" });
+    expect(legacy.reviewSummary.sharedDesignSystemChanges).toEqual(
+      legacy.sharedDesignDirection.consistencyRules,
+    );
+    const plan = createWholeStorefrontGenerationPlan(input, {
+      directionId: "premiumEditorial",
+      designSystemNarrowing: {
+        spacingDensity: "spacious",
+        surfaceDepth: "flat",
+        expressiveVisualPreferences: exactWithRegionalIntent().expressiveVisualPreferences,
+      },
+    });
+    const changes = [
+      "Navigoinnin välit ovat tiiviit.",
+      "Sivun sisällön välit ovat väljät.",
+      "Tuoteselailun ja ostovalintojen välit ovat tasapainoiset.",
+    ];
+    expect(input.brief.languagePlan.primaryLanguage).toBe("fi");
+    expect(plan.reviewSummary.sharedDesignSystemChanges).toEqual([
+      ...plan.sharedDesignDirection.consistencyRules,
+      ...changes,
+    ]);
+    const proposal = compileWholeStorefrontProposal({ plan, planningInput: input });
+    expect(proposal.reviewSummary.sharedDesignSystemChanges).toEqual(
+      expect.arrayContaining(changes),
+    );
+  });
+
   it("carries a bounded regional overlay through decision, plan, operation, and snapshot", () => {
     const request = { intent: "editorial-led" as const, deterministicSeed: "ar09a" };
     const decision = createBoundedStorefrontSynthesisDecision({

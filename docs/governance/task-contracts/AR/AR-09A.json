@@ -201,14 +201,14 @@
   "acceptanceCriteria": [
     {
       "id": "AC-01",
-      "requirement": "Versioned explicit regional choices traverse exact selection, plan, proposal, acceptance and canonical snapshot; independent navigation/content/commerce choices coexist with supported registered frame/profile/surface/card choices and reach actual registered home/collection/PDP consumer output. This child proves registered rendered markup and canonical CSS-variable consumption, not measured geometry or subjective visual quality; AR10B actual browser/visual home+collection+PDP remains required before VQ1 exit.",
+      "requirement": "Versioned explicit regional choices traverse exact selection, plan, proposal, acceptance and canonical snapshot; independent navigation/content/commerce choices coexist with supported registered frame/profile/surface/card choices and reach actual registered home/collection/PDP consumer output. This child proves registered rendered markup and canonical CSS-variable consumption, not measured geometry or subjective visual quality; AR10B actual browser/visual home+collection+PDP remains required before VQ1 exit. Regional preferences are described in merchant-readable sharedDesignSystemChanges before acceptance; absent overlay preserves legacy summary.",
       "verificationClass": "positive-behavior",
       "requiredEvidence": ["EVIDENCE-02"],
       "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
     },
     {
       "id": "AC-02",
-      "requirement": "Reject unknown version/field/value, unsupported or forged exact tuple, altered preference/fingerprint and stale/tampered accepted operation; preserve caller input, draft/history and protected commerce. No silent ignored required preference. Exercise tampering separately at decision, plan, APPLY_REGISTERED_BRAND_SYSTEM and final candidate, including recomputed outer fingerprints. Explicit null/unknown/default injection must not silently become legacy absence.",
+      "requirement": "Reject unknown version/field/value, unsupported or forged exact tuple, altered preference/fingerprint and stale/tampered accepted operation; preserve caller input, draft/history and protected commerce. No silent ignored required preference. Exercise tampering separately at decision, plan, APPLY_REGISTERED_BRAND_SYSTEM and final candidate, including recomputed outer fingerprints. Explicit null/unknown/default injection must not silently become legacy absence. Generic whole-storefront planning provider requests do not grant regional preference authority; a provider-invented self-consistent overlay must reject while ordinary registered direction selection and trusted exact synthesis remain supported.",
       "verificationClass": "negative-fail-closed-behavior",
       "requiredEvidence": ["EVIDENCE-02"],
       "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
@@ -264,7 +264,7 @@
     },
     {
       "id": "VALIDATION-03",
-      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/p10b-15-bounded-storefront-synthesis.test.ts tests/unit/whole-storefront-proposal-lifecycle.test.ts",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/p10b-15-bounded-storefront-synthesis.test.ts tests/unit/whole-storefront-proposal-lifecycle.test.ts tests/unit/whole-storefront-generation-plan.test.ts tests/unit/openai-whole-storefront-planning-provider.test.ts",
       "purpose": "Existing synthesis and atomic proposal acceptance behavior",
       "requiredEvidence": ["EVIDENCE-02"]
     },
@@ -330,20 +330,20 @@
     },
     {
       "id": "VALIDATION-14",
-      "command": "pnpm build:webpack",
-      "purpose": "Actual independent production-build subprocess already executed successfully inside independent03/build/fixture through support05. Preserve original wrapper FAIL for trace-only root-directory defect. Reuse actual build only after VALIDATION16 confirms exact retained artifacts, unchanged production/build/dependency inputs and documentary stylesheet applicability; this command is not re-executed solely for support correction.",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-09/build-proof.py independent-07/build",
+      "purpose": "One remaining child correction-build allowance: fresh independent production build, unchanged six-route budgets and full integrity/trace collection for review-corrected planner. Preserve previous successful build under its original identity; it does not cover changed production input.",
       "requiredEvidence": ["EVIDENCE-04"]
     },
     {
       "id": "VALIDATION-15",
-      "command": "node /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/independent-03/build/fixture/budget-checker/check-storefront-build-budgets.mjs",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/independent-07/build/fixture/budget-checker/check-storefront-build-budgets.mjs",
       "purpose": "Exact unchanged checker bytes copied to fixture-local path so repositoryRoot resolves the fresh .next; all six original raw/gzip limits and counting remain unchanged. Executed within build wrapper, not a second invocation.",
       "requiredEvidence": ["EVIDENCE-04"]
     },
     {
       "id": "VALIDATION-16",
-      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-08/retained-trace.py",
-      "purpose": "Append-only corrected complete trace collection from identity-verified retained build, all dependency-root entries pinned; original FAIL preserved. Check final input/artifact/dependency and installed stylesheet applicability; no new build. Post-build scanner permits only exact generated next-env declaration and byte-identical copied checker, records both mappings and retains complete source/candidate comparison.",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-09/retained-trace.py",
+      "purpose": "Check the new final build complete scanner, generated-file mappings, dependency/artifact integrity, complete trace and stylesheet identity without another build.",
       "requiredEvidence": ["EVIDENCE-04"]
     },
     {
@@ -384,7 +384,7 @@
     {
       "id": "EVIDENCE-04",
       "type": "command",
-      "description": "Fresh independent production build/all six unchanged budgets in generated fixture, exact input/link/scanner/dependency/artifact/trace identities and applicable unchanged guard evidence; original checkout remains unchanged throughout. Report sanitized build environment and non-OS-enforced link limitation honestly. The actual independent build and budgets retain independent03 attribution; support08/independent06 adds corrected complete trace collection and exact applicability, without relabelling the original wrapper FAIL.",
+      "description": "Fresh independent07 final-source production build and all six unchanged budgets, complete trace/scanner/dependency/artifact integrity. Earlier build/PASS remains attributed to earlier candidate. Support controls remain independently executed and applicable after exact function comparison; no repeat solely for routing.",
       "retention": "external-approved",
       "sensitiveDataAllowed": false
     },

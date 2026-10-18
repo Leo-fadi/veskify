@@ -10,11 +10,12 @@ The initial immutable external contract was validated before edits and remains p
 `f9b0b1ac219dc924c57e40f892bff97b983fb7e5b35da0afd00d4aeba816804d`, canonical fingerprint
 `veskify-task-contract-v1_7248ed378553c33becf54524e48249df3151ba278201d0feab08d5f54e16d885`.
 The current documentary copy [AR-09A.json](governance/task-contracts/AR/AR-09A.json) matches the
-preserved eighth contract: raw SHA-256
-`f2f32d58304317c85f23ae39530e01ab66636b1ff19b6e621bd522ec2d65c81e`, canonical fingerprint
-`veskify-task-contract-v1_7397c4e96d529e465f8a0b4759b265915d9e24bba2661ca1f7890c6b6a96eb48`.
-The successors change only build-support and assigned output references. They keep the original
-product scope and acceptance. A generated build fixture isolates Next's declaration/output writes;
+preserved ninth contract: raw SHA-256
+`6f567748c3911db96110d1f844c53fae2b3d0e90cbc4fc85355de1ff733ca399`, canonical fingerprint
+`veskify-task-contract-v1_1087ce15fc0e74e53c650e63129e6c3f38c0a74dac125f7eece708f9de7ef715`.
+Earlier successors changed build-support and assigned output references. The current successor
+records two review corrections within the original scope: provider-request authority and merchant-readable
+regional change summaries. It retains every original product acceptance requirement. A generated build fixture isolates Next's declaration/output writes;
 the original reviewed tree and retained compiled artifacts remain unchanged. Its exact source links,
 installed stylesheet scan, dependencies and resulting artifacts are checked. Links are not an
 OS-enforced read-only boundary. The build deliberately excludes private local environment files.
@@ -88,6 +89,12 @@ scanner comparison encountered Next's generated declaration and the exact copied
 The post-build successor accounts for only those two identity-verified files, preserves complete
 source/candidate inspection and adds mismatch controls. It neither mutates the fixture to simulate
 pre-build state nor substitutes a new build execution. The failed attempt remains unchanged.
+
+The first submitted head passed independent/native verification. Its single automatic review found
+two gaps: the generic planning provider could invent regional preferences, and the review summary
+did not name those material regional changes. A consolidated correction rejects unrequested provider
+overlays and describes the chosen spacing in merchant language. Fresh regression and independent
+final-source build evidence are required; prior PASS remains tied to its original candidate.
 
 ## Delivery and remaining work
 

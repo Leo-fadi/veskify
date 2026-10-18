@@ -3193,8 +3193,30 @@ export function createWholeStorefrontGenerationPlan(
     navigationItemId: item.id,
     disposition: "retained" as const,
   }));
+  const regionalReviewChanges: string[] = [];
+  if (expressiveVisualPreferences !== undefined) {
+    const density = expressiveVisualPreferences.regionalDensity;
+    if (input.brief.languagePlan.primaryLanguage === "fi") {
+      const spacing = { compact: "tiiviit", balanced: "tasapainoiset", spacious: "väljät" };
+      regionalReviewChanges.push(
+        `Navigoinnin välit ovat ${spacing[density.navigation]}.`,
+        `Sivun sisällön välit ovat ${spacing[density.content]}.`,
+        `Tuoteselailun ja ostovalintojen välit ovat ${spacing[density.commerce]}.`,
+      );
+    } else {
+      const spacing = { compact: "compact", balanced: "balanced", spacious: "generous" };
+      regionalReviewChanges.push(
+        `Navigation uses ${spacing[density.navigation]} spacing.`,
+        `Page content uses ${spacing[density.content]} spacing.`,
+        `Product browsing and purchase controls use ${spacing[density.commerce]} spacing.`,
+      );
+    }
+  }
   const reviewSummary = {
-    sharedDesignSystemChanges: sharedDesignDirection.consistencyRules,
+    sharedDesignSystemChanges: [
+      ...sharedDesignDirection.consistencyRules,
+      ...regionalReviewChanges,
+    ],
     pages: pagePlans.map((page) => ({ pageId: page.pageId, disposition: page.disposition })),
     components: allComponents
       .map((component) => ({
@@ -3357,6 +3379,15 @@ export async function acceptWholeStorefrontPlanningResult(
     invalid("stale-result", "The storefront changed while its generation plan was being prepared.");
   }
   const validated = validateWholeStorefrontGenerationPlan(inputValue, received);
+  // This provider request advertises registered directions, not request-side
+  // regional selection authority. Trusted exact synthesis validates that
+  // separate authority before reaching the planner directly.
+  if (validated.designSystemSelection.expressiveVisualPreferences !== undefined) {
+    invalid(
+      "provider-invented-target",
+      "Regional design choices require request-side exact-selection authority.",
+    );
+  }
   if (directionId !== undefined && validated.fingerprint !== expected.fingerprint) {
     invalid(
       "provider-invented-target",
