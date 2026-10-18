@@ -1209,7 +1209,7 @@ if ((tracker.match(/☑/g) ?? []).length !== 66) {
 
 // AR-00B changes current eligibility while preserving the dated pre-AR rows below.
 requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
-  "AR-06D is In progress under BATCH-18 launch. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. Final review, CI and merge remain pending.",
+  "AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete.",
 ]);
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(

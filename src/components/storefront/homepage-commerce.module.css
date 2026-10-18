@@ -83,6 +83,25 @@
   );
 }
 
+/* A split editorial image is a bounded stage, not an instruction to expand a
+   portrait to the full desktop column (and push the opening below it). Its
+   registered art-direction frame continues to own ratio, crop and fit. */
+.hero.variant_editorialSplit[data-media-state="approved"] {
+  min-height: 0;
+  padding-block: clamp(
+    2rem,
+    calc(var(--brand-section-rhythm) * 0.35 * var(--brand-density-content, 1)),
+    4rem
+  );
+}
+
+.variant_editorialSplit .heroMedia {
+  align-self: center;
+  justify-self: end;
+  width: min(100%, calc(22rem * min(var(--brand-media-prominence, 1), 1.2)));
+  min-height: 0;
+}
+
 .promotion,
 .proof,
 .trust {
@@ -337,7 +356,7 @@
 .editorialCopy p,
 .sectionHeading p {
   color: var(--homepage-surface-muted-text, var(--brand-color-muted-text));
-  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  font-size: clamp(1rem, 1.6vw, var(--brand-type-body-size, 1.25rem));
   line-height: var(--brand-type-body-line-height);
   margin: 0;
   max-width: 42rem;
@@ -902,6 +921,10 @@
 
 /* Tablet authority ends immediately below the registered 1024px desktop target. */
 @media (max-width: 63.99rem) {
+  .variant_editorialSplit .heroMedia {
+    justify-self: center;
+  }
+
   .root {
     padding-block: clamp(
       2.5rem,
