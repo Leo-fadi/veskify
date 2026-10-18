@@ -174,6 +174,17 @@ child after the preceding child is accepted and merged. It may reuse one worktre
 after a clean boundary; concurrent writing still requires separate worktrees. Workers and verifiers
 stop at their child checkpoint. Each merge remains explicit owner authority.
 
+For the explicitly approved BATCH-20 / VQ-01 only, the coordinator delivers one complete
+product-quality phase through necessary atomic children in this original checkout. The owner
+has authorized technically accepted intermediate merges after independent/native PASS, one
+automatic review and all final-head CI, with expected-head protection and no override. Keep one
+implementation writer; pause writers for independent check execution and assigned evidence
+writes. Preserve prior contract bytes before same-base administrative/support successors.
+The early integrated target and final generated-storefront visual acceptance remain actual
+owner checkpoints. Tests, schemas, child PRs and navigation density do not complete VQ-01.
+See the development guide, incorporated SDD amendment and current tracker; no next phase,
+new worktree, paid-limit expansion or production rollout follows from this exception.
+
 ### 8.1 Branch discipline
 
 - One task, one branch, one worktree and one PR.

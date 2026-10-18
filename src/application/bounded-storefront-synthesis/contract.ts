@@ -12,6 +12,7 @@ import {
   wholeStorefrontApprovedAssetRoleSelectionsSchema,
   wholeStorefrontPageBlueprintSelectionOverridesSchema,
 } from "@/application/whole-storefront-generation-plan/contract";
+import { expressiveVisualPreferencesV2Schema } from "@/application/storefront-design-system/expressive-visual-preferences-v2";
 
 export const BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION = 2 as const;
 
@@ -86,12 +87,14 @@ export const boundedStorefrontSynthesisSelectionNarrowingSchema = z
  * values that canonical synthesis must execute.
  */
 export const boundedStorefrontSynthesisExactSelectionSchema =
-  boundedStorefrontSynthesisSelectionNarrowingSchema.omit({
-    authorityId: true,
-    authorityVersion: true,
-    authorityFingerprint: true,
-    selectionId: true,
-  });
+  boundedStorefrontSynthesisSelectionNarrowingSchema
+    .omit({
+      authorityId: true,
+      authorityVersion: true,
+      authorityFingerprint: true,
+      selectionId: true,
+    })
+    .extend({ expressiveVisualPreferences: expressiveVisualPreferencesV2Schema.optional() });
 
 const narrativeRoleSchema = z.enum([
   "orientation",
@@ -130,6 +133,7 @@ const synthesisMaterialSchema = z
         directionId: storefrontDesignDirectionIdSchema,
         spacingDensity: z.enum(["compact", "standard", "spacious"]),
         surfaceDepth: z.enum(["flat", "subtle", "layered"]),
+        expressiveVisualPreferences: expressiveVisualPreferencesV2Schema.optional(),
         fingerprint: fingerprintSchema,
       })
       .strict(),

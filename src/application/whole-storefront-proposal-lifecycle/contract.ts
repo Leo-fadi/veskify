@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { expressiveVisualPreferencesV2Schema } from "@/application/storefront-design-system/expressive-visual-preferences-v2";
 import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
 import { registeredTokenRefinementPlanSchema } from "@/application/storefront-design-system/token-refinement";
 import {
@@ -96,6 +97,7 @@ export const wholeStorefrontProposalOperationSchema = z.discriminatedUnion("type
         .object({
           spacingDensity: z.enum(["compact", "standard", "spacious"]),
           surfaceDepth: z.enum(["flat", "subtle", "layered"]),
+          expressiveVisualPreferences: expressiveVisualPreferencesV2Schema.optional(),
         })
         .strict()
         .optional(),

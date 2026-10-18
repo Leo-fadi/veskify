@@ -855,6 +855,9 @@ export function createBoundedStorefrontSynthesisDecision(
             .designSystemSpacingDensity,
           surfaceDepth: (input.exactSelection ?? input.selectionNarrowing)!
             .designSystemSurfaceDepth,
+          ...(input.exactSelection?.expressiveVisualPreferences
+            ? { expressiveVisualPreferences: input.exactSelection.expressiveVisualPreferences }
+            : {}),
         }
       : undefined,
   );
@@ -884,6 +887,9 @@ export function createBoundedStorefrontSynthesisDecision(
         input.exactSelection?.designSystemSurfaceDepth ??
         input.selectionNarrowing?.designSystemSurfaceDepth ??
         selectedDirection.surfaceDepth,
+      ...(input.exactSelection?.expressiveVisualPreferences
+        ? { expressiveVisualPreferences: input.exactSelection.expressiveVisualPreferences }
+        : {}),
       fingerprint: `design-dna-${canonicalValueFingerprint(brandSystem.designDna)}`,
     },
     siteMap: {
@@ -1011,6 +1017,9 @@ export function executeBoundedStorefrontSynthesis(
     designSystemNarrowing: {
       spacingDensity: decision.designDna.spacingDensity,
       surfaceDepth: decision.designDna.surfaceDepth,
+      ...(decision.designDna.expressiveVisualPreferences
+        ? { expressiveVisualPreferences: decision.designDna.expressiveVisualPreferences }
+        : {}),
     },
     pageBlueprintSelectionOverrides: decision.pageBlueprintSelectionOverrides,
     approvedAssetRoleSelections: decision.approvedAssetRoleSelections,

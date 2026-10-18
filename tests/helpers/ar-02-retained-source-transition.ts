@@ -131,18 +131,60 @@ const recordSchema = z
     )
       context.addIssue({ code: "custom", message: "Transition task and path do not match." });
   });
+const successorAuthorities = [
+  {
+    taskId: "AR-09A",
+    path: "src/application/bounded-storefront-synthesis/contract.ts",
+    predecessorSuccessorSha256: "79f8521e808fe48d42ff085f2c1d3e847a460ee981560383be4c41b1e69d2f85",
+    archivePath: "tests/fixtures/ar-09a/synthesis-contract.pre-ar-09a.ts.txt",
+    successorSha256: "ab37a888cc04433c7c607888d6113eaa99662a9a72b9cc395e6643048bdb4a1b",
+    predecessorTaskId: "AR-02M",
+    baseCommit: "ea8d077c4eaa6f5e19d04965ad77efefda5d3571",
+  },
+  {
+    taskId: "AR-09A",
+    path: "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+    predecessorSuccessorSha256: "dafd8210fb868797d7ba8ae48b948b5f816e68627bff0d47433d9cb764dbdcbe",
+    archivePath: "tests/fixtures/ar-09a/compatible-direction-selections.pre-ar-09a.ts.txt",
+    successorSha256: "95f9c0d8eb6a8774c1d29a020bb5a217158607d846c5d0bd99ca437b38e69528",
+    predecessorTaskId: "AR-02M",
+    baseCommit: "ea8d077c4eaa6f5e19d04965ad77efefda5d3571",
+  },
+] as const;
 const documentSchema = z
-  .object({ schemaVersion: z.literal("1.0.0"), transitions: z.array(recordSchema) })
+  .object({
+    schemaVersion: z.literal("1.0.0"),
+    transitions: z.array(recordSchema),
+    successorTransitions: z
+      .array(
+        z
+          .object({
+            taskId: z.literal("AR-09A"),
+            predecessorTaskId: z.literal("AR-02M"),
+            baseCommit: z.literal("ea8d077c4eaa6f5e19d04965ad77efefda5d3571"),
+            path: z.enum([
+              "src/application/bounded-storefront-synthesis/contract.ts",
+              "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+            ]),
+            predecessorSuccessorSha256: z.string().regex(/^[a-f0-9]{64}$/u),
+            archivePath: z.string().min(1),
+            successorSha256: z.string().regex(/^[a-f0-9]{64}$/u),
+          })
+          .strict(),
+      )
+      .length(2),
+  })
   .strict();
 type Record = z.infer<typeof recordSchema>;
 
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 function regular(root: string, relative: string, label: string): string {
-  const absolute = path.resolve(root, relative);
+  const canonicalRoot = realpathSync(root);
+  const absolute = path.resolve(canonicalRoot, relative);
   if (
     path.isAbsolute(relative) ||
     path.posix.normalize(relative) !== relative ||
-    !absolute.startsWith(`${root}${path.sep}`) ||
+    !absolute.startsWith(`${canonicalRoot}${path.sep}`) ||
     !existsSync(absolute) ||
     !lstatSync(absolute).isFile() ||
     lstatSync(absolute).isSymbolicLink() ||
@@ -178,6 +220,25 @@ export function readRetainedSource(
     )
       throw new Error(`Transition record does not match retained authority: ${record.path}.`);
   }
+  const continuations = document.successorTransitions;
+  if (new Set(continuations.map(({ path }) => path)).size !== continuations.length)
+    throw new Error("Successor transition records have duplicate paths.");
+  for (const continuation of continuations) {
+    const expected = successorAuthorities.find(({ path }) => path === continuation.path);
+    const predecessor = records.find(({ path }) => path === continuation.path);
+    if (
+      !expected ||
+      !predecessor ||
+      predecessor.taskId !== continuation.predecessorTaskId ||
+      predecessor.successorSha256 !== continuation.predecessorSuccessorSha256 ||
+      Object.entries(expected).some(
+        ([key, value]) => continuation[key as keyof typeof continuation] !== value,
+      )
+    )
+      throw new Error(
+        `Successor transition does not match retained authority: ${continuation.path}.`,
+      );
+  }
   const source = regular(input.repositoryRoot, input.sourcePath, "Protected authority");
   const record = records.find((candidate) => candidate.path === input.sourcePath);
   const current = readFileSync(source);
@@ -191,8 +252,16 @@ export function readRetainedSource(
   const authority = authorities.find((candidate) => candidate.path === record.path)!;
   if (input.expectedHistoricalSha256 !== authority.originalSha256)
     throw new Error(`Transition historical pin mismatch: ${record.path}.`);
-  if (hash(current) !== record.successorSha256)
+  const continuation = continuations.find(({ path }) => path === record.path);
+  if (hash(current) !== (continuation?.successorSha256 ?? record.successorSha256))
     throw new Error(`Transition successor hash mismatch: ${record.path}.`);
+  if (continuation) {
+    const continuationArchive = readFileSync(
+      regular(input.repositoryRoot, continuation.archivePath, "Successor transition archive"),
+    );
+    if (hash(continuationArchive) !== record.successorSha256)
+      throw new Error(`Successor transition archive hash mismatch: ${record.path}.`);
+  }
   const archive = readFileSync(
     regular(input.repositoryRoot, record.archivePath, "Transition archive"),
   );

@@ -1,4 +1,8 @@
 import {
+  expressiveVisualPreferencesV2Schema,
+  type ExpressiveVisualPreferencesV2,
+} from "@/application/storefront-design-system/expressive-visual-preferences-v2";
+import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
 } from "@/application/storefront-design-system/token-refinement";
@@ -2430,6 +2434,7 @@ export type WholeStorefrontGenerationPlanOptions = Readonly<{
   designSystemNarrowing?: Readonly<{
     spacingDensity: "compact" | "standard" | "spacious";
     surfaceDepth: "flat" | "subtle" | "layered";
+    expressiveVisualPreferences?: ExpressiveVisualPreferencesV2;
   }>;
   tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
@@ -2442,6 +2447,9 @@ export function createWholeStorefrontGenerationPlan(
   options: WholeStorefrontGenerationPlanOptions = {},
 ): WholeStorefrontGenerationPlan {
   const input = parsePlanningInput(inputValue);
+  const expressiveVisualPreferences = expressiveVisualPreferencesV2Schema
+    .optional()
+    .parse(options.designSystemNarrowing?.expressiveVisualPreferences);
   const pageBlueprintSelectionOverrides = [
     ...wholeStorefrontPageBlueprintSelectionOverridesSchema.parse(
       options.pageBlueprintSelectionOverrides ?? [],
@@ -2486,11 +2494,12 @@ export function createWholeStorefrontGenerationPlan(
     tokenOnly &&
     (pageBlueprintSelectionOverrides.length > 0 ||
       requestedApprovedAssetRoleSelections.length > 0 ||
-      dynamicCommerceSelection)
+      dynamicCommerceSelection ||
+      expressiveVisualPreferences !== undefined)
   ) {
     invalid(
       "invalid-component-contract",
-      "Token-only refinement cannot carry structural PageBlueprint or dynamic-commerce selections.",
+      "Token-only refinement cannot carry structural PageBlueprint, dynamic-commerce or regional design selections.",
     );
   }
   const target = createWholeStorefrontGenerationTarget(input);
@@ -2543,6 +2552,7 @@ export function createWholeStorefrontGenerationPlan(
       options.designSystemNarrowing?.spacingDensity ?? selectedDirection.spacingDensity,
     cornerTreatment: selectedDirection.cornerTreatment,
     surfaceDepth: options.designSystemNarrowing?.surfaceDepth ?? selectedDirection.surfaceDepth,
+    ...(expressiveVisualPreferences === undefined ? {} : { expressiveVisualPreferences }),
     componentSelections: selectedDirection.componentSelections,
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
@@ -3295,6 +3305,9 @@ export function validateWholeStorefrontGenerationPlan(
     designSystemNarrowing: {
       spacingDensity: plan.designSystemSelection.spacingDensity,
       surfaceDepth: plan.designSystemSelection.surfaceDepth,
+      ...(plan.designSystemSelection.expressiveVisualPreferences
+        ? { expressiveVisualPreferences: plan.designSystemSelection.expressiveVisualPreferences }
+        : {}),
     },
     ...(homepageMaterialization?.commercialHomepage
       ? {

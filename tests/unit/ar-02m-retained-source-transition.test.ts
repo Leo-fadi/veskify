@@ -44,6 +44,7 @@ function records() {
   return JSON.parse(readFileSync(join(root, recordsPath), "utf8")) as {
     schemaVersion: string;
     transitions: Array<Record<string, string>>;
+    successorTransitions?: Array<Record<string, string>>;
   };
 }
 
@@ -58,6 +59,9 @@ function temporary(document = records()) {
   copyFile(target, recordsPath);
   for (const transition of transitions) {
     copyFile(target, transition.path);
+    copyFile(target, transition.archivePath);
+  }
+  for (const transition of records().successorTransitions ?? []) {
     copyFile(target, transition.archivePath);
   }
   writeFileSync(join(target, recordsPath), JSON.stringify(document));
@@ -205,6 +209,70 @@ describe("AR-02M retained coordinated metadata transitions", () => {
           expectedHistoricalSha256: transition.originalSha256,
         }),
       ).toThrow(/regular repository-relative/i);
+    }
+  });
+});
+
+describe("AR-09A exact successor chain", () => {
+  it.each([
+    ["missing", (rows: Array<Record<string, string>>) => rows.slice(1)],
+    ["duplicate", (rows: Array<Record<string, string>>) => [rows[0], rows[0]]],
+    ...[
+      "taskId",
+      "predecessorTaskId",
+      "baseCommit",
+      "predecessorSuccessorSha256",
+      "successorSha256",
+      "path",
+      "archivePath",
+    ].map(
+      (field) =>
+        [
+          field,
+          (rows: Array<Record<string, string>>) =>
+            rows.map((row, index) =>
+              index === 1
+                ? { ...row, [field]: field === "archivePath" ? "../escape.ts" : "foreign" }
+                : row,
+            ),
+        ] as const,
+    ),
+  ] as const)(
+    "rejects %s continuation metadata even when another source is requested",
+    (_name, mutate) => {
+      const document = records();
+      document.successorTransitions = mutate(document.successorTransitions!);
+      const target = temporary(document);
+      try {
+        expect(() => read(target, transitions[1])).toThrow();
+      } finally {
+        rmSync(target, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each([0, 1])("verifies both historical links and the exact current successor %s", (index) => {
+    const continuation = records().successorTransitions![index];
+    const original = transitions.find(({ path }) => path === continuation.path)!;
+    const target = temporary();
+    try {
+      expect(createHash("sha256").update(read(target, original)).digest("hex")).toBe(
+        original.originalSha256,
+      );
+      writeFileSync(join(target, continuation.archivePath), "changed intermediate archive");
+      expect(() => read(target, original)).toThrow(/archive hash mismatch/);
+      copyFile(target, continuation.archivePath);
+      writeFileSync(
+        join(target, continuation.path),
+        readFileSync(join(target, continuation.archivePath)),
+      );
+      expect(() => read(target, original)).toThrow(/successor hash mismatch/);
+      copyFile(target, continuation.path);
+      rmSync(join(target, continuation.archivePath));
+      symlinkSync(join(root, continuation.archivePath), join(target, continuation.archivePath));
+      expect(() => read(target, original)).toThrow(/regular repository-relative/);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
     }
   });
 });

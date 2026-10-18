@@ -223,6 +223,12 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
       designSystemNarrowing: {
         spacingDensity: input.plan.designSystemSelection.spacingDensity,
         surfaceDepth: input.plan.designSystemSelection.surfaceDepth,
+        ...(input.plan.designSystemSelection.expressiveVisualPreferences
+          ? {
+              expressiveVisualPreferences:
+                input.plan.designSystemSelection.expressiveVisualPreferences,
+            }
+          : {}),
       },
       ...(homepageMaterialization?.commercialHomepage
         ? {
@@ -1306,6 +1312,12 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
           {
             spacingDensity: plan.designSystemSelection.spacingDensity,
             surfaceDepth: plan.designSystemSelection.surfaceDepth,
+            ...(plan.designSystemSelection.expressiveVisualPreferences
+              ? {
+                  expressiveVisualPreferences:
+                    plan.designSystemSelection.expressiveVisualPreferences,
+                }
+              : {}),
           },
         )
       : applyRegisteredTokenRefinement(original.brandSystem, plan.tokenRefinementPlan);
@@ -1317,6 +1329,12 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
           designSystemNarrowing: {
             spacingDensity: plan.designSystemSelection.spacingDensity,
             surfaceDepth: plan.designSystemSelection.surfaceDepth,
+            ...(plan.designSystemSelection.expressiveVisualPreferences
+              ? {
+                  expressiveVisualPreferences:
+                    plan.designSystemSelection.expressiveVisualPreferences,
+                }
+              : {}),
           },
           brandSystem: selectedBrandSystem,
         }

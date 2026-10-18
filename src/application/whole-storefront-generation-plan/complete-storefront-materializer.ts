@@ -1,3 +1,4 @@
+import type { ExpressiveVisualPreferencesV2 } from "@/application/storefront-design-system/expressive-visual-preferences-v2";
 import {
   materializeContentSupportSnapshot,
   type ContentSupportFactAuthority,
@@ -253,6 +254,7 @@ export function materializeCompleteStorefrontSelection(
     designSystemNarrowing?: Readonly<{
       spacingDensity: "compact" | "standard" | "spacious";
       surfaceDepth: "flat" | "subtle" | "layered";
+      expressiveVisualPreferences?: ExpressiveVisualPreferencesV2;
     }>;
     pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
     approvedAssetRoleSelections?: readonly WholeStorefrontApprovedAssetRoleSelection[];
@@ -471,6 +473,14 @@ export function materializeCompleteStorefrontSelection(
         input.designSystemNarrowing?.spacingDensity ?? plan.designSystemSelection.spacingDensity,
       surfaceDepth:
         input.designSystemNarrowing?.surfaceDepth ?? plan.designSystemSelection.surfaceDepth,
+      ...((input.designSystemNarrowing?.expressiveVisualPreferences ??
+      plan.designSystemSelection.expressiveVisualPreferences)
+        ? {
+            expressiveVisualPreferences:
+              input.designSystemNarrowing?.expressiveVisualPreferences ??
+              plan.designSystemSelection.expressiveVisualPreferences,
+          }
+        : {}),
     },
   );
   const plannedComponents = plan.pagePlans.flatMap(({ components }) => components);

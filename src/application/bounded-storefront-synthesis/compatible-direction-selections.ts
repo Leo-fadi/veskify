@@ -592,7 +592,9 @@ export function isCurrentCompatibleCoordinatedDirectionExactSelection(input: {
   exactSelection: BoundedStorefrontSynthesisExactSelection;
 }): boolean {
   const exact = exactSelectionSchema.parse(input.exactSelection);
-  const exactFingerprint = fingerprint(exact);
+  const { expressiveVisualPreferences: _preferences, ...inventoryExact } = exact;
+  void _preferences;
+  const exactFingerprint = fingerprint(exactSelectionSchema.parse(inventoryExact));
   const directionId = listDirections().find(({ constraints }) =>
     constraints.designSystemDirectionIds.includes(exact.directionId),
   )?.id;

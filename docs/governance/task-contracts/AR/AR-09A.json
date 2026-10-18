@@ -1,0 +1,479 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Leo-fadi/veskify/main/docs/governance/task-contract.schema.v1.json",
+  "schemaVersion": "1.0.0",
+  "contractState": "immutable",
+  "sprintId": "BATCH-20",
+  "taskId": "AR-09A",
+  "title": "Versioned regional design intent through canonical proposal compilation",
+  "repository": {
+    "root": "/Users/leo/veskify",
+    "canonicalRemote": "origin",
+    "baseBranch": "main"
+  },
+  "branch": "codex/b20-vq01-regional-design-intent",
+  "baseCommit": "ea8d077c4eaa6f5e19d04965ad77efefda5d3571",
+  "objective": "Compile an explicit versioned regional-density preference through existing exact selection, plan, proposal validation and final canonical BrandSystem; retain legacy byte identities and phase policy. This is the first atomic implementation child of VQ1, not VQ1 or phase completion.",
+  "expectedOutcome": "Compact navigation, generous narrative and independently bounded commerce choices coexist in actual canonical snapshots and registered home/collection/PDP consumers; invalid or tampered intent fails closed. Immediately following AR-10B delivers photo/font input pack and runnable integrated visual target using this path.",
+  "dependencies": [
+    {
+      "taskId": "AR-10A",
+      "requiredState": "MERGED",
+      "commit": "ea8d077c4eaa6f5e19d04965ad77efefda5d3571"
+    }
+  ],
+  "mergeOrder": 1,
+  "canonicalAuthorities": [
+    "Owner BATCH-20 launch; runbook SHA256 c6b774c5c6b27f9f6a473b244046f767311e3ef858550614137d9f3d77b3fce3; original checkout and standing technical intermediate merge authority",
+    "AGENTS.md; SDD sections6-8,10.6-10.12,10.19-10.20,13-14 and FR106-123/NFR101-110; ADR001/002/003/004",
+    "Existing BrandSystem.designDna density, registered direction/profile/capability authority, canonical StorefrontSnapshot and atomic whole-storefront proposal; no second page tree",
+    "Roadmap AR09 compiler ownership with immediate AR10 consumer; tracker sole current status. AR06 remains Partial; completed AR02/03/04/05/06A/B/C/D/10A preserved.",
+    "Phase policy adoption in first implementation PR; up to three consolidated correction passes via preservation-first successors while native reviewPolicy const remains1. Phase totals48 browsers20 builds, reserves8/4; child allocation0 browser,1 required independent production build plus1 in-scope evidence-backed correction build if needed; no paid calls.",
+    "Initial reviewed support identity /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-01/IDENTITY.json SHA256 10d39571201fd32b1eb8bac94d98f983a9bbed084d31af1dd7b35f7bb450e55e. Complete input freeze/check includes all tracked/untracked originals; generated check/cache/temp/build/report outputs assigned separately, never production edits by verifier."
+  ],
+  "ownedPaths": [
+    "src/application/storefront-design-system/expressive-visual-preferences-v2.ts",
+    "src/application/storefront-design-system/registered-brand-system.ts",
+    "src/application/bounded-storefront-synthesis/contract.ts",
+    "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+    "src/application/bounded-storefront-synthesis/synthesizer.ts",
+    "src/application/whole-storefront-generation-plan/contract.ts",
+    "src/application/whole-storefront-generation-plan/planner.ts",
+    "src/application/whole-storefront-proposal-lifecycle/contract.ts",
+    "src/application/whole-storefront-proposal-lifecycle/compiler.ts",
+    "src/application/whole-storefront-generation-plan/complete-storefront-materializer.ts",
+    "tests/unit/ar-09a-regional-design-intent.test.ts",
+    "tests/integration/ar-09a-regional-design-consumers.test.tsx",
+    "tests/unit/ar-09a-legacy-baseline.test.ts",
+    "tests/helpers/ar-09a-regional-design-observation.ts",
+    "tests/fixtures/ar-09a/legacy-behavior.json",
+    "tests/fixtures/ar-09a/synthesis-contract.pre-ar-09a.ts.txt",
+    "tests/fixtures/ar-09a/compatible-direction-selections.pre-ar-09a.ts.txt",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/unit/ar-02m-retained-source-transition.test.ts",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "AGENTS.md",
+    "README.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/BATCH_20_VQ_01.md",
+    "docs/AR_09A_REGIONAL_DESIGN_INTENT.md",
+    "docs/governance/task-contracts/AR/AR-09A.json",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs"
+  ],
+  "allowedPaths": [
+    "src/application/storefront-design-system/expressive-visual-preferences-v2.ts",
+    "src/application/storefront-design-system/registered-brand-system.ts",
+    "src/application/bounded-storefront-synthesis/contract.ts",
+    "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+    "src/application/bounded-storefront-synthesis/synthesizer.ts",
+    "src/application/whole-storefront-generation-plan/contract.ts",
+    "src/application/whole-storefront-generation-plan/planner.ts",
+    "src/application/whole-storefront-proposal-lifecycle/contract.ts",
+    "src/application/whole-storefront-proposal-lifecycle/compiler.ts",
+    "src/application/whole-storefront-generation-plan/complete-storefront-materializer.ts",
+    "tests/unit/ar-09a-regional-design-intent.test.ts",
+    "tests/integration/ar-09a-regional-design-consumers.test.tsx",
+    "tests/unit/ar-09a-legacy-baseline.test.ts",
+    "tests/helpers/ar-09a-regional-design-observation.ts",
+    "tests/fixtures/ar-09a/legacy-behavior.json",
+    "tests/fixtures/ar-09a/synthesis-contract.pre-ar-09a.ts.txt",
+    "tests/fixtures/ar-09a/compatible-direction-selections.pre-ar-09a.ts.txt",
+    "tests/helpers/ar-02-retained-source-transition.ts",
+    "tests/fixtures/ar-02-retained-source-transitions.v1.json",
+    "tests/unit/ar-02m-retained-source-transition.test.ts",
+    "tests/unit/ar-00-architecture-reset-adoption.test.ts",
+    "AGENTS.md",
+    "README.md",
+    "docs/DEVELOPMENT_GUIDE.md",
+    "docs/VESKIFY_SDD.md",
+    "docs/VESKIFY_SDD_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+    "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+    "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+    "docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md",
+    "docs/BATCH_20_VQ_01.md",
+    "docs/AR_09A_REGIONAL_DESIGN_INTENT.md",
+    "docs/governance/task-contracts/AR/AR-09A.json",
+    "scripts/check-architecture-reset-adoption.mjs",
+    "scripts/validate-documentation.mjs",
+    "scripts/export-development-delivery-tracker-docx.mjs",
+    "docs/Veskify_Architecture_Reset/00_START_HERE.md",
+    "docs/Veskify_Architecture_Reset/01_TARGET_ARCHITECTURE.md",
+    "docs/Veskify_Architecture_Reset/02_REFACTOR_INVENTORY.md",
+    "docs/Veskify_Architecture_Reset/03_DEVELOPMENT_ROADMAP.md",
+    "docs/Veskify_Architecture_Reset/04_ASTRA_EXECUTION_HANDOFF.md",
+    "docs/Veskify_Architecture_Reset/05_EVIDENCE_AND_ACCEPTANCE.md",
+    "docs/Veskify_Architecture_Reset/manifest.json",
+    "docs/Veskify_Architecture_Reset/refactor_inventory.json",
+    "docs/Veskify_Architecture_Reset/roadmap.json"
+  ],
+  "forbiddenPaths": [
+    ".git/config",
+    ".codex/**",
+    ".agents/**",
+    "src/integrations/ai/**",
+    "src/integrations/puck/**",
+    "src/domain/**",
+    "src/components/**",
+    "src/app/**",
+    "src/services/**",
+    "src/application/prompted-storefront-design-intent/**",
+    "src/application/prompted-storefront-design-compiler/**",
+    "package.json",
+    "pnpm-lock.yaml",
+    "next.config.ts",
+    ".github/**",
+    "scripts/check-storefront-build-budgets.mjs"
+  ],
+  "noTouchAreas": [
+    "All legacy request behavior and absent-overlay canonical bytes; existing design-DNA schema/version, semantic V1 provider wire and candidate enumeration",
+    "Original eleven historical transition rows, hashes, accepted archives, inventory and closure manifests, seven G/H/M aggregate and legacy replay fingerprints; only append strict continuation records for two named source paths",
+    "Pre-existing nine private originals allowed only for complete identity and byte preservation, never edit/stage/publish",
+    "No model/Vesko/publication call, asset production wiring or renderer/CSS modification in this child; no phase visual-quality claim"
+  ],
+  "scopeBudget": {
+    "targetMaxNetProductionLines": 1000,
+    "targetMaxProductionFiles": 8,
+    "hardMaxNetProductionLines": 1500,
+    "hardMaxProductionFiles": 12,
+    "canonicalConcern": "One atomic versioned regional preference propagation from exact selection into validated canonical proposal and registered renderer consumers; ten production paths are needed to avoid dropped or unchecked authority.",
+    "generatedFileExclusions": [
+      {
+        "path": "docs/VESKIFY_SDD_v1.3.0.docx",
+        "reason": "Existing synchronized DOCX projection"
+      },
+      {
+        "path": "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+        "reason": "Existing synchronized DOCX projection"
+      },
+      {
+        "path": "tests/fixtures/ar-09a/synthesis-contract.pre-ar-09a.ts.txt",
+        "reason": "Exact pre-edit Git source archive; original bytes remain independently hash checked"
+      },
+      {
+        "path": "tests/fixtures/ar-09a/compatible-direction-selections.pre-ar-09a.ts.txt",
+        "reason": "Exact pre-edit Git source archive; original bytes remain independently hash checked"
+      }
+    ],
+    "hardLimitException": null
+  },
+  "externalCallPolicy": {
+    "openAiCallLimit": 0,
+    "veskoCallLimit": 0,
+    "realPublicationAllowed": false,
+    "externalImageActivityAllowed": false,
+    "networkPolicy": "allowlisted",
+    "allowlistedActivities": [
+      "Normal authorized GitHub PR/review/CI and expected-head delivery; no second review request",
+      "Loopback production budget proof using installed dependencies; no provider calls"
+    ],
+    "secretFilesAllowed": []
+  },
+  "implementationApproach": {
+    "selectedApproach": "Strict optional version2 expressiveVisualPreferences with regionalDensity navigation/content/commerce using existing compact/balanced/spacious semantics. Validate the underlying exact registered tuple unchanged, validate preferences separately without candidate cross-product, bind them into synthesis/plan/operation fingerprints, and independently reconstruct identical BrandSystem during proposal validation. Absent field must remain absent.",
+    "canonicalAuthorityExtended": "Existing registered BrandSystem materialization and canonical whole-storefront plan/proposal, reusing existing DNA density fields.",
+    "namedCurrentConsumers": [
+      "createBoundedStorefrontSynthesisDecision / executeBoundedStorefrontSynthesis",
+      "compileWholeStorefrontProposal and validateWholeStorefrontProposal -> materializeWholeStorefrontRuntimeSnapshot",
+      "Existing registered header/homepage/collection/PDP renderer consumes canonical density variables; AR-10B is immediately assigned runnable quality-target consumer."
+    ],
+    "rejectedShortcuts": [
+      "Changing only executionBrandSystem: final snapshot is reconstructed through proposal compiler, so metadata-only change would be discarded",
+      "Mutating DNA after acceptance or weakening full proposal revalidation",
+      "Changing V1 semantic wire, legacy inventory/golden expectations or replacing old source hashes",
+      "A chain of unconsumed schemas or calling independent density a complete quality milestone"
+    ],
+    "expectedFailureBehavior": "Unknown version/field/value, incompatible registered tuple, missing authority, tampered preference/fingerprint or stale proposal is rejected before canonical draft mutation. Caller inputs and protected catalogue remain unchanged.",
+    "unresolvedArchitectureConflicts": []
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "AC-01",
+      "requirement": "Versioned explicit regional choices traverse exact selection, plan, proposal, acceptance and canonical snapshot; independent navigation/content/commerce choices coexist with supported registered frame/profile/surface/card choices and reach actual registered home/collection/PDP consumer output. This child proves registered rendered markup and canonical CSS-variable consumption, not measured geometry or subjective visual quality; AR10B actual browser/visual home+collection+PDP remains required before VQ1 exit.",
+      "verificationClass": "positive-behavior",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    },
+    {
+      "id": "AC-02",
+      "requirement": "Reject unknown version/field/value, unsupported or forged exact tuple, altered preference/fingerprint and stale/tampered accepted operation; preserve caller input, draft/history and protected commerce. No silent ignored required preference. Exercise tampering separately at decision, plan, APPLY_REGISTERED_BRAND_SYSTEM and final candidate, including recomputed outer fingerprints. Explicit null/unknown/default injection must not silently become legacy absence.",
+      "verificationClass": "negative-fail-closed-behavior",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    },
+    {
+      "id": "AC-03",
+      "requirement": "When overlay absent, pre-edit legacy observations and existing accepted semantic V1 inventory/fingerprints remain unchanged. Two append-only AR02M->AR09A continuations prove every original and current source identity; missing/wrong/foreign/duplicate/escaping records fail. Verify original archive -> exact AR02M successor now archived -> current AR09A successor. Both continuation rows are required; metadata is validated globally while artifact reads remain specific to requested source, preserving minimal unrelated fixtures.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    },
+    {
+      "id": "AC-04",
+      "requirement": "No renderer/provider dependency enters metadata owners; no duplicate canonical tree or weakening of existing proposal validation. Existing registered renderer and DNA owner remain authority.",
+      "verificationClass": "canonical-ownership",
+      "requiredEvidence": ["EVIDENCE-02"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    },
+    {
+      "id": "AC-05",
+      "requirement": "Ten exact production paths, <=1500 net production lines, no forbidden edits or calls, complete source/dependency identity preserved during verification and all six budgets unchanged.",
+      "verificationClass": "scope",
+      "requiredEvidence": ["EVIDENCE-05", "EVIDENCE-04"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    },
+    {
+      "id": "AC-06",
+      "requirement": "Adopt complete VQ01 outcome/sequence/standing workflow consistently without dropping original parent requirements. AR10A bounded accepted, commercial quality not accepted; AR06 Partial. Immediate AR10B target assigned and phase counters/caps retained; no schema/PR-based phase completion.",
+      "verificationClass": "documentation",
+      "requiredEvidence": ["EVIDENCE-07"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    },
+    {
+      "id": "AC-07",
+      "requirement": "Fresh final-source independent production build and six raw/gzip checks pass; typecheck/lint/scoped formatting/docs/export checks pass; complete independently authored report and native reconciliation bind final tree.",
+      "verificationClass": "compatibility",
+      "requiredEvidence": ["EVIDENCE-04", "EVIDENCE-03", "EVIDENCE-06"],
+      "failureBehavior": "FAIL if the stated requirement is not established; BLOCKED only for an actual unavailable required operation/evidence."
+    }
+  ],
+  "requiredValidation": [
+    {
+      "id": "VALIDATION-01",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-09a-regional-design-intent.test.ts tests/unit/ar-09a-legacy-baseline.test.ts tests/integration/ar-09a-regional-design-consumers.test.tsx",
+      "purpose": "New preference, actual canonical/renderer consumer and pre-edit legacy baseline checks",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-02",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-02m-retained-source-transition.test.ts tests/unit/ar-02m-coordinated-metadata-boundary.test.ts tests/unit/ar-02i-planner-metadata-boundary.test.ts tests/unit/ar-03d-authoring-boundary.test.ts tests/unit/ar-03e-legacy-conversion-boundary.test.ts tests/unit/ar-02g-closure-transition.test.ts tests/unit/ar-02g-template-capability-boundary.test.ts tests/unit/ar-02h-semantic-request-boundary.test.ts tests/unit/ar-06a-retained-source-transition.test.ts",
+      "purpose": "Complete affected historical/source boundary checks with unchanged old expectations",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-03",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/p10b-15-bounded-storefront-synthesis.test.ts tests/unit/whole-storefront-proposal-lifecycle.test.ts",
+      "purpose": "Existing synthesis and atomic proposal acceptance behavior",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-04",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/integration/ar-05b-composition-version-boundaries.test.ts tests/unit/p10b-19a-09a-legacy-v1-replay-authority.test.ts tests/unit/p10b-19a-07-inactive-family-registry-candidate-fingerprints.test.ts",
+      "purpose": "Historical archive/aggregate/legacy replay remain exactly bound; no expensive retained126matrix",
+      "requiredEvidence": ["EVIDENCE-02"]
+    },
+    {
+      "id": "VALIDATION-05",
+      "command": "pnpm typecheck",
+      "purpose": "Repository typecheck",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-06",
+      "command": "pnpm exec eslint src/application/storefront-design-system/expressive-visual-preferences-v2.ts src/application/storefront-design-system/registered-brand-system.ts src/application/bounded-storefront-synthesis/contract.ts src/application/bounded-storefront-synthesis/compatible-direction-selections.ts src/application/bounded-storefront-synthesis/synthesizer.ts src/application/whole-storefront-generation-plan/contract.ts src/application/whole-storefront-generation-plan/planner.ts src/application/whole-storefront-proposal-lifecycle/contract.ts src/application/whole-storefront-proposal-lifecycle/compiler.ts src/application/whole-storefront-generation-plan/complete-storefront-materializer.ts tests/unit/ar-09a-regional-design-intent.test.ts tests/integration/ar-09a-regional-design-consumers.test.tsx tests/unit/ar-09a-legacy-baseline.test.ts tests/helpers/ar-09a-regional-design-observation.ts tests/helpers/ar-02-retained-source-transition.ts tests/unit/ar-02m-retained-source-transition.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts scripts/check-architecture-reset-adoption.mjs scripts/validate-documentation.mjs scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Scoped lint",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-07",
+      "command": "pnpm exec prettier --check src/application/storefront-design-system/expressive-visual-preferences-v2.ts src/application/storefront-design-system/registered-brand-system.ts src/application/bounded-storefront-synthesis/contract.ts src/application/bounded-storefront-synthesis/compatible-direction-selections.ts src/application/bounded-storefront-synthesis/synthesizer.ts src/application/whole-storefront-generation-plan/contract.ts src/application/whole-storefront-generation-plan/planner.ts src/application/whole-storefront-proposal-lifecycle/contract.ts src/application/whole-storefront-proposal-lifecycle/compiler.ts src/application/whole-storefront-generation-plan/complete-storefront-materializer.ts tests/unit/ar-09a-regional-design-intent.test.ts tests/integration/ar-09a-regional-design-consumers.test.tsx tests/unit/ar-09a-legacy-baseline.test.ts tests/helpers/ar-09a-regional-design-observation.ts tests/fixtures/ar-09a/legacy-behavior.json tests/helpers/ar-02-retained-source-transition.ts tests/fixtures/ar-02-retained-source-transitions.v1.json tests/unit/ar-02m-retained-source-transition.test.ts tests/unit/ar-00-architecture-reset-adoption.test.ts AGENTS.md README.md docs/DEVELOPMENT_GUIDE.md docs/VESKIFY_SDD.md docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md docs/VESKIFY_DEVELOPMENT_ROADMAP.md docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md docs/spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md docs/BATCH_20_VQ_01.md docs/AR_09A_REGIONAL_DESIGN_INTENT.md docs/governance/task-contracts/AR/AR-09A.json scripts/check-architecture-reset-adoption.mjs scripts/validate-documentation.mjs scripts/export-development-delivery-tracker-docx.mjs",
+      "purpose": "Scoped formatting; exact archives excluded from formatting only",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-08",
+      "command": "pnpm exec vitest run --maxWorkers=1 tests/unit/ar-00-architecture-reset-adoption.test.ts",
+      "purpose": "Current documentation/status guard controls",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-09",
+      "command": "pnpm docs:validate",
+      "purpose": "Documentation checks",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-10",
+      "command": "pnpm docs:check:requirements",
+      "purpose": "All original requirement mappings retained",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-11",
+      "command": "pnpm docs:check:tooling",
+      "purpose": "Existing documentation tooling",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-12",
+      "command": "pnpm docs:check:sdd",
+      "purpose": "Synchronized SDD DOCX",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-13",
+      "command": "pnpm docs:check:tracker",
+      "purpose": "Synchronized tracker DOCX",
+      "requiredEvidence": ["EVIDENCE-03"]
+    },
+    {
+      "id": "VALIDATION-14",
+      "command": "pnpm build:webpack",
+      "purpose": "Actual independent production-build subprocess already executed successfully inside independent03/build/fixture through support05. Preserve original wrapper FAIL for trace-only root-directory defect. Reuse actual build only after VALIDATION16 confirms exact retained artifacts, unchanged production/build/dependency inputs and documentary stylesheet applicability; this command is not re-executed solely for support correction.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-15",
+      "command": "node /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/independent-03/build/fixture/budget-checker/check-storefront-build-budgets.mjs",
+      "purpose": "Exact unchanged checker bytes copied to fixture-local path so repositoryRoot resolves the fresh .next; all six original raw/gzip limits and counting remain unchanged. Executed within build wrapper, not a second invocation.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-16",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-08/retained-trace.py",
+      "purpose": "Append-only corrected complete trace collection from identity-verified retained build, all dependency-root entries pinned; original FAIL preserved. Check final input/artifact/dependency and installed stylesheet applicability; no new build. Post-build scanner permits only exact generated next-env declaration and byte-identical copied checker, records both mappings and retains complete source/candidate comparison.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-17",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-06/trace-controls.py",
+      "purpose": "Exact dependency-root/descendant/file positives and changed dependency, missing/absolute/escaping/broken/cyclic/unexpected/unfrozen negatives.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    },
+    {
+      "id": "VALIDATION-18",
+      "command": "python3 /Users/leo/veskify-batch-runs/BATCH-20/VQ-01/AR-09A/support-08/postbuild-controls.py independent-06/postbuild-controls",
+      "purpose": "Expected two pinned post-build files pass with equivalent real-context candidates; unequal candidates, changed declaration, copied checker, source or extra unexpected file fail. No artifact mutation outside synthetic assigned fixtures.",
+      "requiredEvidence": ["EVIDENCE-04"]
+    }
+  ],
+  "requiredEvidence": [
+    {
+      "id": "EVIDENCE-01",
+      "type": "document",
+      "description": "Pre-edit approach, complete affected dependency/pin closure, actual base and legacy baseline captured before production edits",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-02",
+      "type": "test",
+      "description": "Fresh focused positive/negative/canonical and registered consumer checks plus unchanged legacy regression and strict transition controls",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-03",
+      "type": "command",
+      "description": "Actual typecheck/lint/format/documentation checks and synchronized exports",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-04",
+      "type": "command",
+      "description": "Fresh independent production build/all six unchanged budgets in generated fixture, exact input/link/scanner/dependency/artifact/trace identities and applicable unchanged guard evidence; original checkout remains unchanged throughout. Report sanitized build environment and non-OS-enforced link limitation honestly. The actual independent build and budgets retain independent03 attribution; support08/independent06 adds corrected complete trace collection and exact applicability, without relabelling the original wrapper FAIL.",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-05",
+      "type": "diff",
+      "description": "Complete diff/native identity and all reviewed inputs frozen before/after; original private inputs preserved",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-06",
+      "type": "document",
+      "description": "Complete verifier-authored native report with provenance and actual/inherited checks clearly distinguished",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    },
+    {
+      "id": "EVIDENCE-07",
+      "type": "document",
+      "description": "Consistent phase policy, original owner requirements, current status, execution pools and immediate AR10B visual target assignment",
+      "retention": "external-approved",
+      "sensitiveDataAllowed": false
+    }
+  ],
+  "productOwnerCheckpoint": {
+    "required": false,
+    "timing": "not-required",
+    "criteria": []
+  },
+  "stopConditions": [
+    {
+      "id": "STOP-01",
+      "condition": "Unapproved product/security/ownership change or hard scope breach; no second engine, provider call or acceptance relaxation",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-02",
+      "condition": "Measured additional next-operation storage plus unchanged2GiB reserve does not fit after eligible bounded cleanup; no broad scan",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-03",
+      "condition": "Managed substantive denial: preserve exact error and do not bypass",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-04",
+      "condition": "Required independent/native/review/final-head CI does not pass; no delivery waiver",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    },
+    {
+      "id": "STOP-05",
+      "condition": "No standalone density milestone: do not declare VQ1 complete before immediately assigned integrated real home/collection/PDP consumer; no automatic work outside approved VQ01",
+      "action": "STOP",
+      "owner": "sprint-coordinator"
+    }
+  ],
+  "commitPolicy": {
+    "commitAfterVerifierPassOnly": true,
+    "pushBeforeVerifierPassAllowed": false,
+    "failedWorkPrAllowed": false
+  },
+  "reviewPolicy": {
+    "independentVerifierRequired": true,
+    "automaticCodexReviewCount": 1,
+    "consolidatedCorrectionPasses": 1,
+    "secondAutomaticReviewAllowed": false
+  },
+  "mergePolicy": {
+    "dependenciesMergedFirst": true,
+    "sequential": true,
+    "greenCiRequired": true,
+    "explicitMergeAuthorityRequired": true,
+    "rebaseAllowed": false,
+    "forcePushAllowed": false
+  },
+  "nextTask": {
+    "taskId": "AR-10B",
+    "title": "Integrated photo-ready reusable storefront target consuming richer canonical choices",
+    "eligibility": "Immediately after AR09A technical merge on its actual accepted base; within VQ1 use existing registered home/collection/PDP/frame, approved rights-cleared asset/font pack and several independent choices. No paid call until complete phase zero-call readiness; preserve early craft and final owner checkpoints."
+  },
+  "fingerprintPolicy": {
+    "canonicalization": "RFC8785-JCS",
+    "hashAlgorithm": "SHA-256",
+    "domain": "veskify-task-contract-v1"
+  }
+}

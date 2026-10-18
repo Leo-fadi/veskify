@@ -1,0 +1,26 @@
+{
+  "editorial-led": {
+    "decisionFingerprint": "bounded-storefront-synthesis-v1_15603_b3ece9b56bc98bbbd0897793b9e6d4fc8cf6890aec4bb1f6fc047645996c3c0e",
+    "planFingerprint": "whole-storefront-plan-v1_54298_363371b701eef4c8e42480d161280e0a4c5085cd181c471e09d71373cdbd2bdb",
+    "proposalFingerprint": "v1_82971_06d1721051e5d4b4f59d366cfcfef8d083c77d069ea53b422f0b007e19628604",
+    "snapshotFingerprint": "v1_48683_b3c7d6f64c063d71f598975f02dbb43f0150fd3caf19e8d2c244e360d5b14817",
+    "protectedCommerceFingerprint": "v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+    "inputFingerprint": "v1_375600_126e8456427a14b71f13ea35f74b10b66928e52697b1df6bf01dfa34a832d9b4"
+  },
+  "commerce-led": {
+    "decisionFingerprint": "bounded-storefront-synthesis-v1_16270_3ac74acf6327db56057fe54fcc41968871abc8e422efabf8ec63d8ee5c8c19bd",
+    "planFingerprint": "whole-storefront-plan-v1_61974_921c464f4685e6d669c17a8216a5fdf8d8722ad10b89170da0a7fdc8a5aeebea",
+    "proposalFingerprint": "v1_92204_8f84aff8db8b642048033a23223afd2df33b4b6e72d4a3171c6f38adadaf0151",
+    "snapshotFingerprint": "v1_51453_da7bd4a89987677f505bcf34baf3a30b3eeb44085086e1c48bcac7b1d722c0a0",
+    "protectedCommerceFingerprint": "v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+    "inputFingerprint": "v1_375600_126e8456427a14b71f13ea35f74b10b66928e52697b1df6bf01dfa34a832d9b4"
+  },
+  "restrained-minimal": {
+    "decisionFingerprint": "bounded-storefront-synthesis-v1_15272_3ea6308b03ffd2b4788eeca02342671aaacf27f4c06fea994bff840184c5394e",
+    "planFingerprint": "whole-storefront-plan-v1_48054_1f96d8aab61eae762cc8c7ae0c9ada6d7c43a31ae667d94b91d119bd8f8fddf6",
+    "proposalFingerprint": "v1_74600_79aa7abd7b609586fd652487e2e9809327cf5088fcd0804eba10dcb6034b5b5a",
+    "snapshotFingerprint": "v1_45485_f252f8c6e38e96a7de5080e5bbabee38bbebe3eb362a4bf25e22e6abeed3cf61",
+    "protectedCommerceFingerprint": "v1_4219_8739a2d0714ef904e68fece51bd2f19ebd92adca57f2f6468b4ad1859e63921e",
+    "inputFingerprint": "v1_375600_126e8456427a14b71f13ea35f74b10b66928e52697b1df6bf01dfa34a832d9b4"
+  }
+}

@@ -9,6 +9,10 @@ import {
   type DesignDna,
 } from "@/domain/design-system";
 import type { StorefrontDesignDirectionId, StorefrontDesignSystemV1 } from "./contract";
+import {
+  expressiveVisualPreferencesV2Schema,
+  type ExpressiveVisualPreferencesV2,
+} from "./expressive-visual-preferences-v2";
 
 const radiusByCornerTreatment = {
   square: "square",
@@ -121,6 +125,23 @@ function applyRegisteredDensityDomain(
   });
 }
 
+function applyRegionalDensity(
+  input: DesignDna,
+  preferences: ExpressiveVisualPreferencesV2 | undefined,
+): DesignDna {
+  if (preferences === undefined) return input;
+  const parsed = expressiveVisualPreferencesV2Schema.parse(preferences);
+  return designDnaSchema.parse({
+    ...structuredClone(input),
+    density: {
+      ...structuredClone(input.density),
+      navigation: parsed.regionalDensity.navigation,
+      content: parsed.regionalDensity.content,
+      commerce: parsed.regionalDensity.commerce,
+    },
+  });
+}
+
 /** Materializes only server-registered values for a validated direction ID. */
 export function registeredBrandSystemForDirection(
   baseline: BrandSystem,
@@ -129,6 +150,7 @@ export function registeredBrandSystemForDirection(
   narrowing?: Readonly<{
     spacingDensity: "compact" | "standard" | "spacious";
     surfaceDepth: "flat" | "subtle" | "layered";
+    expressiveVisualPreferences?: ExpressiveVisualPreferencesV2;
   }>,
 ): BrandSystem {
   const direction = designSystem.directions.find((candidate) => candidate.id === directionId);
@@ -169,10 +191,13 @@ export function registeredBrandSystemForDirection(
             colour: structuredClone(migratedDesignDna.colour),
           }
         : migratedDesignDna;
-  const designDna = applyRegisteredDensityDomain(
-    directionalDesignDna,
-    selected.spacingDensity,
-    selected.surfaceDepth,
+  const designDna = applyRegionalDensity(
+    applyRegisteredDensityDomain(
+      directionalDesignDna,
+      selected.spacingDensity,
+      selected.surfaceDepth,
+    ),
+    narrowing?.expressiveVisualPreferences,
   );
   return brandSystemSchema.parse({
     ...materialized,
