@@ -1,9 +1,9 @@
 # Veskify Development Guide
 
-> **AR-00B visual-feedback policy:** Accepted at merge `fa6c200`. BATCH-18 / AR-06D was accepted and merged at 970b6cd00a7df90cd7b2ff1008916e8c602127d0. Its one real model call and one official input-count request remain the original generation attribution. BATCH-19 / AR-10A continues with zero additional paid calls and a separate owner visual checkpoint before merge.
+> **AR-00B visual-feedback policy:** Accepted at merge `fa6c200`. BATCH-18 / AR-06D was accepted and merged at 970b6cd00a7df90cd7b2ff1008916e8c602127d0. Its one real model call and one official input-count request remain the original generation attribution. BATCH-19 delivered AR-10A with acceptance as a bounded renderer improvement, not commercial quality. BATCH-20 / VQ-01 now develops the complete generated-storefront quality phase; the tracker owns its current status.
 > AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed.
 > AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed.
-> Original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is In progress under BATCH-19 launch on the accepted AR-06D merge. It uses the preserved generated candidate with zero additional paid calls; its own visual disposition, independent verification, review, CI and merge remain required.
+> Original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial.
 > The roadmap owns dependency order; the tracker owns status.
 > Historical B-01 next-task statements retain only their accepted-event meaning.
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
@@ -227,7 +227,53 @@ After mechanical QA, provide a compact review packet: approved prompt/context, e
 
 Record Leo's actual feedback verbatim or as a labelled faithful summary. Silence is not acceptance. Separate technical verification, visual review status and production readiness in the existing evidence ledger. Prioritize a small correction list by observed product effect; assign each repair to its original AR owner and link before/after requests and outputs. An invisible engineering change must identify its next observable consumer or concrete risk. Repeated failures require inspecting the first failing boundary, not repeated gesture or timeout experiments.
 
-A technical diagnostic may finish with rejected visual quality if its contract explicitly reports that result. Merchant-visible feature/family acceptance still requires the existing human checkpoint; no diagnostic PASS discharges commercial acceptance. Transfer and counterfactual checks must show reusable effects beyond palette/copy or one merchant. Preserve unknown, failed and unexecuted evidence honestly. Use task records and the existing ledger, not a new feedback service or orchestration framework. BATCH-18 launches AR-06D under its locked contract. One real model call and one official input-count request have executed; the owner has accepted the technical baseline only; final review, CI and merge remain pending.
+A technical diagnostic may finish with rejected visual quality if its contract explicitly reports that result. Merchant-visible feature/family acceptance still requires the existing human checkpoint; no diagnostic PASS discharges commercial acceptance. Transfer and counterfactual checks must show reusable effects beyond palette/copy or one merchant. Preserve unknown, failed and unexecuted evidence honestly. Use task records and the existing ledger, not a new feedback service or orchestration framework. BATCH-18 delivered AR-06D and BATCH-19 delivered AR-10A. The original one model call and one input-count request remain historical attribution; AR-10A added no paid calls. The owner accepted both bounded increments without granting commercial quality. BATCH-20 now supplies the explicitly authorized complete quality phase below.
+
+### BATCH-20 / VQ-01 bounded phase delivery
+
+The 18 October 2026 launch authorizes one complete generated-storefront quality phase, not the
+former isolated navigation-density experiment. Use necessary atomic children under existing AR
+owners, one branch/PR each and one implementation writer in the original checkout. The tracker
+alone owns current status; [the phase plan](BATCH_20_VQ_01.md) records outcomes and limits. The
+roadmap may interleave provider work after a complete supported primary path exists. Original
+parent acceptance, family activation and production-readiness gates remain binding.
+
+Lock each child's exact paths, base, commands, evidence outputs and native schema before edits.
+An external immutable initial contract and a matching repository documentary copy are authorized
+for this phase. Preservation-first successors archive actual prior bytes, validate the entire native
+contract, and record raw/canonical identities before replacing only current documentary copies.
+Never rewrite a historical lock, verdict, failure or execution identity. Up to three consolidated
+in-scope correction passes per child use that existing successor mechanism; retain the native
+schema's fixed review-policy value rather than inventing new constants.
+
+Pause implementation, bind the complete working tree, and explicitly assign independent check
+execution plus enumerated cache/build/report outputs in the original checkout. The verifier must
+confirm active role/workspace compatibility, execute checks and author its complete truthful
+native report. Coordinator execution is never relabelled independent. After native reconciliation,
+commit/push one sanitized public PR, use one automatic review, resolve findings and require every
+final-head CI check before an expected-head-protected merge. Standing owner authority permits
+technically accepted intermediate delivery and the next eligible child without a new launch.
+No override, rebase, second review request or final visual-acceptance inference is permitted.
+
+Show an early integrated developer-directed home/collection/PDP target and usable preview,
+then actual generated primary/contrast/transfer stores. Keep deterministic capability proof
+separate from live prompt fidelity. Final phase completion requires the owner's actual visual
+disposition; up to two consolidated feedback rounds stay inside the phase pools. Continue safe
+work while awaiting early taste feedback, but do not spend the live budget on an unapproved target.
+
+Retain one phase execution ledger: 48 browser invocations / 20 builds, reserving at least 8 / 4
+for final independent proof and feedback. One worker and zero automatic retries; at most three
+purposeful attempts per unchanged failure class and three separately recorded API-readiness
+attempts per episode. Preserve the same prepared server for visual proof. Remeasure additional
+next-operation demand plus the unchanged 2 GiB OS reserve; do not double-count existing inputs.
+Retire only verified inactive disposable task outputs with preserved unique proof. No exhausted
+cleanup sweeps, shared-store cleanup or VerifyAI access.
+
+Paid work begins only after zero-call readiness under the exact phase model/token/attempt/spend
+caps in the phase plan. No task may reset the phase counters. Failure or uncertainty consumes the
+attempt and conservative reservation. Refuse unknown/executable intent and protected commerce
+changes; keep proposal isolation and explicit Accept, Save and Publish. No generated Puck tree,
+parallel registry/compiler, arbitrary code or customer deployment is authorized.
 
 ### Contract-driven sprint authority
 

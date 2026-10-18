@@ -89,5 +89,25 @@
       "archivePath": "tests/fixtures/ar-06a/p10b-19a-10c-architecture-closure.pre-ar-06a.ts.txt",
       "successorSha256": "17b006ac8a607f262762992cfad150e42a73412acb83240ba2ee5326956aaea9"
     }
+  ],
+  "successorTransitions": [
+    {
+      "taskId": "AR-09A",
+      "path": "src/application/bounded-storefront-synthesis/contract.ts",
+      "predecessorSuccessorSha256": "79f8521e808fe48d42ff085f2c1d3e847a460ee981560383be4c41b1e69d2f85",
+      "archivePath": "tests/fixtures/ar-09a/synthesis-contract.pre-ar-09a.ts.txt",
+      "successorSha256": "ab37a888cc04433c7c607888d6113eaa99662a9a72b9cc395e6643048bdb4a1b",
+      "predecessorTaskId": "AR-02M",
+      "baseCommit": "ea8d077c4eaa6f5e19d04965ad77efefda5d3571"
+    },
+    {
+      "taskId": "AR-09A",
+      "path": "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+      "predecessorSuccessorSha256": "dafd8210fb868797d7ba8ae48b948b5f816e68627bff0d47433d9cb764dbdcbe",
+      "archivePath": "tests/fixtures/ar-09a/compatible-direction-selections.pre-ar-09a.ts.txt",
+      "successorSha256": "95f9c0d8eb6a8774c1d29a020bb5a217158607d846c5d0bd99ca437b38e69528",
+      "predecessorTaskId": "AR-02M",
+      "baseCommit": "ea8d077c4eaa6f5e19d04965ad77efefda5d3571"
+    }
   ]
 }

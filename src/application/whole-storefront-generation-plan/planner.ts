@@ -1,4 +1,8 @@
 import {
+  expressiveVisualPreferencesV2Schema,
+  type ExpressiveVisualPreferencesV2,
+} from "@/application/storefront-design-system/expressive-visual-preferences-v2";
+import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
 } from "@/application/storefront-design-system/token-refinement";
@@ -2430,6 +2434,7 @@ export type WholeStorefrontGenerationPlanOptions = Readonly<{
   designSystemNarrowing?: Readonly<{
     spacingDensity: "compact" | "standard" | "spacious";
     surfaceDepth: "flat" | "subtle" | "layered";
+    expressiveVisualPreferences?: ExpressiveVisualPreferencesV2;
   }>;
   tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
@@ -2442,6 +2447,9 @@ export function createWholeStorefrontGenerationPlan(
   options: WholeStorefrontGenerationPlanOptions = {},
 ): WholeStorefrontGenerationPlan {
   const input = parsePlanningInput(inputValue);
+  const expressiveVisualPreferences = expressiveVisualPreferencesV2Schema
+    .optional()
+    .parse(options.designSystemNarrowing?.expressiveVisualPreferences);
   const pageBlueprintSelectionOverrides = [
     ...wholeStorefrontPageBlueprintSelectionOverridesSchema.parse(
       options.pageBlueprintSelectionOverrides ?? [],
@@ -2486,11 +2494,12 @@ export function createWholeStorefrontGenerationPlan(
     tokenOnly &&
     (pageBlueprintSelectionOverrides.length > 0 ||
       requestedApprovedAssetRoleSelections.length > 0 ||
-      dynamicCommerceSelection)
+      dynamicCommerceSelection ||
+      expressiveVisualPreferences !== undefined)
   ) {
     invalid(
       "invalid-component-contract",
-      "Token-only refinement cannot carry structural PageBlueprint or dynamic-commerce selections.",
+      "Token-only refinement cannot carry structural PageBlueprint, dynamic-commerce or regional design selections.",
     );
   }
   const target = createWholeStorefrontGenerationTarget(input);
@@ -2543,6 +2552,7 @@ export function createWholeStorefrontGenerationPlan(
       options.designSystemNarrowing?.spacingDensity ?? selectedDirection.spacingDensity,
     cornerTreatment: selectedDirection.cornerTreatment,
     surfaceDepth: options.designSystemNarrowing?.surfaceDepth ?? selectedDirection.surfaceDepth,
+    ...(expressiveVisualPreferences === undefined ? {} : { expressiveVisualPreferences }),
     componentSelections: selectedDirection.componentSelections,
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
@@ -3183,8 +3193,30 @@ export function createWholeStorefrontGenerationPlan(
     navigationItemId: item.id,
     disposition: "retained" as const,
   }));
+  const regionalReviewChanges: string[] = [];
+  if (expressiveVisualPreferences !== undefined) {
+    const density = expressiveVisualPreferences.regionalDensity;
+    if (input.brief.languagePlan.primaryLanguage === "fi") {
+      const spacing = { compact: "tiiviit", balanced: "tasapainoiset", spacious: "väljät" };
+      regionalReviewChanges.push(
+        `Navigoinnin välit ovat ${spacing[density.navigation]}.`,
+        `Sivun sisällön välit ovat ${spacing[density.content]}.`,
+        `Tuoteselailun ja ostovalintojen välit ovat ${spacing[density.commerce]}.`,
+      );
+    } else {
+      const spacing = { compact: "compact", balanced: "balanced", spacious: "generous" };
+      regionalReviewChanges.push(
+        `Navigation uses ${spacing[density.navigation]} spacing.`,
+        `Page content uses ${spacing[density.content]} spacing.`,
+        `Product browsing and purchase controls use ${spacing[density.commerce]} spacing.`,
+      );
+    }
+  }
   const reviewSummary = {
-    sharedDesignSystemChanges: sharedDesignDirection.consistencyRules,
+    sharedDesignSystemChanges: [
+      ...sharedDesignDirection.consistencyRules,
+      ...regionalReviewChanges,
+    ],
     pages: pagePlans.map((page) => ({ pageId: page.pageId, disposition: page.disposition })),
     components: allComponents
       .map((component) => ({
@@ -3295,6 +3327,9 @@ export function validateWholeStorefrontGenerationPlan(
     designSystemNarrowing: {
       spacingDensity: plan.designSystemSelection.spacingDensity,
       surfaceDepth: plan.designSystemSelection.surfaceDepth,
+      ...(plan.designSystemSelection.expressiveVisualPreferences
+        ? { expressiveVisualPreferences: plan.designSystemSelection.expressiveVisualPreferences }
+        : {}),
     },
     ...(homepageMaterialization?.commercialHomepage
       ? {
@@ -3344,6 +3379,15 @@ export async function acceptWholeStorefrontPlanningResult(
     invalid("stale-result", "The storefront changed while its generation plan was being prepared.");
   }
   const validated = validateWholeStorefrontGenerationPlan(inputValue, received);
+  // This provider request advertises registered directions, not request-side
+  // regional selection authority. Trusted exact synthesis validates that
+  // separate authority before reaching the planner directly.
+  if (validated.designSystemSelection.expressiveVisualPreferences !== undefined) {
+    invalid(
+      "provider-invented-target",
+      "Regional design choices require request-side exact-selection authority.",
+    );
+  }
   if (directionId !== undefined && validated.fingerprint !== expected.fingerprint) {
     invalid(
       "provider-invented-target",

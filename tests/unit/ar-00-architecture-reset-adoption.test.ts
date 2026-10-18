@@ -422,7 +422,7 @@ describe("existing delivery-ownership declarations", () => {
 });
 
 describe("post-pilot repository state and PR lifecycle", () => {
-  it("accepts AR-06D delivery and active AR-10A without asserting commercial acceptance", () => {
+  it("accepts AR-06D and AR-10A delivery with active VQ-01 without asserting commercial acceptance", () => {
     const directory = fixture();
     try {
       const tracker = readFileSync(
@@ -432,7 +432,8 @@ describe("post-pilot repository state and PR lifecycle", () => {
       expect(tracker).toContain("AR-00B is Baseline / closed. Its accepted merge is fa6c200.");
       expect(tracker).toContain("AR-06C is Baseline / closed");
       expect(tracker).toContain("AR-06D is Baseline / closed");
-      expect(tracker).toContain("AR-10A is In progress under BATCH-19 launch");
+      expect(tracker).toContain("AR-10A is Baseline / closed.");
+      expect(tracker).toContain("AR-09A is In progress under BATCH-20 / VQ-01");
       expect(tracker).toContain(
         "One real model call and one official input-count request have executed.",
       );
@@ -656,7 +657,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(readmePath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is In progress under BATCH-19 launch on the accepted AR-06D merge. It uses the preserved generated candidate with zero additional paid calls; its own visual disposition, independent verification, review, CI and merge remain required.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial.",
         successor,
       );
       expect(changed).not.toBe(original);
@@ -673,7 +674,7 @@ describe("AR-00 architecture-reset adoption guard", () => {
     try {
       const original = readFileSync(trackerPath, "utf8");
       const changed = original.replace(
-        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is In progress under BATCH-19 launch on the accepted AR-06D merge. It uses the preserved generated candidate with zero additional paid calls; its own visual disposition, independent verification, review, CI and merge remain required.",
+        "BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial.",
         "AR-30 is the exact next selected child after the pilot.",
       );
       expect(changed).not.toBe(original);
@@ -991,12 +992,12 @@ describe("AR-00B visual-feedback eligibility", () => {
     [
       "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
       "One real model call and one official input-count request have executed.",
-      /accepted AR-06D baseline and active AR-10A visual review are required/,
+      /accepted AR-06D baseline, accepted AR-10A and active AR-09A are required/,
     ],
     [
       "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
       "The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete.",
-      /accepted AR-06D baseline and active AR-10A visual review are required/,
+      /accepted AR-06D baseline, accepted AR-10A and active AR-09A are required/,
     ],
   ])("rejects removal of the bounded policy in %s", (relativePath, clause, error = /missing/) => {
     const directory = fixture();
@@ -1040,6 +1041,28 @@ describe("AR-00B visual-feedback eligibility", () => {
       expect(changed).toContain("### AR-18 —");
       writeFileSync(path, changed);
       expect(() => check(directory)).toThrow(/early-slice owner crosswalk/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("VQ-01 complete phase policy", () => {
+  it.each([
+    ["AGENTS.md", "Tests, schemas, child PRs and navigation density do not complete VQ-01."],
+    ["docs/DEVELOPMENT_GUIDE.md", "Final phase completion requires the owner's actual visual"],
+    ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", "| VQ4 |"],
+  ])("rejects removal of the bounded phase safeguard in %s", (source, clause) => {
+    const directory = fixture();
+    try {
+      const path = join(directory, source);
+      const content = readFileSync(path, "utf8");
+      const changed = source.endsWith("ROADMAP.md")
+        ? content.replace(/^\| VQ4\s*\|.*$/mu, "")
+        : content.replace(clause, "Removed safeguard.");
+      expect(changed).not.toBe(content);
+      writeFileSync(path, changed);
+      expect(() => check(directory)).toThrow();
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

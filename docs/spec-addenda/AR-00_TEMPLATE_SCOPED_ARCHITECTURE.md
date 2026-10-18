@@ -54,7 +54,7 @@ The first enabled complete families are **product-first-commerce** and **editori
 
 The [development roadmap](../VESKIFY_DEVELOPMENT_ROADMAP.md) is the delivery-order authority and contains the complete AR outcome/dependency/acceptance/non-goal/rollback plan. The [delivery tracker](../VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md) alone owns task status; this addendum and other documents are status projections.
 
-AR-02M merged in PR #255 and BATCH-10 closeout is complete. AR-05B merged in PR #258 and BATCH-13 closeout is complete. AR-06A and AR-06B accepted merges are verified; accepted AR-06C delivery is verified; its historical verification record remains event evidence. AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 depends only on AR-01 and is not serialized behind visual work. AR-23 is eligible alongside later eligible work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is In progress under BATCH-19 launch on the accepted AR-06D merge. It uses the preserved generated candidate with zero additional paid calls; its own visual disposition, independent verification, review, CI and merge remain required. AR-08 closes the foundational refactor evidence, AR-22 accepts engine quality, and AR-28 accepts the integrated pilot. Retirement occurs only after caller inventory, persisted-version support, replacement behavior, and regression evidence; names, apparent deadness, or an old hash guard are insufficient.
+AR-02M merged in PR #255 and BATCH-10 closeout is complete. AR-05B merged in PR #258 and BATCH-13 closeout is complete. AR-06A and AR-06B accepted merges are verified; accepted AR-06C delivery is verified; its historical verification record remains event evidence. AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 depends only on AR-01 and is not serialized behind visual work. AR-23 is eligible alongside later eligible work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial. AR-08 closes the foundational refactor evidence, AR-22 accepts engine quality, and AR-28 accepts the integrated pilot. Retirement occurs only after caller inventory, persisted-version support, replacement behavior, and regression evidence; names, apparent deadness, or an old hash guard are insufficient.
 
 ## 6. Requirement and evidence relationship
 
@@ -531,6 +531,52 @@ AR-06D delivered the genuine generated-storefront visual review loop under BATCH
 Before any such launch, use a zero-call preflight and obtain explicit owner authorization for provider/model, maximum calls/attempts/tokens/cost, credentials boundary, request identity, and capture retention. The review packet includes approved context, request/provider/intent/candidate/source identities, accepted or substituted intent, local viewing instructions, 375/768/1024/1440 EN/FI captures where supported, directly inspectable original images, compact sanitized boards, limitations, and Leo’s actual assessment.
 
 Early review eligibility does not close parent work. AR-06 supplies the guarded static render/edit/save foundation; AR-07 supplies exact canonical assembly; AR-09–15 supply reusable visual and commerce capabilities; AR-18/19 supply provider/compiler and Studio progress; AR-21 supplies bounded capture/critique; AR-22 remains the engine-quality gate. AR-08 remains a required foundational completion gate, but it is not a blanket prerequisite for a separately safe internal review. AR-16/17 and AR-23–30 remain visible with their original acceptance, family, host, lifecycle, and production gates intact.
+
+## 18.2 BATCH-20 / VQ-01 product-quality phase — 18 October 2026
+
+The owner accepts AR-10A as a bounded renderer improvement for continuation, not commercially
+satisfactory design. VQ-01 replaces the isolated navigation-density successor with complete
+reusable compositions, richer non-executable design intent, approved content/media/fonts,
+internal generation/feedback/draft continuity, contrasting and transfer outputs. Navigation
+density is an internal counterfactual control, never the phase milestone.
+
+Extend existing provider intent and canonical compilation with explicit version dispatch.
+BrandSystem / Design DNA, PageBlueprint and StorefrontSnapshot remain the sole authorities;
+registered components render the same accepted values. Provider-visible choices may describe
+bounded regional layout, typography, image treatment, composition and factual localized copy,
+never executable code or a second page tree. Reject unsupported required choices or report
+explicit substitutions. Preserve legacy bytes and behavior when new preferences are absent.
+An expressed choice must survive compiler selection, proposal validation and rendered consumption.
+
+Develop complete product-first-commerce and editorial-offset interpretations through existing
+owners. Dynamic regions require real executable commerce anatomy, generic options and protected
+bindings; do not duplicate indivisible presentations or relabel legacy flat rendering as composed
+v2. Original AR-06/07/09–22 responsibilities and T01–T24 acceptance remain unchanged. Internal
+review eligibility, parent completion, family activation and production readiness stay separate.
+
+Approved fictional photo-ready inputs, up to twelve selected rights-cleared images and two
+licensed local font families may replace the experiment's input pack before freezing it. Preserve
+L0 unchanged; capture C0 with the new fixed inputs through predecessor behavior where compatible,
+then N through the actual provider/compiler. Hold catalogue facts, assets and copy fixed within
+matched comparisons; attribute any approved content or presentation successor explicitly. Do not
+invent commerce claims, copy trademarks into a fictional identity or manually finish AI output.
+
+Persist safe actual request/output/compiled-decision/candidate lineage atomically using existing
+operational ownership. Reopen from validated artifacts without another generation. Reuse existing
+Studio/proposal/feedback/Accept/Reject/Save/reload flows and repository transactions. This authorizes
+bounded internal continuity, not a second store, publication enablement or normal tenant rollout.
+
+The roadmap schedules six outcome packages, not six mandatory PRs: richer canonical controls and
+an integrated target; complete contrasting compositions; genuine staged generation; feedback/draft
+continuity; contrast/transfer proof; owner feedback and final quality disposition. One writer and
+independent execution remain mandatory. The guide defines standing technical intermediate merge
+authority, preservation-first succession, phase pools and exactly one automatic review per PR.
+
+An early integrated target is developer-directed capability evidence, not AI output. Actual
+provider-backed A/B and transfer results, complete cross-page mechanics, independent original-image
+inspection and the owner's final visual disposition are conjunctive completion gates. Up to two
+consolidated feedback rounds are included. A technically passing but unattractive result is an
+incomplete quality phase. No additional phase or production rollout is automatically authorized.
 
 ## 19. Adoption
 

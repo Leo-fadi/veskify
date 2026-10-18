@@ -27,6 +27,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 VQ-01 | 18 October 2026 | Owner-approved BATCH-20 complete product-quality phase | Extend bounded non-executable intent through existing canonical compilation and reusable complete-store compositions; preserve legacy/canonical safety, original parent gates, actual visual acceptance and bounded paid authority. |
 | 1.3.0 AR-00B | 29 September 2026 | Owner-approved visual-feedback-led delivery amendment; effective on accepted merge | Amend delivery order through bounded early slices and real generated-store review while preserving every original AR/T requirement, canonical safety and separate visual/production gates; select AR-06D only. |
 | 1.3.0 P10B-19A-10C | 4 September 2026 | P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate | Execute the sorted retained 26-file authority from frozen A-10A/A-10B1/A-10B2 evidence; preserve accepted 24/76/9, 126/72 and A-09 metrics, 11 predecessor files, the 21-section/four-diagram/73-child architecture lock and every production/runtime zero; freeze the checked accepted-closure manifest and external mirror; record exact product-owner architecture acceptance and ten ordered limitations; close A-10 and P10B-19A with zero production or merchant-visible change and make P10B-19B-01 exact next without beginning it. |
 | 1.3.0 P10B-19A-10B2 | 4 September 2026 | P10B-19A-10B2 Fail-Closed Cross-Authority Failure Matrix and A-10B Closure | Freeze 36 exact ordered owner-first negative cases across A-03 through A-09C from fresh A-10B1 authority; require one atomic corruption, exact bounded failure, zero downstream phases, partial outputs, source mutations, repairs, fallbacks and external activity; retain strict legacy-v1/v2 isolation and all nine production-v2 zeroes; preserve byte-identical A-10A/A-10B1 and accepted 24/76/9, 126/72 and A-09 authority; add zero production/runtime or merchant-visible change; close parent A-10B while A-10/P10B-19A remain Partial and make A-10C exact next. |
@@ -1234,7 +1235,32 @@ supplies those later bounded acceptance facts. Details are in
 
 The incorporated AR-00 addendum permits an internal, bounded review loop through an actual provider intent, canonical compilation and isolated pending proposal, registered rendering, mechanical QA, and retained owner feedback. It retains StorefrontSnapshot, BrandSystem, PageBlueprint, registered components, protected Vesko commerce, proposal isolation, and explicit Accept/Save/Publish as the sole authorities. An inspectable genuine output, owner-accepted visual quality, and production readiness remain distinct.
 
-AR-00B is Baseline / closed at accepted merge `fa6c200`. AR-06D is Baseline / closed at PR #263 merge `970b6cd00a7df90cd7b2ff1008916e8c602127d0`. It delivered the guarded same-running-server-process and authorized-P04-request-context P10B-16P-04 run-to-cross-page review packet. AR-10A now re-renders its exactly preserved candidate for reusable visual corrections, with zero additional paid calls and its own owner checkpoint before merge. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. It may use the existing legacy/dynamic registered baseline, but does not prove composed dynamic rendering, normal tenant activation, publication, or AR-06 closure.
+AR-00B is Baseline / closed at accepted merge `fa6c200`. AR-06D is Baseline / closed at PR #263 merge `970b6cd00a7df90cd7b2ff1008916e8c602127d0`. It delivered the guarded same-running-server-process and authorized-P04-request-context P10B-16P-04 run-to-cross-page review packet. AR-10A delivered reusable corrections to that exactly preserved candidate with zero additional paid calls, accepted at PR #264 merge `ea8d077c4eaa6f5e19d04965ad77efefda5d3571` as a bounded improvement, not commercial quality. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. It may use the existing legacy/dynamic registered baseline, but does not prove composed dynamic rendering, normal tenant activation, publication, or AR-06 closure.
+
+### 10.21B BATCH-20 / VQ-01 generated-storefront quality phase
+
+The incorporated addendum §18.2 authorizes a complete internal quality phase through existing
+AR owners. Richer bounded non-executable intent, approved factual EN/FI content, local licensed
+fonts and rights-cleared imagery compile through existing BrandSystem / Design DNA, PageBlueprint,
+StorefrontSnapshot and isolated proposals. No second compiler, registry, canonical tree or Puck
+persistence is introduced. Version dispatch is explicit; absent new fields preserves legacy
+behavior. Required unsupported choices fail or receive an explicit diagnosed substitution.
+
+AR-09A introduces explicit version `2.0.0` regional preferences over the existing navigation,
+content and commerce density fields. The registered compatibility tuple remains unchanged; the
+overlay is validated separately and bound through selection, plan, operation and final snapshot.
+This is canonical capability proof, not new provider-wire support or visual-quality acceptance.
+AR-10B is the immediately assigned integrated home/collection/PDP consumer, including approved
+photo/font input and actual preview proof. The phase must proceed to complete reusable structures,
+real generation, contrasting/transfer output and feedback/save/reopen continuity.
+
+The original AR/T responsibilities remain intact. Early review does not close AR-06, activate
+families or establish production readiness. Preserve the old generated L0, disclose input changes
+in C0, and retain actual provider-to-candidate lineage for N. A deterministic developer-directed
+target and a real generated result have distinct attribution. The owner reviews the early complete
+target and gives the final quality disposition; tests and PRs cannot substitute for either.
+The roadmap owns sequencing, tracker owns status and development guide owns the bounded workflow.
+See [VQ-01](BATCH_20_VQ_01.md) for fixed outcomes, execution limits and all nine completion gates.
 
 ### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance
 

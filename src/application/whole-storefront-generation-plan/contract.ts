@@ -24,6 +24,7 @@ import {
 import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates/contract";
 import { registeredTokenRefinementPlanSchema } from "@/application/storefront-design-system/token-refinement";
 import { storefrontDesignSystemV1Schema } from "@/application/storefront-design-system/contract";
+import { expressiveVisualPreferencesV2Schema } from "@/application/storefront-design-system/expressive-visual-preferences-v2";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import {
   commercialHomepageProfileAuthoritySchema,
@@ -394,6 +395,7 @@ export const wholeStorefrontDesignSystemSelectionSchema = z
     spacingDensity: z.enum(["compact", "standard", "spacious"]),
     cornerTreatment: z.enum(["square", "soft", "rounded"]),
     surfaceDepth: z.enum(["flat", "subtle", "layered"]),
+    expressiveVisualPreferences: expressiveVisualPreferencesV2Schema.optional(),
     componentSelections: storefrontDesignDirectionComponentSelectionsSchema,
     collectionPresentation: z
       .object({
@@ -503,6 +505,16 @@ export const wholeStorefrontGenerationPlanSchema = z
   })
   .strict()
   .superRefine((plan, context) => {
+    if (
+      plan.tokenRefinementPlan !== null &&
+      plan.designSystemSelection.expressiveVisualPreferences !== undefined
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["designSystemSelection", "expressiveVisualPreferences"],
+        message: "Token-only plans cannot carry regional design preferences.",
+      });
+    }
     if ((plan.requestClass === "tokenOnlyRefinement") !== (plan.tokenRefinementPlan !== null)) {
       context.addIssue({
         code: "custom",
