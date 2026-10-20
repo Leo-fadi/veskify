@@ -1,5 +1,19 @@
 # Veskify Development Guide
 
+> **CR-00 current policy (proposed):** The corrective roadmap and tracker supersede all historical
+> exact-next schedule statements in this document. BATCH-20 is paused and AR-10B is Paused;
+> uncommitted work is preserved and not visually accepted. Approved future batches use one writer, declared independent
+> check execution and verifier-authored reports, preservation-first routine administration, exactly
+> one automatic review, final-head CI and expected-head-protected merge. Owner approval remains
+> required for platform choice, visual acceptance, deployment and spend. These are execution rules,
+> not authority to launch a CR task.
+
+> The roadmap owns dependency order; the tracker owns current status.
+
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
 > **AR-00B visual-feedback policy:** Accepted at merge `fa6c200`. BATCH-18 / AR-06D was accepted and merged at 970b6cd00a7df90cd7b2ff1008916e8c602127d0. Its one real model call and one official input-count request remain the original generation attribution. BATCH-19 delivered AR-10A with acceptance as a bounded renderer improvement, not commercial quality. BATCH-20 / VQ-01 now develops the complete generated-storefront quality phase; the tracker owns its current status.
 > AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed.
 > AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed.
@@ -9,6 +23,8 @@
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
+
+<!-- CR00 retained-history end -->
 
 **Version:** 1.3.0
 **Aligned with:** `docs/VESKIFY_SDD.md` and `AGENTS.md`
@@ -229,6 +245,10 @@ Record Leo's actual feedback verbatim or as a labelled faithful summary. Silence
 
 A technical diagnostic may finish with rejected visual quality if its contract explicitly reports that result. Merchant-visible feature/family acceptance still requires the existing human checkpoint; no diagnostic PASS discharges commercial acceptance. Transfer and counterfactual checks must show reusable effects beyond palette/copy or one merchant. Preserve unknown, failed and unexecuted evidence honestly. Use task records and the existing ledger, not a new feedback service or orchestration framework. BATCH-18 delivered AR-06D and BATCH-19 delivered AR-10A. The original one model call and one input-count request remain historical attribution; AR-10A added no paid calls. The owner accepted both bounded increments without granting commercial quality. BATCH-20 now supplies the explicitly authorized complete quality phase below.
 
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
 ### BATCH-20 / VQ-01 bounded phase delivery
 
 The 18 October 2026 launch authorizes one complete generated-storefront quality phase, not the
@@ -274,6 +294,8 @@ caps in the phase plan. No task may reset the phase counters. Failure or uncerta
 attempt and conservative reservation. Refuse unknown/executable intent and protected commerce
 changes; keep proposal isolation and explicit Accept, Save and Publish. No generated Puck tree,
 parallel registry/compiler, arbitrary code or customer deployment is authorized.
+
+<!-- CR00 retained-history end -->
 
 ### Contract-driven sprint authority
 

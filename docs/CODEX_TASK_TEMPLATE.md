@@ -1,5 +1,10 @@
 # Codex Task Template
 
+> **CR-00 proposed use:** This template does not launch a task. A future corrective task must name
+> its outcome/current consumer, exact foundation-decision dependencies, paid/service authority when
+> applicable, independent execution outputs, failure routing and owner checkpoints for platform,
+> visual acceptance, deployment or spend. Historical exact-next text cannot fill those fields.
+
 Use this template for every Veskify implementation task.
 
 Before implementation, instantiate and lock

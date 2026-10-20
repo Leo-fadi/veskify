@@ -1,5 +1,26 @@
 # Veskify Current-State Truth Audit
 
+> **CR-00 current-state reading rule (proposed):** Capability claims use the separate dimensions
+> implemented, reachable, provider-expressible, rendered, editable/saveable, technically verified,
+> owner-accepted and production-integrated. The tracker owns current status: BATCH-20 is paused,
+> AR-10B is Paused; uncommitted work is not visually accepted. AR-09A is Baseline / closed.
+> Retained exact-next statements below are historical observations, not current scheduling.
+
+## CR-00 reconciliation at verified main
+
+Main `7d01380b70455b7e28e836248bb385a20d6f54f3` contains accepted AR-09A canonical regional
+preference propagation, not a new provider-wire contract. The current coordinator invokes the
+provider before final materialization. Existing profiles and dynamic archetypes are real; the
+new complete composed dynamic path and normal lifecycle are not established by static proof.
+The [current capability dimensions](VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md#cr-00-current-capability-reconciliation)
+separate these claims using accepted reports. AR-10B remains preserved/uncommitted and unaccepted.
+This reconciliation does not rerun historical tests or change their recorded outcomes. The
+September audit below remains a dated record, not a competing current schedule or new acceptance.
+
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
 > **AR-00 scope note:** This point-in-time audit retains P10B-19A-10C's historical exact-next
 > statement as evidence of that accepted event. Current reset scheduling is projected by the
 > SDD addendum, roadmap, and tracker. Effective upon accepted merge of AR-06A, the repository
@@ -10,6 +31,8 @@
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
+
+<!-- CR00 retained-history end -->
 
 **Audit date:** 4 September 2026
 

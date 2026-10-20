@@ -1,5 +1,26 @@
 # Veskify Development Delivery Tracker
 
+> **CR-00 current status block (proposed; owner adoption/merge pending):** This block is the sole
+> current status authority on adoption. CR-00 is **Prepared — adoption/owner merge pending**;
+> CR-01 and CR-02 are **Planned — separate launch required**; CR-03 through CR-19 are **Planned**.
+> BATCH-20 / VQ-01 is **PAUSED**. AR-10B is Paused; its local uncommitted work is **not visually accepted**. It does not establish accepted/merged work or authority to resume. AR-09A is Baseline / closed. Its accepted merge is `7d01380b70455b7e28e836248bb385a20d6f54f3`.
+>
+> AR-02, AR-03, AR-04 and AR-05 are **Baseline / closed**. Accepted AR-06A/B/C/D and AR-09A
+> children are closed at their recorded merges; AR-06 is Partial; its retained
+> lifecycle, dynamic-commerce, normal-Studio and publication obligations. No historical exact-next
+> statement, including the BATCH-20 schedule below, is current eligibility. The roadmap is the one
+> current corrective order; no CR task is complete or launched by this adoption. The tracker owns
+> current status; the roadmap owns dependency order.
+
+> **Historical status record:** The following AR-00B/BATCH-20 text is retained for its original
+> attribution and evidence. It is not the current status block and must not be read as authorization
+> to resume BATCH-20 or as visual acceptance of AR-10B.
+> The tracker owns current status; the roadmap owns dependency order.
+
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
 > **AR-00B visual-feedback policy amendment:** Accepted at merge `fa6c200`. BATCH-18 / AR-06D was accepted and merged at 970b6cd00a7df90cd7b2ff1008916e8c602127d0. Its one real model call and one official input-count request remain the original generation attribution. BATCH-19 delivered AR-10A with acceptance as a bounded renderer improvement, not commercial quality. BATCH-20 / VQ-01 now develops the complete generated-storefront quality phase; the tracker owns its current status.
 > **AR-00 current status authority:** **Baseline / closed.** AR-01 is **Baseline / closed.** AR-02A is **Baseline / closed.** AR-02B is **Baseline / closed.** AR-02C is **Baseline / closed.** AR-02D is **Baseline / closed.** AR-02E is **Baseline / closed.** AR-02F is **Baseline / closed.** AR-02G is **Baseline / closed.** AR-02H is **Baseline / closed.** AR-02I is **Baseline / closed.** AR-02J is **Baseline / closed.** AR-02K is **Baseline / closed.** AR-02L is **Baseline / closed.** AR-02M is **Baseline / closed.**
 > AR-02 is **Baseline / closed**; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is **Baseline / closed**; original same-input characterization and separate ownership are verified.
@@ -8,6 +29,8 @@
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
+
+<!-- CR00 retained-history end -->
 
 AR-05 decomposition: [AR-05A design](AR_05_COMPOSITION_DESIGN.md) and
 [implementation evidence](AR_05A_IMPLEMENTATION_REPORT.md) cover the strict compiled

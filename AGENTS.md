@@ -163,6 +163,15 @@ Use this priority:
 
 ### 8.0 AR-00 adopted architecture policy
 
+**CR-00 proposed current policy.** The tracker owns current status and the corrective roadmap owns
+delivery order. BATCH-20 is paused; AR-10B remains preserved uncommitted work without visual
+acceptance. Historical exact-next/decomposition prose below is evidence, not activation authority.
+For a separately owner-approved corrective batch: keep one implementation writer, pause writers
+for independent declared check execution and verifier-authored reports, preserve predecessors
+before routine administrative successors, use exactly one automatic review, and require final-head
+CI plus expected-head protection. Platform/foundation choice, paid limits, visual acceptance,
+deployment and material scope remain owner gates. CR-00 does not launch CR-01/02.
+
 When AR-00 is adopted, its incorporated SDD addendum governs future template-scoped compilation,
 bounded operational persistence, one-concept default, two initial families, and staged AR delivery.
 The roadmap remains the delivery-order authority and the tracker remains the sole status authority.
@@ -174,6 +183,10 @@ child after the preceding child is accepted and merged. It may reuse one worktre
 after a clean boundary; concurrent writing still requires separate worktrees. Workers and verifiers
 stop at their child checkpoint. Each merge remains explicit owner authority.
 
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
 For the explicitly approved BATCH-20 / VQ-01 only, the coordinator delivers one complete
 product-quality phase through necessary atomic children in this original checkout. The owner
 has authorized technically accepted intermediate merges after independent/native PASS, one
@@ -184,6 +197,8 @@ The early integrated target and final generated-storefront visual acceptance rem
 owner checkpoints. Tests, schemas, child PRs and navigation density do not complete VQ-01.
 See the development guide, incorporated SDD amendment and current tracker; no next phase,
 new worktree, paid-limit expansion or production rollout follows from this exception.
+
+<!-- CR00 retained-history end -->
 
 ### 8.1 Branch discipline
 

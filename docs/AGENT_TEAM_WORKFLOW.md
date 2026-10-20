@@ -28,6 +28,13 @@ The current checkpoint's observations are in [AGTEAM_01_SETUP_REPORT.md](AGTEAM_
 
 ## Assign and deliver
 
+Current scheduling follows the corrective roadmap; the tracker owns status. BATCH-20 is paused.
+CR-00 permits documentary review only. A separately launched corrective batch can assign declared
+independent check execution and evidence writes, with implementation paused and exact inputs frozen.
+Routine administrative successors preserve current bytes first; material platform, ownership,
+paid-spend, destructive, data-disclosure, acceptance and owner-visual gates remain explicit.
+No old task map or role configuration launches CR-01/02.
+
 Each assignment states the outcome, owned write files (or none), allowed read paths,
 forbidden files/contracts, exact branch/base, merged dependencies, integration
 impact and merge order, focused tests/evidence, and stop conditions. Reference the

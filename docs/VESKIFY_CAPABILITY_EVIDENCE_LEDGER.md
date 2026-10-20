@@ -1,5 +1,34 @@
 # Veskify Capability Evidence Ledger
 
+> **CR-00 current ledger rule (proposed):** Record each capability separately as implemented,
+> reachable, provider-expressible, rendered, editable/saveable, technically verified,
+> owner-accepted and production-integrated. Existing evidence is not promoted across columns by
+> prose. The corrective roadmap/tracker supersede historical exact-next wording below.
+
+> The roadmap owns dependency order; the tracker owns current status.
+
+## CR-00 current capability reconciliation
+
+Reconciled against main `7d01380b70455b7e28e836248bb385a20d6f54f3` and the preserved local
+AR-10B state. These dimensions are evidence qualifications, not another task-status tracker.
+The following dated ledger retains its exact original acceptance attribution.
+
+| Capability / evidence                                                 | Implemented                                  | Reachable                                                          | Provider-expressible                                                                  | Rendered                                             | Editable/saveable                                                                                   | Technically verified                      | Owner-accepted                                                               | Production-integrated |
+| --------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------- | --------------------- |
+| [AR-09A regional preferences](AR_09A_REGIONAL_DESIGN_INTENT.md)       | Yes                                          | Canonical generation/proposal path                                 | No new provider-wire capability                                                       | Registered home and dynamic collection/PDP consumers | Partial: canonical reconstruction carried; no new normal merchant control/lifecycle proof           | Yes, bounded accepted delivery            | Accepted technical increment at main `7d01380…`; no commercial-quality claim | No                    |
+| [Bounded semantic provider path](VESKIFY_SDD.md)                      | Yes; provider precedes final materialization | Partial: local/injected path, not authenticated production tenancy | Supported semantic drivers, not arbitrary exact component/variant/blueprint selection | Existing compiler/materializer output                | Partial: bounded lifecycle evidence, not complete normal Studio                                     | Retained real-provider technical baseline | Technical baseline only; commercial quality unaccepted                       | No                    |
+| [AR-06A/B/C composed static consumers](AR_06_RENDERING_ACCEPTANCE.md) | Yes                                          | Guarded acceptance routes; normal Studio unproved                  | N/A: not provider authoring proof                                                     | Shared static renderer at four widths in EN/FI       | Guarded Puck edit/reorder and canonical IndexedDB save/fresh reopen; full lifecycle remains Partial | Yes for bounded accepted A/B/C proof      | Accepted bounded delivery; no parent commercial claim                        | No                    |
+| Preserved AR-10B work                                                 | Unverified local changes                     | Unverified                                                         | Unverified                                                                            | Unverified target; owner dissatisfied                | Unverified                                                                                          | No new verification claimed               | Not accepted                                                                 | Not established       |
+
+The current bounded provider interface is not the proposed component-aware capability contract.
+Composed dynamic collection/search/PDP execution, normal Studio lifecycle/history/publication and
+the shared collection/search context decision remain open. Neither propagation nor an accepted
+static child closes these obligations. The tracker alone determines current task status.
+
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
 > **AR-00 scope note:** Historical P10B-19A/A-10C evidence is retained unchanged. It is not a
 > current successor-task authority; status is owned only by the delivery tracker.
 > AR-02G preserves the original utility-profile source archive and historical hash while verifying
@@ -41,6 +70,8 @@
 > Retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, and 73-child
 > future-sequence statements are **historical pre-AR future policy** superseded by the incorporated
 > addendum; accepted history, functional requirements, and current capability truth remain binding.
+
+<!-- CR00 retained-history end -->
 
 **Audit date:** 4 September 2026
 

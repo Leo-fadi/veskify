@@ -1,5 +1,18 @@
 # Veskify Software Design Document v1.3.0
 
+> **CR-00 corrective adoption (proposed; owner merge pending):** This is the one operative
+> product specification on adoption. The roadmap defines corrective delivery order and the tracker
+> alone defines current status. Historical task reports, old architecture audits, and retained
+> exact-next statements are dated evidence, not scheduling authority. This proposal preserves the
+> existing Appendix A definitions byte-for-byte; the corrective ownership and disposition map is
+> [CR_00_REQUIREMENT_DISPOSITION.md](CR_00_REQUIREMENT_DISPOSITION.md).
+> The [template-scoped architecture addendum](spec-addenda/AR-00_TEMPLATE_SCOPED_ARCHITECTURE.md)
+> is incorporated into this SDD; its current scheduling role is replaced by the corrective roadmap.
+
+<!-- CR00 retained-history begin -->
+
+Historical record: prior incorporation notice; current incorporation and schedule are stated above.
+
 > **AR-00 incorporation (effective upon explicit owner adoption/merge):** This specifies the
 > repository content delivered by adoption, not the actual PR lifecycle or owner acceptance.
 > The normative
@@ -9,6 +22,8 @@
 > Any retained B01 exact-next, fixed-two-call/mandatory-three-concept, transient-only, or 73-child
 > future-sequence statement is **historical pre-AR future policy** superseded by that addendum. It
 > does not weaken accepted history, binding functional requirements, or current capability truth.
+
+<!-- CR00 retained-history end -->
 
 ## 1. Document control and revision history
 
@@ -27,6 +42,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 CR-00 proposed | 20 October 2026 | `7d01380b70455b7e28e836248bb385a20d6f54f3` plus preserved paused local AR-10B work | Reconcile the current specification, roadmap and status model around an executed reuse decision, bounded provider proposal data, complete-store quality gates and explicit historical/non-claim treatment. This is documentary adoption only: it does not resume BATCH-20, accept AR-10B, select a platform or authorize provider calls. |
 | 1.3.0 VQ-01 | 18 October 2026 | Owner-approved BATCH-20 complete product-quality phase | Extend bounded non-executable intent through existing canonical compilation and reusable complete-store compositions; preserve legacy/canonical safety, original parent gates, actual visual acceptance and bounded paid authority. |
 | 1.3.0 AR-00B | 29 September 2026 | Owner-approved visual-feedback-led delivery amendment; effective on accepted merge | Amend delivery order through bounded early slices and real generated-store review while preserving every original AR/T requirement, canonical safety and separate visual/production gates; select AR-06D only. |
 | 1.3.0 P10B-19A-10C | 4 September 2026 | P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate | Execute the sorted retained 26-file authority from frozen A-10A/A-10B1/A-10B2 evidence; preserve accepted 24/76/9, 126/72 and A-09 metrics, 11 predecessor files, the 21-section/four-diagram/73-child architecture lock and every production/runtime zero; freeze the checked accepted-closure manifest and external mirror; record exact product-owner architecture acceptance and ten ordered limitations; close A-10 and P10B-19A with zero production or merchant-visible change and make P10B-19B-01 exact next without beginning it. |
@@ -111,6 +127,11 @@ implementation status does not manufacture a stronger evidence level. Determinis
 not real-provider, human visual, staging, or production evidence.
 
 ## 2. Executive product truth
+
+> **Historical baseline:** This section retains its dated observations and accepted-event wording.
+> Its exact-next/status projections do not schedule work; use the current corrective roadmap and
+> tracker. CR-00 §17.1 governs current operative interpretation.
+
 
 Veskify is a controlled storefront-design engine. It is not a general website generator and not a
 commerce system. The repository contains a substantial deterministic foundation: canonical
@@ -1239,6 +1260,13 @@ AR-00B is Baseline / closed at accepted merge `fa6c200`. AR-06D is Baseline / cl
 
 ### 10.21B BATCH-20 / VQ-01 generated-storefront quality phase
 
+> **Historical scheduling record (superseded on CR-00 adoption):** This section records the
+> BATCH-20 authority and paused AR-10B work as it stood before CR-00. It is not a current launch
+> instruction, acceptance claim, or authority to resume work. The current corrective order is
+> [the roadmap](VESKIFY_DEVELOPMENT_ROADMAP.md); AR-10B remains preserved, uncommitted and not
+> visually accepted. Any later foundation choice requires the separately launched CR-01/CR-02
+> comparison and decision.
+
 The incorporated addendum §18.2 authorizes a complete internal quality phase through existing
 AR owners. Richer bounded non-executable intent, approved factual EN/FI content, local licensed
 fonts and rights-cleared imagery compile through existing BrandSystem / Design DNA, PageBlueprint,
@@ -1640,6 +1668,11 @@ incomplete.
 
 ## 15. Phase sequence and exit criteria
 
+> **Current scheduling pointer (CR-00 proposed):** The retained phase sequence below is historical
+> reference and requirement context. It does not select an exact next implementation task. On
+> adoption, the only current delivery order is COR-01 through COR-06 and CR-00 through CR-19 in
+> [the roadmap](VESKIFY_DEVELOPMENT_ROADMAP.md); the tracker remains the sole status authority.
+
 The binding sequence is:
 
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
@@ -1741,6 +1774,131 @@ Version 1.3.0 does not claim:
 - that P10B-16P-03 provides executable search, live Design Intent V2 provider evidence, retained
   V2 human review, commercial quality acceptance, or phase-closure evidence;
 - that archived v1.2.2 prose describes current implementation or phase status.
+
+## 17.1 CR-00 operative corrective clauses (proposed)
+
+### 17.1.1 Document control and authority
+
+This specification defines required behaviour and ownership; the roadmap defines delivery order;
+the tracker alone defines current task and capability status. The development guide defines
+execution practice and AGENTS supplies binding repository instructions. Source and executed
+evidence establish what exists. Prose cannot turn an unimplemented capability into a fact, and a
+source/spec conflict must be recorded and resolved rather than normalized silently.
+
+The master handoff, older audits, frozen reports, mandatory-three-concept default, fixed
+73-child decomposition, provider-after-materialization diagnosis and all old exact-next claims are
+historical evidence only. One exact pre-adoption record is retained. Markdown remains normative;
+the existing DOCX exports are synchronized exports and are never hand edited. A document edition
+is not a runtime-schema version: an incompatible data change still needs its own migration decision.
+
+### 17.1.2 Product outcome and verified baseline
+
+Vesko Storefront Studio remains the merchant-facing authoring experience and Veskify the controlled
+storefront-design capability. The outcome is coherent, editable presentation using an approved
+brief, useful brand/asset context and read-only canonical commerce; it is not a commerce backend.
+Complete-store generation orchestrates the same proven page/template operations under a shared
+theme into one atomically accepted proposal. One design is the default; a requested alternative
+must be meaningful or honestly unavailable. The retained three-direction obligation is not closed
+by a two-result internal experiment.
+
+The verified remote baseline is `7d01380b70455b7e28e836248bb385a20d6f54f3`. AR-09A propagated
+regional preferences through planning/reconstruction but did not add a provider-wire contract. The
+provider is invoked before final materialization; do not recreate the historical ordering defect.
+AR-10B is preserved local work, uncommitted and not visually or commercially accepted. Current
+capability reporting must distinguish: implemented, reachable, provider-expressible, rendered,
+editable/saveable, technically verified, owner-accepted and production-integrated.
+
+### 17.1.3 Designed library, theme and foundation selection
+
+A component/section definition must state purpose, compatible page roles, meaningful variants,
+bounded fields/defaults, slots/order, theme effects, binding/protected values, media rules,
+responsive/accessibility behaviour, editor controls/saved version/native renderer, good examples
+and anti-patterns. A PageBlueprint is a useful constrained composition from that library, with
+required/optional regions and purposeful alternatives; it is not another page database. Native
+components must work in narrow/wide containers, sparse/dense catalogues, mixed media ratios,
+long EN/FI content and missing optional data.
+
+Theme bounds are schema/validator-enforced. Navigation density, editorial rhythm, commerce density,
+type roles, card treatment and media proportions may vary independently when supported. Theme and
+local section scope remain distinct. A preference is never advertised without an executable
+consumer; unsupported critical intent fails or requests clarification.
+
+Before another substantial custom-builder investment, CR-01/CR-02 execute a fair reuse comparison
+of Puck Assembly and Webstudio native authoring against the retained baseline using matched facts,
+assets, a page, scoped revision and save/reopen. Comparison artifacts are isolated research. Record all attempts, manual configuration, gaps,
+output quality, data routing, rights/licensing and cost. Puck Assembly is distinct from Puck
+Design or generated-code modes. A separately labelled evaluation of those modes does not authorize
+production adoption; that needs owner-approved sandbox, validation, persistence/licensing and
+compatibility decisions. The
+owner chooses integration, a lawful limited fork or justified repair. Until then Puck,
+StorefrontSnapshot and PageBlueprint ownership remain unchanged; no automatic Puck/Webstudio
+integration, migration or second editable site follows.
+
+### 17.1.4 Agent contract, proposal path and canonical ownership
+
+The provider receives a compact projection of executable components/templates, theme limits, field
+schemas, approved facts/assets, neighbouring composition and scope. It may propose permitted
+arrangements, variants and bounded presentation choices. **Allowlisted capability references are
+untrusted proposal data, not executable authority.** They are accepted only when advertised for
+the current scope/version and server-validated; unknown, foreign or stale keys reject. Project
+ownership, permissions, product identity, token/cost and publication authority remain outside
+provider control. This never permits arbitrary imports, code, CSS/classes, remote fonts,
+credentials or provider-controlled privilege.
+
+The retained path is request/scope → provider proposal → schema/semantic validation →
+protected-field/current-revision validation → deterministic compilation into the selected native
+document → isolated candidate → review → acceptance. Each transformation needs a real trust or
+lifecycle purpose. Valid proposed order/variants survive compilation; rejection/substitution is
+merchant-readable. Whole-store coordination does not require one call and no partial page becomes
+the saved/published store merely because another page succeeded.
+
+Vesko continues to own product identity/types/options/variants/SKU/prices/stock/availability/media
+and transactions. Static pages own their routes; product and collection URLs are reusable-template
+instances, and search remains transient. Facts/policies/claims stay separate from creative prose;
+EN/FI must not invent claims. Approved asset identities and rights are required. Unsupported
+commerce actions remain explicitly unavailable.
+
+### 17.1.5 Lifecycle, evidence and quality
+
+Selected-section, page/template, frame, theme and whole-store scopes have explicit write sets.
+Manual changes made while generation runs must never be silently overwritten.
+Candidates are isolated; rejection changes nothing; acceptance creates an atomic unsaved history
+transaction; undo/redo restores actual state; Save persists a draft; preview reads the intended
+revision; Publish is separately confirmed; Restore follows the documented model. A protected local
+route is verification support, not host-authentication proof.
+
+Before a paid result depends on review/capture, retain the bounded validated intent, compiled
+changes, candidate and input/revision identities through a suitable artifact mechanism. Hashes alone
+do not recover content. Never retain secrets, cookies, hidden reasoning or raw private dumps. A
+normal restart cannot require another paid generation. Uncertain billing/execution consumes the
+declared budget until resolved. Safe owner-approved diagnostic prompts/outputs may be retained
+under access controls; repeated inspection, acceptance, Save, preview and Publish make no provider call. Endpoint readiness is measured separately
+from browser assertions and cold/prepared evidence is labelled truthfully.
+
+Correctness, prompt fidelity, visual craft and merchant usability are independent gates. The
+complete internal product requires a real primary generated store accepted by the owner, meaningful
+supported contrast and a transfer merchant. Tests cannot grant aesthetic acceptance; a technical
+baseline cannot convert a visual failure into corrective-product completion; production/market
+acceptance remain separate.
+
+### 17.1.6 Delivery, retention and retained requirements
+
+Use the corrective roadmap and one current tracker. Tasks declare an outcome, current consumer,
+dependencies, scoped changes, failure behaviour and evidence. Independent verification, truthful
+reports, one automatic review, final-head CI and expected-head protected merge remain. Routine
+support repairs in an approved batch may use preservation-first records, but scope, ownership,
+licensing, paid spend, destructive change, data disclosure, acceptance weakening and final visual
+decisions remain material owner gates. A finite resource pool records actual consumption; three
+same-signature failures require diagnosis, not repeated timeout increases.
+
+Retain accepted source/fixtures, useful intent/decision artifacts, final inspected review sets and
+concise reports. Reinstallable caches, redundant exports and superseded raw trial media have finite
+retention. Historical byte identity remains history; future changes use explicit version/behavioural
+compatibility checks. FR-101–124, NFR-101–110 and AC-101–138 remain defined in Appendix A without
+renumbering. AC-120 is historical only; URL onboarding, production integration and the retained
+three-direction obligation remain. No mandatory six-family campaign, commerce backend, arbitrary
+front-end code, second accepted site, automatic paid call, production activation or VerifyAI change
+follows from this specification.
 
 ## Appendix A — Authoritative requirement and acceptance traceability
 
@@ -2971,6 +3129,11 @@ architecture.
 `P10B-19 = Partial`; `P10B = Partial`.
 
 ### 10.47 P10B-19A-10C P10B-19A Closure and Product-Owner Architecture Gate
+
+> **Historical baseline:** This section retains its dated observations and accepted-event wording.
+> Its exact-next/status projections do not schedule work; use the current corrective roadmap and
+> tracker. CR-00 §17.1 governs current operative interpretation.
+
 
 P10B-19A-10C is test, evidence and constitutional-documentation authority only. At exact task base
 `f9af2b2f007ff1bcb0f20a046edf33bc1f10ea37`, it executes the sorted unique 26-file retained plan,

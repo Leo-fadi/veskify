@@ -1,5 +1,10 @@
 # Architecture decision index
 
+> **CR-00 proposed entrypoint note:** ADR-001 and ADR-002 remain operative. A CR-02 working reuse
+> comparison is evaluation only; changed canonical/editor/native-document ownership requires a
+> later explicit ADR and requirement disposition. Advertised capability references remain untrusted
+> proposal data validated by the server, never provider-granted executable authority.
+
 The decisions below remain binding under Veskify SDD v1.3.0. The consolidated specification
 clarifies their current application; it does not supersede their decisions.
 

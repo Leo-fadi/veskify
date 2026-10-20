@@ -13,6 +13,11 @@ The Phase 0 Batch 1 proof demonstrated that `@puckeditor/core` can be embedded b
 
 ## Decision
 
+> **CR-00 current-entrypoint note (proposed):** This decision remains binding until a later CR-02
+> working comparison and explicit owner-approved ADR/migration disposition select another native
+> document/editor foundation. Evaluation alone does not authorize Puck Assembly, Webstudio, Puck
+> Cloud or Puck AI adoption, and does not change `StorefrontSnapshot` or `PageBlueprint` ownership.
+
 Veskify will use the open-source `@puckeditor/core` package as its embedded visual-editor foundation.
 
 Puck owns:
