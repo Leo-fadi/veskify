@@ -1,0 +1,578 @@
+{
+  "status": "Developer-directed zero-spend local feasibility only; no hosted generation, no foundation decision, no live Vesko integration.",
+  "sources": [
+    {
+      "path": "tests/fixtures/ar-10b/input-pack.json (retained paused checkout)",
+      "sha256": "2b18c507831879a6c55ba717f99c5e6c0d7064ebaeea525d8fbe690e39e56fa7"
+    },
+    {
+      "path": "src/data/demo/vq-01-quality-inputs.ts (retained paused checkout)",
+      "sha256": "31d14c136fe54827ebaa557aef2e116a9b3d8fc6f94f2c46a03586db900560e4"
+    }
+  ],
+  "commerceDisclosure": "Fictional EUR prices, product-level availability and uniform-price/availability order options. No numerical or per-variant inventory, material, certification, origin or delivery claim is inferred from photographs.",
+  "primaryFixture": {
+    "namespace": "vq01-aurum-quality",
+    "name": "Aurum Nordic",
+    "products": [
+      {
+        "id": "vq01-aurum-quality-keha-pendant",
+        "sku": "VQ01-AURUM-KEHA-PENDANT",
+        "title": {
+          "en": "Kehä pendant",
+          "fi": "Kehä-riipus"
+        },
+        "description": {
+          "en": "A round, light-catching pendant on a gold-tone chain. Choose your chain length.",
+          "fi": "Pyöreä, valoa heijastava riipus kullanvärisessä ketjussa. Valitse ketjun pituus."
+        },
+        "brand": "Aurum Nordic",
+        "price": {
+          "amount": 79,
+          "currency": "EUR"
+        },
+        "availabilityLabel": {
+          "en": "In stock",
+          "fi": "Varastossa"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "vq01-aurum-quality-image-pendant",
+            "url": "/assets/vq-01/aurum/pendant.jpg",
+            "alt": {
+              "en": "Round iridescent pendant on a gold-tone chain",
+              "fi": "Pyöreä helmiäishohtoinen riipus kullanvärisessä ketjussa"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "necklace",
+        "attributes": {},
+        "variants": [],
+        "orderOptions": [
+          {
+            "id": "length",
+            "type": "selection",
+            "label": {
+              "en": "Length",
+              "fi": "Pituus"
+            },
+            "required": true,
+            "values": [
+              {
+                "en": "42 cm",
+                "fi": "42 cm"
+              },
+              {
+                "en": "46 cm",
+                "fi": "46 cm"
+              }
+            ]
+          }
+        ],
+        "assetId": "necklace-34372548"
+      },
+      {
+        "id": "vq01-aurum-quality-rivi-bracelet",
+        "sku": "VQ01-AURUM-RIVI-BRACELET",
+        "title": {
+          "en": "Rivi bracelet",
+          "fi": "Rivi-rannekoru"
+        },
+        "description": {
+          "en": "A line of pale beads meets a fine gold-tone chain.",
+          "fi": "Vaaleiden helmien rivi yhdistyy siroon kullanväriseen ketjuun."
+        },
+        "brand": "Aurum Nordic",
+        "price": {
+          "amount": 49,
+          "currency": "EUR"
+        },
+        "availabilityLabel": {
+          "en": "In stock",
+          "fi": "Varastossa"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "vq01-aurum-quality-image-bracelet",
+            "url": "/assets/vq-01/aurum/bracelet.jpg",
+            "alt": {
+              "en": "Pale beads with a gold-tone chain",
+              "fi": "Vaaleita helmiä ja kullanvärinen ketju"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "bracelet",
+        "attributes": {},
+        "variants": [],
+        "assetId": "bracelet-29149181",
+        "orderOptions": []
+      },
+      {
+        "id": "vq01-aurum-quality-syke-watch",
+        "sku": "VQ01-AURUM-SYKE-WATCH",
+        "title": {
+          "en": "Syke watch",
+          "fi": "Syke-kello"
+        },
+        "description": {
+          "en": "A round watch with a dark blue face and matching strap.",
+          "fi": "Pyöreä kello, jossa on tummansininen kellotaulu ja samanvärinen ranneke."
+        },
+        "brand": "Aurum Nordic",
+        "price": {
+          "amount": 89,
+          "currency": "EUR"
+        },
+        "availabilityLabel": {
+          "en": "In stock",
+          "fi": "Varastossa"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "vq01-aurum-quality-image-watch",
+            "url": "/assets/vq-01/aurum/watch.jpg",
+            "alt": {
+              "en": "Round watch with a dark blue face and strap",
+              "fi": "Pyöreä kello, jossa on tummansininen kellotaulu ja ranneke"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "watch",
+        "attributes": {},
+        "variants": [],
+        "assetId": "watch-commons-modern",
+        "orderOptions": []
+      },
+      {
+        "id": "vq01-aurum-quality-valo-set",
+        "sku": "VQ01-AURUM-VALO-SET",
+        "title": {
+          "en": "Valo set",
+          "fi": "Valo-setti"
+        },
+        "description": {
+          "en": "Round sun motifs and a ring, brought together as a small collection.",
+          "fi": "Pyöreitä aurinkoaiheita ja sormus pieneksi kokonaisuudeksi koottuna."
+        },
+        "brand": "Aurum Nordic",
+        "price": {
+          "amount": 112,
+          "currency": "EUR"
+        },
+        "availabilityLabel": {
+          "en": "In stock",
+          "fi": "Varastossa"
+        },
+        "stockStatus": "inStock",
+        "images": [
+          {
+            "id": "vq01-aurum-quality-product-valo-image",
+            "url": "/assets/vq-01/aurum/hero.jpg",
+            "alt": {
+              "en": "Round pendants and a ring on a warm pale surface",
+              "fi": "Pyöreitä riipuksia ja sormus lämpimällä vaalealla pinnalla"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "jewellery-set",
+        "attributes": {},
+        "variants": [],
+        "assetId": "hero-flatlay-29502931",
+        "orderOptions": []
+      },
+      {
+        "id": "vq01-aurum-quality-pallo-set",
+        "sku": "VQ01-AURUM-PALLO-SET",
+        "title": {
+          "en": "Pallo set",
+          "fi": "Pallo-setti"
+        },
+        "description": {
+          "en": "A rounded pendant and earrings with a warm golden tone.",
+          "fi": "Pyöreä riipus ja korvakorut lämpimän kullan sävyssä."
+        },
+        "brand": "Aurum Nordic",
+        "price": {
+          "amount": 96,
+          "currency": "EUR"
+        },
+        "availabilityLabel": {
+          "en": "Currently unavailable",
+          "fi": "Ei tällä hetkellä saatavilla"
+        },
+        "stockStatus": "outOfStock",
+        "images": [
+          {
+            "id": "vq01-aurum-quality-product-pallo-image",
+            "url": "/assets/vq-01/aurum/editorial.jpg",
+            "alt": {
+              "en": "A pendant and earrings resting on folded cloth",
+              "fi": "Riipus ja korvakorut taitellulla kankaalla"
+            },
+            "decorative": false
+          }
+        ],
+        "productType": "jewellery-set",
+        "attributes": {},
+        "variants": [],
+        "assetId": "editorial-33370257",
+        "orderOptions": []
+      }
+    ],
+    "collections": [
+      {
+        "id": "vq01-aurum-quality-collection-the-edit",
+        "slug": "the-edit",
+        "title": {
+          "en": "The edit",
+          "fi": "Valikoima"
+        },
+        "description": {
+          "en": "Small details, chosen to be worn your way.",
+          "fi": "Pieniä yksityiskohtia omalla tavallasi käytettäviksi."
+        },
+        "productIds": [
+          "vq01-aurum-quality-keha-pendant",
+          "vq01-aurum-quality-rivi-bracelet",
+          "vq01-aurum-quality-syke-watch",
+          "vq01-aurum-quality-valo-set",
+          "vq01-aurum-quality-pallo-set"
+        ]
+      },
+      {
+        "id": "vq01-aurum-quality-collection-jewellery",
+        "slug": "jewellery",
+        "title": {
+          "en": "Jewellery",
+          "fi": "Korut"
+        },
+        "description": {
+          "en": "Light, shape and a little warmth.",
+          "fi": "Valoa, muotoja ja ripaus lämpöä."
+        },
+        "productIds": [
+          "vq01-aurum-quality-keha-pendant",
+          "vq01-aurum-quality-rivi-bracelet",
+          "vq01-aurum-quality-valo-set",
+          "vq01-aurum-quality-pallo-set"
+        ]
+      },
+      {
+        "id": "vq01-aurum-quality-collection-watches",
+        "slug": "watches",
+        "title": {
+          "en": "Watches",
+          "fi": "Kellot"
+        },
+        "description": {
+          "en": "A quiet accent for every day.",
+          "fi": "Rauhallinen yksityiskohta jokaiseen päivään."
+        },
+        "productIds": ["vq01-aurum-quality-syke-watch"]
+      }
+    ],
+    "copy": {
+      "eyebrow": {
+        "en": "Aurum Nordic · The everyday edit",
+        "fi": "Aurum Nordic · Arjen valikoima"
+      },
+      "heading": {
+        "en": "A little light.\nEntirely yours.",
+        "fi": "Ripaus valoa.\nOmalta tuntuva."
+      },
+      "introduction": {
+        "en": "Quiet shapes, warm tones and pieces that find their place in your day.",
+        "fi": "Rauhallisia muotoja, lämpimiä sävyjä ja koruja, jotka löytävät paikkansa päivässäsi."
+      },
+      "primaryAction": {
+        "en": "Explore the edit",
+        "fi": "Tutustu valikoimaan"
+      },
+      "aboutTitle": {
+        "en": "Our point of view",
+        "fi": "Meidän näkökulmamme"
+      },
+      "aboutBody": {
+        "en": "We bring together jewellery and watches through an eye for simple forms and warm, light-catching details. Choose the pieces that feel like you.",
+        "fi": "Kokoamme koruja ja kelloja, joissa yhdistyvät yksinkertaiset muodot ja lämpimät, valoa heijastavat yksityiskohdat. Valitse sinulta tuntuvat korut."
+      }
+    },
+    "brandSystem": {
+      "colors": {
+        "primary": "#2D302B",
+        "secondary": "#67695D",
+        "accent": "#71613D",
+        "background": "#FAF8F3",
+        "surface": "#FFFFFF",
+        "text": "#232520",
+        "mutedText": "#5B5F54",
+        "border": "#DAD6CB"
+      },
+      "typography": {
+        "headingFont": "georgia",
+        "bodyFont": "system-sans",
+        "baseSize": 16,
+        "scaleRatio": 1.25,
+        "headingWeight": 400,
+        "bodyWeight": 400
+      },
+      "shape": {
+        "radius": "square"
+      },
+      "spacing": {
+        "density": "balanced"
+      },
+      "imagery": {
+        "style": "product-focused"
+      },
+      "voice": {
+        "formality": "balanced",
+        "detail": "concise",
+        "positioning": "accessible",
+        "warmth": "warm",
+        "energy": "balanced"
+      }
+    }
+  },
+  "transferFixture": {
+    "namespace": "vq01-arki-transfer",
+    "name": "Arki Objects",
+    "products": [
+      {
+        "id": "vq01-arki-transfer-pari-cup-set",
+        "sku": "VQ01-ARKI-PARI-CUP-SET",
+        "title": {
+          "en": "Pari cup set",
+          "fi": "Pari-kuppisetti"
+        },
+        "description": {
+          "en": "Two cups in warm brown and yellow, ready for an everyday pause.",
+          "fi": "Kaksi kuppia lämpimän ruskeana ja keltaisena arjen taukoihin."
+        },
+        "brand": "Arki Objects",
+        "price": {
+          "amount": 32.0,
+          "currency": "EUR"
+        },
+        "stockStatus": "inStock",
+        "availabilityLabel": {
+          "en": "In stock",
+          "fi": "Varastossa"
+        },
+        "assetId": "transfer-cup-set",
+        "productType": "cup-set",
+        "attributes": {},
+        "variants": [],
+        "orderOptions": []
+      },
+      {
+        "id": "vq01-arki-transfer-reuna-mug",
+        "sku": "VQ01-ARKI-REUNA-MUG",
+        "title": {
+          "en": "Reuna mug",
+          "fi": "Reuna-muki"
+        },
+        "description": {
+          "en": "A white mug with a dark rim and a curved handle.",
+          "fi": "Valkoinen muki, jossa on tumma reunus ja kaareva kahva."
+        },
+        "brand": "Arki Objects",
+        "price": {
+          "amount": 18.0,
+          "currency": "EUR"
+        },
+        "stockStatus": "inStock",
+        "availabilityLabel": {
+          "en": "In stock",
+          "fi": "Varastossa"
+        },
+        "assetId": "transfer-rim-mug",
+        "productType": "mug",
+        "attributes": {},
+        "variants": [],
+        "orderOptions": [
+          {
+            "id": "size",
+            "type": "selection",
+            "label": {
+              "en": "Size",
+              "fi": "Koko"
+            },
+            "required": true,
+            "values": [
+              {
+                "en": "S",
+                "fi": "S"
+              },
+              {
+                "en": "M",
+                "fi": "M"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "assets": [
+    {
+      "assetId": "hero-flatlay-29502931",
+      "sha256": "a031399bcf94f943348688e15d397e26ab9068c5e484a6a29ecc947e8704b37a",
+      "bytes": 211675,
+      "dimensions": {
+        "pixelWidth": 1600,
+        "pixelHeight": 1600
+      },
+      "author": "Yusuf Çelik",
+      "sourceURL": "https://www.pexels.com/photo/29502931/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["editorial-hero", "collection", "illustrative-set-product"],
+      "directObservation": "Warm-white flatlay with two round sun motifs and a ring; sharp details, no visible logo/person. Treat as one explicitly described illustrative set if used as product."
+    },
+    {
+      "assetId": "ring-10581426",
+      "sha256": "8f234e37275a164d60764cdaa8d4016c23d0e9a7fe14eb6f4ef959393c4a5e45",
+      "bytes": 84729,
+      "dimensions": {
+        "pixelWidth": 1600,
+        "pixelHeight": 2400
+      },
+      "author": "Kader D. Kahraman",
+      "sourceURL": "https://www.pexels.com/photo/10581426/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["configurable-ring-product"],
+      "directObservation": "Unbranded gold-tone chain-form ring on fabric. Product occupies a small area; honest supported framing needed; do not infer gold/material."
+    },
+    {
+      "assetId": "necklace-34372548",
+      "sha256": "e5ef4d0f64aa725350fc491f20eab9e4577cbb18961d74489c5f585a25fb8825",
+      "bytes": 180348,
+      "dimensions": {
+        "pixelWidth": 1600,
+        "pixelHeight": 2400
+      },
+      "author": "Sergei Starostin",
+      "sourceURL": "https://www.pexels.com/photo/34372548/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["simple-pendant-product", "editorial"],
+      "directObservation": "Round iridescent pendant on gold-tone chain over pale rocks with a dark upper background. Clear product, no logo. No material or certification inference."
+    },
+    {
+      "assetId": "editorial-33370257",
+      "sha256": "ef0748c5c5baf6ba514acdd5b12e35af1375a6188910d950988ca4894329a199",
+      "bytes": 103439,
+      "dimensions": {
+        "pixelWidth": 1600,
+        "pixelHeight": 1067
+      },
+      "author": "Leman Hajiyeva",
+      "sourceURL": "https://www.pexels.com/photo/33370257/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["editorial", "illustrative-pendant-earring-set"],
+      "directObservation": "Pendant and matching two-tone spherical earrings on light fabric. Foreground depth softness retained; only claim an illustrative pictured set, not pearl material."
+    },
+    {
+      "assetId": "bracelet-29149181",
+      "sha256": "9db13e83e002ad13946e18c09a17c05960c4c5e134a1510d6f7f0d26b5b029a7",
+      "bytes": 1378131,
+      "dimensions": {
+        "pixelWidth": 3024,
+        "pixelHeight": 4032
+      },
+      "author": "Nurfa Khoirunnisa",
+      "sourceURL": "https://www.pexels.com/photo/elegant-gold-and-pearl-bracelet-on-white-background-29149181/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["bracelet-product"],
+      "directObservation": "Bead row and gold-tone adjustable chain on light fabric; complete bracelet visible. No visible logo/person. Some focus softness retained and must be judged at actual card/PDP size."
+    },
+    {
+      "assetId": "watch-commons-modern",
+      "sha256": "0829ecaf4cfc858fbbea221532e7153a7c825a4a67d1b0ecef8707fadb087be2",
+      "bytes": 1750551,
+      "dimensions": {
+        "pixelWidth": 4000,
+        "pixelHeight": 3000
+      },
+      "author": "Curpharar",
+      "sourceURL": "https://commons.wikimedia.org/wiki/File:Modern_wristwatch_on_a_white_background.jpg",
+      "licenseURL": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "allowedRoles": ["watch-product"],
+      "directObservation": "Dark blue watch/strap diagonally on white. No visible brand marks in inspected original. Generic dial, image shadows and real surface detail retained. Uploader disclosed prior logo removal; Veskify performs no removal or retouch."
+    },
+    {
+      "assetId": "transfer-cup-set",
+      "sha256": "be4995f0bddac95b95fe290ef6481f9b141f532c2c39ee05a50ebd2bc4bd9e15",
+      "bytes": 27926,
+      "dimensions": {
+        "pixelWidth": 1600,
+        "pixelHeight": 1067
+      },
+      "author": "Hanna Pad",
+      "sourceURL": "https://www.pexels.com/photo/cups-on-white-background-7214897/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["two-cup-set-product", "editorial-hero"],
+      "directObservation": "Two complete unbranded cups, one warm brown without visible handle and one yellow with handle, on pale background. Keep both as one pictured set; no material/capacity claim inferred."
+    },
+    {
+      "assetId": "transfer-rim-mug",
+      "sha256": "d3c4226fb562ec458b99bb2365f4c3b06d54e2ae7589e3296a41ed09712ab22b",
+      "bytes": 67484,
+      "dimensions": {
+        "pixelWidth": 1600,
+        "pixelHeight": 1067
+      },
+      "author": "KATRIN BOLOVTSOVA",
+      "sourceURL": "https://www.pexels.com/photo/white-ceramic-cup-on-white-tiles-6312273/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["mug-product"],
+      "directObservation": "Complete white mug with dark rim and curved handle on tiled surface; actual marks remain visible. No visible logo/person. Do not infer ceramic/enamel/material from source title."
+    },
+    {
+      "assetId": "transfer-vase-editorial",
+      "sha256": "9a54e5658a2a11ec25fd2e4c345f711e420c715b87135031c9f4f6e2832e8f85",
+      "bytes": 28253,
+      "dimensions": {
+        "pixelWidth": 1000,
+        "pixelHeight": 1500
+      },
+      "author": "Eva Bronzini",
+      "sourceURL": "https://www.pexels.com/photo/white-ceramic-vase-on-plain-white-background-6952059/",
+      "licenseURL": "https://www.pexels.com/license/",
+      "allowedRoles": ["editorial-only"],
+      "directObservation": "Complete white round-bodied vase in bottom40% of portrait with generous whitespace. Editorial lead only; not a centered product-card asset."
+    }
+  ],
+  "unknownTypeExample": {
+    "sourceProductId": "vq01-aurum-quality-keha-pendant",
+    "override": {
+      "productType": "cor01-synthetic-unrecognized-type"
+    },
+    "disclosure": "Test-only type substitution; identity, price, attributes, media and option groups remain unchanged. Not an additional merchant product."
+  },
+  "requests": {
+    "editorial": "Build home, collection and PDP for Aurum Nordic. Warm ivory and deep green, restrained serif headlines, a split editorial lead, three proportional product cards and a compact supporting story. Mobile stacks the lead and uses two compact collection columns. Use only supplied fictional facts and approved imagery. Keep price, availability and options readable.",
+    "direct": "Use the same Aurum facts, catalogue and asset pool. Make the direction product-first: sans-serif headings, pale surfaces, tighter spacing, product rail before editorial story and smaller lead. Keep the same home/collection/PDP functions. Do not alter commerce or add claims.",
+    "transfer": "Use the same capabilities for Arki Objects with the supplied two-product fixture; sparse product-first collection and generic Size choices on Reuna mug. No new commerce claims.",
+    "selectedSectionRevision": {
+      "page": "home",
+      "sectionId": "story-home",
+      "instruction": "Change only story-home to foreground the Kehä pendant: use necklace-34372548; heading \"A little light, close to you\" / \"Ripaus valoa lähelläsi\"; retain the supplied pendant description as body. Preserve all other sections, pages and theme."
+    }
+  },
+  "longCopy": {
+    "en": "Quiet shapes, warm tones and pieces that find their place in your day. We bring together jewellery and watches through an eye for simple forms and warm, light-catching details. Choose the pieces that feel like you. Small details, chosen to be worn your way.",
+    "fi": "Rauhallisia muotoja, lämpimiä sävyjä ja koruja, jotka löytävät paikkansa päivässäsi. Kokoamme koruja ja kelloja, joissa yhdistyvät yksinkertaiset muodot ja lämpimät, valoa heijastavat yksityiskohdat. Valitse sinulta tuntuvat korut. Pieniä yksityiskohtia omalla tavallasi käytettäviksi."
+  },
+  "storyboard": {
+    "home": "Brand/navigation; split lead; representative three-product row; exact story-home target; credits footer. Direct direction moves products ahead of the lead.",
+    "collection": "Compact introduction with long EN/FI variant; five reference products including unavailable Pallo; two-product transfer and single watch sparse cases; cards link to fixture PDP.",
+    "product": "Image and fixture details; price and product-level availability; generic required option groups; simple/unavailable/unknown-type scenarios. No checkout or stock quantity."
+  }
+}
