@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Puck, Render } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
@@ -13,18 +13,41 @@ import {
   reviseSection,
   isProject,
   pageNames,
+  productIdsForSite,
+  assetIdsForSite,
 } from "../model.mjs";
 const image = (id) => `/approved-assets/${id}.jpg`;
 const words = (locale, en, fi) => (locale === "fi" ? fi : en);
+const canonical = (value) =>
+  Array.isArray(value)
+    ? value.map(canonical)
+    : value && typeof value === "object"
+      ? Object.fromEntries(
+          Object.keys(value)
+            .sort()
+            .map((key) => [key, canonical(value[key])]),
+        )
+      : value;
+const sameProject = (left, right) =>
+  JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
 const price = (p, locale) =>
   new Intl.NumberFormat(locale === "fi" ? "fi-FI" : "en-FI", {
     style: "currency",
     currency: p.price.currency,
   }).format(p.price.amount);
 function ProductDetail({ productId, unknownType, locale }) {
+  return (
+    <ProductDetailContent
+      key={`${productId}-${locale}`}
+      productId={productId}
+      unknownType={unknownType}
+      locale={locale}
+    />
+  );
+}
+function ProductDetailContent({ productId, unknownType, locale }) {
   const p = productView(productId, unknownType);
   const [selection, setSelection] = useState({});
-  useEffect(() => setSelection({}), [productId, locale]);
   if (!p)
     return (
       <section className="missing" role="alert">
@@ -99,15 +122,21 @@ function ProductDetail({ productId, unknownType, locale }) {
 function makeConfig(project) {
   const { locale, direction, site } = project;
   const t = (en, fi) => words(locale, en, fi);
+  const allowedProductIds = productIdsForSite(site);
+  const imageIds = assetIdsForSite(site);
   const link = (page, productId) =>
     `?preview=1&page=${page}${productId ? `&product=${encodeURIComponent(productId)}` : ""}`;
   const assets = manifest.assets
-    .filter((a) => a.assetId !== "ring-10581426")
+    .filter((a) => imageIds.has(a.assetId))
     .map((a) => ({ label: a.assetId, value: a.assetId }));
-  const productOptions = Object.values(products).map((p) => ({
-    label: localize(p.title, locale),
-    value: p.id,
-  }));
+  const productOptions = Object.values(products)
+    .filter((p) => allowedProductIds.has(p.id))
+    .map((p) => ({
+      label: localize(p.title, locale),
+      value: p.id,
+    }));
+  const defaultHeroImage = site === "arki" ? "transfer-vase-editorial" : "hero-flatlay-29502931";
+  const defaultStoryImage = site === "arki" ? "transfer-rim-mug" : "necklace-34372548";
   const text = { type: "text", label: "Heading" };
   const copy = { type: "textarea", label: "Body copy" };
   const imageField = { type: "select", label: "Image", options: assets };
@@ -132,20 +161,22 @@ function makeConfig(project) {
             </p>
             <details>
               <summary>{t("Photography credits", "Kuvien tekijät")}</summary>
-              {manifest.assets.map((a) => (
-                <p key={a.assetId}>
-                  <a href={a.sourceURL}>
-                    {a.author} · {a.assetId}
-                  </a>{" "}
-                  —{" "}
-                  <a href={a.licenseURL}>
-                    {a.licenseURL.includes("creativecommons") ? "CC BY-SA 4.0" : "Pexels License"}
-                  </a>
-                  {a.assetId === "watch-commons-modern"
-                    ? " · Uploader disclosed prior logo removal; no research retouch."
-                    : ""}
-                </p>
-              ))}
+              {manifest.assets
+                .filter((a) => imageIds.has(a.assetId))
+                .map((a) => (
+                  <p key={a.assetId}>
+                    <a href={a.sourceURL}>
+                      {a.author} · {a.assetId}
+                    </a>{" "}
+                    —{" "}
+                    <a href={a.licenseURL}>
+                      {a.licenseURL.includes("creativecommons") ? "CC BY-SA 4.0" : "Pexels License"}
+                    </a>
+                    {a.assetId === "watch-commons-modern"
+                      ? " · Uploader disclosed prior logo removal; no research retouch."
+                      : ""}
+                  </p>
+                ))}
             </details>
           </footer>
         </div>
@@ -158,24 +189,27 @@ function makeConfig(project) {
         defaultProps: {
           title: t("A little light", "Ripaus valoa"),
           copy: "",
-          imageId: "hero-flatlay-29502931",
+          imageId: defaultHeroImage,
         },
-        render: ({ title, copy, imageId }) => (
-          <section className="hero">
-            <div>
-              <p className="kicker">{t("The everyday edit", "Arjen valikoima")}</p>
-              <h1>{title}</h1>
-              <p>{copy}</p>
-              <a className="text-link" href={link("collection")}>
-                {t("Explore the collection", "Tutustu mallistoon")} ↗
-              </a>
-            </div>
-            <img
-              src={image(imageId)}
-              alt={t("Editorial composition", "Toimituksellinen asetelma")}
-            />
-          </section>
-        ),
+        render: ({ title, copy, imageId }) => {
+          const validImageId = imageIds.has(imageId) ? imageId : defaultHeroImage;
+          return (
+            <section className="hero">
+              <div>
+                <p className="kicker">{t("The everyday edit", "Arjen valikoima")}</p>
+                <h1>{title}</h1>
+                <p>{copy}</p>
+                <a className="text-link" href={link("collection")}>
+                  {t("Explore the collection", "Tutustu mallistoon")} ↗
+                </a>
+              </div>
+              <img
+                src={image(validImageId)}
+                alt={t("Editorial composition", "Toimituksellinen asetelma")}
+              />
+            </section>
+          );
+        },
       },
       Intro: {
         label: "Collection introduction",
@@ -212,7 +246,7 @@ function makeConfig(project) {
             </div>
             <div className="cards">
               {productIds.map(({ productId }, index) => {
-                const p = productView(productId);
+                const p = allowedProductIds.has(productId) ? productView(productId) : null;
                 return p ? (
                   <article className="card" key={`${productId}-${index}`} data-product-id={p.id}>
                     <a href={link("product", p.id)}>
@@ -239,27 +273,29 @@ function makeConfig(project) {
       EditorialStory: {
         label: "Selected product story",
         fields: { heading: text, copy, imageId: imageField },
-        defaultProps: { heading: "A closer look", copy: "", imageId: "necklace-34372548" },
-        render: ({ heading, copy, imageId }) => (
-          <section className="story">
-            <img src={image(imageId)} alt={t("A closer product view", "Tuote lähempää")} />
-            <div>
-              <p className="kicker">{t("In focus", "Lähikuvassa")}</p>
-              <h2>{heading}</h2>
-              <p>{copy}</p>
-              <a
-                className="text-link"
-                href={
-                  Object.values(products).some((p) => p.assetId === imageId)
-                    ? link("product", Object.values(products).find((p) => p.assetId === imageId).id)
-                    : link("collection")
-                }
-              >
-                {t("See the details", "Katso tiedot")} ↗
-              </a>
-            </div>
-          </section>
-        ),
+        defaultProps: { heading: "A closer look", copy: "", imageId: defaultStoryImage },
+        render: ({ heading, copy, imageId }) => {
+          const validImageId = imageIds.has(imageId) ? imageId : defaultStoryImage;
+          const selectedProduct = Object.values(products).find(
+            (p) => allowedProductIds.has(p.id) && p.assetId === validImageId,
+          );
+          return (
+            <section className="story">
+              <img src={image(validImageId)} alt={t("A closer product view", "Tuote lähempää")} />
+              <div>
+                <p className="kicker">{t("In focus", "Lähikuvassa")}</p>
+                <h2>{heading}</h2>
+                <p>{copy}</p>
+                <a
+                  className="text-link"
+                  href={selectedProduct ? link("product", selectedProduct.id) : link("collection")}
+                >
+                  {t("See the details", "Katso tiedot")} ↗
+                </a>
+              </div>
+            </section>
+          );
+        },
       },
       ProductDetail: {
         label: "Fixture product detail",
@@ -275,7 +311,13 @@ function makeConfig(project) {
           },
         },
         defaultProps: { productId: productOptions[0].value, unknownType: false },
-        render: (props) => <ProductDetail {...props} locale={locale} />,
+        render: (props) => (
+          <ProductDetail
+            {...props}
+            productId={allowedProductIds.has(props.productId) ? props.productId : undefined}
+            locale={locale}
+          />
+        ),
       },
     },
   };
@@ -285,6 +327,9 @@ function App() {
   const [page, setPage] = useState("home");
   const [revision, setRevision] = useState(0);
   const [status, setStatus] = useState("Loading local draft");
+  const [dirty, setDirty] = useState(false);
+  const changeVersion = useRef(0);
+  const saveRequest = useRef(0);
   const params = new URLSearchParams(location.search);
   const preview = params.has("preview");
   useEffect(() => {
@@ -297,31 +342,47 @@ function App() {
       .then((saved) => {
         if (saved && !isProject(saved)) throw Error("Invalid saved project");
         setProject(saved ?? createProject());
+        setDirty(false);
         setStatus(saved ? "Reopened private research draft" : "Unsaved developer-directed example");
       })
       .catch((error) => setStatus(error.message));
   }, []);
+  const site = project?.site;
+  const direction = project?.direction;
+  const locale = project?.locale;
   const config = useMemo(
-    () => (project ? makeConfig(project) : null),
-    [project?.locale, project?.direction, project?.site],
+    () => (site ? makeConfig({ site, direction, locale }) : null),
+    [site, direction, locale],
   );
-  const replace = (next) => {
+  const markDirty = (next, remount = false) => {
+    changeVersion.current += 1;
     setProject(next);
-    setRevision((v) => v + 1);
+    setDirty(true);
     setStatus("Unsaved developer-directed example");
+    if (remount) setRevision((value) => value + 1);
+  };
+  const replace = (next) => {
+    markDirty(next, true);
   };
   const save = async (next) => {
+    const version = changeVersion.current;
+    const request = ++saveRequest.current;
     try {
       if (!isProject(next)) throw Error("Invalid project; save refused");
+      setStatus("Saving private research draft");
       const response = await fetch("/research-save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(next),
       });
       if (!response.ok) throw Error(`Save refused (${response.status})`);
-      setStatus("Saved private research draft");
+      if (request === saveRequest.current && version === changeVersion.current) {
+        setDirty(false);
+        setStatus("Saved private research draft");
+      }
     } catch (error) {
-      setStatus(error.message);
+      if (request === saveRequest.current && version === changeVersion.current)
+        setStatus(error.message);
     }
   };
   const exportJson = () => {
@@ -339,10 +400,22 @@ function App() {
   if (preview) {
     const requested = params.get("page") ?? "home";
     const data = structuredClone(project.pages[pageNames.includes(requested) ? requested : "home"]);
-    if (requested === "product" && params.has("product"))
-      data.content[0].props.productId = params.get("product");
-    if (params.has("unknown")) data.content[0].props.unknownType = true;
-    return <Render config={config} data={data} />;
+    const detail =
+      requested === "product" && data.content.find((item) => item.type === "ProductDetail");
+    const productId = params.get("product");
+    if (detail && params.has("product"))
+      detail.props.productId = productIdsForSite(project.site).has(productId)
+        ? productId
+        : undefined;
+    if (detail && params.has("unknown")) detail.props.unknownType = true;
+    return (
+      <>
+        <Render config={config} data={data} />
+        {requested === "product" && !detail && (
+          <p role="alert">Product details unavailable in this edited page.</p>
+        )}
+      </>
+    );
   }
   return (
     <main className="research">
@@ -427,17 +500,24 @@ function App() {
           <a href={`?preview=1&page=${page}`} target="_blank" rel="noreferrer">
             Saved page preview ↗
           </a>
-          <output role="status">{status}</output>
+          <output role="status" data-dirty={dirty}>
+            {status}
+          </output>
         </div>
       </header>
       <Puck
         key={`${page}-${revision}`}
         config={config}
         data={project.pages[page]}
-        onChange={(data) =>
-          setProject((current) => ({ ...current, pages: { ...current.pages, [page]: data } }))
-        }
-        onPublish={(data) => save({ ...project, pages: { ...project.pages, [page]: data } })}
+        onChange={(data) => {
+          const next = { ...project, pages: { ...project.pages, [page]: data } };
+          if (!sameProject(next, project)) markDirty(next);
+        }}
+        onPublish={(data) => {
+          const next = { ...project, pages: { ...project.pages, [page]: data } };
+          if (!sameProject(next, project)) markDirty(next);
+          save(next);
+        }}
       />
     </main>
   );

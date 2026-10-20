@@ -9,6 +9,8 @@ import {
   reviseSection,
   productView,
   selectionState,
+  productIdsForSite,
+  assetIdsForSite,
 } from "./model.mjs";
 let total = 0;
 function check(name, fn) {
@@ -102,6 +104,27 @@ check("protected fields, nested invalid product references, unknown root data re
     mutate(p);
     assert.equal(isProject(p), false);
   }
+});
+check("fixture boundaries reject cross-fixture products and images on every page", () => {
+  const arum = createProject("aurum");
+  const arki = createProject("arki");
+  assert.deepEqual([...productIdsForSite("aurum")].length, 5);
+  assert.deepEqual([...productIdsForSite("arki")].length, 2);
+  assert.ok(assetIdsForSite("aurum").has("hero-flatlay-29502931"));
+  assert.ok(!assetIdsForSite("arki").has("hero-flatlay-29502931"));
+  for (const mutate of [
+    (p) => (p.pages.home.content[0].props.imageId = "transfer-vase-editorial"),
+    (p) =>
+      (p.pages.collection.content[1].props.productIds[0].productId =
+        "vq01-arki-transfer-reuna-mug"),
+    (p) => (p.pages.product.content[0].props.productId = "vq01-arki-transfer-pari-cup-set"),
+  ]) {
+    const candidate = structuredClone(arum);
+    mutate(candidate);
+    assert.equal(isProject(candidate), false);
+  }
+  arki.pages.product.content[0].props.productId = "vq01-aurum-quality-keha-pendant";
+  assert.equal(isProject(arki), false);
 });
 check("source and licensed asset identities retained without local private paths", () => {
   assert.equal(manifest.assets.length, 9);

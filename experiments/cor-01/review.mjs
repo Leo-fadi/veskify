@@ -111,6 +111,10 @@ try {
   await page
     .getByRole("combobox", { name: "Image", exact: true })
     .selectOption("necklace-34372548");
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Unsaved developer-directed example" })
+    .waitFor();
   await page.getByRole("button", { name: "Save research draft", exact: true }).click();
   await page.getByRole("status").filter({ hasText: "Saved private research draft" }).waitFor();
   const edited = await read();
@@ -124,6 +128,41 @@ try {
   writeFileSync(resolve(out, "initial-project.json"), JSON.stringify(initial, null, 2) + "\n");
   writeFileSync(resolve(out, "edited-project.json"), JSON.stringify(edited, null, 2) + "\n");
   step("Native field edits changed only story-home; all other sections/pages/theme preserved");
+  let delayedSave;
+  await page.route("**/research-save", async (route) => {
+    if (route.request().method() === "POST" && !delayedSave) {
+      delayedSave = { route, response: await route.fetch() };
+      return;
+    }
+    await route.continue();
+  });
+  await frame.locator('[data-puck-component="story-home"]').click({ position: { x: 10, y: 10 } });
+  await page.getByRole("textbox", { name: "Heading", exact: true }).fill("Saved snapshot title");
+  await page.getByRole("button", { name: "Save research draft", exact: true }).click();
+  for (let attempt = 0; attempt < 500 && !delayedSave; attempt++)
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.ok(delayedSave, "save request was intercepted before the newer edit");
+  await page.getByRole("textbox", { name: "Heading", exact: true }).fill("Newer unsaved title");
+  const lateResponse = page.waitForResponse(
+    (response) =>
+      response.url() === base + "/research-save" && response.request().method() === "POST",
+  );
+  await delayedSave.route.fulfill({ response: delayedSave.response });
+  await (await lateResponse).finished();
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+  assert.equal(
+    await page.locator('output[role="status"]').innerText(),
+    "Unsaved developer-directed example",
+  );
+  assert.equal(await page.locator('output[role="status"]').getAttribute("data-dirty"), "true");
+  assert.equal((await read()).pages.home.content[2].props.heading, "Saved snapshot title");
+  await page.unroute("**/research-save");
+  await save(edited);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByRole("status").filter({ hasText: "Reopened private research draft" }).waitFor();
+  step("Native edit marks dirty; delayed earlier save cannot clear a newer dirty edit");
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export editable JSON" }).click();
   const download = await downloadPromise;
@@ -139,7 +178,16 @@ try {
   });
   assert.equal(reject.status, 422);
   assert.deepEqual(await read(), edited);
-  step("Rejected protected-field write preserves previous durable save");
+  const foreign = structuredClone(edited);
+  foreign.pages.product.content[0].props.productId = "vq01-arki-transfer-reuna-mug";
+  const rejectForeign = await fetch(base + "/research-save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(foreign),
+  });
+  assert.equal(rejectForeign.status, 422);
+  assert.deepEqual(await read(), edited);
+  step("Rejected protected-field and cross-fixture writes preserve previous durable save");
   await context.close();
   context = await contextFor();
   page = await context.newPage();
@@ -226,15 +274,46 @@ try {
   });
   assert.equal(await page.getByRole("status").innerText(), "Currently unavailable");
   await capture("unavailable-product");
+  const reordered = createProject();
+  reordered.pages.product.content.unshift({
+    type: "Intro",
+    props: { id: "product-preface", heading: "Preface", copy: "A deliberate reordered block." },
+  });
+  await save(reordered);
+  const bracelet = "vq01-aurum-quality-rivi-bracelet";
+  await page.goto(`${base}/?preview=1&page=product&product=${bracelet}&unknown=1`, {
+    waitUntil: "networkidle",
+  });
+  assert.equal(await page.locator(".detail").getAttribute("data-product-id"), bracelet);
+  assert.equal(await page.getByRole("heading", { name: "Preface", exact: true }).count(), 1);
+  assert.match(
+    await page.locator(".detail").getAttribute("data-product-type"),
+    /synthetic-unrecognized/,
+  );
+  await page.goto(`${base}/?preview=1&page=product&product=vq01-arki-transfer-reuna-mug`, {
+    waitUntil: "networkidle",
+  });
+  assert.match(await page.getByRole("alert").innerText(), /Unknown product identity/);
+  step("Product override finds ProductDetail after reorder and rejects cross-fixture identity");
   await page.goto(`${base}/?preview=1&page=product&product=missing`, { waitUntil: "networkidle" });
   assert.match(await page.getByRole("alert").innerText(), /Unknown product identity/);
+  assert.deepEqual(await read(), reordered);
+  reordered.pages.product.content = reordered.pages.product.content.filter(
+    (item) => item.type !== "ProductDetail",
+  );
+  await save(reordered);
+  await page.goto(`${base}/?preview=1&page=product&product=${bracelet}`, {
+    waitUntil: "networkidle",
+  });
+  assert.match(await page.getByRole("alert").innerText(), /Product details unavailable/);
+  assert.equal(await page.getByRole("heading", { name: "Preface", exact: true }).count(), 1);
   await save(createProject("arki", "direct", "fi"));
   await page.goto(`${base}/?preview=1&page=product`, { waitUntil: "networkidle" });
   await page.getByRole("radio", { name: "M", exact: true }).check();
   assert.equal(await page.getByRole("status").innerText(), "Valinta valmis");
   await capture("transfer-fi-selection");
   step(
-    "Generic required options, unknown type, unavailable/missing identity and FI transfer verified",
+    "Generic required options, unknown type, unavailable product, rejected missing identity and FI transfer verified",
   );
   await save(edited);
   assert.equal(report.errors.length, 0, JSON.stringify(report.errors));

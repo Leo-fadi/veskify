@@ -16,6 +16,22 @@ const exact = (obj, keys) =>
 const assetIds = new Set(
   manifest.assets.filter((a) => a.assetId !== "ring-10581426").map((a) => a.assetId),
 );
+const fixtureForSite = (site) =>
+  site === "aurum" ? manifest.primaryFixture : site === "arki" ? manifest.transferFixture : null;
+export const productIdsForSite = (site) =>
+  new Set((fixtureForSite(site)?.products ?? []).map((p) => p.id));
+export const assetIdsForSite = (site) => {
+  const ids = new Set((fixtureForSite(site)?.products ?? []).map((p) => p.assetId));
+  if (site === "aurum")
+    ["hero-flatlay-29502931", "editorial-33370257", "necklace-34372548"].forEach((id) =>
+      ids.add(id),
+    );
+  if (site === "arki")
+    ["transfer-vase-editorial", "transfer-cup-set", "transfer-rim-mug"].forEach((id) =>
+      ids.add(id),
+    );
+  return ids;
+};
 export function productView(id, unknownType = false) {
   if (!Object.hasOwn(products, id)) return null;
   const product = copy(products[id]);
@@ -111,7 +127,9 @@ export function reviseSection(project, sectionId = "story-home") {
   });
   return next;
 }
-export function isData(data) {
+export function isData(data, site) {
+  const productIds = productIdsForSite(site);
+  const scopedAssets = assetIdsForSite(site);
   if (
     !exact(data, ["root", "content", "zones"]) ||
     !exact(data.root, ["props"]) ||
@@ -138,7 +156,8 @@ export function isData(data) {
         exact(p, ["id", i.type === "Hero" ? "title" : "heading", "copy", "imageId"]) &&
         text(p.title ?? p.heading) &&
         text(p.copy) &&
-        assetIds.has(p.imageId)
+        assetIds.has(p.imageId) &&
+        scopedAssets.has(p.imageId)
       );
     if (i.type === "Intro")
       return exact(p, ["id", "heading", "copy"]) && text(p.heading) && text(p.copy);
@@ -149,13 +168,13 @@ export function isData(data) {
         Array.isArray(p.productIds) &&
         p.productIds.length <= 20 &&
         p.productIds.every(
-          (entry) => exact(entry, ["productId"]) && Object.hasOwn(products, entry.productId),
+          (entry) => exact(entry, ["productId"]) && productIds.has(entry.productId),
         )
       );
     if (i.type === "ProductDetail")
       return (
         exact(p, ["id", "productId", "unknownType"]) &&
-        Object.hasOwn(products, p.productId) &&
+        productIds.has(p.productId) &&
         typeof p.unknownType === "boolean"
       );
     return false;
@@ -169,6 +188,6 @@ export function isProject(p) {
     ["editorial", "direct"].includes(p.direction) &&
     ["en", "fi"].includes(p.locale) &&
     exact(p.pages, pageNames) &&
-    pageNames.every((name) => isData(p.pages[name])),
+    pageNames.every((name) => isData(p.pages[name], p.site)),
   );
 }
