@@ -68,7 +68,7 @@ const phasePackages = roadmap
   ?.split("### Accepted predecessor:")[0];
 if (
   JSON.stringify(
-    [...(phasePackages ?? "").matchAll(/^\| (VQ[1-6])\s*\|/gmu)].map(([, id]) => id),
+    [...(phasePackages ?? "").matchAll(/^\|\s*(VQ[1-6])\s*\|/gmu)].map(([, id]) => id),
   ) !== JSON.stringify(["VQ1", "VQ2", "VQ3", "VQ4", "VQ5", "VQ6"])
 )
   throw new Error("VQ-01: all six complete product-outcome packages are required");
@@ -76,7 +76,7 @@ if (
 const earlySliceRows = roadmap
   .split("### Early-slice eligibility crosswalk")[1]
   ?.split("### Active implementation:")[0];
-const earlyOwners = [...(earlySliceRows ?? "").matchAll(/^\| (AR-\d{2})\s*\|/gmu)].map(
+const earlyOwners = [...(earlySliceRows ?? "").matchAll(/^\|\s*(AR-\d{2})\s*\|/gmu)].map(
   ([, task]) => task,
 );
 if (
@@ -132,7 +132,7 @@ for (const [path, document] of [
     );
   }
 }
-const ar06cRows = tracker.split("\n").filter((line) => /^\| AR-06C\s*\|/u.test(line));
+const ar06cRows = tracker.split("\n").filter((line) => /^\|\s*AR-06C\s*\|/u.test(line));
 if (
   ar06cRows.length !== 1 ||
   !ar06cRows[0].includes(
@@ -149,11 +149,14 @@ const policyLines = (document) => {
   return document.split("\n").map((line) => {
     if (line === "<!-- CR00 retained-history begin -->") {
       if (retainedHistory) throw new Error("nested retained-history boundary");
-      retainedHistory = true; return "";
+      retainedHistory = true;
+      return "";
     }
     if (line === "<!-- CR00 retained-history end -->") {
       if (!retainedHistory) throw new Error("unmatched retained-history boundary");
-      retainedHistory = false; excludedLevel = undefined; return "";
+      retainedHistory = false;
+      excludedLevel = undefined;
+      return "";
     }
     if (retainedHistory) return "";
     const delimiter = line.match(/^\s*(`{3,}|~{3,})/u)?.[1];
@@ -197,7 +200,10 @@ const normalizeCurrentAuthority = (value) =>
               .split("|")
               .slice(1, -1)
               .map((cell) => cell.trim());
-            if (cells.length !== 2 || !/^(?:(?:AR|CR)-\d{2}|A-10C?|P10B-19A(?:-10C?)?)$/u.test(cells[0]))
+            if (
+              cells.length !== 2 ||
+              !/^(?:(?:AR|CR)-\d{2}|A-10C?|P10B-19A(?:-10C?)?)$/u.test(cells[0])
+            )
               throw new Error("current policy: invalid Task table row");
             return `${cells[0]} ${field.toLowerCase() === "status" ? "is" : "depends on"} ${cells[1].replace(/\.$/u, "")}.`;
           })
@@ -257,7 +263,10 @@ const policySources = [
     "all",
   ],
 ];
-const sourcePaths = new Set([...policySources.map(([path]) => path), "docs/CR_00_REQUIREMENT_DISPOSITION.md"]);
+const sourcePaths = new Set([
+  ...policySources.map(([path]) => path),
+  "docs/CR_00_REQUIREMENT_DISPOSITION.md",
+]);
 const links = (owner, text) =>
   [...text.matchAll(/\[[^\]]+\]\(([^)]+\.md)\)/gu)].map(([, target]) =>
     posix.normalize(posix.join(posix.dirname(owner), target)),
@@ -356,9 +365,13 @@ const currentPolicyBlocks = (path, document) => {
   });
 };
 const quotedCurrentPolicyBlocks = (path, document) =>
-  [...document.matchAll(/^>\s*\*\*current policy\s*:\*\*\s*([^\n]*(?:\n>[^\n]*)*)/gimu)].map(
-    ([, block]) => [path, normalizeCurrentAuthority(block)],
-  );
+  [
+    ...document.matchAll(
+      path === requiredAddendum
+        ? /^>\s*\*\*(?:current policy|CR-00 proposed current pointer)\s*:\*\*\s*([^\n]*(?:\n>[^\n]*)*)/gimu
+        : /^>\s*\*\*current policy\s*:\*\*\s*([^\n]*(?:\n>[^\n]*)*)/gimu,
+    ),
+  ].map(([, block]) => [path, normalizeCurrentAuthority(block)]);
 const explicitCurrentAuthorities = policySources.flatMap(([path, document, , heading]) => [
   ...(heading === "all" ? [] : currentPolicyBlocks(path, document)),
   ...quotedCurrentPolicyBlocks(path, policyLines(document).join("\n")),
@@ -448,7 +461,7 @@ for (const [path, concerns] of requiredOwnership) {
 // The tracker's document-control table is also an existing ownership projection.
 const trackerOrderRows = tracker
   .split("\n")
-  .filter((line) => /^\| Delivery order\s+\|/u.test(line));
+  .filter((line) => /^\|\s*Delivery order\s*\|/u.test(line));
 if (
   trackerOrderRows.length !== 1 ||
   JSON.stringify(links("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", trackerOrderRows[0])) !==
@@ -501,11 +514,38 @@ statusExpectation.set("AR-10A", "Baseline");
 statusExpectation.set("AR-09A", "Baseline");
 statusExpectation.set("AR-10B", "Paused");
 statusExpectation.set("CR-00", "Prepared");
-for (let n = 1; n <= 19; n += 1) statusExpectation.set(`CR-${String(n).padStart(2, "0")}`, "Planned");
+for (let n = 1; n <= 19; n += 1)
+  statusExpectation.set(`CR-${String(n).padStart(2, "0")}`, "Planned");
 statusExpectation.set("AR-00B", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
 const activeAmendmentRecords = [];
+const groupedStatusSubjects = (value) => {
+  const raw = value.toUpperCase();
+  const range = raw.match(/^((AR|CR)-(\d{2}))\s*(?:THROUGH|TO|[–—-])\s*((AR|CR)-(\d{2}))$/u);
+  if (range) {
+    const [, , firstPrefix, firstNumber, , lastPrefix, lastNumber] = range;
+    const first = Number(firstNumber);
+    const last = Number(lastNumber);
+    if (firstPrefix !== lastPrefix || first >= last)
+      throw new Error(`current policy: invalid grouped status subject: ${raw}`);
+    return Array.from(
+      { length: last - first + 1 },
+      (_, index) => `${firstPrefix}-${String(first + index).padStart(2, "0")}`,
+    );
+  }
+  const subjects = raw.split(/\s*(?:,\s*(?:AND\b)?|\bAND\b)\s*/u);
+  const parsed = subjects.map((subject) => subject.match(/^(AR|CR)-(\d{2})[A-Z]?$/u));
+  if (
+    subjects.length < 2 ||
+    parsed.some((subject) => subject === null) ||
+    new Set(parsed.map(([, prefix]) => prefix)).size !== 1 ||
+    new Set(subjects).size !== subjects.length
+  ) {
+    throw new Error(`current policy: invalid grouped status subject: ${raw}`);
+  }
+  return subjects;
+};
 for (const [path, block] of allCurrentAuthorities) {
   const addStatus = (subject, status, qualifier = "") => {
     const normalizedQualifier = qualifier.trim();
@@ -515,6 +555,11 @@ for (const [path, block] of allCurrentAuthorities) {
     /(?<!when )\b((?:AR|CR)-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is (?!a\b|the\b|eligible\b|not\b)([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     addStatus(subject, status, qualifier);
+  }
+  for (const [, rawSubjects, status, qualifier] of block.matchAll(
+    /\b((?:AR|CR)-\d{2}[A-Z]?(?:(?:\s*,\s*(?:and\s+)?|\s+and\s+|\s+(?:through|to)\s+|\s*[–—-]\s*)(?:AR|CR)-\d{2}[A-Z]?)+)\s+are ([A-Za-z]+)\b([^.;]*)/giu,
+  )) {
+    for (const subject of groupedStatusSubjects(rawSubjects)) addStatus(subject, status, qualifier);
   }
   for (const [, subject, status, qualifier] of block.matchAll(
     /\b((?:AR|CR)-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is not ([A-Za-z]+)\b([^.;]*)/giu,
@@ -560,59 +605,60 @@ for (const record of statusRecords) {
   const normalizedQualifier = record.qualifier.replace(/^[—:/\s]+/u, "").trim();
   const permittedQualifier = record.subject.startsWith("CR-")
     ? /^(?:adoption\/owner merge pending|separate launch required)?$/iu
-    : record.subject === "AR-10B" ? /^$/u
-    : ["AR-00", "AR-01"].includes(record.subject)
-    ? /^closed$/iu
-    : ["AR-02", "AR-02M"].includes(record.subject)
-      ? /^closed$/iu
-      : record.subject === "AR-03"
-        ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-        : record.subject === "AR-02A"
-          ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-          : record.subject === "AR-02B"
+    : record.subject === "AR-10B"
+      ? /^$/u
+      : ["AR-00", "AR-01"].includes(record.subject)
+        ? /^closed$/iu
+        : ["AR-02", "AR-02M"].includes(record.subject)
+          ? /^closed$/iu
+          : record.subject === "AR-03"
             ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-            : record.subject === "AR-02C"
+            : record.subject === "AR-02A"
               ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-              : record.subject === "AR-02D"
+              : record.subject === "AR-02B"
                 ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-                : [
-                      "AR-02E",
-                      "AR-02F",
-                      "AR-02G",
-                      "AR-02H",
-                      "AR-02I",
-                      "AR-02J",
-                      "AR-02K",
-                      "AR-02L",
-                    ].includes(record.subject)
+                : record.subject === "AR-02C"
                   ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-                  : ["AR-03A", "AR-03B", "AR-03C", "AR-03D", "AR-03E"].includes(record.subject)
+                  : record.subject === "AR-02D"
                     ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
-                    : record.subject === "AR-23"
-                      ? /^unstarted$/iu
-                      : record.subject === "AR-04"
-                        ? /^closed$/iu
-                        : record.subject === "AR-06A"
-                          ? /^closed$/iu
-                          : record.subject === "AR-06B"
+                    : [
+                          "AR-02E",
+                          "AR-02F",
+                          "AR-02G",
+                          "AR-02H",
+                          "AR-02I",
+                          "AR-02J",
+                          "AR-02K",
+                          "AR-02L",
+                        ].includes(record.subject)
+                      ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
+                      : ["AR-03A", "AR-03B", "AR-03C", "AR-03D", "AR-03E"].includes(record.subject)
+                        ? /^closed(?: upon (?:explicit )?owner acceptance\/merge)?$/iu
+                        : record.subject === "AR-23"
+                          ? /^unstarted$/iu
+                          : record.subject === "AR-04"
                             ? /^closed$/iu
-                            : record.subject === "AR-06C"
+                            : record.subject === "AR-06A"
                               ? /^closed$/iu
-                              : record.subject === "AR-06D"
+                              : record.subject === "AR-06B"
                                 ? /^closed$/iu
-                                : record.subject === "AR-10A"
+                                : record.subject === "AR-06C"
                                   ? /^closed$/iu
-                                  : record.subject === "AR-09A"
+                                  : record.subject === "AR-06D"
                                     ? /^closed$/iu
-                                    : record.subject === "AR-00B"
+                                    : record.subject === "AR-10A"
                                       ? /^closed$/iu
-                                      : ["AR-05", "AR-05B"].includes(record.subject)
+                                      : record.subject === "AR-09A"
                                         ? /^closed$/iu
-                                        : record.subject === "AR-05A"
+                                        : record.subject === "AR-00B"
                                           ? /^closed$/iu
-                                          : /^AR-\d{2}$/u.test(record.subject)
-                                            ? /^$/u
-                                            : /^(?:closed)?$/iu;
+                                          : ["AR-05", "AR-05B"].includes(record.subject)
+                                            ? /^closed$/iu
+                                            : record.subject === "AR-05A"
+                                              ? /^closed$/iu
+                                              : /^AR-\d{2}$/u.test(record.subject)
+                                                ? /^$/u
+                                                : /^(?:closed)?$/iu;
   if (
     expected?.toLowerCase() !== record.status.toLowerCase() ||
     !permittedQualifier.test(normalizedQualifier)
@@ -662,11 +708,17 @@ for (const clause of [
   "CR-03 through CR-19 are Planned",
   "AR-02, AR-03, AR-04 and AR-05 are Baseline / closed",
   "Accepted AR-06A/B/C/D and AR-09A children are closed at their recorded merges",
-  "BATCH-20 / VQ-01 is PAUSED", "AR-10B is Paused", "AR-09A is Baseline / closed",
+  "BATCH-20 / VQ-01 is PAUSED",
+  "AR-10B is Paused",
+  "AR-09A is Baseline / closed",
   "AR-06 is Partial",
   "no CR task is complete or launched by this adoption",
-]) if (!trackerCurrent?.includes(clause)) throw new Error(`tracker: missing current CR-00 boundary: ${clause}`);
-const roadmapCurrent = currentAuthorities.find(([path]) => path.endsWith("DEVELOPMENT_ROADMAP.md"))?.[1];
+])
+  if (!trackerCurrent?.includes(clause))
+    throw new Error(`tracker: missing current CR-00 boundary: ${clause}`);
+const roadmapCurrent = currentAuthorities.find(([path]) =>
+  path.endsWith("DEVELOPMENT_ROADMAP.md"),
+)?.[1];
 // Guard the actual operative gate clauses, not only their labels or nonempty cells.
 for (const clause of [
   "does not start a task",
@@ -691,7 +743,7 @@ const taskSections = new Map(
 );
 const detailedTaskMatches = [...roadmap.matchAll(/^### (AR-\d{2}) —/gmu)];
 const dependencyRowMatches = [
-  ...roadmap.matchAll(/^\| P\d\s+\|\s+(AR-\d{2})\s+\|.*?\|\s+(.*?)\s+\|$/gmu),
+  ...roadmap.matchAll(/^\|\s*P\d\s*\|\s*(AR-\d{2})\s*\|.*?\|\s*(.*?)\s*\|$/gmu),
 ];
 const dependencyRows = new Map(
   dependencyRowMatches.map(([, id, dependencies]) => [id, dependencies]),
@@ -729,9 +781,10 @@ const expectedDependencies = new Map([
   ["AR-29", "AR-04, AR-20, AR-22"],
   ["AR-30", "AR-28, AR-29"],
 ]);
-const normalizedDependencies = (value) => (value === "—" ? [] : value.split(", "));
 for (const record of dependencyRecords) {
-  throw new Error(`${record.path}: contradictory current dependency declaration for ${record.subject}; AR dependency records are historical`);
+  throw new Error(
+    `${record.path}: contradictory current dependency declaration for ${record.subject}; AR dependency records are historical`,
+  );
 }
 if (
   dependencyRowMatches.length !== 31 ||
@@ -816,43 +869,91 @@ for (const path of [
   if (!existsSync(resolve(root, path))) throw new Error(`missing required file: ${path}`);
 }
 const correctiveDependencies = [
-  "—", "CR-00", "CR-01; separate service/spend access", "CR-02", "CR-03", "CR-03, CR-04",
-  "CR-05; exact paid authority", "CR-06", "CR-06, CR-07", "CR-05, CR-08", "CR-07, CR-08, CR-09",
-  "CR-10", "CR-07, CR-09, CR-10", "CR-10, CR-12", "CR-11, CR-12, CR-13", "CR-14",
-  "CR-02; separate host access", "CR-14, CR-16", "CR-13, CR-17", "CR-14, CR-18",
+  "—",
+  "CR-00",
+  "CR-01; separate service/spend access",
+  "CR-02",
+  "CR-03",
+  "CR-03, CR-04",
+  "CR-05; exact paid authority",
+  "CR-06",
+  "CR-06, CR-07",
+  "CR-05, CR-08",
+  "CR-07, CR-08, CR-09",
+  "CR-10",
+  "CR-07, CR-09, CR-10",
+  "CR-10, CR-12",
+  "CR-11, CR-12, CR-13",
+  "CR-14",
+  "CR-02; separate host access",
+  "CR-14, CR-16",
+  "CR-13, CR-17",
+  "CR-14, CR-18",
 ];
-const correctiveRows = [...roadmap.matchAll(/^\| (CR-\d{2}) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$/gmu)];
-if (correctiveRows.length !== 20) throw new Error("corrective roadmap: duplicate or missing task row");
+const correctiveRows = [
+  ...roadmap.matchAll(/^\|\s*(CR-\d{2})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|$/gmu),
+];
+if (correctiveRows.length !== 20)
+  throw new Error("corrective roadmap: duplicate or missing task row");
 for (const [index, [, id, outcome, dependencies, failure]] of correctiveRows.entries()) {
-  if (id !== `CR-${String(index).padStart(2, "0")}` || dependencies.trim() !== correctiveDependencies[index] || !outcome.trim() || !failure.trim())
+  if (
+    id !== `CR-${String(index).padStart(2, "0")}` ||
+    dependencies.trim() !== correctiveDependencies[index] ||
+    !outcome.trim() ||
+    !failure.trim()
+  )
     throw new Error(`corrective roadmap: ${id} exact dependency/outcome mismatch`);
-  if (id === "CR-14" && (
-    outcome.trim() !== "Owner internal-product acceptance on independent evidence" ||
-    failure.trim() !== "No owner acceptance leaves product incomplete."
-  )) throw new Error("corrective roadmap: CR-14 owner acceptance/failure routing changed");
+  if (
+    id === "CR-14" &&
+    (outcome.trim() !== "Owner internal-product acceptance on independent evidence" ||
+      failure.trim() !== "No owner acceptance leaves product incomplete.")
+  )
+    throw new Error("corrective roadmap: CR-14 owner acceptance/failure routing changed");
 }
 for (const [path, block] of allCurrentAuthorities) {
-  if (/BATCH-20(?: \/ VQ-01)? is (?:active|resumed)/iu.test(block)) throw new Error(`${path}: superseded BATCH-20 activation`);
+  if (/BATCH-20(?: \/ VQ-01)? is (?:active|resumed)/iu.test(block))
+    throw new Error(`${path}: superseded BATCH-20 activation`);
   const records = [...block.matchAll(/\b(CR-\d{2}) depends (?:only )?on ([^.]+)\./gu)];
   const seen = new Set();
   for (const [, id, raw] of records) {
     const n = Number(id.slice(3));
-    if (seen.has(id)) throw new Error(`${path}: duplicate current dependency declaration for ${id}`);
+    if (seen.has(id))
+      throw new Error(`${path}: duplicate current dependency declaration for ${id}`);
     seen.add(id);
-    if (!correctiveDependencies[n] || raw.replace(/ and /gu, ", ") !== correctiveDependencies[n].split(";")[0])
+    if (
+      !correctiveDependencies[n] ||
+      raw.replace(/ and /gu, ", ") !== correctiveDependencies[n].split(";")[0]
+    )
       throw new Error(`${path}: contradictory current dependency declaration for ${id}`);
   }
 }
-const requirementRows = [...sdd.matchAll(/^\| \*\*(?:FR|NFR|AC)-1\d\d\*\* \|.*$/gmu)].map(([row]) => row);
-if (requirementRows.length !== 72 || createHash("sha256").update(requirementRows.join("\n")).digest("hex") !== "098f629a42c6d67a2b26ef2f1b173143617e5188cee3a2162af80c2a5e66a019")
+const requirementRows = [...sdd.matchAll(/^\|\s*\*\*(?:FR|NFR|AC)-1\d\d\*\*\s*\|.*$/gmu)].map(
+  ([row]) => row,
+);
+if (
+  requirementRows.length !== 72 ||
+  createHash("sha256").update(requirementRows.join("\n")).digest("hex") !==
+    "098f629a42c6d67a2b26ef2f1b173143617e5188cee3a2162af80c2a5e66a019"
+)
   throw new Error("CR-00: original 72 requirement definitions changed");
 const crDisposition = read("docs/CR_00_REQUIREMENT_DISPOSITION.md");
-const mapped = [...crDisposition.matchAll(/^\| ((?:FR|NFR|AC)-1\d\d) \|/gmu)].map(([, id]) => id);
+const mapped = [...crDisposition.matchAll(/^\|\s*((?:FR|NFR|AC)-1\d\d)\s*\|/gmu)].map(
+  ([, id]) => id,
+);
 const originalIds = requirementRows.map((row) => row.match(/\*\*((?:FR|NFR|AC)-1\d\d)\*\*/u)[1]);
-if (JSON.stringify(mapped) !== JSON.stringify(originalIds)) throw new Error("CR-00: missing/duplicate requirement disposition");
-for (const [prefix, count, expression] of [["T",24,/^\| (T\d{2}) \|/gmu],["F",10,/^\| (F\d{2}) —/gmu]]) {
-  const ids=[...crDisposition.matchAll(expression)].map(([,id])=>id);
-  if (JSON.stringify(ids)!==JSON.stringify(Array.from({length:count},(_,i)=>`${prefix}${String(i+1).padStart(2,"0")}`)))
+if (JSON.stringify(mapped) !== JSON.stringify(originalIds))
+  throw new Error("CR-00: missing/duplicate requirement disposition");
+for (const [prefix, count, expression] of [
+  ["T", 24, /^\|\s*(T\d{2})\s*\|/gmu],
+  ["F", 10, /^\|\s*(F\d{2})\s*—/gmu],
+]) {
+  const ids = [...crDisposition.matchAll(expression)].map(([, id]) => id);
+  if (
+    JSON.stringify(ids) !==
+    JSON.stringify(
+      Array.from({ length: count }, (_, i) => `${prefix}${String(i + 1).padStart(2, "0")}`),
+    )
+  )
     throw new Error(`CR-00: incomplete/duplicate ${prefix} crosswalk`);
 }
 for (const [path, document] of policySources) {

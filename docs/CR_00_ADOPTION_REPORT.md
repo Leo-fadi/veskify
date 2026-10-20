@@ -13,15 +13,15 @@ working tree before any delivery decision.
 
 ## Operative changes and reconciled sources
 
-| Source | Current interpretation after proposed adoption | Historical material retained |
-| --- | --- | --- |
-| SDD §§1–4, 6–7, 13–17 | One spec; roadmap controls order, tracker controls status; full corrective clauses govern outcome, library, proposal path, lifecycle, quality and retention. | Pre-existing revision rows and Appendix A definitions remain unchanged; a CR-00 editorial row is added. |
-| SDD §10.21B / BATCH-20 | BATCH-20 is paused; AR-10B is preserved/uncommitted and not visually accepted. | Prior authority/attempt records remain labelled historical. |
-| SDD §15 and AR/P10 material | CR order is current; retained AR responsibilities remain reference obligations only. | Full historical outcomes/dependencies remain present. |
-| Appendix A / requirement map | All 72 source rows retain their definitions; CR ownership is mapping, not completion. | AC-120 historical-only and AC-126 three-direction obligation remain explicit. |
-| ADR-001 / ADR-002 | Puck, StorefrontSnapshot and PageBlueprint remain current canonical default; advertised capability handles are untrusted proposal data resolved server-side. | No migration/adoption or provider authority is inferred. |
-| Guide, AGENTS, template | One writer; independent execution/reports; preservation-first routine repairs; one review; final-head CI/protected merge; owner gates remain. | Older workflow and task records retain their original scope. |
-| Audit / ledger / README | Separate implemented/reachable/provider-expressible/rendered/editable-saveable/technical/owner/production dimensions. | Existing evidence retains its original attribution. |
+| Source                       | Current interpretation after proposed adoption                                                                                                               | Historical material retained                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| SDD §§1–4, 6–7, 13–17        | One spec; roadmap controls order, tracker controls status; full corrective clauses govern outcome, library, proposal path, lifecycle, quality and retention. | Pre-existing revision rows and Appendix A definitions remain unchanged; a CR-00 editorial row is added. |
+| SDD §10.21B / BATCH-20       | BATCH-20 is paused; AR-10B is preserved/uncommitted and not visually accepted.                                                                               | Prior authority/attempt records remain labelled historical.                                             |
+| SDD §15 and AR/P10 material  | CR order is current; retained AR responsibilities remain reference obligations only.                                                                         | Full historical outcomes/dependencies remain present.                                                   |
+| Appendix A / requirement map | All 72 source rows retain their definitions; CR ownership is mapping, not completion.                                                                        | AC-120 historical-only and AC-126 three-direction obligation remain explicit.                           |
+| ADR-001 / ADR-002            | Puck, StorefrontSnapshot and PageBlueprint remain current canonical default; advertised capability handles are untrusted proposal data resolved server-side. | No migration/adoption or provider authority is inferred.                                                |
+| Guide, AGENTS, template      | One writer; independent execution/reports; preservation-first routine repairs; one review; final-head CI/protected merge; owner gates remain.                | Older workflow and task records retain their original scope.                                            |
+| Audit / ledger / README      | Separate implemented/reachable/provider-expressible/rendered/editable-saveable/technical/owner/production dimensions.                                        | Existing evidence retains its original attribution.                                                     |
 
 ## Requirement and gate disposition
 

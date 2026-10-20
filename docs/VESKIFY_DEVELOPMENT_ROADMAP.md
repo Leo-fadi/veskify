@@ -7,37 +7,37 @@ foundation, spend funds, or resume BATCH-20. The tracker alone records status. T
 P10 and DEVX material below preserves responsibility and historical evidence, but has no
 independent scheduling role.
 
-| Batch | Tasks | Owner-visible exit |
-| --- | --- | --- |
-| COR-01 | CR-00–02 | Correct current authority, then select a foundation from a fair working reuse comparison. |
-| COR-02 | CR-03–05 | Prove designed responsive home, collection and PDP template capability before expanding AI integration. |
-| COR-03 | CR-06–08 | Real component-aware page generation and selected-section revision with protected data intact. |
-| COR-04 | CR-09–11 | Complete-store assembly, materially contrasting result and transfer merchant. |
+| Batch  | Tasks    | Owner-visible exit                                                                                       |
+| ------ | -------- | -------------------------------------------------------------------------------------------------------- |
+| COR-01 | CR-00–02 | Correct current authority, then select a foundation from a fair working reuse comparison.                |
+| COR-02 | CR-03–05 | Prove designed responsive home, collection and PDP template capability before expanding AI integration.  |
+| COR-03 | CR-06–08 | Real component-aware page generation and selected-section revision with protected data intact.           |
+| COR-04 | CR-09–11 | Complete-store assembly, materially contrasting result and transfer merchant.                            |
 | COR-05 | CR-12–15 | Ordinary editing, recoverable save/reopen, owner commercial-reference decision and selective retirement. |
-| COR-06 | CR-16–19 | Separately verified host, commerce, publication, recovery and controlled pilot. |
+| COR-06 | CR-16–19 | Separately verified host, commerce, publication, recovery and controlled pilot.                          |
 
-| CR | Outcome | Exact dependencies | Gate / failure routing |
-| --- | --- | --- | --- |
-| CR-00 | One operative spec, roadmap, tracker and shared policy | — | Requirement loss or unsafe separation stops adoption. |
-| CR-01 | Frozen lawful brief, catalogue, assets and measurable reference target | CR-00 | Weak input returns to target preparation. |
-| CR-02 | Executed reuse comparison and owner foundation decision | CR-01; separate service/spend access | No proven option stops custom-foundation expansion. |
-| CR-03 | Designed theme, frame and content sections | CR-02 | Weak configured design returns to library work. |
-| CR-04 | Designed commerce cards, grids, gallery and purchase sections | CR-03 | Commerce usability failure returns to components, not prompt expansion. |
-| CR-05 | Approved integrated home/collection/PDP template target | CR-03, CR-04 | Weak target returns to CR-03/04. |
-| CR-06 | Component-aware agent for one real editable page | CR-05; exact paid authority | Unexpressible target returns to agent boundary. |
-| CR-07 | Scoped AI revision and explicit acceptance | CR-06 | Collateral change returns to scope/validation. |
-| CR-08 | Grounded content/media and independent design controls | CR-06, CR-07 | Lost/substituted supported intent returns to compiler/adapter. |
-| CR-09 | Coherent remaining templates and honest route states | CR-05, CR-08 | Homepage/static-only result fails. |
-| CR-10 | Whole-store request using proven scoped operations | CR-07, CR-08, CR-09 | Monolithic/partial failure returns to stage boundary. |
-| CR-11 | Actual contrast and transfer | CR-10 | Palette-only difference fails. |
-| CR-12 | Ordinary merchant editing and draft journey | CR-07, CR-09, CR-10 | Demo-only editor fails. |
-| CR-13 | Operation/review recovery | CR-10, CR-12 | Process-local proof returns to recovery. |
-| CR-14 | Owner internal-product acceptance on independent evidence | CR-11, CR-12, CR-13 | No owner acceptance leaves product incomplete. |
-| CR-15 | Replaced-path/evidence retirement | CR-14 | Unproven dependency stays retained. |
-| CR-16 | Actual Vesko host/data contracts | CR-02; separate host access | Missing host authority blocks dependents only. |
-| CR-17 | Authenticated project/live-commerce adapters | CR-14, CR-16 | Foreign/expired access must fail safely. |
-| CR-18 | Real publication, SEO and recovery | CR-13, CR-17 | Any atomicity/authority failure blocks activation. |
-| CR-19 | Controlled retailer pilot | CR-14, CR-18 | Internal proof never substitutes for pilot evidence. |
+| CR    | Outcome                                                                | Exact dependencies                   | Gate / failure routing                                                  |
+| ----- | ---------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
+| CR-00 | One operative spec, roadmap, tracker and shared policy                 | —                                    | Requirement loss or unsafe separation stops adoption.                   |
+| CR-01 | Frozen lawful brief, catalogue, assets and measurable reference target | CR-00                                | Weak input returns to target preparation.                               |
+| CR-02 | Executed reuse comparison and owner foundation decision                | CR-01; separate service/spend access | No proven option stops custom-foundation expansion.                     |
+| CR-03 | Designed theme, frame and content sections                             | CR-02                                | Weak configured design returns to library work.                         |
+| CR-04 | Designed commerce cards, grids, gallery and purchase sections          | CR-03                                | Commerce usability failure returns to components, not prompt expansion. |
+| CR-05 | Approved integrated home/collection/PDP template target                | CR-03, CR-04                         | Weak target returns to CR-03/04.                                        |
+| CR-06 | Component-aware agent for one real editable page                       | CR-05; exact paid authority          | Unexpressible target returns to agent boundary.                         |
+| CR-07 | Scoped AI revision and explicit acceptance                             | CR-06                                | Collateral change returns to scope/validation.                          |
+| CR-08 | Grounded content/media and independent design controls                 | CR-06, CR-07                         | Lost/substituted supported intent returns to compiler/adapter.          |
+| CR-09 | Coherent remaining templates and honest route states                   | CR-05, CR-08                         | Homepage/static-only result fails.                                      |
+| CR-10 | Whole-store request using proven scoped operations                     | CR-07, CR-08, CR-09                  | Monolithic/partial failure returns to stage boundary.                   |
+| CR-11 | Actual contrast and transfer                                           | CR-10                                | Palette-only difference fails.                                          |
+| CR-12 | Ordinary merchant editing and draft journey                            | CR-07, CR-09, CR-10                  | Demo-only editor fails.                                                 |
+| CR-13 | Operation/review recovery                                              | CR-10, CR-12                         | Process-local proof returns to recovery.                                |
+| CR-14 | Owner internal-product acceptance on independent evidence              | CR-11, CR-12, CR-13                  | No owner acceptance leaves product incomplete.                          |
+| CR-15 | Replaced-path/evidence retirement                                      | CR-14                                | Unproven dependency stays retained.                                     |
+| CR-16 | Actual Vesko host/data contracts                                       | CR-02; separate host access          | Missing host authority blocks dependents only.                          |
+| CR-17 | Authenticated project/live-commerce adapters                           | CR-14, CR-16                         | Foreign/expired access must fail safely.                                |
+| CR-18 | Real publication, SEO and recovery                                     | CR-13, CR-17                         | Any atomicity/authority failure blocks activation.                      |
+| CR-19 | Controlled retailer pilot                                              | CR-14, CR-18                         | Internal proof never substitutes for pilot evidence.                    |
 
 Decision gates: G0 foundation choice at CR-02; G1 owner direction for configured templates at CR-05;
 G2 real AI authoring at CR-06–08; G3 owner acceptance of the complete internal product at CR-14;
@@ -48,6 +48,8 @@ retained three-direction or production requirement. VerifyAI remains out of scop
 <!-- CR00 current-order end -->
 
 ## Historical AR/P10 responsibility reference (not current scheduling)
+
+<!-- prettier-ignore-start -->
 
 <!-- CR00 retained-history begin -->
 
@@ -1660,3 +1662,5 @@ remains unchanged; no successor is authorized by BATCH-14.
 
 
 <!-- CR00 retained-history end -->
+
+<!-- prettier-ignore-end -->
