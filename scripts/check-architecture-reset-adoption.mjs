@@ -145,7 +145,17 @@ if (
 const policyLines = (document) => {
   let fence;
   let excludedLevel;
+  let retainedHistory = false;
   return document.split("\n").map((line) => {
+    if (line === "<!-- CR00 retained-history begin -->") {
+      if (retainedHistory) throw new Error("nested retained-history boundary");
+      retainedHistory = true; return "";
+    }
+    if (line === "<!-- CR00 retained-history end -->") {
+      if (!retainedHistory) throw new Error("unmatched retained-history boundary");
+      retainedHistory = false; excludedLevel = undefined; return "";
+    }
+    if (retainedHistory) return "";
     const delimiter = line.match(/^\s*(`{3,}|~{3,})/u)?.[1];
     if (delimiter) {
       if (!fence) fence = delimiter;
@@ -187,7 +197,7 @@ const normalizeCurrentAuthority = (value) =>
               .split("|")
               .slice(1, -1)
               .map((cell) => cell.trim());
-            if (cells.length !== 2 || !/^(?:AR-\d{2}|A-10C?|P10B-19A(?:-10C?)?)$/u.test(cells[0]))
+            if (cells.length !== 2 || !/^(?:(?:AR|CR)-\d{2}|A-10C?|P10B-19A(?:-10C?)?)$/u.test(cells[0]))
               throw new Error("current policy: invalid Task table row");
             return `${cells[0]} ${field.toLowerCase() === "status" ? "is" : "depends on"} ${cells[1].replace(/\.$/u, "")}.`;
           })
@@ -226,8 +236,8 @@ const policySources = [
     "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
     roadmap,
     "# Veskify Development Roadmap",
-    "## AR-00 replacement-roadmap projection (effective on adoption/merge)",
-    "| Package | Task  | Outcome                                                 | Dependencies                      |",
+    "## CR-00 current corrective order (proposed; owner adoption/merge pending)",
+    "<!-- CR00 current-order end -->",
   ],
   ["docs/VESKIFY_SDD.md", sdd, "# Veskify Software Design Document v1.3.0"],
   ["docs/DEVELOPMENT_GUIDE.md", guide, "# Veskify Development Guide"],
@@ -247,7 +257,7 @@ const policySources = [
     "all",
   ],
 ];
-const sourcePaths = new Set(policySources.map(([path]) => path));
+const sourcePaths = new Set([...policySources.map(([path]) => path), "docs/CR_00_REQUIREMENT_DISPOSITION.md"]);
 const links = (owner, text) =>
   [...text.matchAll(/\[[^\]]+\]\(([^)]+\.md)\)/gu)].map(([, target]) =>
     posix.normalize(posix.join(posix.dirname(owner), target)),
@@ -488,7 +498,10 @@ statusExpectation.set("AR-06B", "Baseline");
 statusExpectation.set("AR-06C", "Baseline");
 statusExpectation.set("AR-06D", "Baseline");
 statusExpectation.set("AR-10A", "Baseline");
-statusExpectation.set("AR-09A", "In");
+statusExpectation.set("AR-09A", "Baseline");
+statusExpectation.set("AR-10B", "Paused");
+statusExpectation.set("CR-00", "Prepared");
+for (let n = 1; n <= 19; n += 1) statusExpectation.set(`CR-${String(n).padStart(2, "0")}`, "Planned");
 statusExpectation.set("AR-00B", "Baseline");
 const statusRecords = [];
 const dependencyRecords = [];
@@ -499,17 +512,17 @@ for (const [path, block] of allCurrentAuthorities) {
     statusRecords.push({ path, subject, status, qualifier: normalizedQualifier });
   };
   for (const [, subject, status, qualifier] of block.matchAll(
-    /(?<!when )\b(AR-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is (?!a\b|the\b|eligible\b|not\b)([A-Za-z]+)\b([^.;]*)/giu,
+    /(?<!when )\b((?:AR|CR)-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is (?!a\b|the\b|eligible\b|not\b)([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     addStatus(subject, status, qualifier);
   }
   for (const [, subject, status, qualifier] of block.matchAll(
-    /\b(AR-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is not ([A-Za-z]+)\b([^.;]*)/giu,
+    /\b((?:AR|CR)-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) is not ([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     if (status.toLowerCase() !== "serialized") addStatus(subject, `not ${status}`, qualifier);
   }
   for (const [, subject, status, qualifier] of block.matchAll(
-    /\b(AR-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) current status authority:\s*([A-Za-z]+)\b([^.;]*)/giu,
+    /\b((?:AR|CR)-\d{2}[A-Z]?|A-10(?:C)?|P[A-Z0-9]+(?:-[A-Z0-9]+)+) current status authority:\s*([A-Za-z]+)\b([^.;]*)/giu,
   )) {
     addStatus(subject, status, qualifier);
   }
@@ -545,7 +558,10 @@ for (const [path, block] of allCurrentAuthorities) {
 for (const record of statusRecords) {
   const expected = statusExpectation.get(record.subject);
   const normalizedQualifier = record.qualifier.replace(/^[—:/\s]+/u, "").trim();
-  const permittedQualifier = ["AR-00", "AR-01"].includes(record.subject)
+  const permittedQualifier = record.subject.startsWith("CR-")
+    ? /^(?:adoption\/owner merge pending|separate launch required)?$/iu
+    : record.subject === "AR-10B" ? /^$/u
+    : ["AR-00", "AR-01"].includes(record.subject)
     ? /^closed$/iu
     : ["AR-02", "AR-02M"].includes(record.subject)
       ? /^closed$/iu
@@ -587,7 +603,7 @@ for (const record of statusRecords) {
                                 : record.subject === "AR-10A"
                                   ? /^closed$/iu
                                   : record.subject === "AR-09A"
-                                    ? /^progress under BATCH-20 \/ VQ-01 on the accepted AR-10A merge$/iu
+                                    ? /^closed$/iu
                                     : record.subject === "AR-00B"
                                       ? /^closed$/iu
                                       : ["AR-05", "AR-05B"].includes(record.subject)
@@ -639,67 +655,29 @@ if (activeAmendmentRecords.length > 0) {
 const trackerCurrent = currentAuthorities.find(([path]) =>
   path.endsWith("DELIVERY_TRACKER.md"),
 )?.[1];
-if (
-  !trackerCurrent?.includes("AR-00 current status authority: Baseline / closed.") ||
-  !trackerCurrent.includes("AR-01 is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02A is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02B is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02C is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02D is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02E is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02F is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02G is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02H is Baseline / closed") ||
-  !trackerCurrent.includes("AR-02I is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-02J is Baseline / closed.") ||
-  !trackerCurrent.includes(
-    "AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed.",
-  ) ||
-  !trackerCurrent.includes("AR-02 is Baseline / closed;") ||
-  !trackerCurrent.includes(
-    "AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement.",
-  ) ||
-  !trackerCurrent.includes("AR-03 is Baseline / closed;") ||
-  !trackerCurrent.includes("AR-03A is Baseline / closed.") ||
-  !trackerCurrent.includes("AR-03B is Baseline / closed.") ||
-  !trackerCurrent.includes(
-    "AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed.",
-  ) ||
-  !trackerCurrent.includes("BATCH-05 is complete.") ||
-  !trackerCurrent.includes(
-    "AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial.",
-  ) ||
-  !trackerCurrent.includes("BATCH-03 is complete") ||
-  !trackerCurrent.includes("BATCH-04 is complete.") ||
-  !trackerCurrent.includes(
-    "BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete.",
-  ) ||
-  !trackerCurrent.includes(
-    "AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial.",
-  ) ||
-  nextTaskIds(trackerCurrent).length !== 0
-) {
-  throw new Error(
-    "tracker: AR-00/AR-01/AR-02A/AR-02B/AR-02C/AR-02D/AR-02E/AR-03/AR-03A statuses, AR-02/AR-02M closure, AR-04 closure, AR-05A closure, AR-05B/AR-05 closure, AR-06A verified closure, AR-06B verified closure and AR-06C accepted closure, AR-06 Partial, and the accepted AR-06D baseline, accepted AR-10A and active AR-09A are required",
-  );
-}
-if (
-  dependencyRecords.filter(
-    (record) => record.path.endsWith("DELIVERY_TRACKER.md") && record.subject === "AR-23",
-  ).length !== 1 ||
-  !trackerCurrent.includes("not serialized behind visual work")
-) {
-  throw new Error("tracker: AR-23 must depend only on AR-01 without visual serialization");
-}
-const roadmapCurrent = currentAuthorities.find(([path]) =>
-  path.endsWith("DEVELOPMENT_ROADMAP.md"),
-)?.[1];
-if (
-  !roadmapCurrent?.includes(
-    "AR-00 is Baseline / closed. AR-01 is Baseline / closed. AR-02A is Baseline / closed. AR-02B is Baseline / closed. AR-02C is Baseline / closed. AR-02D is Baseline / closed. AR-02E is Baseline / closed. AR-02F is Baseline / closed. AR-02G is Baseline / closed. AR-02H is Baseline / closed. AR-02I is Baseline / closed. AR-02J is Baseline / closed. AR-02K is Baseline / closed. AR-02L is Baseline / closed. AR-02M is Baseline / closed. AR-02 is Baseline / closed; complete original acceptance is mapped in AR_02_BOUNDARY_ACCEPTANCE.md. AR-04 is Baseline / closed. AR-05A is Baseline / closed. AR-05B is Baseline / closed. AR-05 is Baseline / closed; original T01/T02 acceptance is mapped in AR_05_CANONICAL_ACCEPTANCE.md. AR-06A is Baseline / closed. Its accepted merge is bc209f4bdfed9626605b8c699aaabb547d5d2025. AR-06B is Baseline / closed. Its accepted merge is e2addffc29f7719e23e9e7856ecf7c739924501f. AR-06C is Baseline / closed. Its accepted PR #261 head is af75994f2a4e1186b4429db6b93cb1bf51d2e048, merged as de0faeba0d40bd36ac83f25d533a3428f83501cc. AR-06 is Partial; rendering, editing and save/reload evidence is mapped in AR_06_RENDERING_ACCEPTANCE.md. History/lifecycle/publication integration, positive collection/search and PDP executable-commerce proof, and the shared collection/search context decision remain required before enablement. AR-03 is Baseline / closed; original same-input characterization and separate ownership are verified. AR-03A is Baseline / closed. AR-03B is Baseline / closed. AR-03C is Baseline / closed. AR-03D is Baseline / closed. AR-03E is Baseline / closed. AR-23 is eligible after AR-01 and is not serialized behind visual work. AR-23 remains unstarted. BATCH-03 is complete. BATCH-04 is complete. BATCH-05 is complete. BATCH-06 is complete. BATCH-07 is complete. BATCH-08 is complete. BATCH-09 is complete. BATCH-10 is complete. BATCH-11 is complete. BATCH-12 is complete. BATCH-13 is complete. BATCH-14 is complete. BATCH-15 is complete. BATCH-16 is complete after accepted AR-06C delivery and safe closeout. AR-00B is Baseline / closed. Its accepted merge is fa6c200. AR-06D is Baseline / closed. Its accepted PR #263 head is 496664011c0b7553233ee160b70e2d89fc795eb2, merged as 970b6cd00a7df90cd7b2ff1008916e8c602127d0. One real model call and one official input-count request have executed. The owner accepts the honest technical baseline; visual quality remains below target. This is not commercial-quality acceptance or production approval. BATCH-18 delivery is complete. AR-10A is Baseline / closed. Its accepted merge is ea8d077c4eaa6f5e19d04965ad77efefda5d3571. BATCH-19 is complete. BATCH-20 / VQ-01 is active. AR-09A is In progress under BATCH-20 / VQ-01 on the accepted AR-10A merge. It is the first atomic AR-09 child for versioned regional design-intent propagation; AR-10B remains unstarted. AR-06 remains Partial.",
-  )
-) {
-  throw new Error("roadmap: current scheduling declaration is required");
+// CR-00 replaces forward scheduling, not accepted historical outcomes.
+for (const clause of [
+  "CR-00 is Prepared — adoption/owner merge pending",
+  "CR-01 and CR-02 are Planned — separate launch required",
+  "CR-03 through CR-19 are Planned",
+  "AR-02, AR-03, AR-04 and AR-05 are Baseline / closed",
+  "Accepted AR-06A/B/C/D and AR-09A children are closed at their recorded merges",
+  "BATCH-20 / VQ-01 is PAUSED", "AR-10B is Paused", "AR-09A is Baseline / closed",
+  "AR-06 is Partial",
+  "no CR task is complete or launched by this adoption",
+]) if (!trackerCurrent?.includes(clause)) throw new Error(`tracker: missing current CR-00 boundary: ${clause}`);
+const roadmapCurrent = currentAuthorities.find(([path]) => path.endsWith("DEVELOPMENT_ROADMAP.md"))?.[1];
+// Guard the actual operative gate clauses, not only their labels or nonempty cells.
+for (const clause of [
+  "does not start a task",
+  "G0 foundation choice at CR-02",
+  "G1 owner direction for configured templates at CR-05",
+  "G2 real AI authoring at CR-06–08",
+  "G3 owner acceptance of the complete internal product at CR-14",
+  "G4 host/pilot proof at CR-19",
+]) {
+  if (!roadmapCurrent?.includes(clause))
+    throw new Error(`roadmap: missing current corrective gate: ${clause}`);
 }
 const taskSections = new Map(
   roadmap
@@ -753,28 +731,7 @@ const expectedDependencies = new Map([
 ]);
 const normalizedDependencies = (value) => (value === "—" ? [] : value.split(", "));
 for (const record of dependencyRecords) {
-  const expected = expectedDependencies.get(record.subject);
-  const expectedSet = normalizedDependencies(expected).toSorted();
-  const declaredSet = record.dependencies.toSorted();
-  const duplicate = new Set(record.dependencies).size !== record.dependencies.length;
-  if (
-    !expected ||
-    record.residue ||
-    duplicate ||
-    declaredSet.length !== expectedSet.length ||
-    declaredSet.some((dependency, index) => dependency !== expectedSet[index])
-  ) {
-    throw new Error(
-      `${record.path}: contradictory current dependency declaration for ${record.subject}`,
-    );
-  }
-  if (
-    record.subject === "AR-23" &&
-    !/(?:not serialized behind visual work|numeric order does not serialize it behind visual packages)/u.test(
-      record.rawDependencies,
-    )
-  )
-    throw new Error(`${record.path}: current AR-23 declaration lacks non-serialization`);
+  throw new Error(`${record.path}: contradictory current dependency declaration for ${record.subject}; AR dependency records are historical`);
 }
 if (
   dependencyRowMatches.length !== 31 ||
@@ -858,6 +815,51 @@ for (const path of [
 ]) {
   if (!existsSync(resolve(root, path))) throw new Error(`missing required file: ${path}`);
 }
+const correctiveDependencies = [
+  "—", "CR-00", "CR-01; separate service/spend access", "CR-02", "CR-03", "CR-03, CR-04",
+  "CR-05; exact paid authority", "CR-06", "CR-06, CR-07", "CR-05, CR-08", "CR-07, CR-08, CR-09",
+  "CR-10", "CR-07, CR-09, CR-10", "CR-10, CR-12", "CR-11, CR-12, CR-13", "CR-14",
+  "CR-02; separate host access", "CR-14, CR-16", "CR-13, CR-17", "CR-14, CR-18",
+];
+const correctiveRows = [...roadmap.matchAll(/^\| (CR-\d{2}) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$/gmu)];
+if (correctiveRows.length !== 20) throw new Error("corrective roadmap: duplicate or missing task row");
+for (const [index, [, id, outcome, dependencies, failure]] of correctiveRows.entries()) {
+  if (id !== `CR-${String(index).padStart(2, "0")}` || dependencies.trim() !== correctiveDependencies[index] || !outcome.trim() || !failure.trim())
+    throw new Error(`corrective roadmap: ${id} exact dependency/outcome mismatch`);
+  if (id === "CR-14" && (
+    outcome.trim() !== "Owner internal-product acceptance on independent evidence" ||
+    failure.trim() !== "No owner acceptance leaves product incomplete."
+  )) throw new Error("corrective roadmap: CR-14 owner acceptance/failure routing changed");
+}
+for (const [path, block] of allCurrentAuthorities) {
+  if (/BATCH-20(?: \/ VQ-01)? is (?:active|resumed)/iu.test(block)) throw new Error(`${path}: superseded BATCH-20 activation`);
+  const records = [...block.matchAll(/\b(CR-\d{2}) depends (?:only )?on ([^.]+)\./gu)];
+  const seen = new Set();
+  for (const [, id, raw] of records) {
+    const n = Number(id.slice(3));
+    if (seen.has(id)) throw new Error(`${path}: duplicate current dependency declaration for ${id}`);
+    seen.add(id);
+    if (!correctiveDependencies[n] || raw.replace(/ and /gu, ", ") !== correctiveDependencies[n].split(";")[0])
+      throw new Error(`${path}: contradictory current dependency declaration for ${id}`);
+  }
+}
+const requirementRows = [...sdd.matchAll(/^\| \*\*(?:FR|NFR|AC)-1\d\d\*\* \|.*$/gmu)].map(([row]) => row);
+if (requirementRows.length !== 72 || createHash("sha256").update(requirementRows.join("\n")).digest("hex") !== "098f629a42c6d67a2b26ef2f1b173143617e5188cee3a2162af80c2a5e66a019")
+  throw new Error("CR-00: original 72 requirement definitions changed");
+const crDisposition = read("docs/CR_00_REQUIREMENT_DISPOSITION.md");
+const mapped = [...crDisposition.matchAll(/^\| ((?:FR|NFR|AC)-1\d\d) \|/gmu)].map(([, id]) => id);
+const originalIds = requirementRows.map((row) => row.match(/\*\*((?:FR|NFR|AC)-1\d\d)\*\*/u)[1]);
+if (JSON.stringify(mapped) !== JSON.stringify(originalIds)) throw new Error("CR-00: missing/duplicate requirement disposition");
+for (const [prefix, count, expression] of [["T",24,/^\| (T\d{2}) \|/gmu],["F",10,/^\| (F\d{2}) —/gmu]]) {
+  const ids=[...crDisposition.matchAll(expression)].map(([,id])=>id);
+  if (JSON.stringify(ids)!==JSON.stringify(Array.from({length:count},(_,i)=>`${prefix}${String(i+1).padStart(2,"0")}`)))
+    throw new Error(`CR-00: incomplete/duplicate ${prefix} crosswalk`);
+}
+for (const [path, document] of policySources) {
+  const begins = (document.match(/<!-- CR00 retained-history begin -->/gu) ?? []).length;
+  const ends = (document.match(/<!-- CR00 retained-history end -->/gu) ?? []).length;
+  if (begins !== ends) throw new Error(`${path}: unclosed historical boundary`);
+}
 process.stdout.write(
-  `AR-00 architecture-reset adoption checks passed (31 outcomes, 4 deferred families, ${policySources.length} current-policy surfaces, historical identities retained)\n`,
+  `AR-00 architecture-reset adoption checks passed (31 outcomes retained, 20 corrective tasks, 72 unchanged definitions, T01–T24/F01–F10, ${policySources.length} current-policy surfaces, historical identities retained)\n`,
 );

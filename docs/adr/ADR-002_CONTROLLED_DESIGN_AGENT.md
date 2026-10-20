@@ -47,6 +47,15 @@ Merchant request
 
 ## 3. Core principles
 
+### 3.1.1 CR-00 advertised capability-reference clarification (proposed)
+
+An advertised registered capability handle is untrusted proposal data, not permission or executable
+authority. Server-side scope/version validation may resolve an advertised handle to a currently
+registered capability; unknown, foreign and stale handles reject. Provider output cannot grant
+project ownership, commerce identity, token/cost authority, publication authority or access to
+internal IDs. This clarification does not permit arbitrary code, imports, CSS, fonts, credentials
+or provider-selected modules. It is not a Puck/Webstudio migration decision.
+
 ### 3.1 The AI proposes; Veskify owns the truth
 
 AI output is untrusted until validated. Canonical Veskify models, validators, the component registry, protected-field rules, and repository services determine whether a proposed change may enter draft state.
@@ -237,7 +246,15 @@ coverage remains mocked and network-free by default. The explicitly authorized P
 retains one successful governed initial-generation call before one successful hero follow-up call,
 with zero retries; P10A is now Baseline / closed.
 
-This ADR remains binding. New work follows the v1.3.0 roadmap:
+This ADR remains binding. Current delivery order is owned by [the corrective roadmap](../VESKIFY_DEVELOPMENT_ROADMAP.md);
+current status is owned by [the tracker](../VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md). This ADR
+remains binding for its architectural controls. The following phase list is historical context.
+
+<!-- CR00 retained-history begin -->
+
+Historical record: retained verbatim; current scheduling is governed by the corrective roadmap and tracker.
+
+New work follows the v1.3.0 roadmap:
 
 1. preserve the closed P10A internal governed-orchestration and authoritative-publishing contracts;
 2. deliver the now-active but still Planned P10B Commercial Storefront Generation System v1 and
@@ -250,3 +267,5 @@ This ADR remains binding. New work follows the v1.3.0 roadmap:
 6. complete P12 production hardening and controlled pilot operations.
 
 This decision does not authorize a second catalogue model, merchant-specific component code or weaker validation in order to increase generation freedom.
+
+<!-- CR00 retained-history end -->
