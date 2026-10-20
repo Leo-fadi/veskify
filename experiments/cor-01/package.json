@@ -1,0 +1,23 @@
+{
+  "name": "cor-01-local-puck-evaluation",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4317",
+    "build": "vite build",
+    "check": "node check.mjs",
+    "review": "node review.mjs"
+  },
+  "dependencies": {
+    "@puckeditor/core": "0.23.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1",
+    "prettier": "3.9.5",
+    "vite": "8.3.4",
+    "webstudio": "0.306.0"
+  }
+}
